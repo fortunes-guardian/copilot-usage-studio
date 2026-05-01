@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { LedgerData, LedgerSession } from './ledger.model';
+import { LedgerData, LedgerSession, ModelBreakdown, TokenBreakdown, TraceEvent } from './ledger.model';
 import {
   MODEL_PRICES_USD_PER_MILLION,
   PRICING_EFFECTIVE_DATE,
@@ -46,6 +46,39 @@ export class App {
       ),
     })),
   );
+  protected readonly costExplanation = computed(() => {
+    const session = this.selectedSession();
+    const ledger = this.ledger();
+
+    if (!session || !ledger) {
+      return null;
+    }
+
+    const modelRows = session.modelBreakdown.map((entry) =>
+      this.explainModelCost(entry, ledger.usdToEur, session.cost.eur),
+    );
+    const categoryRows = this.explainCategoryCosts(modelRows);
+    const topTokenEvents = this.topTokenEvents(session.traceEvents, session.modelBreakdown, ledger.usdToEur);
+    const hasCacheData = session.tokens.cachedInput > 0 || session.tokens.cacheWrite > 0;
+
+    return {
+      sourceStrength:
+        session.tokenSource === 'llm_request_token_totals'
+          ? 'Exact local input/output token totals'
+          : 'Estimated token totals',
+      sourceDescription:
+        session.tokenSource === 'llm_request_token_totals'
+          ? 'Imported from VS Code Copilot debug-log llm_request events. This is the strongest local source for session input and output tokens.'
+          : 'Estimated from visible chat/session data. Useful context, but weaker than debug-log llm_request totals.',
+      cacheStatus: hasCacheData ? 'Cache tokens imported' : 'Cache tokens not present in local logs',
+      cacheDescription: hasCacheData
+        ? 'This session includes cached input or cache-write token totals in the generated ledger.'
+        : 'The VS Code debug-log events imported for this session expose inputTokens and outputTokens, but not billing cache read/write fields. The estimate therefore prices visible local input/output totals and keeps cache accounting explicit as unavailable.',
+      modelRows,
+      categoryRows,
+      topTokenEvents,
+    };
+  });
   protected readonly filteredSessions = computed(() => {
     const query = this.query().trim().toLowerCase();
     const sessions = [...this.sessions()].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
@@ -130,5 +163,120 @@ export class App {
 
   protected setQuery(value: string): void {
     this.query.set(value);
+  }
+
+  private explainModelCost(entry: ModelBreakdown, usdToEur: number, sessionCostEur: number) {
+    const pricingModel = entry.pricingModel || entry.model;
+    const price = MODEL_PRICES_USD_PER_MILLION[pricingModel] ?? MODEL_PRICES_USD_PER_MILLION['GPT-5.4'];
+    const inputEur = this.tokenCostEur(entry.tokens.input, price.input, usdToEur);
+    const cachedInputEur = this.tokenCostEur(entry.tokens.cachedInput, price.cachedInput, usdToEur);
+    const cacheWriteEur = this.tokenCostEur(entry.tokens.cacheWrite, price.cacheWrite ?? 0, usdToEur);
+    const outputEur = this.tokenCostEur(entry.tokens.output, price.output, usdToEur);
+    const totalEur = inputEur + cachedInputEur + cacheWriteEur + outputEur;
+
+    return {
+      ...entry,
+      provider: price.provider,
+      releaseStatus: price.releaseStatus,
+      category: price.category,
+      inputRate: price.input,
+      cachedInputRate: price.cachedInput,
+      cacheWriteRate: price.cacheWrite ?? 0,
+      outputRate: price.output,
+      inputEur,
+      cachedInputEur,
+      cacheWriteEur,
+      outputEur,
+      totalEur,
+      share: sessionCostEur > 0 ? (totalEur / sessionCostEur) * 100 : 0,
+      usesFallbackPrice: pricingModel !== entry.model || !MODEL_PRICES_USD_PER_MILLION[entry.model],
+    };
+  }
+
+  private explainCategoryCosts(modelRows: ReturnType<App['explainModelCost']>[]) {
+    return [
+      {
+        label: 'Input',
+        tokens: this.sumTokens(modelRows, 'input'),
+        eur: modelRows.reduce((sum, row) => sum + row.inputEur, 0),
+        description: 'Prompt, context, tool, and repository material sent into the model.',
+      },
+      {
+        label: 'Output',
+        tokens: this.sumTokens(modelRows, 'output'),
+        eur: modelRows.reduce((sum, row) => sum + row.outputEur, 0),
+        description: 'Generated model response tokens.',
+      },
+      {
+        label: 'Cached input',
+        tokens: this.sumTokens(modelRows, 'cachedInput'),
+        eur: modelRows.reduce((sum, row) => sum + row.cachedInputEur, 0),
+        description: 'Prompt tokens served from provider cache when that billing signal is available.',
+      },
+      {
+        label: 'Cache write',
+        tokens: this.sumTokens(modelRows, 'cacheWrite'),
+        eur: modelRows.reduce((sum, row) => sum + row.cacheWriteEur, 0),
+        description: 'Provider cache creation tokens. GitHub lists this mainly for Anthropic models.',
+      },
+    ];
+  }
+
+  private topTokenEvents(events: TraceEvent[], modelBreakdown: ModelBreakdown[], usdToEur: number) {
+    const sessionPricingModel = modelBreakdown.length === 1 ? modelBreakdown[0].pricingModel : null;
+
+    return events
+      .filter((event) => event.inputTokens || event.outputTokens)
+      .map((event) => {
+        const parsedModel = this.modelFromEventDetail(event.detail);
+        const pricingModel = this.matchPricingModel(parsedModel) ?? sessionPricingModel ?? 'GPT-5.4';
+        const price = MODEL_PRICES_USD_PER_MILLION[pricingModel] ?? MODEL_PRICES_USD_PER_MILLION['GPT-5.4'];
+        const estimatedEur =
+          this.tokenCostEur(event.inputTokens, price.input, usdToEur) +
+          this.tokenCostEur(event.outputTokens, price.output, usdToEur);
+
+        return {
+          ...event,
+          totalTokens: event.inputTokens + event.outputTokens,
+          pricingModel,
+          estimatedEur,
+        };
+      })
+      .sort((a, b) => b.totalTokens - a.totalTokens)
+      .slice(0, 5);
+  }
+
+  private tokenCostEur(tokens: number, usdPerMillion: number, usdToEur: number): number {
+    return (tokens / 1_000_000) * usdPerMillion * usdToEur;
+  }
+
+  private sumTokens(rows: { tokens: TokenBreakdown }[], field: keyof TokenBreakdown): number {
+    return rows.reduce((sum, row) => sum + row.tokens[field], 0);
+  }
+
+  private modelFromEventDetail(detail: string): string {
+    return String(detail).split(':')[0]?.trim() ?? '';
+  }
+
+  private matchPricingModel(rawModel: string): string | null {
+    const rawKey = this.modelKey(rawModel);
+    if (!rawKey) {
+      return null;
+    }
+
+    return (
+      Object.keys(MODEL_PRICES_USD_PER_MILLION).find((model) => this.modelKey(model) === rawKey) ??
+      Object.keys(MODEL_PRICES_USD_PER_MILLION).find((model) => rawKey.includes(this.modelKey(model))) ??
+      null
+    );
+  }
+
+  private modelKey(model: string): string {
+    return String(model ?? '')
+      .replace(/^copilot\//i, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim()
+      .replace(/\s+/g, ' ');
   }
 }

@@ -243,6 +243,98 @@
           </dl>
         </section>
 
+        @if (costExplanation(); as cost) {
+          <section class="cost-explainer">
+            <div class="cost-explainer-header">
+              <div>
+                <p class="eyebrow">Cost debugger</p>
+                <h3>Why this run cost €{{ session.cost.eur | number: '1.2-4' }}</h3>
+              </div>
+              <span class="source-pill" [title]="cost.sourceDescription">{{ cost.sourceStrength }}</span>
+            </div>
+
+            <div class="source-callout">
+              <div>
+                <strong>{{ cost.cacheStatus }}</strong>
+                <p>{{ cost.cacheDescription }}</p>
+              </div>
+              <a [href]="pricingSourceUrl" target="_blank" rel="noreferrer">GitHub price source</a>
+            </div>
+
+            <div class="cost-categories">
+              @for (category of cost.categoryRows; track category.label) {
+                <article [class.unavailable]="category.tokens === 0 && (category.label === 'Cached input' || category.label === 'Cache write')">
+                  <span [title]="category.description">{{ category.label }}</span>
+                  <strong>{{ category.tokens | number }} tokens</strong>
+                  <em>€{{ category.eur | number: '1.6-6' }}</em>
+                </article>
+              }
+            </div>
+
+            <div class="cost-table">
+              <div class="cost-row cost-row-heading">
+                <span>Model</span>
+                <span>Price row</span>
+                <span>Tokens</span>
+                <span>Rates / 1M</span>
+                <span>Cost</span>
+                <span>Share</span>
+              </div>
+              @for (model of cost.modelRows; track model.model) {
+                <div class="cost-row">
+                  <strong>
+                    {{ model.model }}
+                    <em>{{ model.turns | number }} model turns · {{ model.provider }}</em>
+                  </strong>
+                  <span>
+                    {{ model.pricingModel }}
+                    @if (model.usesFallbackPrice) {
+                      <em class="warning-text">fallback</em>
+                    }
+                  </span>
+                  <span>
+                    {{ model.tokens.input | number }} in /
+                    {{ model.tokens.output | number }} out
+                    @if (model.tokens.cachedInput || model.tokens.cacheWrite) {
+                      <em>{{ model.tokens.cachedInput | number }} cached / {{ model.tokens.cacheWrite | number }} write</em>
+                    }
+                  </span>
+                  <span>
+                    ${{ model.inputRate | number: '1.0-3' }} in /
+                    ${{ model.outputRate | number: '1.0-3' }} out
+                    @if (model.cacheWriteRate) {
+                      <em>${{ model.cachedInputRate | number: '1.0-3' }} cached / ${{ model.cacheWriteRate | number: '1.0-3' }} write</em>
+                    } @else {
+                      <em>${{ model.cachedInputRate | number: '1.0-3' }} cached</em>
+                    }
+                  </span>
+                  <span>
+                    €{{ model.totalEur | number: '1.6-6' }}
+                    <em>{{ model.inputEur | number: '1.6-6' }} in / {{ model.outputEur | number: '1.6-6' }} out</em>
+                  </span>
+                  <span>{{ model.share | number: '1.0-0' }}%</span>
+                </div>
+              }
+            </div>
+
+            @if (cost.topTokenEvents.length) {
+              <div class="token-burners">
+                <h4>Largest model calls</h4>
+                <div>
+                  @for (event of cost.topTokenEvents; track event.index) {
+                    <article>
+                      <strong>#{{ event.index + 1 }} · {{ event.totalTokens | number }} tokens</strong>
+                      <span>{{ event.inputTokens | number }} in / {{ event.outputTokens | number }} out · {{ event.pricingModel }}</span>
+                      <em>about €{{ event.estimatedEur | number: '1.6-6' }}</em>
+                      <p>{{ event.detail }}</p>
+                    </article>
+                  }
+                </div>
+              </div>
+            }
+          </section>
+        }
+
         <section>
           <h3>Summary</h3>
           <div class="facts trace-cards">
@@ -353,8 +445,9 @@
         <div class="explain">
           <h3>Why this cost?</h3>
           <p>
-            Cost is derived from the imported token totals above. The trace log explains where those totals came from,
-            while billing reconciliation and cache accounting remain separate future imports.
+            Cost is derived from the imported token totals above and the GitHub price row for each model. Cache
+            accounting is shown separately because the current local VS Code debug logs do not expose provider
+            cache read/write token fields.
           </p>
           <div class="tags">
             @for (tag of session.tags; track tag) {

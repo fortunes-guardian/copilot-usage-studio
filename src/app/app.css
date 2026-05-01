@@ -307,6 +307,179 @@
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
+.cost-explainer {
+  display: grid;
+  gap: 16px;
+  border: 1px solid #d9e5e7;
+  border-radius: 8px;
+  padding: 18px;
+  background: #fbfdfd;
+}
+
+.cost-explainer-header,
+.source-callout {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cost-explainer h3 {
+  margin: 4px 0 0;
+}
+
+.source-pill {
+  border: 1px solid #b7d8d7;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #edf8f6;
+  color: #245a62;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.source-callout {
+  border-left: 4px solid #52b4a9;
+  padding-left: 14px;
+}
+
+.source-callout strong,
+.token-burners h4 {
+  color: #16202a;
+}
+
+.source-callout p {
+  max-width: 920px;
+  margin: 5px 0 0;
+  color: #4e6070;
+  line-height: 1.5;
+}
+
+.source-callout a {
+  color: #245a62;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.cost-categories {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.cost-categories article {
+  display: grid;
+  gap: 5px;
+  border: 1px solid #dfe8ec;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff;
+}
+
+.cost-categories article.unavailable {
+  background: #f6f8f9;
+}
+
+.cost-categories span,
+.cost-categories em,
+.cost-row span,
+.cost-row em,
+.token-burners span,
+.token-burners em {
+  color: #60717f;
+  font-size: 13px;
+  font-style: normal;
+}
+
+.cost-categories strong {
+  color: #16202a;
+  font-size: 18px;
+}
+
+.cost-table {
+  display: grid;
+  border: 1px solid #dfe6ed;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.cost-row {
+  display: grid;
+  grid-template-columns:
+    minmax(170px, 1.15fr)
+    minmax(130px, 0.9fr)
+    minmax(150px, 1fr)
+    minmax(160px, 1fr)
+    minmax(130px, 0.85fr)
+    minmax(64px, 0.35fr);
+  gap: 12px;
+  align-items: start;
+  padding: 11px 12px;
+  border-bottom: 1px solid #edf2f5;
+}
+
+.cost-row:last-child {
+  border-bottom: 0;
+}
+
+.cost-row-heading {
+  background: #f3f7f9;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.cost-row strong,
+.cost-row span {
+  display: grid;
+  gap: 3px;
+}
+
+.cost-row strong {
+  color: #16202a;
+}
+
+.warning-text {
+  color: #9c4f11 !important;
+  font-weight: 800;
+}
+
+.token-burners {
+  display: grid;
+  gap: 10px;
+}
+
+.token-burners h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.token-burners > div {
+  display: grid;
+  gap: 8px;
+}
+
+.token-burners article {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #e6edf2;
+  border-radius: 8px;
+  padding: 11px 12px;
+  background: #fff;
+}
+
+.token-burners strong {
+  color: #16202a;
+}
+
+.token-burners p {
+  margin: 0;
+  color: #3f4f5d;
+  overflow-wrap: anywhere;
+}
+
 .session-details dl {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
@@ -665,6 +838,8 @@
 
   .summary-grid,
   .facts,
+  .cost-categories,
+  .cost-row,
   .trace-cards,
   .comparison-grid,
   .ingestion,
@@ -677,6 +852,8 @@
 
   .detail-header,
   .compare-header,
+  .cost-explainer-header,
+  .source-callout,
   .pricing-header {
     display: grid;
   }

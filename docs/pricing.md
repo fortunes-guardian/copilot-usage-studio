@@ -60,6 +60,7 @@ The `GitHub prices` view therefore shows every rate row the app knows about, whe
 ## Current Limitations
 
 - Local VS Code debug logs currently provide input and output token totals, but not complete billing-grade cache accounting.
+- When `cachedInput` and `cacheWrite` are zero in a debug-log import, that currently means those cache fields were not present in the local log source. It should not be presented as proof that provider-side cache billing was zero.
 - GitHub billing can still differ because GitHub may apply provider-side cache accounting or billing adjustments not present in local logs.
 - Unknown model ids are preserved for display and priced with a visible fallback until the pricing table is updated.
 - The pricing table should be rechecked against GitHub Docs whenever GitHub changes model availability or usage-based rates.

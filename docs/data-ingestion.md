@@ -58,6 +58,8 @@ For debug logs with `llm_request` events:
 
 The word `exact` means exact for the local VS Code debug-log token fields that were imported. It does not mean exact final billing. GitHub billing reconciliation can still differ because cache accounting and provider-side billing adjustments are not present in the local log.
 
+`cachedInput` and `cacheWrite` are currently zero for debug-log sessions because the local `llm_request` events observed so far expose `inputTokens` and `outputTokens`, not provider billing cache read/write fields. The UI should describe those cache fields as unavailable from this local source, not as proof that GitHub billed no cache activity.
+
 Model names are normalized for display without discarding the raw id. For example, `claude-sonnet-4.6` becomes `Claude Sonnet 4.6`, but the raw id remains in `modelBreakdown.rawModels`. Why: VS Code logs provider ids, while users expect readable model names and pricing needs a canonical key. Unknown models are not relabeled as a known model; they keep their raw label and use `pricingModel` to show any fallback pricing assumption.
 
 For chat snapshots:
