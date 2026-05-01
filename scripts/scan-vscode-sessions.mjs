@@ -33,6 +33,8 @@ const pricing = {
 const diagnostics = {
   scannedRoots: [],
   scannedWorkspaces: 0,
+  scannedStateDbs: 0,
+  enrichedFromStateDbs: 0,
   importedDebugLogSessions: 0,
   importedChatSnapshotSessions: 0,
   skippedEmptyDebugLogs: 0,
@@ -40,6 +42,8 @@ const diagnostics = {
   skippedDuplicateChatSnapshots: 0,
   warnings: [],
 };
+
+let DatabaseSync = null;
 
 function defaultCodeUserDirs() {
   const home = homedir();
@@ -64,6 +68,161 @@ function safeJson(text) {
     return JSON.parse(text);
   } catch {
     return null;
+  }
+}
+
+async function loadSqliteSupport() {
+  const originalEmitWarning = process.emitWarning;
+  process.emitWarning = (warning, ...args) => {
+    if (String(warning).includes('SQLite is an experimental feature')) {
+      return;
+    }
+    originalEmitWarning.call(process, warning, ...args);
+  };
+
+  try {
+    const sqlite = await import('node:sqlite');
+    return sqlite.DatabaseSync;
+  } catch (error) {
+    diagnostics.warnings.push(`SQLite enrichment unavailable: ${error.code ?? error.message}`);
+    return null;
+  } finally {
+    process.emitWarning = originalEmitWarning;
+  }
+}
+
+function readStateValue(db, key) {
+  const row = db.prepare('select value from ItemTable where key = ?').get(key);
+  if (!row?.value) {
+    return null;
+  }
+
+  return safeJson(Buffer.from(row.value).toString('utf8'));
+}
+
+function sessionIdFromResource(resource) {
+  const encoded = String(resource ?? '').split('/').pop();
+  if (!encoded) {
+    return '';
+  }
+
+  try {
+    return Buffer.from(encoded, 'base64').toString('utf8');
+  } catch {
+    return '';
+  }
+}
+
+function timestampFromMillis(value) {
+  const millis = Number(value);
+  return Number.isFinite(millis) && millis > 0 ? new Date(millis).toISOString() : '';
+}
+
+function locationLabel(location) {
+  const normalized = String(location ?? '').toLowerCase();
+  if (normalized === 'panel') {
+    return 'Chat Panel';
+  }
+  if (normalized === 'editor') {
+    return 'Editor';
+  }
+  if (normalized === 'terminal') {
+    return 'Terminal';
+  }
+  return location ? String(location) : 'Chat Panel';
+}
+
+function statusLabel(status, lastResponseState) {
+  if (Number(status) === 2) {
+    return 'Running';
+  }
+  if (Number(lastResponseState) === 2) {
+    return 'Error';
+  }
+  return 'Idle';
+}
+
+function readWorkspaceState(workspaceDir) {
+  if (!DatabaseSync) {
+    return new Map();
+  }
+
+  const stateDb = join(workspaceDir, 'state.vscdb');
+  if (!existsSync(stateDb)) {
+    return new Map();
+  }
+
+  diagnostics.scannedStateDbs += 1;
+
+  try {
+    const db = new DatabaseSync(stateDb, { readOnly: true });
+    const chatIndex = readStateValue(db, 'chat.ChatSessionStore.index');
+    const agentModelCache = readStateValue(db, 'agentSessions.model.cache');
+    const agentStateCache = readStateValue(db, 'agentSessions.state.cache');
+    db.close();
+
+    const bySession = new Map();
+    const entries = Object.values(chatIndex?.entries ?? {});
+    for (const entry of entries) {
+      if (!entry?.sessionId) {
+        continue;
+      }
+
+      bySession.set(entry.sessionId, {
+        sourcePath: stateDb,
+        keys: ['chat.ChatSessionStore.index'],
+        title: entry.title,
+        initialLocation: entry.initialLocation,
+        permissionLevel: entry.permissionLevel,
+        hasPendingEdits: Boolean(entry.hasPendingEdits),
+        isExternal: Boolean(entry.isExternal),
+        lastResponseState: entry.lastResponseState,
+        createdAt: timestampFromMillis(entry.timing?.created),
+        lastActivityAt: timestampFromMillis(
+          entry.timing?.lastRequestEnded ?? entry.lastMessageDate ?? entry.timing?.lastRequestStarted,
+        ),
+      });
+    }
+
+    for (const agent of Array.isArray(agentModelCache) ? agentModelCache : []) {
+      const sessionId = sessionIdFromResource(agent.resource);
+      if (!sessionId) {
+        continue;
+      }
+
+      const existing = bySession.get(sessionId) ?? { sourcePath: stateDb, keys: [] };
+      bySession.set(sessionId, {
+        ...existing,
+        keys: [...new Set([...(existing.keys ?? []), 'agentSessions.model.cache'])],
+        label: agent.label ?? existing.label,
+        sessionType: agent.providerLabel ?? existing.sessionType,
+        status: statusLabel(agent.status, existing.lastResponseState),
+        resource: agent.resource,
+        createdAt: existing.createdAt || timestampFromMillis(agent.timing?.created),
+        lastActivityAt:
+          existing.lastActivityAt ||
+          timestampFromMillis(agent.timing?.lastRequestEnded ?? agent.timing?.lastRequestStarted),
+      });
+    }
+
+    for (const readState of Array.isArray(agentStateCache) ? agentStateCache : []) {
+      const sessionId = sessionIdFromResource(readState.resource);
+      const existing = bySession.get(sessionId);
+      if (!sessionId || !existing) {
+        continue;
+      }
+
+      bySession.set(sessionId, {
+        ...existing,
+        keys: [...new Set([...(existing.keys ?? []), 'agentSessions.state.cache'])],
+        readAt: timestampFromMillis(readState.read),
+      });
+    }
+
+    return bySession;
+  } catch (error) {
+    diagnostics.warnings.push(`${stateDb}: SQLite enrichment skipped: ${error.message}`);
+    return new Map();
   }
 }
 
@@ -100,15 +259,25 @@ function listFiles(dir, suffix) {
     .filter((path) => statSync(path).isFile() && path.endsWith(suffix));
 }
 
+function modelKey(model) {
+  return String(model ?? '')
+    .replace(/^copilot\//i, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
 function normalizeModel(model) {
   const raw = String(model ?? '')
-    .replace(/^copilot\//, '')
-    .toLowerCase();
+    .replace(/^copilot\//i, '')
+    .trim();
+  const key = modelKey(raw);
   const known = Object.keys(pricing);
   return (
-    known.find((name) => name.toLowerCase() === raw) ??
-    known.find((name) => raw.includes(name.toLowerCase())) ??
-    'GPT-5.4'
+    known.find((name) => modelKey(name) === key) ??
+    known.find((name) => key.includes(modelKey(name))) ??
+    (raw || 'Unknown model')
   );
 }
 
@@ -120,6 +289,52 @@ function costUsd(model, tokens) {
     (tokens.cacheWrite / 1_000_000) * (price.cacheWrite ?? 0) +
     (tokens.output / 1_000_000) * price.output
   );
+}
+
+function modelBreakdownFromLlmRequests(llmRequests) {
+  const byModel = new Map();
+
+  for (const event of llmRequests) {
+    const rawModel = String(event.attrs?.model ?? 'unknown')
+      .replace(/^copilot\//i, '')
+      .trim();
+    const displayModel = normalizeModel(rawModel);
+    const current = byModel.get(displayModel) ?? {
+      model: displayModel,
+      rawModels: new Set(),
+      turns: 0,
+      tokens: { input: 0, cachedInput: 0, cacheWrite: 0, output: 0 },
+      cost: { usd: 0, eur: 0 },
+      pricingModel: pricing[displayModel] ? displayModel : 'GPT-5.4',
+    };
+
+    current.rawModels.add(rawModel || 'unknown');
+    current.turns += 1;
+    current.tokens.input += Number(event.attrs?.inputTokens ?? 0);
+    current.tokens.output += Number(event.attrs?.outputTokens ?? 0);
+    byModel.set(displayModel, current);
+  }
+
+  return [...byModel.values()].map((entry) => {
+    const usd = costUsd(entry.pricingModel, entry.tokens);
+    return {
+      ...entry,
+      rawModels: [...entry.rawModels],
+      cost: { usd, eur: usd * usdToEur },
+    };
+  });
+}
+
+function sessionModelLabel(modelBreakdown, fallbackModel) {
+  if (modelBreakdown.length === 1) {
+    return modelBreakdown[0].model;
+  }
+
+  if (modelBreakdown.length > 1) {
+    return `Mixed (${modelBreakdown.map((entry) => entry.model).join(', ')})`;
+  }
+
+  return normalizeModel(fallbackModel);
 }
 
 function estimateTokens(text) {
@@ -205,14 +420,20 @@ function sessionFromDebugLog(sessionDir, workspaceDir) {
   }
 
   const firstUserMessage = userMessages[0]?.attrs?.content ?? 'Untitled Copilot session';
-  const model = normalizeModel(llmRequests.find((event) => event.attrs?.model)?.attrs?.model);
+  const modelBreakdown = modelBreakdownFromLlmRequests(llmRequests);
+  const model = sessionModelLabel(
+    modelBreakdown,
+    llmRequests.find((event) => event.attrs?.model)?.attrs?.model,
+  );
   const input = llmRequests.reduce((sum, event) => sum + Number(event.attrs?.inputTokens ?? 0), 0);
   const output = llmRequests.reduce(
     (sum, event) => sum + Number(event.attrs?.outputTokens ?? 0),
     0,
   );
   const tokens = { input, cachedInput: 0, cacheWrite: 0, output };
-  const usd = costUsd(model, tokens);
+  const usd = modelBreakdown.length
+    ? modelBreakdown.reduce((sum, entry) => sum + entry.cost.usd, 0)
+    : costUsd(model, tokens);
   const startEvent = main.find((event) => event.type === 'session_start') ?? main[0];
   const lastEvent = main[main.length - 1];
   const startedAt =
@@ -255,6 +476,7 @@ function sessionFromDebugLog(sessionDir, workspaceDir) {
     workspace: workspaceName(workspaceDir),
     sourcePath: sessionDir,
     model,
+    modelBreakdown,
     startedAt,
     endedAt,
     tags: ['debug-log', llmRequests.length ? 'llm-request-token-totals' : 'estimated-visible-text'],
@@ -332,6 +554,20 @@ function sessionFromChatSnapshot(file, workspaceDir) {
     workspace: workspaceName(workspaceDir),
     sourcePath: file,
     model,
+    modelBreakdown: [
+      {
+        model,
+        rawModels: [
+          String(
+            firstRequest?.modelId ?? firstRequest?.inputState?.selectedModel?.identifier ?? model,
+          ),
+        ],
+        turns: requests.length,
+        tokens,
+        cost: { usd, eur: usd * usdToEur },
+        pricingModel: pricing[model] ? model : 'GPT-5.4',
+      },
+    ],
     startedAt,
     endedAt,
     tags: ['chat-session', 'estimated-input'],
@@ -391,12 +627,57 @@ function sessionFromChatSnapshot(file, workspaceDir) {
   };
 }
 
+function enrichSessionFromWorkspaceState(session, stateBySessionId) {
+  const state = stateBySessionId.get(session.id);
+  if (!state) {
+    return session;
+  }
+
+  diagnostics.enrichedFromStateDbs += 1;
+
+  const title = String(state.title ?? state.label ?? session.title);
+  return {
+    ...session,
+    title: title.slice(0, 80),
+    location: locationLabel(state.initialLocation ?? session.location),
+    sessionType: state.sessionType ?? session.sessionType,
+    status: state.status ?? statusLabel(undefined, state.lastResponseState),
+    startedAt: state.createdAt || session.startedAt,
+    endedAt: state.lastActivityAt || session.endedAt,
+    tags: [
+      ...new Set([
+        ...session.tags,
+        'state-vscdb-enriched',
+        state.hasPendingEdits ? 'pending-edits' : '',
+        state.isExternal ? 'external' : '',
+      ].filter(Boolean)),
+    ],
+    vscodeState: {
+      sourcePath: state.sourcePath,
+      keys: state.keys ?? [],
+      title: state.title ?? '',
+      label: state.label ?? '',
+      resource: state.resource ?? '',
+      initialLocation: state.initialLocation ?? '',
+      permissionLevel: state.permissionLevel ?? '',
+      hasPendingEdits: Boolean(state.hasPendingEdits),
+      isExternal: Boolean(state.isExternal),
+      lastResponseState: Number(state.lastResponseState ?? 0),
+      readAt: state.readAt ?? '',
+      createdAt: state.createdAt ?? '',
+      lastActivityAt: state.lastActivityAt ?? '',
+    },
+  };
+}
+
 function parseWorkspace(workspaceDir) {
   diagnostics.scannedWorkspaces += 1;
+  const stateBySessionId = readWorkspaceState(workspaceDir);
   const debugRoot = join(workspaceDir, 'GitHub.copilot-chat', 'debug-logs');
   const debugSessions = listDirs(debugRoot)
     .map((sessionDir) => sessionFromDebugLog(sessionDir, workspaceDir))
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((session) => enrichSessionFromWorkspaceState(session, stateBySessionId));
   const debugIds = new Set(debugSessions.map((session) => session.id));
   diagnostics.importedDebugLogSessions += debugSessions.length;
 
@@ -407,7 +688,7 @@ function parseWorkspace(workspaceDir) {
         diagnostics.skippedDuplicateChatSnapshots += 1;
         return null;
       }
-      return session;
+      return session ? enrichSessionFromWorkspaceState(session, stateBySessionId) : null;
     })
     .filter(Boolean);
   diagnostics.importedChatSnapshotSessions += chatSessions.length;
@@ -421,6 +702,7 @@ function workspaceDirsFromUserDir(userDir) {
 }
 
 const userDirs = explicitRoots.length ? explicitRoots : defaultCodeUserDirs();
+DatabaseSync = await loadSqliteSupport();
 diagnostics.scannedRoots = userDirs;
 const workspaceDirs = userDirs.flatMap((root) => {
   if (basename(dirname(root)) === 'workspaceStorage' || existsSync(join(root, 'workspace.json'))) {

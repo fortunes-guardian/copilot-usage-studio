@@ -5,6 +5,7 @@ Local-first MVP for inspecting GitHub Copilot chat/agent session cost estimates.
 ## What it does now
 
 - Scans local VS Code Copilot agent debug logs and chat session JSONL files.
+- Enriches imported sessions from VS Code `state.vscdb` when available.
 - Generates `public/data/sessions.json`.
 - Shows sessions by first prompt, model, workspace, tokens, and estimated EUR cost.
 - Compares two sessions to estimate token and cost deltas.
@@ -36,6 +37,8 @@ That file is produced when Agent Debug Log file logging is enabled. It includes 
 %APPDATA%\Code\User\workspaceStorage\<workspace-id>\chatSessions\<session-id>.jsonl
 ```
 
+The scanner also reads workspace `state.vscdb` files with Node's built-in SQLite support. That pass enriches sessions with VS Code's stable title, location, permission level, pending-edit flag, read state, and Agent Debug Log label/status when those keys exist.
+
 You can also pass a custom output file and one or more VS Code `User` directories or concrete workspace storage directories:
 
 ```bash
@@ -48,6 +51,7 @@ node scripts/scan-vscode-sessions.mjs public/data/sessions.json "C:\Users\you\Ap
 This MVP now uses two token paths:
 
 - if `GitHub.copilot-chat/debug-logs/<session-id>/main.jsonl` has `llm_request` events, it uses VS Code's `inputTokens` and `outputTokens`
+- debug-log model ids are preserved in `modelBreakdown.rawModels`, normalized for display, and priced per model before session totals are summed
 - otherwise, it falls back to a visible-text heuristic
 
 The fallback heuristic is:
@@ -67,7 +71,9 @@ Pricing is stored in `src/app/pricing.ts` and mirrored in the scanner script. Ra
 
 ## Next build steps
 
-1. Add SQLite `state.vscdb` enrichment for better titles, labels, and restored-session metadata.
-2. Add a real tokenizer adapter interface for fallback imports.
-3. Add GitHub billing report import and daily reconciliation.
-4. Add experiment pairing with labels like `mcp-on` and `mcp-off`.
+1. Add a real tokenizer adapter interface for fallback imports.
+2. Add GitHub billing report import and daily reconciliation.
+3. Add experiment pairing with labels like `mcp-on` and `mcp-off`.
+4. Add app-owned SQLite storage for historical scans, labels, and comparisons.
+
+See `docs/roadmap.md` for the computed build path and design rationale after the current SQLite enrichment phase.

@@ -37,6 +37,26 @@ function warn(message) {
   warnings.push(message);
 }
 
+function modelKey(model) {
+  return String(model ?? '')
+    .replace(/^copilot\//i, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function normalizeModel(model) {
+  const raw = String(model ?? '').replace(/^copilot\//i, '').trim();
+  const key = modelKey(raw);
+  const known = Object.keys(pricing);
+  return (
+    known.find((name) => modelKey(name) === key) ??
+    known.find((name) => key.includes(modelKey(name))) ??
+    (raw || 'Unknown model')
+  );
+}
+
 function expectedCostUsd(model, tokens) {
   const price = pricing[model] ?? pricing['GPT-5.4'];
   return (
@@ -91,6 +111,20 @@ for (const session of ledger.sessions ?? []) {
     fail(`${session.id} missing traceEvents array`);
   }
 
+  if (session.vscodeState) {
+    if (!session.vscodeState.sourcePath) {
+      fail(`${session.id} vscodeState missing sourcePath`);
+    }
+    if (!Array.isArray(session.vscodeState.keys) || !session.vscodeState.keys.length) {
+      fail(`${session.id} vscodeState missing keys`);
+    }
+    for (const field of ['hasPendingEdits', 'isExternal']) {
+      if (typeof session.vscodeState[field] !== 'boolean') {
+        fail(`${session.id} vscodeState.${field} must be boolean`);
+      }
+    }
+  }
+
   if (!Date.parse(session.startedAt) || !Date.parse(session.endedAt)) {
     fail(`${session.id} has invalid timestamps`);
   }
@@ -116,7 +150,41 @@ for (const session of ledger.sessions ?? []) {
     warn(`${session.id} has no tags`);
   }
 
-  const expectedUsd = expectedCostUsd(session.model, tokens);
+  if (!Array.isArray(session.modelBreakdown) || !session.modelBreakdown.length) {
+    fail(`${session.id} missing modelBreakdown array`);
+  }
+
+  let modelBreakdownUsd = 0;
+  for (const entry of session.modelBreakdown ?? []) {
+    if (!entry.model) {
+      fail(`${session.id} has modelBreakdown entry without model`);
+    }
+    if (!Array.isArray(entry.rawModels) || !entry.rawModels.length) {
+      fail(`${session.id} modelBreakdown.${entry.model ?? 'unknown'} missing rawModels`);
+    }
+    if (!Number.isFinite(entry.turns) || entry.turns < 0) {
+      fail(`${session.id} modelBreakdown.${entry.model ?? 'unknown'} has invalid turns`);
+    }
+    for (const field of ['input', 'cachedInput', 'cacheWrite', 'output']) {
+      if (!Number.isFinite(entry.tokens?.[field]) || entry.tokens[field] < 0) {
+        fail(`${session.id} modelBreakdown.${entry.model ?? 'unknown'} has invalid token field ${field}`);
+      }
+    }
+    const normalizedRawModels = new Set(entry.rawModels.map(normalizeModel));
+    if (!normalizedRawModels.has(entry.model) && entry.model !== 'Unknown model') {
+      fail(`${session.id} modelBreakdown.${entry.model} does not match raw model ids`);
+    }
+    const pricingModel = entry.pricingModel ?? entry.model;
+    const entryExpectedUsd = expectedCostUsd(pricingModel, entry.tokens ?? {});
+    modelBreakdownUsd += entryExpectedUsd;
+    if (Math.abs(entryExpectedUsd - Number(entry.cost?.usd)) > 0.000000001) {
+      fail(`${session.id} modelBreakdown.${entry.model} cost.usd does not match token pricing`);
+    }
+  }
+
+  const expectedUsd = session.modelBreakdown?.length
+    ? modelBreakdownUsd
+    : expectedCostUsd(session.model, tokens);
   const expectedEur = expectedUsd * Number(ledger.usdToEur);
   if (Math.abs(expectedUsd - Number(session.cost?.usd)) > 0.000000001) {
     fail(`${session.id} cost.usd does not match token pricing`);
@@ -129,6 +197,12 @@ for (const session of ledger.sessions ?? []) {
 const importedSessions = ledger.ingestion?.importedSessions;
 if (Number.isFinite(importedSessions) && importedSessions !== (ledger.sessions?.length ?? 0)) {
   fail(`ingestion.importedSessions=${importedSessions} does not match sessions.length=${ledger.sessions?.length ?? 0}`);
+}
+
+for (const field of ['scannedStateDbs', 'enrichedFromStateDbs']) {
+  if (!Number.isFinite(ledger.ingestion?.[field]) || ledger.ingestion[field] < 0) {
+    fail(`ingestion.${field} is missing or invalid`);
+  }
 }
 
 for (const warning of ledger.ingestion?.warnings ?? []) {

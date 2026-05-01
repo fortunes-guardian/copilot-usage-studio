@@ -75,6 +75,14 @@
             <dd>{{ ingestion.importedChatSnapshotSessions | number }}</dd>
           </div>
           <div>
+            <dt>State DBs</dt>
+            <dd>{{ ingestion.scannedStateDbs | number }}</dd>
+          </div>
+          <div>
+            <dt>State enriched</dt>
+            <dd>{{ ingestion.enrichedFromStateDbs | number }}</dd>
+          </div>
+          <div>
             <dt>Empty debug logs skipped</dt>
             <dd>{{ ingestion.skippedEmptyDebugLogs | number }}</dd>
           </div>
@@ -130,6 +138,16 @@
               <dt>Source</dt>
               <dd>{{ session.sourceKind }}</dd>
             </div>
+            @if (session.vscodeState; as state) {
+              <div>
+                <dt>Permission</dt>
+                <dd>{{ state.permissionLevel || 'unknown' }}</dd>
+              </div>
+              <div>
+                <dt>Pending Edits</dt>
+                <dd>{{ state.hasPendingEdits ? 'Yes' : 'No' }}</dd>
+              </div>
+            }
           </dl>
         </section>
 
@@ -182,6 +200,22 @@
               <span>Output</span>
               <strong>{{ session.tokens.output | number }}</strong>
             </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Model Pricing</h3>
+          <div class="model-breakdown">
+            @for (model of session.modelBreakdown; track model.model) {
+              <article>
+                <div>
+                  <strong>{{ model.model }}</strong>
+                  <span>{{ model.turns | number }} turns · priced as {{ model.pricingModel }}</span>
+                </div>
+                <p>{{ model.tokens.input | number }} in / {{ model.tokens.output | number }} out</p>
+                <em>€{{ model.cost.eur | number: '1.2-2' }}</em>
+              </article>
+            }
           </div>
         </section>
 

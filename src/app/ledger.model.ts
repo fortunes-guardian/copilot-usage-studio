@@ -12,6 +12,31 @@ export interface CostBreakdown {
   eur: number;
 }
 
+export interface ModelBreakdown {
+  model: string;
+  rawModels: string[];
+  turns: number;
+  tokens: TokenBreakdown;
+  cost: CostBreakdown;
+  pricingModel: string;
+}
+
+export interface VscodeStateEnrichment {
+  sourcePath: string;
+  keys: string[];
+  title: string;
+  label: string;
+  resource: string;
+  initialLocation: string;
+  permissionLevel: string;
+  hasPendingEdits: boolean;
+  isExternal: boolean;
+  lastResponseState: number;
+  readAt: string;
+  createdAt: string;
+  lastActivityAt: string;
+}
+
 export interface LedgerTurn {
   role: 'user' | 'assistant' | 'tool' | 'system';
   text: string;
@@ -49,6 +74,7 @@ export interface LedgerSession {
   workspace: string;
   sourcePath: string;
   model: string;
+  modelBreakdown: ModelBreakdown[];
   startedAt: string;
   endedAt: string;
   tags: string[];
@@ -58,6 +84,7 @@ export interface LedgerSession {
   confidence: EstimateConfidence;
   traceSummary: TraceSummary;
   traceEvents: TraceEvent[];
+  vscodeState?: VscodeStateEnrichment;
   turns: LedgerTurn[];
 }
 
@@ -69,6 +96,8 @@ export interface LedgerData {
   ingestion?: {
     scannedRoots: string[];
     scannedWorkspaces: number;
+    scannedStateDbs: number;
+    enrichedFromStateDbs: number;
     importedDebugLogSessions: number;
     importedChatSnapshotSessions: number;
     skippedEmptyDebugLogs: number;

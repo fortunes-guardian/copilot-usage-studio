@@ -197,7 +197,7 @@
 
 .ingestion dl {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 12px;
   margin: 0;
 }
@@ -238,6 +238,47 @@
 .facts strong {
   overflow-wrap: anywhere;
   font-size: 18px;
+}
+
+.model-breakdown {
+  display: grid;
+  gap: 10px;
+}
+
+.model-breakdown article {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(140px, auto) 90px;
+  gap: 14px;
+  align-items: center;
+  border: 1px solid #e6edf2;
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #f8fafb;
+}
+
+.model-breakdown article > div {
+  display: grid;
+  gap: 4px;
+}
+
+.model-breakdown strong {
+  color: #16202a;
+  overflow-wrap: anywhere;
+}
+
+.model-breakdown span,
+.model-breakdown p,
+.model-breakdown em {
+  margin: 0;
+  color: #60717f;
+  font-size: 13px;
+  font-style: normal;
+}
+
+.model-breakdown em {
+  color: #16202a;
+  font-weight: 800;
+  text-align: right;
 }
 
 .trace-cards {
@@ -484,8 +525,13 @@
   }
 
   .event-row,
-  .flow-node {
+  .flow-node,
+  .model-breakdown article {
     grid-template-columns: 1fr;
+  }
+
+  .model-breakdown em {
+    text-align: left;
   }
 
   .session-details dl {

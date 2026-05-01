@@ -54,8 +54,11 @@ For debug logs with `llm_request` events:
 - `tokens.cacheWrite` is `0`.
 - `tokenSource` is `llm_request_token_totals`.
 - `confidence` is `exact`.
+- `modelBreakdown` groups `llm_request` rows by normalized model id and stores raw model ids, turn count, token totals, estimated cost, and the pricing model used.
 
 The word `exact` means exact for the local VS Code debug-log token fields that were imported. It does not mean exact final billing. GitHub billing reconciliation can still differ because cache accounting and provider-side billing adjustments are not present in the local log.
+
+Model names are normalized for display without discarding the raw id. For example, `claude-sonnet-4.6` becomes `Claude Sonnet 4.6`, but the raw id remains in `modelBreakdown.rawModels`. Why: VS Code logs provider ids, while users expect readable model names and pricing needs a canonical key. Unknown models are not relabeled as a known model; they keep their raw label and use `pricingModel` to show any fallback pricing assumption.
 
 For chat snapshots:
 
@@ -75,6 +78,8 @@ Costs are estimates calculated from token totals and the local pricing table. Th
 
 The current pricing version is `github-copilot-usage-pricing-2026-06-01`. `USD_TO_EUR` defaults to `0.93` unless overridden for a scan.
 
+When a debug-log session uses more than one model, cost is calculated per `modelBreakdown` entry and then summed into `cost.usd` and `cost.eur`. Why: applying one session-level model price to all tokens is wrong for mixed runs and hides model-switching behavior.
+
 ## Display semantics
 
 The app displays:
@@ -83,6 +88,7 @@ The app displays:
 - VS Code Agent Debug Log style session details: session type, location, status, created time, and last activity
 - trace summary cards: model turns, tool calls, total tokens, errors, total events, and estimated cost
 - token totals and estimated cost
+- per-model pricing rows that show model turns, token totals, price fallback, and estimated cost
 - a capped turn preview for human inspection
 - a capped trace event preview for logs and flow-chart views
 - comparison deltas between two imported sessions
@@ -98,7 +104,26 @@ Each VS Code workspace storage folder can contain `state.vscdb`. That database i
 - workspace-scoped UI/session metadata
 - possible links between chat sessions, edit sessions, and restored historical sessions
 
-It does not replace debug logs for pricing. The debug log remains the pricing source because it carries `llm_request` token totals. SQLite should be added as an enrichment pass that joins metadata onto sessions by id or workspace, not as the primary cost source.
+The scanner reads `state.vscdb` as an enrichment pass using Node's built-in `node:sqlite` module. It currently probes these keys:
+
+- `chat.ChatSessionStore.index`
+- `agentSessions.model.cache`
+- `agentSessions.state.cache`
+
+The join key is the VS Code chat session id. `chat.ChatSessionStore.index` stores plain session ids. `agentSessions.*` stores a `vscode-chat-session://local/<base64-session-id>` resource, so the scanner decodes the final path segment before joining.
+
+When a match exists, the generated session gets:
+
+- `title` from the stable VS Code session title or agent label
+- `location` from `initialLocation`
+- `sessionType` from the agent provider label
+- `status` from the agent/session response state
+- `vscodeState` with the exact keys and state DB path used for the enrichment
+- a `state-vscdb-enriched` tag
+
+It does not replace debug logs for pricing. The debug log remains the pricing source because it carries `llm_request` token totals. SQLite is metadata only unless a future VS Code version starts storing billing-grade token rows there.
+
+Why this is the right boundary: `state.vscdb` gives better human labels and restored-session state, but it is workspace UI state. It is not the billing ledger, and it can be compacted or changed by VS Code. Keeping it as an optional enrichment means the scanner remains correct when SQLite is missing, locked, or has a changed key layout.
 
 ## Verification
 
@@ -109,4 +134,4 @@ npm run scan
 npm run verify:data
 ```
 
-The verifier checks the generated ledger shape, duplicate ids, required source metadata, valid timestamps, non-negative token fields, and guards against importing sessions with neither token totals nor turns.
+The verifier checks the generated ledger shape, duplicate ids, required source metadata, valid timestamps, non-negative token fields, model breakdown pricing, optional VS Code state metadata, and guards against importing sessions with neither token totals nor turns.
