@@ -95,11 +95,13 @@ The app displays:
 - first prompt, workspace, model, timestamps, tags, source kind, token source
 - VS Code Agent Debug Log style session details: session type, location, status, created time, and last activity
 - trace summary cards: model turns, tool calls, total tokens, errors, and total events
-- a cost debugger with token categories, per-model pricing rows, and the largest model calls
+- a cost debugger with cost drivers, token categories, per-model pricing rows, and the largest model calls
 - a capped trace event preview for logs and flow-chart views
 - comparison deltas between two imported sessions
 
 The flow chart uses structured trace event pricing fields for model-call costs. The cost debugger uses the session and model-level token totals; both are generated during ingestion from the same `llm_request` source.
+
+Cost drivers are UI-level diagnosis, not new billing facts. They summarize the generated ledger into practical signals: input cost share, the largest model call, context growth across model calls, model mix, and tool-call density. Why: developers need a quick answer to "what made this run expensive?" before they dig into raw logs.
 
 ## SQLite workspace state
 

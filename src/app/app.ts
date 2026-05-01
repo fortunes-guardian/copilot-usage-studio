@@ -59,6 +59,7 @@ export class App {
     );
     const categoryRows = this.explainCategoryCosts(modelRows);
     const topTokenEvents = this.topTokenEvents(session.traceEvents, session.modelBreakdown, ledger.usdToEur);
+    const costDrivers = this.explainCostDrivers(session, modelRows, topTokenEvents);
     const hasCacheData = session.tokens.cachedInput > 0 || session.tokens.cacheWrite > 0;
 
     return {
@@ -77,6 +78,7 @@ export class App {
         : 'The VS Code debug-log events imported for this session expose inputTokens and outputTokens, but not billing cache read/write fields. The estimate therefore prices visible local input/output totals and keeps cache accounting explicit as unavailable.',
       modelRows,
       categoryRows,
+      costDrivers,
       topTokenEvents,
     };
   });
@@ -233,6 +235,79 @@ export class App {
     ];
   }
 
+  private explainCostDrivers(
+    session: LedgerSession,
+    modelRows: ReturnType<App['explainModelCost']>[],
+    topTokenEvents: ReturnType<App['topTokenEvents']>,
+  ) {
+    const inputEur = modelRows.reduce((sum, row) => sum + row.inputEur, 0);
+    const outputEur = modelRows.reduce((sum, row) => sum + row.outputEur, 0);
+    const sessionCost = Math.max(session.cost.eur, 0);
+    const inputShare = sessionCost > 0 ? (inputEur / sessionCost) * 100 : 0;
+    const outputShare = sessionCost > 0 ? (outputEur / sessionCost) * 100 : 0;
+    const topCall = topTokenEvents[0];
+    const topCallShare = topCall && sessionCost > 0 ? (topCall.estimatedEur / sessionCost) * 100 : 0;
+    const topModel = [...modelRows].sort((a, b) => b.totalEur - a.totalEur)[0];
+    const topModelShare = topModel && sessionCost > 0 ? (topModel.totalEur / sessionCost) * 100 : 0;
+    const llmEvents = session.traceEvents
+      .filter((event) => event.type === 'llm_request' && (event.inputTokens || event.outputTokens))
+      .sort((a, b) => a.index - b.index);
+    const firstInputs = llmEvents.slice(0, 3).map((event) => event.inputTokens);
+    const lastInputs = llmEvents.slice(-3).map((event) => event.inputTokens);
+    const firstAvg = this.average(firstInputs);
+    const lastAvg = this.average(lastInputs);
+    const growth = firstAvg > 0 ? ((lastAvg - firstAvg) / firstAvg) * 100 : 0;
+    const toolCalls = session.traceSummary.toolCalls;
+    const toolsPerTurn = session.traceSummary.modelTurns > 0 ? toolCalls / session.traceSummary.modelTurns : 0;
+    const mixedModelCount = modelRows.length;
+
+    return [
+      {
+        title: 'Input context burn',
+        value: `${Math.round(inputShare)}%`,
+        detail:
+          inputShare >= outputShare
+            ? `Most cost is prompt/context material sent into the model: ${session.tokens.input.toLocaleString()} input tokens.`
+            : `Output is the larger priced category here, but input still contributes ${inputShare.toFixed(0)}% of this estimate.`,
+        tone: inputShare >= 75 ? 'high' : inputShare >= 50 ? 'medium' : 'low',
+      },
+      {
+        title: 'Largest model call',
+        value: topCall ? `€${topCall.estimatedEur.toFixed(4)}` : 'None',
+        detail: topCall
+          ? `Raw event #${topCall.index + 1} used ${topCall.totalTokens.toLocaleString()} tokens and accounts for about ${topCallShare.toFixed(0)}% of this run.`
+          : 'No token-bearing model calls were imported for this session.',
+        tone: topCallShare >= 25 ? 'high' : topCallShare >= 10 ? 'medium' : 'low',
+      },
+      {
+        title: 'Context growth',
+        value: llmEvents.length >= 2 ? `${growth >= 0 ? '+' : ''}${growth.toFixed(0)}%` : 'n/a',
+        detail:
+          llmEvents.length >= 2
+            ? `Average input moved from ${Math.round(firstAvg).toLocaleString()} tokens at the start to ${Math.round(lastAvg).toLocaleString()} near the end.`
+            : 'Not enough model calls to detect whether context grew during the run.',
+        tone: growth >= 80 ? 'high' : growth >= 25 ? 'medium' : 'low',
+      },
+      {
+        title: 'Model mix',
+        value: mixedModelCount === 1 ? topModel?.model ?? session.model : `${mixedModelCount} models`,
+        detail: topModel
+          ? `${topModel.model} contributes about ${topModelShare.toFixed(0)}% of estimated cost using the ${topModel.pricingModel} price row.`
+          : 'No model breakdown is available for this session.',
+        tone: mixedModelCount > 1 || topModelShare >= 80 ? 'medium' : 'low',
+      },
+      {
+        title: 'Tool activity',
+        value: toolCalls.toLocaleString(),
+        detail:
+          toolCalls > 0
+            ? `${toolsPerTurn.toFixed(1)} tool calls per model turn. Tool results can increase later prompt/context size when they are sent back to the model.`
+            : 'No tool calls were imported for this session.',
+        tone: toolsPerTurn >= 4 ? 'high' : toolsPerTurn >= 2 ? 'medium' : 'low',
+      },
+    ];
+  }
+
   private topTokenEvents(events: TraceEvent[], modelBreakdown: ModelBreakdown[], usdToEur: number) {
     return events
       .filter((event) => event.inputTokens || event.outputTokens)
@@ -297,6 +372,10 @@ export class App {
 
   private tokenCostEur(tokens: number, usdPerMillion: number, usdToEur: number): number {
     return (tokens / 1_000_000) * usdPerMillion * usdToEur;
+  }
+
+  private average(values: number[]): number {
+    return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
   }
 
   private sumTokens(rows: { tokens: TokenBreakdown }[], field: keyof TokenBreakdown): number {

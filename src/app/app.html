@@ -287,6 +287,22 @@
               <a [href]="pricingSourceUrl" target="_blank" rel="noreferrer">GitHub price source</a>
             </div>
 
+            <section class="cost-drivers">
+              <div>
+                <h4>Cost drivers</h4>
+                <p>Fast read on what made this run expensive.</p>
+              </div>
+              <div class="driver-grid">
+                @for (driver of cost.costDrivers; track driver.title) {
+                  <article [ngClass]="driver.tone">
+                    <span>{{ driver.title }}</span>
+                    <strong>{{ driver.value }}</strong>
+                    <p>{{ driver.detail }}</p>
+                  </article>
+                }
+              </div>
+            </section>
+
             <div class="cost-categories">
               @for (category of cost.categoryRows; track category.label) {
                 <article

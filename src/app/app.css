@@ -370,6 +370,69 @@
   white-space: nowrap;
 }
 
+.cost-drivers {
+  display: grid;
+  gap: 10px;
+}
+
+.cost-drivers h4 {
+  margin: 0;
+  color: #16202a;
+  font-size: 15px;
+}
+
+.cost-drivers > div:first-child p {
+  margin: 4px 0 0;
+  color: #60717f;
+  font-size: 13px;
+}
+
+.driver-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.driver-grid article {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  border: 1px solid #dfe8ec;
+  border-top: 3px solid #9eb3bd;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff;
+}
+
+.driver-grid article.medium {
+  border-top-color: #d09b38;
+}
+
+.driver-grid article.high {
+  border-top-color: #c75d3d;
+}
+
+.driver-grid span {
+  color: #60717f;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.driver-grid strong {
+  color: #16202a;
+  font-size: 20px;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.driver-grid p {
+  margin: 0;
+  color: #3f4f5d;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .cost-categories {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -864,6 +927,7 @@
   .summary-grid,
   .facts,
   .cost-categories,
+  .driver-grid,
   .cost-row,
   .trace-cards,
   .comparison-grid,
