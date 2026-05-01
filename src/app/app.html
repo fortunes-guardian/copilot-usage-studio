@@ -1,0 +1,303 @@
+<main class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div>
+        <p class="eyebrow">Local ledger</p>
+        <h1>Copilot Cost Ledger</h1>
+      </div>
+      <span class="status">Estimate</span>
+    </div>
+
+    <label class="search">
+      <span>Search</span>
+      <input
+        type="search"
+        [ngModel]="query()"
+        (ngModelChange)="setQuery($event)"
+        placeholder="Prompt, repo, model, tag"
+      />
+    </label>
+
+    <div class="session-list">
+      @for (session of filteredSessions(); track trackBySessionId($index, session)) {
+        <button
+          type="button"
+          class="session-card"
+          [class.active]="selectedSession()?.id === session.id"
+          (click)="selectSession(session)"
+        >
+          <span class="session-title">{{ session.firstPrompt }}</span>
+          <span class="session-meta">
+            {{ session.workspace }} · {{ session.model }}
+          </span>
+          <span class="session-footer">
+            <span>{{ session.startedAt | date: 'MMM d, HH:mm' }}</span>
+            <strong>€{{ session.cost.eur | number: '1.2-2' }}</strong>
+          </span>
+        </button>
+      }
+    </div>
+  </aside>
+
+  <section class="content">
+    <section class="summary-grid">
+      <article class="metric">
+        <span>Sessions</span>
+        <strong>{{ summary().count }}</strong>
+      </article>
+      <article class="metric">
+        <span>Total estimate</span>
+        <strong>€{{ summary().eur | number: '1.2-2' }}</strong>
+      </article>
+      <article class="metric">
+        <span>Input tokens</span>
+        <strong>{{ summary().input | number }}</strong>
+      </article>
+      <article class="metric">
+        <span>Output tokens</span>
+        <strong>{{ summary().output | number }}</strong>
+      </article>
+    </section>
+
+    @if (ledger()?.ingestion; as ingestion) {
+      <section class="ingestion">
+        <div>
+          <p class="eyebrow">Data ingest</p>
+          <h2>{{ ingestion.importedSessions }} imported from {{ ingestion.scannedWorkspaces }} workspaces</h2>
+        </div>
+        <dl>
+          <div>
+            <dt>Debug logs</dt>
+            <dd>{{ ingestion.importedDebugLogSessions | number }}</dd>
+          </div>
+          <div>
+            <dt>Chat snapshots</dt>
+            <dd>{{ ingestion.importedChatSnapshotSessions | number }}</dd>
+          </div>
+          <div>
+            <dt>Empty debug logs skipped</dt>
+            <dd>{{ ingestion.skippedEmptyDebugLogs | number }}</dd>
+          </div>
+          <div>
+            <dt>Snapshots without requests</dt>
+            <dd>{{ ingestion.skippedChatSnapshotsWithoutRequests | number }}</dd>
+          </div>
+        </dl>
+      </section>
+    }
+
+    @if (selectedSession(); as session) {
+      <section class="detail">
+        <div class="detail-header">
+          <div>
+            <p class="eyebrow">{{ session.workspace }} · {{ session.confidence }} · {{ session.tokenSource }}</p>
+            <h2>{{ session.title }}</h2>
+          </div>
+          <div class="price">
+            <span>Estimated cost</span>
+            <strong>€{{ session.cost.eur | number: '1.2-2' }}</strong>
+          </div>
+        </div>
+
+        <section class="session-details">
+          <h3>Session Details</h3>
+          <dl>
+            <div>
+              <dt>Session Type</dt>
+              <dd>{{ session.sessionType }}</dd>
+            </div>
+            <div>
+              <dt>Location</dt>
+              <dd>{{ session.location }}</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd>{{ session.status }}</dd>
+            </div>
+            <div>
+              <dt>Created</dt>
+              <dd>{{ session.startedAt | date: 'M/d/yyyy, h:mm:ss a' }}</dd>
+            </div>
+            <div>
+              <dt>Last Activity</dt>
+              <dd>{{ session.endedAt | date: 'M/d/yyyy, h:mm:ss a' }}</dd>
+            </div>
+            <div>
+              <dt>Model</dt>
+              <dd>{{ session.model }}</dd>
+            </div>
+            <div>
+              <dt>Source</dt>
+              <dd>{{ session.sourceKind }}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section>
+          <h3>Summary</h3>
+          <div class="facts trace-cards">
+            <div>
+              <span>Model Turns</span>
+              <strong>{{ session.traceSummary.modelTurns | number }}</strong>
+            </div>
+            <div>
+              <span>Tool Calls</span>
+              <strong>{{ session.traceSummary.toolCalls | number }}</strong>
+            </div>
+            <div>
+              <span>Total Tokens</span>
+              <strong>{{ session.traceSummary.totalTokens | number }}</strong>
+            </div>
+            <div>
+              <span>Errors</span>
+              <strong>{{ session.traceSummary.errors | number }}</strong>
+            </div>
+            <div>
+              <span>Total Events</span>
+              <strong>{{ session.traceSummary.totalEvents | number }}</strong>
+            </div>
+            <div>
+              <span>Estimated Cost</span>
+              <strong>€{{ session.cost.eur | number: '1.2-2' }}</strong>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Token Pricing</h3>
+          <div class="facts">
+            <div>
+              <span>Input</span>
+              <strong>{{ session.tokens.input | number }}</strong>
+            </div>
+            <div>
+              <span>Cached Input</span>
+              <strong>{{ session.tokens.cachedInput | number }}</strong>
+            </div>
+            <div>
+              <span>Cache Write</span>
+              <strong>{{ session.tokens.cacheWrite | number }}</strong>
+            </div>
+            <div>
+              <span>Output</span>
+              <strong>{{ session.tokens.output | number }}</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="trace-tools">
+          <h3>Explore Trace Data</h3>
+          <div class="trace-actions">
+            <button type="button" [class.active]="traceView() === 'logs'" (click)="traceView.set('logs')">
+              View Logs
+            </button>
+            <button type="button" [class.active]="traceView() === 'flow'" (click)="traceView.set('flow')">
+              Agent Flow Chart
+            </button>
+          </div>
+
+          @if (traceView() === 'logs') {
+            <div class="event-log">
+              @for (event of session.traceEvents; track event.index) {
+                <article class="event-row" [class.error]="event.status !== 'ok'">
+                  <span>{{ event.timestamp | date: 'HH:mm:ss' }}</span>
+                  <strong>{{ event.name }}</strong>
+                  <p>{{ event.detail }}</p>
+                  @if (event.inputTokens || event.outputTokens) {
+                    <em>{{ event.inputTokens | number }} in / {{ event.outputTokens | number }} out</em>
+                  }
+                </article>
+              }
+            </div>
+          } @else {
+            <div class="flow-chart">
+              @for (event of session.traceEvents; track event.index) {
+                @if (event.type === 'user_message' || event.type === 'llm_request' || event.type.includes('tool') || event.type === 'agent_response') {
+                  <article class="flow-node" [ngClass]="event.type">
+                    <span>{{ event.index + 1 }}</span>
+                    <strong>{{ event.type }}</strong>
+                    <p>{{ event.detail }}</p>
+                  </article>
+                }
+              }
+            </div>
+          }
+        </section>
+
+        <div class="explain">
+          <h3>Why this cost?</h3>
+          <p>
+            Cost is derived from the imported token totals above. The trace log explains where those totals came from,
+            while billing reconciliation and cache accounting remain separate future imports.
+          </p>
+          <div class="tags">
+            @for (tag of session.tags; track tag) {
+              <span>{{ tag }}</span>
+            }
+            @for (tool of session.toolsUsed; track tool) {
+              <span>{{ tool }}</span>
+            }
+          </div>
+        </div>
+
+        <div class="turns">
+          @for (turn of session.turns; track $index) {
+            <article class="turn" [ngClass]="turn.role">
+              <div>
+                <strong>{{ turn.role }}</strong>
+                <span>{{ turn.tokens | number }} tokens</span>
+              </div>
+              <p>{{ turn.text }}</p>
+            </article>
+          }
+        </div>
+      </section>
+    }
+
+    <section class="compare">
+      <div class="compare-header">
+        <div>
+          <p class="eyebrow">Evaluation</p>
+          <h2>Compare two runs</h2>
+        </div>
+        <div class="selectors">
+          <select [ngModel]="compareA()" (ngModelChange)="compareA.set($event)">
+            @for (session of sessions(); track session.id) {
+              <option [value]="session.id">{{ session.title }}</option>
+            }
+          </select>
+          <select [ngModel]="compareB()" (ngModelChange)="compareB.set($event)">
+            @for (session of sessions(); track session.id) {
+              <option [value]="session.id">{{ session.title }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      @if (comparison(); as diff) {
+        <div class="comparison-grid">
+          <div>
+            <span>Cost delta</span>
+            <strong [class.saving]="diff.eurDelta < 0">
+              {{ diff.eurDelta < 0 ? '-' : '+' }}€{{ abs(diff.eurDelta) | number: '1.2-2' }}
+            </strong>
+          </div>
+          <div>
+            <span>Token delta</span>
+            <strong>{{ diff.tokenDelta | number }}</strong>
+          </div>
+          <div>
+            <span>Model turn delta</span>
+            <strong>{{ diff.b.traceSummary.modelTurns - diff.a.traceSummary.modelTurns | number }}</strong>
+          </div>
+          <div>
+            <span>Change</span>
+            <strong [class.saving]="diff.percent < 0">{{ diff.percent | number: '1.0-0' }}%</strong>
+          </div>
+        </div>
+      } @else {
+        <p class="empty">Pick two different sessions to compare cost and token deltas.</p>
+      }
+    </section>
+  </section>
+</main>
