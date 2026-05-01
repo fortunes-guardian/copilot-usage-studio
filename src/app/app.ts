@@ -62,6 +62,7 @@ export class App {
     const hasCacheData = session.tokens.cachedInput > 0 || session.tokens.cacheWrite > 0;
 
     return {
+      hasCacheData,
       sourceStrength:
         session.tokenSource === 'llm_request_token_totals'
           ? 'Exact local input/output token totals'
@@ -78,6 +79,16 @@ export class App {
       categoryRows,
       topTokenEvents,
     };
+  });
+  protected readonly flowEvents = computed(() => {
+    const session = this.selectedSession();
+    const ledger = this.ledger();
+
+    if (!session || !ledger) {
+      return [];
+    }
+
+    return this.flowTraceEvents(session.traceEvents, session.modelBreakdown, ledger.usdToEur);
   });
   protected readonly filteredSessions = computed(() => {
     const query = this.query().trim().toLowerCase();
@@ -223,13 +234,10 @@ export class App {
   }
 
   private topTokenEvents(events: TraceEvent[], modelBreakdown: ModelBreakdown[], usdToEur: number) {
-    const sessionPricingModel = modelBreakdown.length === 1 ? modelBreakdown[0].pricingModel : null;
-
     return events
       .filter((event) => event.inputTokens || event.outputTokens)
       .map((event) => {
-        const parsedModel = this.modelFromEventDetail(event.detail);
-        const pricingModel = this.matchPricingModel(parsedModel) ?? sessionPricingModel ?? 'GPT-5.4';
+        const pricingModel = this.pricingModelForEvent(event, modelBreakdown);
         const price = MODEL_PRICES_USD_PER_MILLION[pricingModel] ?? MODEL_PRICES_USD_PER_MILLION['GPT-5.4'];
         const estimatedEur =
           this.tokenCostEur(event.inputTokens, price.input, usdToEur) +
@@ -244,6 +252,41 @@ export class App {
       })
       .sort((a, b) => b.totalTokens - a.totalTokens)
       .slice(0, 5);
+  }
+
+  private flowTraceEvents(events: TraceEvent[], modelBreakdown: ModelBreakdown[], usdToEur: number) {
+    return events
+      .filter((event) => this.isFlowEvent(event))
+      .map((event, index) => {
+        const pricingModel = this.pricingModelForEvent(event, modelBreakdown);
+        const price = MODEL_PRICES_USD_PER_MILLION[pricingModel] ?? MODEL_PRICES_USD_PER_MILLION['GPT-5.4'];
+        const estimatedEur =
+          this.tokenCostEur(event.inputTokens, price.input, usdToEur) +
+          this.tokenCostEur(event.outputTokens, price.output, usdToEur);
+
+        return {
+          ...event,
+          flowIndex: index + 1,
+          totalTokens: event.inputTokens + event.outputTokens,
+          pricingModel,
+          estimatedEur,
+        };
+      });
+  }
+
+  private isFlowEvent(event: TraceEvent): boolean {
+    return (
+      event.type === 'user_message' ||
+      event.type === 'llm_request' ||
+      event.type.includes('tool') ||
+      event.type === 'agent_response'
+    );
+  }
+
+  private pricingModelForEvent(event: TraceEvent, modelBreakdown: ModelBreakdown[]): string {
+    const sessionPricingModel = modelBreakdown.length === 1 ? modelBreakdown[0].pricingModel : null;
+    const parsedModel = this.modelFromEventDetail(event.detail);
+    return this.matchPricingModel(parsedModel) ?? sessionPricingModel ?? 'GPT-5.4';
   }
 
   private tokenCostEur(tokens: number, usdPerMillion: number, usdToEur: number): number {

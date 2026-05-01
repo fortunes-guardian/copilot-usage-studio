@@ -196,7 +196,7 @@
 .ingestion,
 .compare {
   display: grid;
-  gap: 20px;
+  gap: 18px;
   padding: 22px;
 }
 
@@ -304,7 +304,15 @@
 }
 
 .trace-cards {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.session-summary .facts > div {
+  padding: 11px 12px;
+}
+
+.session-summary .facts strong {
+  font-size: 17px;
 }
 
 .cost-explainer {
@@ -379,6 +387,10 @@
 
 .cost-categories article.unavailable {
   background: #f6f8f9;
+}
+
+.cost-categories article.hidden-cache {
+  border-style: dashed;
 }
 
 .cost-categories span,
@@ -580,7 +592,7 @@
 .flow-node {
   position: relative;
   display: grid;
-  grid-template-columns: 34px minmax(120px, 180px) minmax(0, 1fr);
+  grid-template-columns: 34px minmax(150px, 220px) minmax(0, 1fr);
   gap: 12px;
   align-items: start;
   border: 1px solid #dce6e8;
@@ -618,6 +630,19 @@
 .flow-node p {
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.flow-node strong,
+.flow-node em {
+  display: block;
+}
+
+.flow-node em {
+  margin-top: 3px;
+  color: #245a62;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
 }
 
 .explain {

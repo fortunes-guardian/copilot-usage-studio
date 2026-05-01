@@ -243,6 +243,32 @@
           </dl>
         </section>
 
+        <section class="session-summary">
+          <h3>Summary</h3>
+          <div class="facts trace-cards">
+            <div>
+              <span>Model Turns</span>
+              <strong>{{ session.traceSummary.modelTurns | number }}</strong>
+            </div>
+            <div>
+              <span>Tool Calls</span>
+              <strong>{{ session.traceSummary.toolCalls | number }}</strong>
+            </div>
+            <div>
+              <span>Total Tokens</span>
+              <strong>{{ session.traceSummary.totalTokens | number }}</strong>
+            </div>
+            <div>
+              <span>Errors</span>
+              <strong>{{ session.traceSummary.errors | number }}</strong>
+            </div>
+            <div>
+              <span>Total Events</span>
+              <strong>{{ session.traceSummary.totalEvents | number }}</strong>
+            </div>
+          </div>
+        </section>
+
         @if (costExplanation(); as cost) {
           <section class="cost-explainer">
             <div class="cost-explainer-header">
@@ -263,10 +289,18 @@
 
             <div class="cost-categories">
               @for (category of cost.categoryRows; track category.label) {
-                <article [class.unavailable]="category.tokens === 0 && (category.label === 'Cached input' || category.label === 'Cache write')">
+                <article
+                  [class.unavailable]="category.tokens === 0 && (category.label === 'Cached input' || category.label === 'Cache write')"
+                  [class.hidden-cache]="!cost.hasCacheData && (category.label === 'Cached input' || category.label === 'Cache write')"
+                >
                   <span [title]="category.description">{{ category.label }}</span>
-                  <strong>{{ category.tokens | number }} tokens</strong>
-                  <em>€{{ category.eur | number: '1.6-6' }}</em>
+                  @if (!cost.hasCacheData && (category.label === 'Cached input' || category.label === 'Cache write')) {
+                    <strong>Not in local logs</strong>
+                    <em>not priced for this run</em>
+                  } @else {
+                    <strong>{{ category.tokens | number }} tokens</strong>
+                    <em>€{{ category.eur | number: '1.6-6' }}</em>
+                  }
                 </article>
               }
             </div>
@@ -302,10 +336,12 @@
                   <span>
                     ${{ model.inputRate | number: '1.0-3' }} in /
                     ${{ model.outputRate | number: '1.0-3' }} out
-                    @if (model.cacheWriteRate) {
+                    @if (cost.hasCacheData && model.cacheWriteRate) {
                       <em>${{ model.cachedInputRate | number: '1.0-3' }} cached / ${{ model.cacheWriteRate | number: '1.0-3' }} write</em>
-                    } @else {
+                    } @else if (cost.hasCacheData) {
                       <em>${{ model.cachedInputRate | number: '1.0-3' }} cached</em>
+                    } @else {
+                      <em class="muted">cache rates hidden: no local cache tokens</em>
                     }
                   </span>
                   <span>
@@ -335,74 +371,6 @@
           </section>
         }
 
-        <section>
-          <h3>Summary</h3>
-          <div class="facts trace-cards">
-            <div>
-              <span>Model Turns</span>
-              <strong>{{ session.traceSummary.modelTurns | number }}</strong>
-            </div>
-            <div>
-              <span>Tool Calls</span>
-              <strong>{{ session.traceSummary.toolCalls | number }}</strong>
-            </div>
-            <div>
-              <span>Total Tokens</span>
-              <strong>{{ session.traceSummary.totalTokens | number }}</strong>
-            </div>
-            <div>
-              <span>Errors</span>
-              <strong>{{ session.traceSummary.errors | number }}</strong>
-            </div>
-            <div>
-              <span>Total Events</span>
-              <strong>{{ session.traceSummary.totalEvents | number }}</strong>
-            </div>
-            <div>
-              <span>Estimated Cost</span>
-              <strong>€{{ session.cost.eur | number: '1.2-2' }}</strong>
-            </div>
-          </div>
-        </section>
-
-        <section>
-          <h3>Token Pricing</h3>
-          <div class="facts">
-            <div>
-              <span>Input</span>
-              <strong>{{ session.tokens.input | number }}</strong>
-            </div>
-            <div>
-              <span>Cached Input</span>
-              <strong>{{ session.tokens.cachedInput | number }}</strong>
-            </div>
-            <div>
-              <span>Cache Write</span>
-              <strong>{{ session.tokens.cacheWrite | number }}</strong>
-            </div>
-            <div>
-              <span>Output</span>
-              <strong>{{ session.tokens.output | number }}</strong>
-            </div>
-          </div>
-        </section>
-
-        <section>
-          <h3>Model Pricing</h3>
-          <div class="model-breakdown">
-            @for (model of session.modelBreakdown; track model.model) {
-              <article>
-                <div>
-                  <strong>{{ model.model }}</strong>
-                  <span>{{ model.turns | number }} turns · priced as {{ model.pricingModel }}</span>
-                </div>
-                <p>{{ model.tokens.input | number }} in / {{ model.tokens.output | number }} out</p>
-                <em>€{{ model.cost.eur | number: '1.2-2' }}</em>
-              </article>
-            }
-          </div>
-        </section>
-
         <section class="trace-tools">
           <h3>Explore Trace Data</h3>
           <div class="trace-actions">
@@ -429,47 +397,21 @@
             </div>
           } @else {
             <div class="flow-chart">
-              @for (event of session.traceEvents; track event.index) {
-                @if (event.type === 'user_message' || event.type === 'llm_request' || event.type.includes('tool') || event.type === 'agent_response') {
-                  <article class="flow-node" [ngClass]="event.type">
-                    <span>{{ event.index + 1 }}</span>
+              @for (event of flowEvents(); track event.index) {
+                <article class="flow-node" [ngClass]="event.type">
+                  <span>{{ event.flowIndex }}</span>
+                  <div>
                     <strong>{{ event.type }}</strong>
-                    <p>{{ event.detail }}</p>
-                  </article>
-                }
+                    @if (event.totalTokens) {
+                      <em>{{ event.totalTokens | number }} tokens · about €{{ event.estimatedEur | number: '1.6-6' }}</em>
+                    }
+                  </div>
+                  <p>{{ event.detail }}</p>
+                </article>
               }
             </div>
           }
         </section>
-
-        <div class="explain">
-          <h3>Why this cost?</h3>
-          <p>
-            Cost is derived from the imported token totals above and the GitHub price row for each model. Cache
-            accounting is shown separately because the current local VS Code debug logs do not expose provider
-            cache read/write token fields.
-          </p>
-          <div class="tags">
-            @for (tag of session.tags; track tag) {
-              <span>{{ tag }}</span>
-            }
-            @for (tool of session.toolsUsed; track tool) {
-              <span>{{ tool }}</span>
-            }
-          </div>
-        </div>
-
-        <div class="turns">
-          @for (turn of session.turns; track $index) {
-            <article class="turn" [ngClass]="turn.role">
-              <div>
-                <strong>{{ turn.role }}</strong>
-                <span>{{ turn.tokens | number }} tokens</span>
-              </div>
-              <p>{{ turn.text }}</p>
-            </article>
-          }
-        </div>
       </section>
     }
 
