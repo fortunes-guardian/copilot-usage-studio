@@ -22,7 +22,7 @@ Build:
 - Show the exact GitHub price row used for each model.
 - Store structured model, pricing row, token total, and estimated cost on each token-bearing trace event.
 - Add selected-run cost driver diagnosis: input context burn, largest model call, context growth, model mix, and tool activity.
-- Add tooltips for ingestion and cost terms.
+- Add source-confidence tooltips for ingestion, source, confidence, cache, and cost terms.
 - Mark whether a pricing row is actually used by the imported ledger.
 - Keep local estimates separate from final GitHub billing.
 

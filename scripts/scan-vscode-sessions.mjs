@@ -8,6 +8,7 @@ const explicitRoots = process.argv.length > 3 ? process.argv.slice(3) : [];
 const ledgerSchemaVersion = 1;
 const pricingVersion = 'github-copilot-usage-pricing-2026-06-01';
 const pricingSourceUrl = 'https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing';
+const traceEventLimit = 1000;
 
 const pricing = {
   'GPT-4.1': { input: 2, cachedInput: 0.5, output: 8 },
@@ -396,6 +397,10 @@ function eventDetail(event) {
   return String(event.attrs?.details ?? event.name ?? event.type ?? '').slice(0, 140);
 }
 
+function capTraceEvents(events) {
+  return events.slice(0, traceEventLimit);
+}
+
 function workspaceName(workspaceDir) {
   const workspaceJson = join(workspaceDir, 'workspace.json');
   const raw = existsSync(workspaceJson) ? safeJson(readFileSync(workspaceJson, 'utf8')) : null;
@@ -521,8 +526,8 @@ function sessionFromDebugLog(sessionDir, workspaceDir) {
       errors: errorEvents.length,
       totalEvents: main.length,
     },
-    traceEvents: main
-      .map((event, index) => {
+    traceEvents: capTraceEvents(
+      main.map((event, index) => {
         const inputTokens = event.type === 'llm_request' ? Number(event.attrs?.inputTokens ?? 0) : 0;
         const outputTokens =
           event.type === 'llm_request' ? Number(event.attrs?.outputTokens ?? 0) : 0;
@@ -540,8 +545,8 @@ function sessionFromDebugLog(sessionDir, workspaceDir) {
             ? eventModelCostFields(event.attrs?.model, inputTokens, outputTokens)
             : {}),
         };
-      })
-      .slice(0, 200),
+      }),
+    ),
     turns: turns.slice(0, 60),
   };
 }
@@ -616,8 +621,8 @@ function sessionFromChatSnapshot(file, workspaceDir) {
       errors: 0,
       totalEvents: records.length,
     },
-    traceEvents: requests
-      .flatMap((request, index) => {
+    traceEvents: capTraceEvents(
+      requests.flatMap((request, index) => {
         const rawRequestModel =
           request?.modelId ?? request?.inputState?.selectedModel?.identifier ?? model;
         const userInputTokens = estimateTokens(request?.message?.text ?? '');
@@ -647,8 +652,8 @@ function sessionFromChatSnapshot(file, workspaceDir) {
             ...eventModelCostFields(rawRequestModel, 0, assistantOutputTokens),
           },
         ];
-      })
-      .slice(0, 200),
+      }),
+    ),
     turns: requests
       .flatMap((request) => [
         {

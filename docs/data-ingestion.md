@@ -101,7 +101,11 @@ The app displays:
 
 The flow chart uses structured trace event pricing fields for model-call costs. The cost debugger uses the session and model-level token totals; both are generated during ingestion from the same `llm_request` source.
 
+The trace event preview cap is intentionally high enough for normal debug sessions (`1000` events). Why: compacted or long-running sessions can append important activity late in the same debug log. Keeping only the first slice hides exactly the recent events a developer is trying to inspect. The session summary still records the raw `traceSummary.totalEvents`, so any future truncation should be visible rather than silently changing totals.
+
 Cost drivers are UI-level diagnosis, not new billing facts. They summarize the generated ledger into practical signals: input cost share, the largest model call, context growth across model calls, model mix, and tool-call density. Why: developers need a quick answer to "what made this run expensive?" before they dig into raw logs.
+
+Source-confidence terms in the UI should carry inline help. Labels such as debug logs, chat snapshots, state DBs, state enriched, exact local totals, estimated totals, cached input, and cache write all need short explanations at the point of use. Why: this app is only credible if it says why a source is strong, what it does not know, and which fields are local estimates rather than GitHub billing facts.
 
 ## SQLite workspace state
 

@@ -5,7 +5,7 @@
         <p class="eyebrow">Local ledger</p>
         <h1>Copilot Cost Ledger</h1>
       </div>
-      <span class="status">Estimate</span>
+      <span class="status" [title]="help.appEstimate">Estimate</span>
     </div>
 
     <nav class="view-nav" aria-label="Ledger views">
@@ -93,10 +93,10 @@
             <span>Provider</span>
             <span>Status</span>
             <span>Category</span>
-            <span title="Cost for uncached prompt/request tokens sent to the model.">Input</span>
-            <span title="Cost for prompt tokens GitHub/model provider can reuse from cache.">Cached input</span>
-            <span title="Anthropic-only cost for writing reusable prompt context into cache.">Cache write</span>
-            <span title="Cost for generated model response tokens.">Output</span>
+            <span>Input <span class="help-dot" [title]="help.inputTokens" [attr.aria-label]="help.inputTokens" tabindex="0">?</span></span>
+            <span>Cached input <span class="help-dot" [title]="help.cachedInput" [attr.aria-label]="help.cachedInput" tabindex="0">?</span></span>
+            <span>Cache write <span class="help-dot" [title]="help.cacheWrite" [attr.aria-label]="help.cacheWrite" tabindex="0">?</span></span>
+            <span>Output <span class="help-dot" [title]="help.outputTokens" [attr.aria-label]="help.outputTokens" tabindex="0">?</span></span>
             <span>Used</span>
           </div>
           @for (price of pricingRows(); track price.model) {
@@ -159,27 +159,27 @@
         </div>
         <dl>
           <div>
-            <dt>Debug logs</dt>
+            <dt>Debug logs <span class="help-dot" [title]="help.debugLogs" [attr.aria-label]="help.debugLogs" tabindex="0">?</span></dt>
             <dd>{{ ingestion.importedDebugLogSessions | number }}</dd>
           </div>
           <div>
-            <dt>Chat snapshots</dt>
+            <dt>Chat snapshots <span class="help-dot" [title]="help.chatSnapshots" [attr.aria-label]="help.chatSnapshots" tabindex="0">?</span></dt>
             <dd>{{ ingestion.importedChatSnapshotSessions | number }}</dd>
           </div>
           <div>
-            <dt>State DBs</dt>
+            <dt>State DBs <span class="help-dot" [title]="help.stateDbs" [attr.aria-label]="help.stateDbs" tabindex="0">?</span></dt>
             <dd>{{ ingestion.scannedStateDbs | number }}</dd>
           </div>
           <div>
-            <dt>State enriched</dt>
+            <dt>State enriched <span class="help-dot" [title]="help.stateEnriched" [attr.aria-label]="help.stateEnriched" tabindex="0">?</span></dt>
             <dd>{{ ingestion.enrichedFromStateDbs | number }}</dd>
           </div>
           <div>
-            <dt>Empty debug logs skipped</dt>
+            <dt>Empty debug logs skipped <span class="help-dot" [title]="help.emptyDebugLogs" [attr.aria-label]="help.emptyDebugLogs" tabindex="0">?</span></dt>
             <dd>{{ ingestion.skippedEmptyDebugLogs | number }}</dd>
           </div>
           <div>
-            <dt>Snapshots without requests</dt>
+            <dt>Snapshots without requests <span class="help-dot" [title]="help.snapshotsWithoutRequests" [attr.aria-label]="help.snapshotsWithoutRequests" tabindex="0">?</span></dt>
             <dd>{{ ingestion.skippedChatSnapshotsWithoutRequests | number }}</dd>
           </div>
         </dl>
@@ -190,7 +190,17 @@
       <section class="detail">
         <div class="detail-header">
           <div>
-            <p class="eyebrow">{{ session.workspace }} · {{ session.confidence }} · {{ session.tokenSource }}</p>
+            <div class="source-meta">
+              <span>{{ session.workspace }}</span>
+              <span [title]="confidenceHelp(session.confidence)">
+                {{ session.confidence }}
+                <span class="help-dot" [title]="confidenceHelp(session.confidence)" [attr.aria-label]="confidenceHelp(session.confidence)" tabindex="0">?</span>
+              </span>
+              <span [title]="tokenSourceHelp(session.tokenSource)">
+                {{ session.tokenSource }}
+                <span class="help-dot" [title]="tokenSourceHelp(session.tokenSource)" [attr.aria-label]="tokenSourceHelp(session.tokenSource)" tabindex="0">?</span>
+              </span>
+            </div>
             <h2>{{ session.title }}</h2>
           </div>
           <div class="price">
@@ -228,7 +238,10 @@
             </div>
             <div>
               <dt>Source</dt>
-              <dd>{{ session.sourceKind }}</dd>
+              <dd>
+                {{ session.sourceKind }}
+                <span class="help-dot" [title]="sourceKindHelp(session.sourceKind)" [attr.aria-label]="sourceKindHelp(session.sourceKind)" tabindex="0">?</span>
+              </dd>
             </div>
             @if (session.vscodeState; as state) {
               <div>
@@ -276,12 +289,18 @@
                 <p class="eyebrow">Cost debugger</p>
                 <h3>Why this run cost €{{ session.cost.eur | number: '1.2-4' }}</h3>
               </div>
-              <span class="source-pill" [title]="cost.sourceDescription">{{ cost.sourceStrength }}</span>
+              <span class="source-pill" [title]="cost.sourceDescription">
+                {{ cost.sourceStrength }}
+                <span class="help-dot" [title]="cost.sourceDescription" [attr.aria-label]="cost.sourceDescription" tabindex="0">?</span>
+              </span>
             </div>
 
             <div class="source-callout">
               <div>
-                <strong>{{ cost.cacheStatus }}</strong>
+                <strong>
+                  {{ cost.cacheStatus }}
+                  <span class="help-dot" [title]="cost.cacheDescription" [attr.aria-label]="cost.cacheDescription" tabindex="0">?</span>
+                </strong>
                 <p>{{ cost.cacheDescription }}</p>
               </div>
               <a [href]="pricingSourceUrl" target="_blank" rel="noreferrer">GitHub price source</a>
@@ -309,7 +328,10 @@
                   [class.unavailable]="category.tokens === 0 && (category.label === 'Cached input' || category.label === 'Cache write')"
                   [class.hidden-cache]="!cost.hasCacheData && (category.label === 'Cached input' || category.label === 'Cache write')"
                 >
-                  <span [title]="category.description">{{ category.label }}</span>
+                  <span>
+                    {{ category.label }}
+                    <span class="help-dot" [title]="category.description" [attr.aria-label]="category.description" tabindex="0">?</span>
+                  </span>
                   @if (!cost.hasCacheData && (category.label === 'Cached input' || category.label === 'Cache write')) {
                     <strong>Not in local logs</strong>
                     <em>not priced for this run</em>
@@ -324,9 +346,9 @@
             <div class="cost-table">
               <div class="cost-row cost-row-heading">
                 <span>Model</span>
-                <span>Price row</span>
-                <span>Tokens</span>
-                <span>Rates / 1M</span>
+                <span>Price row <span class="help-dot" [title]="help.priceRow" [attr.aria-label]="help.priceRow" tabindex="0">?</span></span>
+                <span>Tokens <span class="help-dot" [title]="help.inputTokens + ' ' + help.outputTokens" [attr.aria-label]="help.inputTokens + ' ' + help.outputTokens" tabindex="0">?</span></span>
+                <span>Rates / 1M <span class="help-dot" [title]="help.appEstimate" [attr.aria-label]="help.appEstimate" tabindex="0">?</span></span>
                 <span>Cost</span>
                 <span>Share</span>
               </div>

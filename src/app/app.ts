@@ -34,6 +34,31 @@ export class App {
   protected readonly pricingSourceUrl = PRICING_SOURCE_URL;
   protected readonly pricingEffectiveDate = PRICING_EFFECTIVE_DATE;
   protected readonly pricingImportedAt = PRICING_IMPORTED_AT;
+  protected readonly help = {
+    appEstimate:
+      'This is a local estimate from imported VS Code token totals multiplied by GitHub published model prices. It is not a GitHub invoice.',
+    debugLogs:
+      'VS Code Copilot debug-log sessions. These are the strongest local source because llm_request events include model ids, input tokens, and output tokens.',
+    chatSnapshots:
+      'VS Code chat session snapshots. Useful for conversation context, but weaker for cost because full request input tokens are not reliably present.',
+    stateDbs:
+      'VS Code state.vscdb files. The scanner reads them only for metadata enrichment such as titles, labels, location, and restored-session state.',
+    stateEnriched:
+      'Imported sessions matched to state.vscdb metadata. Pricing still comes from debug logs; SQLite only improves human labels and session metadata.',
+    emptyDebugLogs:
+      'Debug-log folders that contained no useful user, assistant, or model-call signal. Skipping them avoids fake zero-cost sessions.',
+    snapshotsWithoutRequests:
+      'Chat snapshot files without a requests array. They do not contain enough session structure to import.',
+    inputTokens:
+      'Prompt, context, repository, tool-result, and conversation material sent into the model.',
+    outputTokens: 'Generated model response tokens.',
+    cachedInput:
+      'Provider cache-read tokens when the billing source exposes them. Current local VS Code debug logs have not exposed this field.',
+    cacheWrite:
+      'Provider cache creation tokens when the billing source exposes them. GitHub lists this mainly for Anthropic pricing rows.',
+    priceRow:
+      'The GitHub model pricing row used to estimate this model. Unknown models keep their display label and show any pricing fallback separately.',
+  };
 
   protected readonly sessions = computed(() => this.ledger()?.sessions ?? []);
   protected readonly pricingRows = computed(() =>
@@ -176,6 +201,46 @@ export class App {
 
   protected setQuery(value: string): void {
     this.query.set(value);
+  }
+
+  protected sourceKindHelp(sourceKind: string): string {
+    if (sourceKind === 'vscode-copilot-debug-log') {
+      return this.help.debugLogs;
+    }
+
+    if (sourceKind === 'vscode-chat-session-snapshot') {
+      return this.help.chatSnapshots;
+    }
+
+    return 'Imported local session source. Check the generated ledger sourceKind for the exact importer path.';
+  }
+
+  protected tokenSourceHelp(tokenSource: string): string {
+    if (tokenSource === 'llm_request_token_totals') {
+      return 'Exact for the local VS Code llm_request inputTokens and outputTokens fields. It does not include provider-side cache billing fields.';
+    }
+
+    if (tokenSource === 'chat-snapshot-output-plus-visible-input-estimate') {
+      return 'Estimated from visible chat text plus any completion token fields in the chat snapshot. This is weaker than debug-log token totals.';
+    }
+
+    return 'Token source recorded by the scanner. Treat unknown sources as lower confidence until documented.';
+  }
+
+  protected confidenceHelp(confidence: string): string {
+    if (confidence === 'exact') {
+      return 'Exact for the imported local token fields, not a final billing guarantee.';
+    }
+
+    if (confidence === 'estimated') {
+      return 'Estimated from weaker local data. Useful for direction, but not billing-grade.';
+    }
+
+    if (confidence === 'reconciled') {
+      return 'Matched to an external billing or usage source while preserving the local estimate.';
+    }
+
+    return 'Sample or incomplete data. Use only as rough context.';
   }
 
   private explainModelCost(entry: ModelBreakdown, usdToEur: number, sessionCostEur: number) {

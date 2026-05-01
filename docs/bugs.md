@@ -1,3 +1,5 @@
+# bugs and features
+
 ## cached? fixed
 
 UI says
@@ -28,3 +30,25 @@ $0.25 cached
 
 - Fixed: the second summary row is smaller and no longer repeats estimated cost.
 - Fixed: the user/assistant transcript block was removed from the session page.
+
+## trace
+
+- make user_message standout, to differentiate, and clearly show, this is a user msg
+
+## ledger
+
+- is this really a ledger? consider rename.
+
+## ui
+
+- these are at the top of the session summary:
+  copilot-cost-ledger
+  exact
+  ?
+  llm_request_token_totals
+  - they look odd, the tooltips are very cryptic.
+
+- Data ingest summary - compress
+- tooltips: too cryptic and technical, hard to understand.
+
+- ui reads: Why this run cost €4.49 and then below it is text - you would think that text answers this - but it doesn't it is "Cache tokens not present in local logs ?" - i don't think this fits.
