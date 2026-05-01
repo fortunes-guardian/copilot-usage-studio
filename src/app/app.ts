@@ -4,6 +4,14 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { LedgerData, LedgerSession } from './ledger.model';
+import {
+  MODEL_PRICES_USD_PER_MILLION,
+  PRICING_EFFECTIVE_DATE,
+  PRICING_IMPORTED_AT,
+  PRICING_SOURCE_LABEL,
+  PRICING_SOURCE_URL,
+  PRICING_VERSION,
+} from './pricing';
 
 @Component({
   selector: 'app-root',
@@ -20,8 +28,24 @@ export class App {
   protected readonly compareB = signal<string | null>(null);
   protected readonly query = signal('');
   protected readonly traceView = signal<'logs' | 'flow'>('logs');
+  protected readonly activeView = signal<'sessions' | 'pricing'>('sessions');
+  protected readonly pricingVersion = PRICING_VERSION;
+  protected readonly pricingSourceLabel = PRICING_SOURCE_LABEL;
+  protected readonly pricingSourceUrl = PRICING_SOURCE_URL;
+  protected readonly pricingEffectiveDate = PRICING_EFFECTIVE_DATE;
+  protected readonly pricingImportedAt = PRICING_IMPORTED_AT;
 
   protected readonly sessions = computed(() => this.ledger()?.sessions ?? []);
+  protected readonly pricingRows = computed(() =>
+    Object.entries(MODEL_PRICES_USD_PER_MILLION).map(([model, price]) => ({
+      model,
+      ...price,
+      cacheWrite: price.cacheWrite ?? 0,
+      usedByImportedSessions: this.sessions().some((session) =>
+        session.modelBreakdown.some((entry) => entry.pricingModel === model),
+      ),
+    })),
+  );
   protected readonly filteredSessions = computed(() => {
     const query = this.query().trim().toLowerCase();
     const sessions = [...this.sessions()].sort((a, b) => b.startedAt.localeCompare(a.startedAt));

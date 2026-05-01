@@ -1,14 +1,22 @@
 # Copilot Cost Ledger
 
-Local-first MVP for inspecting GitHub Copilot chat/agent session cost estimates.
+Local-first developer cost debugger for VS Code GitHub Copilot chat and agent sessions.
 
-## What it does now
+The goal is to answer practical questions:
 
-- Scans local VS Code Copilot agent debug logs and chat session JSONL files.
+- Which Copilot sessions were small, medium, or expensive?
+- Which model and token category drove the estimate?
+- Which GitHub-published price rows were used for the calculation?
+- Did one run cost more or less than another run?
+
+## Current Product Shape
+
+- Scans local VS Code Copilot Agent Debug Log files.
 - Enriches imported sessions from VS Code `state.vscdb` when available.
-- Generates `public/data/sessions.json`.
-- Shows sessions by first prompt, model, workspace, tokens, and estimated EUR cost.
-- Compares two sessions to estimate token and cost deltas.
+- Generates `public/data/sessions.json` as the app-facing ledger contract.
+- Shows session details, model turns, tool calls, token totals, and estimated EUR cost.
+- Provides a GitHub prices view listing the model pricing rows used by the estimator.
+- Compares two sessions for token and estimated cost delta.
 
 ## Run
 
@@ -18,62 +26,55 @@ npm start
 
 Then open the Angular dev server URL.
 
-## Import local VS Code sessions
+## Import Local VS Code Sessions
 
 ```bash
 npm run scan
 npm run verify:data
 ```
 
-The scanner checks standard VS Code Stable and Insiders user-storage locations. For VS Code only, the strongest source is:
+The preferred source is:
 
 ```text
 %APPDATA%\Code\User\workspaceStorage\<workspace-id>\GitHub.copilot-chat\debug-logs\<session-id>\main.jsonl
 ```
 
-That file is produced when Agent Debug Log file logging is enabled. It includes model name, user messages, LLM request token totals, tool events, and timestamps. The fallback source is:
+Why: debug logs include `llm_request` rows with model ids plus `inputTokens` and `outputTokens`. Those are the best local session-level inputs this app has found so far.
+
+The scanner can also read:
 
 ```text
 %APPDATA%\Code\User\workspaceStorage\<workspace-id>\chatSessions\<session-id>.jsonl
 ```
 
-The scanner also reads workspace `state.vscdb` files with Node's built-in SQLite support. That pass enriches sessions with VS Code's stable title, location, permission level, pending-edit flag, read state, and Agent Debug Log label/status when those keys exist.
+Those chat snapshots are useful for context, but they are not as strong for cost estimation because they do not reliably include full request token totals.
 
-You can also pass a custom output file and one or more VS Code `User` directories or concrete workspace storage directories:
+You can pass a custom output file and one or more VS Code `User` directories or workspace storage directories:
 
 ```bash
 node scripts/scan-vscode-sessions.mjs public/data/sessions.json "C:\Users\you\AppData\Roaming\Code\User"
 node scripts/scan-vscode-sessions.mjs public/data/sessions.json "C:\Users\you\AppData\Roaming\Code\User\workspaceStorage\<workspace-id>"
 ```
 
-## Token estimator
-
-This MVP now uses two token paths:
-
-- if `GitHub.copilot-chat/debug-logs/<session-id>/main.jsonl` has `llm_request` events, it uses VS Code's `inputTokens` and `outputTokens`
-- debug-log model ids are preserved in `modelBreakdown.rawModels`, normalized for display, and priced per model before session totals are summed
-- otherwise, it falls back to a visible-text heuristic
-
-The fallback heuristic is:
-
-- user turns and tool turns count as input tokens
-- assistant turns count as output tokens
-- token estimate is roughly `max(words * 1.35, characters / 4)`
-- cached input and cache write are set to `0` unless imported from a future billing/reconciliation source
-
-This is intentionally conservative engineering: even with debug logs, cached input/cache write and final GitHub billable reconciliation may differ from local visible token totals.
-
-See `docs/data-ingestion.md` for the ingestion contract, source priority, token semantics, and why empty debug-log folders are skipped.
-
 ## Pricing
 
-Pricing is stored in `src/app/pricing.ts` and mirrored in the scanner script. Rates are per 1M tokens from GitHub's published Copilot usage-based pricing table for June 1, 2026. USD is converted to EUR with `USD_TO_EUR`, defaulting to `0.93`.
+Pricing is stored in `src/app/pricing.ts` and mirrored in the scanner/verifier scripts. The rows are copied from GitHub's published Copilot usage-based pricing table:
 
-## Next build steps
+https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing
 
-1. Add a real tokenizer adapter interface for fallback imports.
-2. Add GitHub billing report import and daily reconciliation.
-3. Add experiment pairing with labels like `mcp-on` and `mcp-off`.
-4. Add app-owned SQLite storage for historical scans, labels, and comparisons.
+The current app pricing version is `github-copilot-usage-pricing-2026-06-01`. GitHub states those usage-based billing prices take effect on June 1, 2026. All rates are USD per 1 million tokens. The scanner converts USD estimates to EUR using `USD_TO_EUR`, defaulting to `0.93`.
 
-See `docs/roadmap.md` for the computed build path and design rationale after the current SQLite enrichment phase.
+The app now has a `GitHub prices` view so the user can inspect the exact table driving session estimates.
+
+## Data Boundary
+
+The Angular UI does not parse VS Code internals directly. It renders `public/data/sessions.json`.
+
+That boundary matters because the scanner is where local files, SQLite enrichment, model normalization, token semantics, and cost calculation are verified. The UI should explain the ledger; it should not silently reinterpret source files.
+
+## Docs
+
+- `docs/intent.md` is the product north star.
+- `docs/data-ingestion.md` documents where data comes from and what each field means.
+- `docs/pricing.md` documents the price source, calculation rules, and current limitations.
+- `docs/roadmap.md` tracks the next implementation steps.

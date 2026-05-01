@@ -21,6 +21,8 @@ const pricing = {
   'Claude Sonnet 4.5': { input: 3, cachedInput: 0.3, cacheWrite: 3.75, output: 15 },
   'Claude Sonnet 4.6': { input: 3, cachedInput: 0.3, cacheWrite: 3.75, output: 15 },
   'Claude Opus 4.5': { input: 5, cachedInput: 0.5, cacheWrite: 6.25, output: 25 },
+  'Claude Opus 4.6': { input: 5, cachedInput: 0.5, cacheWrite: 6.25, output: 25 },
+  'Claude Opus 4.7': { input: 5, cachedInput: 0.5, cacheWrite: 6.25, output: 25 },
   'Gemini 2.5 Pro': { input: 1.25, cachedInput: 0.125, output: 10 },
   'Gemini 3 Flash': { input: 0.5, cachedInput: 0.05, output: 3 },
   'Gemini 3.1 Pro': { input: 2, cachedInput: 0.2, output: 12 },

@@ -8,6 +8,15 @@
       <span class="status">Estimate</span>
     </div>
 
+    <nav class="view-nav" aria-label="Ledger views">
+      <button type="button" [class.active]="activeView() === 'sessions'" (click)="activeView.set('sessions')">
+        Sessions
+      </button>
+      <button type="button" [class.active]="activeView() === 'pricing'" (click)="activeView.set('pricing')">
+        GitHub prices
+      </button>
+    </nav>
+
     <label class="search">
       <span>Search</span>
       <input
@@ -40,6 +49,89 @@
   </aside>
 
   <section class="content">
+    @if (activeView() === 'pricing') {
+      <section class="pricing-page">
+        <div class="pricing-header">
+          <div>
+            <p class="eyebrow">Cost inputs</p>
+            <h2>GitHub Copilot prices used by this app</h2>
+          </div>
+          <a [href]="pricingSourceUrl" target="_blank" rel="noreferrer">Open GitHub source</a>
+        </div>
+
+        <section class="pricing-source">
+          <div>
+            <span>Source</span>
+            <strong>{{ pricingSourceLabel }}</strong>
+          </div>
+          <div>
+            <span>Pricing version</span>
+            <strong>{{ pricingVersion }}</strong>
+          </div>
+          <div>
+            <span>Effective date</span>
+            <strong>{{ pricingEffectiveDate | date: 'MMM d, y' }}</strong>
+          </div>
+          <div>
+            <span>Imported into app</span>
+            <strong>{{ pricingImportedAt | date: 'MMM d, y' }}</strong>
+          </div>
+        </section>
+
+        <div class="pricing-note">
+          <strong>How to read this</strong>
+          <p>
+            These are the per-1M-token rates copied from GitHub's published Copilot usage-based
+            pricing table. Session estimates multiply imported VS Code token totals by the matching
+            model row. USD is converted to EUR using the scan's <code>usdToEur</code> value.
+          </p>
+        </div>
+
+        <div class="pricing-table">
+          <div class="pricing-row pricing-row-heading">
+            <span>Model</span>
+            <span>Provider</span>
+            <span>Status</span>
+            <span>Category</span>
+            <span title="Cost for uncached prompt/request tokens sent to the model.">Input</span>
+            <span title="Cost for prompt tokens GitHub/model provider can reuse from cache.">Cached input</span>
+            <span title="Anthropic-only cost for writing reusable prompt context into cache.">Cache write</span>
+            <span title="Cost for generated model response tokens.">Output</span>
+            <span>Used</span>
+          </div>
+          @for (price of pricingRows(); track price.model) {
+            <div class="pricing-row">
+              <strong>
+                {{ price.model }}
+                @if (price.note) {
+                  <em>{{ price.note }}</em>
+                }
+              </strong>
+              <span>{{ price.provider }}</span>
+              <span>{{ price.releaseStatus }}</span>
+              <span>{{ price.category }}</span>
+              <span>${{ price.input | number: '1.0-3' }}</span>
+              <span>${{ price.cachedInput | number: '1.0-3' }}</span>
+              <span>
+                @if (price.cacheWrite) {
+                  ${{ price.cacheWrite | number: '1.0-3' }}
+                } @else {
+                  -
+                }
+              </span>
+              <span>${{ price.output | number: '1.0-3' }}</span>
+              <span>
+                @if (price.usedByImportedSessions) {
+                  <span class="used-pill">In ledger</span>
+                } @else {
+                  <span class="muted">Not yet</span>
+                }
+              </span>
+            </div>
+          }
+        </div>
+      </section>
+    } @else {
     <section class="summary-grid">
       <article class="metric">
         <span>Sessions</span>
@@ -333,5 +425,6 @@
         <p class="empty">Pick two different sessions to compare cost and token deltas.</p>
       }
     </section>
+    }
   </section>
 </main>

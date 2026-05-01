@@ -92,6 +92,7 @@ export interface LedgerData {
   schemaVersion: number;
   generatedAt: string;
   pricingVersion: string;
+  pricingSourceUrl?: string;
   usdToEur: number;
   ingestion?: {
     scannedRoots: string[];

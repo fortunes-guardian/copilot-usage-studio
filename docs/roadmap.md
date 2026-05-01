@@ -1,65 +1,76 @@
-# Build roadmap
+# Build Roadmap
 
-This roadmap starts after the local VS Code debug-log import and `state.vscdb` enrichment are in place.
+This roadmap follows `docs/intent.md`: the product is a local developer cost debugger, not a generic billing clone.
 
-## Current foundation
+## Current Foundation
 
-The ledger now has three separate responsibilities:
+The app has three core inputs:
 
-- Debug logs are the pricing source because `llm_request` rows carry model ids and token totals.
-- `state.vscdb` is the metadata enrichment source because it carries stable VS Code titles, labels, location, permission level, pending-edit state, and read state.
-- The Angular app renders `public/data/sessions.json` and does not parse VS Code internals directly.
+- VS Code Copilot debug logs for session token totals and model ids.
+- VS Code `state.vscdb` for friendlier titles, labels, restored-session metadata, and UI state.
+- GitHub's published Copilot model pricing table for per-token price rows.
 
-Why: keeping these concerns separate makes each number explainable. The app can show friendly titles from VS Code state without accidentally trusting UI state as a billing source.
+Why: those sources answer different questions. Debug logs explain what happened in a local agent run. `state.vscdb` makes sessions recognizable to a human. GitHub pricing explains the rate card used to turn tokens into money.
 
-## Next phase: tokenizer adapter
+## Phase 1: Explainable Session Cost
 
-The next implementation step should be a tokenizer adapter interface for fallback imports.
-
-Build:
-
-- `scripts/token-estimator.mjs` or equivalent module used by the scanner
-- a default heuristic adapter matching the current `max(words * 1.35, characters / 4)` behavior
-- a contract that allows replacing the heuristic with a model-aware tokenizer later
-- verifier checks that estimated sessions declare which adapter produced their numbers
-
-Why this is next: debug-log sessions are already strong, but chat snapshot fallbacks still rely on a rough heuristic. Before importing more data sources, the estimate path needs to say exactly which estimator produced the tokens and how much confidence the UI should assign to it.
-
-## Then: billing reconciliation import
-
-After fallback token estimation is explicit, add GitHub billing report import.
+Status: in progress.
 
 Build:
 
-- importer for exported Copilot usage/billing rows
-- daily/provider/model aggregation
-- reconciliation fields beside local estimates, not overwriting them
-- UI that shows local estimate, billed value, delta, and unmatched rows
+- Show the selected session's token totals, model breakdown, and estimated cost.
+- Show the exact GitHub price row used for each model.
+- Add tooltips for ingestion and cost terms.
+- Mark whether a pricing row is actually used by the imported ledger.
+- Keep local estimates separate from final GitHub billing.
 
-Why: local debug logs explain what happened in a session; billing reports explain what GitHub charged. They are related but not identical because cache accounting and provider-side adjustments are not present in the local debug logs.
+Why: the first valuable workflow is "why did this run cost what it cost?" The user should be able to inspect the rate card, token totals, and session metadata in one place.
 
-## Then: experiment labels and run pairing
-
-Once local estimates and billed rows can coexist, add explicit experiment grouping.
-
-Build:
-
-- labels like `mcp-on`, `mcp-off`, `baseline`, `retry`, and `model-swap`
-- run-pair metadata stored outside the generated VS Code import
-- comparison views grouped by label and workspace
-- filters for model, time window, confidence, and billing reconciliation status
-
-Why: comparison only becomes trustworthy when the app knows which sessions are intended to be compared. Manual labels keep this practical without pretending the app can infer experiment intent from prompts alone.
-
-## Then: app-owned SQLite
-
-Add an app-owned database after the import contract is stable.
+## Phase 2: Better Comparison
 
 Build:
 
-- immutable scan records
-- user labels and comparison groups
-- billing reconciliation imports
-- notes and decisions tied to session ids
+- Side-by-side session comparison with input/output/cached/cache-write token deltas.
+- Highlight model switches and price-row changes.
+- Add simple size categories for sessions: small, medium, large, and very large.
+- Add filters for model, workspace, source quality, and time window.
 
-Why this is intentionally later: VS Code `state.vscdb` is external editor state, not application storage. The app should not write to it. An app-owned SQLite database becomes useful once there is state worth preserving across scans, especially labels, billing imports, and comparisons.
+Why: cost debugging becomes useful when a developer can test whether a prompt, model, MCP setup, or workflow change increased or reduced token burn.
+
+## Phase 3: Source Confidence And Limitations
+
+Build:
+
+- Make unsupported or lower-confidence sources obvious in the UI.
+- Prefer debug-log sessions for cost-grade estimates.
+- Keep chat snapshots visible only when they help explain session context.
+- Add warnings when imported data lacks model ids or token totals.
+
+Why: a polished cost debugger must not blur strong local token totals with weaker visible-text estimates. Transparency matters more than making every possible source look equally valid.
+
+## Phase 4: App-Owned SQLite
+
+Build:
+
+- Immutable scan history.
+- User labels and comparison groups.
+- Notes tied to session ids.
+- Stored pricing table snapshots.
+- Optional future price scenarios.
+
+Why: VS Code `state.vscdb` is external editor state and should stay read-only enrichment. App-owned SQLite becomes useful once the app has its own durable state: labels, chosen comparisons, historical scans, notes, and editable future pricing scenarios.
+
+## Phase 5: Billing Reconciliation
+
+Build:
+
+- Import GitHub billing or usage exports.
+- Match billed rows to local sessions where possible.
+- Show local estimate, billed amount, and delta without overwriting either source.
+- Explain unmatched rows.
+
+Why: local debug logs estimate a session from local token totals. GitHub billing is the authority for what was charged. Reconciliation is valuable, but it should come after local estimates are explainable.
+
+## Later Style Rework
+
+The UI should stay dense and operational, closer to a debugger than a marketing dashboard. A later style pass should improve hierarchy, spacing, and empty states without hiding the raw facts.

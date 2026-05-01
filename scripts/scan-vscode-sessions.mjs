@@ -6,6 +6,8 @@ const usdToEur = Number(process.env.USD_TO_EUR ?? '0.93');
 const outFile = resolve(process.argv[2] ?? 'public/data/sessions.json');
 const explicitRoots = process.argv.length > 3 ? process.argv.slice(3) : [];
 const ledgerSchemaVersion = 1;
+const pricingVersion = 'github-copilot-usage-pricing-2026-06-01';
+const pricingSourceUrl = 'https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing';
 
 const pricing = {
   'GPT-4.1': { input: 2, cachedInput: 0.5, output: 8 },
@@ -22,6 +24,8 @@ const pricing = {
   'Claude Sonnet 4.5': { input: 3, cachedInput: 0.3, cacheWrite: 3.75, output: 15 },
   'Claude Sonnet 4.6': { input: 3, cachedInput: 0.3, cacheWrite: 3.75, output: 15 },
   'Claude Opus 4.5': { input: 5, cachedInput: 0.5, cacheWrite: 6.25, output: 25 },
+  'Claude Opus 4.6': { input: 5, cachedInput: 0.5, cacheWrite: 6.25, output: 25 },
+  'Claude Opus 4.7': { input: 5, cachedInput: 0.5, cacheWrite: 6.25, output: 25 },
   'Gemini 2.5 Pro': { input: 1.25, cachedInput: 0.125, output: 10 },
   'Gemini 3 Flash': { input: 0.5, cachedInput: 0.05, output: 3 },
   'Gemini 3.1 Pro': { input: 2, cachedInput: 0.2, output: 12 },
@@ -729,7 +733,8 @@ writeFileSync(
     {
       schemaVersion: ledgerSchemaVersion,
       generatedAt: new Date().toISOString(),
-      pricingVersion: 'github-copilot-usage-pricing-2026-06-01',
+      pricingVersion,
+      pricingSourceUrl,
       usdToEur,
       ingestion: {
         ...diagnostics,

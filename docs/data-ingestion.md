@@ -72,6 +72,7 @@ For chat snapshots:
 Costs are estimates calculated from token totals and the local pricing table. The scanner writes:
 
 - `pricingVersion`
+- `pricingSourceUrl`
 - `usdToEur`
 - `cost.usd`
 - `cost.eur`
@@ -79,6 +80,8 @@ Costs are estimates calculated from token totals and the local pricing table. Th
 The current pricing version is `github-copilot-usage-pricing-2026-06-01`. `USD_TO_EUR` defaults to `0.93` unless overridden for a scan.
 
 When a debug-log session uses more than one model, cost is calculated per `modelBreakdown` entry and then summed into `cost.usd` and `cost.eur`. Why: applying one session-level model price to all tokens is wrong for mixed runs and hides model-switching behavior.
+
+The price table is copied from GitHub's public Copilot model pricing documentation, then exposed in the UI as a first-class `GitHub prices` view. Why: cost estimates should be inspectable from their inputs. A user should not have to trust a hidden rate card.
 
 ## Display semantics
 
