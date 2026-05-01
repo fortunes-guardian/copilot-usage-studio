@@ -240,12 +240,13 @@ export class App {
         const pricingModel = this.pricingModelForEvent(event, modelBreakdown);
         const price = MODEL_PRICES_USD_PER_MILLION[pricingModel] ?? MODEL_PRICES_USD_PER_MILLION['GPT-5.4'];
         const estimatedEur =
+          event.estimatedCost?.eur ??
           this.tokenCostEur(event.inputTokens, price.input, usdToEur) +
-          this.tokenCostEur(event.outputTokens, price.output, usdToEur);
+            this.tokenCostEur(event.outputTokens, price.output, usdToEur);
 
         return {
           ...event,
-          totalTokens: event.inputTokens + event.outputTokens,
+          totalTokens: event.totalTokens ?? event.inputTokens + event.outputTokens,
           pricingModel,
           estimatedEur,
         };
@@ -261,13 +262,14 @@ export class App {
         const pricingModel = this.pricingModelForEvent(event, modelBreakdown);
         const price = MODEL_PRICES_USD_PER_MILLION[pricingModel] ?? MODEL_PRICES_USD_PER_MILLION['GPT-5.4'];
         const estimatedEur =
+          event.estimatedCost?.eur ??
           this.tokenCostEur(event.inputTokens, price.input, usdToEur) +
-          this.tokenCostEur(event.outputTokens, price.output, usdToEur);
+            this.tokenCostEur(event.outputTokens, price.output, usdToEur);
 
         return {
           ...event,
           flowIndex: index + 1,
-          totalTokens: event.inputTokens + event.outputTokens,
+          totalTokens: event.totalTokens ?? event.inputTokens + event.outputTokens,
           pricingModel,
           estimatedEur,
         };
@@ -284,8 +286,12 @@ export class App {
   }
 
   private pricingModelForEvent(event: TraceEvent, modelBreakdown: ModelBreakdown[]): string {
+    if (event.pricingModel) {
+      return event.pricingModel;
+    }
+
     const sessionPricingModel = modelBreakdown.length === 1 ? modelBreakdown[0].pricingModel : null;
-    const parsedModel = this.modelFromEventDetail(event.detail);
+    const parsedModel = event.model ?? this.modelFromEventDetail(event.detail);
     return this.matchPricingModel(parsedModel) ?? sessionPricingModel ?? 'GPT-5.4';
   }
 

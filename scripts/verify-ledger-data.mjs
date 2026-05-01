@@ -113,6 +113,36 @@ for (const session of ledger.sessions ?? []) {
     fail(`${session.id} missing traceEvents array`);
   }
 
+  for (const event of session.traceEvents ?? []) {
+    for (const field of ['inputTokens', 'outputTokens']) {
+      if (!Number.isFinite(event[field]) || event[field] < 0) {
+        fail(`${session.id} traceEvents.${event.index ?? 'unknown'} has invalid ${field}`);
+      }
+    }
+
+    const tokenTotal = Number(event.inputTokens ?? 0) + Number(event.outputTokens ?? 0);
+    if (tokenTotal > 0) {
+      if (!event.model || !event.pricingModel) {
+        fail(`${session.id} traceEvents.${event.index ?? 'unknown'} missing model/pricingModel`);
+      }
+      if (!Number.isFinite(event.totalTokens) || event.totalTokens !== tokenTotal) {
+        fail(`${session.id} traceEvents.${event.index ?? 'unknown'} has invalid totalTokens`);
+      }
+      const expectedEventUsd = expectedCostUsd(event.pricingModel, {
+        input: event.inputTokens,
+        cachedInput: 0,
+        cacheWrite: 0,
+        output: event.outputTokens,
+      });
+      if (Math.abs(expectedEventUsd - Number(event.estimatedCost?.usd)) > 0.000000001) {
+        fail(`${session.id} traceEvents.${event.index ?? 'unknown'} estimatedCost.usd does not match token pricing`);
+      }
+      if (Math.abs(expectedEventUsd * Number(ledger.usdToEur) - Number(event.estimatedCost?.eur)) > 0.000000001) {
+        fail(`${session.id} traceEvents.${event.index ?? 'unknown'} estimatedCost.eur does not match token pricing and usdToEur`);
+      }
+    }
+  }
+
   if (session.vscodeState) {
     if (!session.vscodeState.sourcePath) {
       fail(`${session.id} vscodeState missing sourcePath`);

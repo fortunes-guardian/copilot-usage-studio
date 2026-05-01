@@ -295,6 +295,26 @@ function costUsd(model, tokens) {
   );
 }
 
+function eventModelCostFields(rawModel, inputTokens, outputTokens) {
+  const normalizedModel = normalizeModel(rawModel);
+  const pricingModel = pricing[normalizedModel] ? normalizedModel : 'GPT-5.4';
+  const tokens = {
+    input: Number(inputTokens ?? 0),
+    cachedInput: 0,
+    cacheWrite: 0,
+    output: Number(outputTokens ?? 0),
+  };
+  const usd = costUsd(pricingModel, tokens);
+
+  return {
+    model: normalizedModel,
+    rawModel: String(rawModel ?? '').replace(/^copilot\//i, '').trim() || 'unknown',
+    pricingModel,
+    totalTokens: tokens.input + tokens.output,
+    estimatedCost: { usd, eur: usd * usdToEur },
+  };
+}
+
 function modelBreakdownFromLlmRequests(llmRequests) {
   const byModel = new Map();
 
@@ -502,16 +522,25 @@ function sessionFromDebugLog(sessionDir, workspaceDir) {
       totalEvents: main.length,
     },
     traceEvents: main
-      .map((event, index) => ({
-        index,
-        timestamp: timestampForEvent(event),
-        type: String(event.type ?? 'unknown'),
-        name: String(event.name ?? event.type ?? 'unknown'),
-        status: String(event.status ?? 'unknown'),
-        detail: eventDetail(event),
-        inputTokens: event.type === 'llm_request' ? Number(event.attrs?.inputTokens ?? 0) : 0,
-        outputTokens: event.type === 'llm_request' ? Number(event.attrs?.outputTokens ?? 0) : 0,
-      }))
+      .map((event, index) => {
+        const inputTokens = event.type === 'llm_request' ? Number(event.attrs?.inputTokens ?? 0) : 0;
+        const outputTokens =
+          event.type === 'llm_request' ? Number(event.attrs?.outputTokens ?? 0) : 0;
+
+        return {
+          index,
+          timestamp: timestampForEvent(event),
+          type: String(event.type ?? 'unknown'),
+          name: String(event.name ?? event.type ?? 'unknown'),
+          status: String(event.status ?? 'unknown'),
+          detail: eventDetail(event),
+          inputTokens,
+          outputTokens,
+          ...(event.type === 'llm_request'
+            ? eventModelCostFields(event.attrs?.model, inputTokens, outputTokens)
+            : {}),
+        };
+      })
       .slice(0, 200),
     turns: turns.slice(0, 60),
   };
@@ -543,6 +572,7 @@ function sessionFromChatSnapshot(file, workspaceDir) {
   );
   const tokens = { input, cachedInput: 0, cacheWrite: 0, output };
   const usd = costUsd(model, tokens);
+  const pricingModel = pricing[model] ? model : 'GPT-5.4';
   const startedAt = new Date(Number(snapshot.creationDate ?? statSync(file).mtimeMs)).toISOString();
   const endedAt = statSync(file).mtime.toISOString();
 
@@ -569,7 +599,7 @@ function sessionFromChatSnapshot(file, workspaceDir) {
         turns: requests.length,
         tokens,
         cost: { usd, eur: usd * usdToEur },
-        pricingModel: pricing[model] ? model : 'GPT-5.4',
+        pricingModel,
       },
     ],
     startedAt,
@@ -587,28 +617,37 @@ function sessionFromChatSnapshot(file, workspaceDir) {
       totalEvents: records.length,
     },
     traceEvents: requests
-      .flatMap((request, index) => [
-        {
-          index: index * 2,
-          timestamp: startedAt,
-          type: 'user_message',
-          name: 'user_message',
-          status: 'ok',
-          detail: String(request?.message?.text ?? '').slice(0, 140),
-          inputTokens: estimateTokens(request?.message?.text ?? ''),
-          outputTokens: 0,
-        },
-        {
-          index: index * 2 + 1,
-          timestamp: endedAt,
-          type: 'assistant_response',
-          name: 'assistant_response',
-          status: 'ok',
-          detail: `${Number(request.completionTokens ?? 0).toLocaleString()} completion tokens`,
-          inputTokens: 0,
-          outputTokens: Number(request.completionTokens ?? 0),
-        },
-      ])
+      .flatMap((request, index) => {
+        const rawRequestModel =
+          request?.modelId ?? request?.inputState?.selectedModel?.identifier ?? model;
+        const userInputTokens = estimateTokens(request?.message?.text ?? '');
+        const assistantOutputTokens = Number(request.completionTokens ?? 0);
+
+        return [
+          {
+            index: index * 2,
+            timestamp: startedAt,
+            type: 'user_message',
+            name: 'user_message',
+            status: 'ok',
+            detail: String(request?.message?.text ?? '').slice(0, 140),
+            inputTokens: userInputTokens,
+            outputTokens: 0,
+            ...eventModelCostFields(rawRequestModel, userInputTokens, 0),
+          },
+          {
+            index: index * 2 + 1,
+            timestamp: endedAt,
+            type: 'assistant_response',
+            name: 'assistant_response',
+            status: 'ok',
+            detail: `${assistantOutputTokens.toLocaleString()} completion tokens`,
+            inputTokens: 0,
+            outputTokens: assistantOutputTokens,
+            ...eventModelCostFields(rawRequestModel, 0, assistantOutputTokens),
+          },
+        ];
+      })
       .slice(0, 200),
     turns: requests
       .flatMap((request) => [

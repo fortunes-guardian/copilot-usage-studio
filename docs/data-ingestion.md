@@ -55,6 +55,7 @@ For debug logs with `llm_request` events:
 - `tokenSource` is `llm_request_token_totals`.
 - `confidence` is `exact`.
 - `modelBreakdown` groups `llm_request` rows by normalized model id and stores raw model ids, turn count, token totals, estimated cost, and the pricing model used.
+- each token-bearing `traceEvents` row stores structured `model`, `rawModel`, `pricingModel`, `totalTokens`, and `estimatedCost` fields.
 
 The word `exact` means exact for the local VS Code debug-log token fields that were imported. It does not mean exact final billing. GitHub billing reconciliation can still differ because cache accounting and provider-side billing adjustments are not present in the local log.
 
@@ -85,20 +86,20 @@ When a debug-log session uses more than one model, cost is calculated per `model
 
 The price table is copied from GitHub's public Copilot model pricing documentation, then exposed in the UI as a first-class `GitHub prices` view. Why: cost estimates should be inspectable from their inputs. A user should not have to trust a hidden rate card.
 
+Token-bearing trace rows repeat the pricing decision at the event level. Why: the UI should not parse cost-critical facts back out of human display text such as `detail`. The generated ledger is the contract, so the ledger carries the exact model and price row used for each model call.
+
 ## Display semantics
 
 The app displays:
 
 - first prompt, workspace, model, timestamps, tags, source kind, token source
 - VS Code Agent Debug Log style session details: session type, location, status, created time, and last activity
-- trace summary cards: model turns, tool calls, total tokens, errors, total events, and estimated cost
-- token totals and estimated cost
-- per-model pricing rows that show model turns, token totals, price fallback, and estimated cost
-- a capped turn preview for human inspection
+- trace summary cards: model turns, tool calls, total tokens, errors, and total events
+- a cost debugger with token categories, per-model pricing rows, and the largest model calls
 - a capped trace event preview for logs and flow-chart views
 - comparison deltas between two imported sessions
 
-The turn preview is not the pricing source when `tokenSource` is `llm_request_token_totals`; it is there to explain the session to a human. The cost comes from imported token totals.
+The flow chart uses structured trace event pricing fields for model-call costs. The cost debugger uses the session and model-level token totals; both are generated during ingestion from the same `llm_request` source.
 
 ## SQLite workspace state
 
@@ -139,4 +140,4 @@ npm run scan
 npm run verify:data
 ```
 
-The verifier checks the generated ledger shape, duplicate ids, required source metadata, valid timestamps, non-negative token fields, model breakdown pricing, optional VS Code state metadata, and guards against importing sessions with neither token totals nor turns.
+The verifier checks the generated ledger shape, duplicate ids, required source metadata, valid timestamps, non-negative token fields, model breakdown pricing, token-bearing trace event pricing, optional VS Code state metadata, and guards against importing sessions with neither token totals nor turns.

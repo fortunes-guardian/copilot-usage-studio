@@ -60,6 +60,11 @@ export interface TraceEvent {
   detail: string;
   inputTokens: number;
   outputTokens: number;
+  totalTokens?: number;
+  model?: string;
+  rawModel?: string;
+  pricingModel?: string;
+  estimatedCost?: CostBreakdown;
 }
 
 export interface LedgerSession {
