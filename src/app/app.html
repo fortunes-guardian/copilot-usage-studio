@@ -155,7 +155,8 @@
       <section class="ingestion">
         <div>
           <p class="eyebrow">Data ingest</p>
-          <h2>{{ ingestion.importedSessions }} imported from {{ ingestion.scannedWorkspaces }} workspaces</h2>
+          <h2>{{ ingestion.importedSessions }} sessions imported</h2>
+          <p>{{ ingestion.scannedWorkspaces }} workspaces scanned · {{ ingestion.enrichedFromStateDbs }} state-enriched</p>
         </div>
         <dl>
           <div>
@@ -193,11 +194,11 @@
             <div class="source-meta">
               <span>{{ session.workspace }}</span>
               <span [title]="confidenceHelp(session.confidence)">
-                {{ session.confidence }}
+                {{ confidenceLabel(session.confidence) }}
                 <span class="help-dot" [title]="confidenceHelp(session.confidence)" [attr.aria-label]="confidenceHelp(session.confidence)" tabindex="0">?</span>
               </span>
               <span [title]="tokenSourceHelp(session.tokenSource)">
-                {{ session.tokenSource }}
+                {{ tokenSourceLabel(session.tokenSource) }}
                 <span class="help-dot" [title]="tokenSourceHelp(session.tokenSource)" [attr.aria-label]="tokenSourceHelp(session.tokenSource)" tabindex="0">?</span>
               </span>
             </div>
@@ -239,7 +240,7 @@
             <div>
               <dt>Source</dt>
               <dd>
-                {{ session.sourceKind }}
+                {{ sourceKindLabel(session.sourceKind) }}
                 <span class="help-dot" [title]="sourceKindHelp(session.sourceKind)" [attr.aria-label]="sourceKindHelp(session.sourceKind)" tabindex="0">?</span>
               </dd>
             </div>
@@ -297,6 +298,7 @@
 
             <div class="source-callout">
               <div>
+                <span>Estimate scope</span>
                 <strong>
                   {{ cost.cacheStatus }}
                   <span class="help-dot" [title]="cost.cacheDescription" [attr.aria-label]="cost.cacheDescription" tabindex="0">?</span>
@@ -423,7 +425,7 @@
           @if (traceView() === 'logs') {
             <div class="event-log">
               @for (event of session.traceEvents; track event.index) {
-                <article class="event-row" [class.error]="event.status !== 'ok'">
+                <article class="event-row" [class.error]="event.status !== 'ok'" [class.user-message]="event.type === 'user_message'">
                   <span>{{ event.timestamp | date: 'HH:mm:ss' }}</span>
                   <strong>{{ event.name }}</strong>
                   <p>{{ event.detail }}</p>

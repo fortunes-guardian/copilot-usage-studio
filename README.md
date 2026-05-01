@@ -1,24 +1,37 @@
 # Copilot Cost Ledger
 
-Local-first developer cost debugger for VS Code GitHub Copilot chat and agent sessions.
+Local-first cost debugger for VS Code GitHub Copilot chat and agent sessions.
 
-The goal is to answer practical questions:
+The app helps answer one practical question:
 
-- Which Copilot sessions were small, medium, or expensive?
-- Which model and token category drove the estimate?
-- Which GitHub-published price rows were used for the calculation?
-- Did one run cost more or less than another run?
+> Why did this Copilot run cost what it cost?
 
-## Current Product Shape
+It scans local VS Code data, estimates cost from GitHub published model prices, and shows which models, token categories, and model calls drove the estimate.
 
-- Scans local VS Code Copilot Agent Debug Log files.
-- Enriches imported sessions from VS Code `state.vscdb` when available.
-- Generates `public/data/sessions.json` as the app-facing ledger contract.
-- Shows session details, model turns, tool calls, token totals, and estimated EUR cost.
-- Provides a GitHub prices view listing the model pricing rows used by the estimator.
-- Compares two sessions for token and estimated cost delta.
+## Start Here
 
-## Run
+- [docs/project-state.md](docs/project-state.md): current state, what works, what is next.
+- [docs/how-to-read-the-app.md](docs/how-to-read-the-app.md): plain-English guide to the UI.
+- [docs/intent.md](docs/intent.md): product direction.
+- [docs/roadmap.md](docs/roadmap.md): planned build order.
+- [docs/data-ingestion.md](docs/data-ingestion.md): where the data comes from and what it means.
+- [docs/pricing.md](docs/pricing.md): GitHub price source and calculation rules.
+
+## What Works Now
+
+- Imports VS Code Copilot debug-log sessions.
+- Enriches titles and metadata from VS Code `state.vscdb`.
+- Shows a selected-run Cost debugger:
+  - cost drivers
+  - input/output token categories
+  - per-model pricing rows
+  - largest model calls
+  - source-confidence explanations
+- Shows the GitHub pricing table used by the app.
+- Shows trace logs and an agent flow chart.
+- Compares two runs at a basic token/cost level.
+
+## Run The App
 
 ```bash
 npm start
@@ -26,55 +39,61 @@ npm start
 
 Then open the Angular dev server URL.
 
-## Import Local VS Code Sessions
+## Refresh Local Session Data
 
 ```bash
 npm run scan
 npm run verify:data
 ```
 
-The preferred source is:
+The app reads `public/data/sessions.json`. Running `npm run scan` regenerates that file from local VS Code data.
+
+## Preferred Data Source
+
+Best source:
 
 ```text
 %APPDATA%\Code\User\workspaceStorage\<workspace-id>\GitHub.copilot-chat\debug-logs\<session-id>\main.jsonl
 ```
 
-Why: debug logs include `llm_request` rows with model ids plus `inputTokens` and `outputTokens`. Those are the best local session-level inputs this app has found so far.
+Why: these debug logs include model ids plus input and output token counts for each model call. That is the strongest local signal for estimating a run.
 
-The scanner can also read:
+Secondary source:
 
 ```text
 %APPDATA%\Code\User\workspaceStorage\<workspace-id>\chatSessions\<session-id>.jsonl
 ```
 
-Those chat snapshots are useful for context, but they are not as strong for cost estimation because they do not reliably include full request token totals.
+These chat snapshots can explain conversation context, but they are weaker for cost because they do not reliably include the full request token count.
 
-You can pass a custom output file and one or more VS Code `User` directories or workspace storage directories:
+## Pricing
+
+Prices are copied from GitHub's published Copilot usage-based pricing table:
+
+https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing
+
+Current pricing version:
+
+```text
+github-copilot-usage-pricing-2026-06-01
+```
+
+Rates are USD per 1 million tokens. The scanner converts USD estimates to EUR using `USD_TO_EUR`, defaulting to `0.93`.
+
+Important: this app shows a local estimate, not a GitHub invoice. Local VS Code logs currently expose input/output tokens, but not provider cache read/write billing fields.
+
+## Useful Commands
+
+```bash
+npm run scan
+npm run verify:data
+npm test -- --watch=false
+npm run build
+```
+
+You can scan a custom VS Code user directory or workspace storage folder:
 
 ```bash
 node scripts/scan-vscode-sessions.mjs public/data/sessions.json "C:\Users\you\AppData\Roaming\Code\User"
 node scripts/scan-vscode-sessions.mjs public/data/sessions.json "C:\Users\you\AppData\Roaming\Code\User\workspaceStorage\<workspace-id>"
 ```
-
-## Pricing
-
-Pricing is stored in `src/app/pricing.ts` and mirrored in the scanner/verifier scripts. The rows are copied from GitHub's published Copilot usage-based pricing table:
-
-https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing
-
-The current app pricing version is `github-copilot-usage-pricing-2026-06-01`. GitHub states those usage-based billing prices take effect on June 1, 2026. All rates are USD per 1 million tokens. The scanner converts USD estimates to EUR using `USD_TO_EUR`, defaulting to `0.93`.
-
-The app now has a `GitHub prices` view so the user can inspect the exact table driving session estimates.
-
-## Data Boundary
-
-The Angular UI does not parse VS Code internals directly. It renders `public/data/sessions.json`.
-
-That boundary matters because the scanner is where local files, SQLite enrichment, model normalization, token semantics, and cost calculation are verified. The UI should explain the ledger; it should not silently reinterpret source files.
-
-## Docs
-
-- `docs/intent.md` is the product north star.
-- `docs/data-ingestion.md` documents where data comes from and what each field means.
-- `docs/pricing.md` documents the price source, calculation rules, and current limitations.
-- `docs/roadmap.md` tracks the next implementation steps.

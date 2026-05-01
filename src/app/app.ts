@@ -36,24 +36,24 @@ export class App {
   protected readonly pricingImportedAt = PRICING_IMPORTED_AT;
   protected readonly help = {
     appEstimate:
-      'This is a local estimate from imported VS Code token totals multiplied by GitHub published model prices. It is not a GitHub invoice.',
+      'Estimated from local VS Code token counts and GitHub published model prices. This is useful for debugging a run, but it is not your GitHub bill.',
     debugLogs:
-      'VS Code Copilot debug-log sessions. These are the strongest local source because llm_request events include model ids, input tokens, and output tokens.',
+      'Best source for cost debugging. These VS Code logs include the model used plus input and output token counts for each model call.',
     chatSnapshots:
-      'VS Code chat session snapshots. Useful for conversation context, but weaker for cost because full request input tokens are not reliably present.',
+      'Useful for seeing chat history, but weaker for cost. They often do not include the full prompt/context token count sent to the model.',
     stateDbs:
-      'VS Code state.vscdb files. The scanner reads them only for metadata enrichment such as titles, labels, location, and restored-session state.',
+      'VS Code local databases. We read them only to improve titles, labels, location, and restored-session details.',
     stateEnriched:
-      'Imported sessions matched to state.vscdb metadata. Pricing still comes from debug logs; SQLite only improves human labels and session metadata.',
+      'This many sessions got better names/details from VS Code state. Cost still comes from debug logs, not SQLite.',
     emptyDebugLogs:
-      'Debug-log folders that contained no useful user, assistant, or model-call signal. Skipping them avoids fake zero-cost sessions.',
+      'Folders VS Code created but never filled with useful chat/model activity. We skip them so they do not look like real zero-cost runs.',
     snapshotsWithoutRequests:
-      'Chat snapshot files without a requests array. They do not contain enough session structure to import.',
+      'Chat files without usable request records. They do not contain enough structure to import safely.',
     inputTokens:
-      'Prompt, context, repository, tool-result, and conversation material sent into the model.',
+      'Everything sent into the model: prompt, repo context, prior conversation, and tool results.',
     outputTokens: 'Generated model response tokens.',
     cachedInput:
-      'Provider cache-read tokens when the billing source exposes them. Current local VS Code debug logs have not exposed this field.',
+      'Tokens served from a provider cache when that data is available. Current local VS Code debug logs do not show this field.',
     cacheWrite:
       'Provider cache creation tokens when the billing source exposes them. GitHub lists this mainly for Anthropic pricing rows.',
     priceRow:
@@ -91,13 +91,13 @@ export class App {
       hasCacheData,
       sourceStrength:
         session.tokenSource === 'llm_request_token_totals'
-          ? 'Exact local input/output token totals'
-          : 'Estimated token totals',
+          ? 'Exact local token counts'
+          : 'Estimated token counts',
       sourceDescription:
         session.tokenSource === 'llm_request_token_totals'
           ? 'Imported from VS Code Copilot debug-log llm_request events. This is the strongest local source for session input and output tokens.'
           : 'Estimated from visible chat/session data. Useful context, but weaker than debug-log llm_request totals.',
-      cacheStatus: hasCacheData ? 'Cache tokens imported' : 'Cache tokens not present in local logs',
+      cacheStatus: hasCacheData ? 'Cache tokens included' : 'Cache billing not visible locally',
       cacheDescription: hasCacheData
         ? 'This session includes cached input or cache-write token totals in the generated ledger.'
         : 'The VS Code debug-log events imported for this session expose inputTokens and outputTokens, but not billing cache read/write fields. The estimate therefore prices visible local input/output totals and keeps cache accounting explicit as unavailable.',
@@ -215,21 +215,45 @@ export class App {
     return 'Imported local session source. Check the generated ledger sourceKind for the exact importer path.';
   }
 
+  protected sourceKindLabel(sourceKind: string): string {
+    if (sourceKind === 'vscode-copilot-debug-log') {
+      return 'Debug log';
+    }
+
+    if (sourceKind === 'vscode-chat-session-snapshot') {
+      return 'Chat snapshot';
+    }
+
+    return sourceKind;
+  }
+
   protected tokenSourceHelp(tokenSource: string): string {
     if (tokenSource === 'llm_request_token_totals') {
-      return 'Exact for the local VS Code llm_request inputTokens and outputTokens fields. It does not include provider-side cache billing fields.';
+      return 'Strongest local token source: VS Code logged input and output token counts for each model call. Cache billing is still not visible here.';
     }
 
     if (tokenSource === 'chat-snapshot-output-plus-visible-input-estimate') {
-      return 'Estimated from visible chat text plus any completion token fields in the chat snapshot. This is weaker than debug-log token totals.';
+      return 'We estimate from visible chat text and any completion token fields. This is weaker than debug logs.';
     }
 
     return 'Token source recorded by the scanner. Treat unknown sources as lower confidence until documented.';
   }
 
+  protected tokenSourceLabel(tokenSource: string): string {
+    if (tokenSource === 'llm_request_token_totals') {
+      return 'Debug-log token counts';
+    }
+
+    if (tokenSource === 'chat-snapshot-output-plus-visible-input-estimate') {
+      return 'Chat snapshot estimate';
+    }
+
+    return tokenSource;
+  }
+
   protected confidenceHelp(confidence: string): string {
     if (confidence === 'exact') {
-      return 'Exact for the imported local token fields, not a final billing guarantee.';
+      return 'Exact for the token fields VS Code logged locally. It is still not a final billing guarantee.';
     }
 
     if (confidence === 'estimated') {
@@ -241,6 +265,22 @@ export class App {
     }
 
     return 'Sample or incomplete data. Use only as rough context.';
+  }
+
+  protected confidenceLabel(confidence: string): string {
+    if (confidence === 'exact') {
+      return 'Exact local data';
+    }
+
+    if (confidence === 'estimated') {
+      return 'Estimated data';
+    }
+
+    if (confidence === 'reconciled') {
+      return 'Reconciled data';
+    }
+
+    return confidence;
   }
 
   private explainModelCost(entry: ModelBreakdown, usdToEur: number, sessionCostEur: number) {

@@ -1,56 +1,64 @@
-# Build Roadmap
+# Roadmap
 
-This roadmap follows `docs/intent.md`: the product is a local developer cost debugger, not a generic billing clone.
+This roadmap follows `docs/intent.md`: first make one selected run excellent, then make comparisons useful.
 
-## Current Foundation
+## Phase 1: Selected Run Cost Debugger
 
-The app has three core inputs:
+Status: mostly built.
 
-- VS Code Copilot debug logs for session token totals and model ids.
-- VS Code `state.vscdb` for friendlier titles, labels, restored-session metadata, and UI state.
-- GitHub's published Copilot model pricing table for per-token price rows.
+Done:
 
-Why: those sources answer different questions. Debug logs explain what happened in a local agent run. `state.vscdb` makes sessions recognizable to a human. GitHub pricing explains the rate card used to turn tokens into money.
+- Import VS Code Copilot debug logs.
+- Enrich session labels from `state.vscdb`.
+- Show GitHub price rows used by the estimator.
+- Store structured model, pricing row, token total, and estimated cost on token-bearing trace events.
+- Show cost drivers: input burn, largest model call, context growth, model mix, and tool activity.
+- Add source-confidence help for ingest, source, confidence, cache, and cost terms.
+- Show logs and agent flow chart with token/cost detail.
 
-## Phase 1: Explainable Session Cost
+Next:
 
-Status: in progress.
+- Add session size and warning labels.
+- Improve wording and layout of the selected-run header.
+- Replace native title tooltips with a small custom help popover if the native behavior feels too hidden.
 
-Build:
+Why: the core workflow is “I ran an agent, why was this expensive?” The selected run has to be readable before comparison gets deeper.
 
-- Show the selected session's token totals, model breakdown, and estimated cost.
-- Show the exact GitHub price row used for each model.
-- Store structured model, pricing row, token total, and estimated cost on each token-bearing trace event.
-- Add selected-run cost driver diagnosis: input context burn, largest model call, context growth, model mix, and tool activity.
-- Add source-confidence tooltips for ingestion, source, confidence, cache, and cost terms.
-- Mark whether a pricing row is actually used by the imported ledger.
-- Keep local estimates separate from final GitHub billing.
-
-Why: the first valuable workflow is "why did this run cost what it cost?" The user should be able to inspect the rate card, token totals, and session metadata in one place.
-
-## Phase 2: Better Comparison
+## Phase 2: Session Labels And Triage
 
 Build:
 
-- Side-by-side session comparison with input/output/cached/cache-write token deltas.
+- Session size labels: `Small`, `Medium`, `Large`, `Very large`.
+- Warning labels: `High input context`, `Context grew`, `Mixed models`, `Cache unknown`, `State enriched`.
+- Better session-list scanning: cost, model, size, source quality.
+- Filters for workspace, model, source quality, and time window.
+
+Why: a developer should spot suspicious runs before opening each one.
+
+## Phase 3: Better Comparison
+
+Build:
+
+- Side-by-side selected-run comparison.
+- Explain what changed: cost, input tokens, output tokens, model mix, tool count, context growth.
 - Highlight model switches and price-row changes.
-- Add simple size categories for sessions: small, medium, large, and very large.
-- Add filters for model, workspace, source quality, and time window.
+- Show “winner/loser” language carefully: cheaper is not always better if the run failed.
 
-Why: cost debugging becomes useful when a developer can test whether a prompt, model, MCP setup, or workflow change increased or reduced token burn.
+Why: comparison is useful when testing prompts, models, MCP setup, or workflow changes.
 
-## Phase 3: Source Confidence And Limitations
+## Phase 4: UX And Style Rework
 
 Build:
 
-- Make unsupported or lower-confidence sources obvious in the UI.
-- Prefer debug-log sessions for cost-grade estimates.
-- Keep chat snapshots visible only when they help explain session context.
-- Add warnings when imported data lacks model ids or token totals.
+- Cleaner visual hierarchy.
+- More compact data ingest section.
+- Better responsive tables.
+- Proper help popovers.
+- More debugger-like polish.
 
-Why: a polished cost debugger must not blur strong local token totals with weaker visible-text estimates. Transparency matters more than making every possible source look equally valid.
+Why: the app has complex information. Better style should reduce cognitive load, not hide details.
 
-## Phase 4: App-Owned SQLite
+## Phase 5: App-Owned SQLite
 
 Build:
 
@@ -60,9 +68,11 @@ Build:
 - Stored pricing table snapshots.
 - Optional future price scenarios.
 
-Why: VS Code `state.vscdb` is external editor state and should stay read-only enrichment. App-owned SQLite becomes useful once the app has its own durable state: labels, chosen comparisons, historical scans, notes, and editable future pricing scenarios.
+Why: VS Code `state.vscdb` is external editor state and should stay read-only enrichment. App-owned SQLite becomes useful once the app has durable user state.
 
-## Phase 5: Billing Reconciliation
+## Phase 6: Billing Reconciliation
+
+Status: later, not the current focus.
 
 Build:
 
@@ -71,8 +81,5 @@ Build:
 - Show local estimate, billed amount, and delta without overwriting either source.
 - Explain unmatched rows.
 
-Why: local debug logs estimate a session from local token totals. GitHub billing is the authority for what was charged. Reconciliation is valuable, but it should come after local estimates are explainable.
+Why: GitHub billing is authoritative for what was charged, but reconciliation should come after local session estimates are easy to understand.
 
-## Later Style Rework
-
-The UI should stay dense and operational, closer to a debugger than a marketing dashboard. A later style pass should improve hierarchy, spacing, and empty states without hiding the raw facts.

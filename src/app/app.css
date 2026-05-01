@@ -221,8 +221,7 @@
 .metric span,
 .facts span,
 .comparison-grid span,
-.price span,
-.turn span {
+.price span {
   color: #60717f;
   font-size: 13px;
 }
@@ -257,8 +256,16 @@
 }
 
 .ingestion {
-  grid-template-columns: minmax(220px, 1fr) 2fr;
+  grid-template-columns: minmax(200px, 0.8fr) 2.2fr;
   align-items: start;
+  gap: 14px;
+  padding: 16px 18px;
+}
+
+.ingestion p {
+  margin: 5px 0 0;
+  color: #60717f;
+  font-size: 13px;
 }
 
 .ingestion dl {
@@ -284,7 +291,7 @@
 .ingestion dd {
   margin: 0;
   color: #16202a;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 800;
 }
 
@@ -359,6 +366,15 @@
 .source-callout {
   border-left: 4px solid #52b4a9;
   padding-left: 14px;
+}
+
+.source-callout span {
+  display: block;
+  margin-bottom: 3px;
+  color: #60717f;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 .source-callout strong,
@@ -660,6 +676,25 @@
 
 .event-row.error {
   background: #fff7f5;
+}
+
+.event-row.user-message {
+  border-left: 4px solid #52b4a9;
+  background: #f2fbfa;
+}
+
+.event-row.user-message strong::after {
+  content: "User";
+  display: inline-flex;
+  width: fit-content;
+  margin-left: 8px;
+  border-radius: 999px;
+  padding: 2px 6px;
+  background: #dff4f1;
+  color: #245a62;
+  font-size: 11px;
+  font-weight: 900;
+  vertical-align: middle;
 }
 
 .flow-chart {
