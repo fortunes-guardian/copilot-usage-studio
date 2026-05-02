@@ -690,7 +690,7 @@
                       <strong>#{{ event.callNumber }}</strong>
                       <span>
                         {{ event.timestamp | date: 'HH:mm:ss' }}
-                        <em>event #{{ event.index + 1 }}</em>
+                        <em>raw index #{{ event.index }}</em>
                       </span>
                       <span>
                         {{ event.model || event.name }}
@@ -732,7 +732,7 @@
             <div class="event-log">
               @for (event of session.traceEvents; track event.index) {
                 <article class="event-row" [class.error]="event.status !== 'ok'" [class.user-message]="event.type === 'user_message'">
-                  <span>{{ event.timestamp | date: 'HH:mm:ss' }}</span>
+                  <span>{{ event.timestamp | date: 'HH:mm:ss' }} · #{{ event.index }}</span>
                   <strong>{{ event.name }}</strong>
                   <p>{{ event.detail }}</p>
                   @if (event.inputTokens || event.outputTokens) {

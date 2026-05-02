@@ -316,12 +316,7 @@ function eventModelCostFields(rawModel, inputTokens, outputTokens) {
   };
 }
 
-function explicitCompactionMarker(event) {
-  const text = `${event.name ?? ''} ${event.attrs?.details ?? ''} ${event.attrs?.content ?? ''}`;
-  return /\b(compact|compaction|summari[sz](e|ed|ing|ation)|full context|context window)\b/i.test(text);
-}
-
-function debugEvidence(llmRequests, agentResponses, allEvents) {
+function debugEvidence(llmRequests, agentResponses) {
   const inputSeries = llmRequests.map((event) => Number(event.attrs?.inputTokens ?? 0));
   const outputCaps = [
     ...new Set(llmRequests.map((event) => Number(event.attrs?.maxTokens ?? 0)).filter((value) => value > 0)),
@@ -329,18 +324,6 @@ function debugEvidence(llmRequests, agentResponses, allEvents) {
   const maxInputTokens = Math.max(0, ...inputSeries);
   const maxRequestTokens = Math.max(0, ...outputCaps);
   const reasoningEvents = agentResponses.filter((event) => String(event.attrs?.reasoning ?? '').trim()).length;
-  const explicitCompactionEvents = allEvents.filter(explicitCompactionMarker).length;
-  const inputTokenDrops = [];
-
-  for (let index = 1; index < inputSeries.length; index += 1) {
-    const previous = inputSeries[index - 1];
-    const current = inputSeries[index];
-    const drop = previous - current;
-
-    if (previous >= 50_000 && drop >= Math.max(20_000, previous * 0.35)) {
-      inputTokenDrops.push({ fromTurn: index - 1, toTurn: index, previous, current, drop });
-    }
-  }
 
   return {
     reasoning: {
@@ -352,23 +335,6 @@ function debugEvidence(llmRequests, agentResponses, allEvents) {
         reasoningEvents > 0
           ? 'VS Code debug logs include reasoning text on agent_response events, but these logs do not expose a low/medium/high/xhigh reasoning-level field.'
           : 'No reasoning text field was present on imported agent_response events.',
-    },
-    compaction: {
-      detected: explicitCompactionEvents > 0 || inputTokenDrops.length > 0,
-      explicitEvents: explicitCompactionEvents,
-      inputTokenDrops,
-      source:
-        explicitCompactionEvents > 0
-          ? 'explicit log text'
-          : inputTokenDrops.length > 0
-            ? 'large input-token drop'
-            : '',
-      help:
-        explicitCompactionEvents > 0
-          ? 'The raw debug log contains text that looks like a compaction or summarization marker.'
-          : inputTokenDrops.length > 0
-            ? 'No explicit marker was found, but input tokens dropped sharply after a long context. Treat this as a signal to inspect, not proof.'
-            : 'No explicit compaction marker or large input-token reset was found in the imported debug log.',
     },
     context: {
       maxInputTokens,
@@ -597,8 +563,6 @@ function sessionFromDebugLog(sessionDir, workspaceDir) {
       reasoningEvents: evidence.reasoning.events,
       maxInputTokens: evidence.context.maxInputTokens,
       maxRequestTokens: evidence.context.maxRequestTokens,
-      compactionEvents: evidence.compaction.explicitEvents,
-      inputTokenDrops: evidence.compaction.inputTokenDrops.length,
     },
     advancedSignals: evidence,
     traceEvents: capTraceEvents(
@@ -701,8 +665,6 @@ function sessionFromChatSnapshot(file, workspaceDir) {
       reasoningEvents: 0,
       maxInputTokens: input,
       maxRequestTokens: 0,
-      compactionEvents: 0,
-      inputTokenDrops: 0,
     },
     advancedSignals: {
       reasoning: {
@@ -711,13 +673,6 @@ function sessionFromChatSnapshot(file, workspaceDir) {
         events: 0,
         source: '',
         help: 'Chat snapshots do not expose agent_response reasoning text or a reasoning-level field.',
-      },
-      compaction: {
-        detected: false,
-        explicitEvents: 0,
-        inputTokenDrops: [],
-        source: '',
-        help: 'Chat snapshots do not expose enough request-by-request context evidence for compaction detection.',
       },
       context: {
         maxInputTokens: input,

@@ -82,7 +82,6 @@ Signals are quick explanations, not separate billing rows:
 - **Mixed models** means more than one model contributed to the estimate.
 - **Cache unknown** means local logs did not expose provider cache read/write billing fields.
 - **State enriched** means VS Code `state.vscdb` improved the label or metadata.
-- **Compacted 1 time** or **Compacted N times** means the scanner found explicit compaction/summarization evidence or a strong input-token reset.
 
 ## Source Quality
 
@@ -140,4 +139,6 @@ Each row shows:
 - share of the session cost
 - nearby prior context, such as a user prompt or tool event
 
-Why this matters: total session cost tells you that a run was expensive, but per-turn cost tells you where it became expensive. It should make questions like "which step burned tokens?" and "did the cost spike after repo reads, tool results, or compaction?" much easier to answer.
+Why this matters: total session cost tells you that a run was expensive, but per-turn cost tells you where it became expensive. It should make questions like "which step burned tokens?" and "did the cost spike after repo reads or tool results?" much easier to answer.
+
+The app uses the debug log's zero-based raw event index. If the scanner reports marker `#183`, look for `raw index #183` in the per-turn table or `#183` in View Logs.

@@ -609,16 +609,6 @@ export class App {
       });
     }
 
-    const compactionCount = this.compactionSignalCount(session);
-    if (compactionCount > 0) {
-      warnings.push({
-        label: compactionCount === 1 ? 'Compacted 1 time' : `Compacted ${compactionCount} times`,
-        tone: 'medium',
-        help:
-          'The imported debug log contains explicit compaction/summarization evidence or a strong input-token reset after a long request sequence.',
-      });
-    }
-
     if (session.modelBreakdown.length > 1) {
       warnings.push({
         label: 'Mixed models',
@@ -867,7 +857,7 @@ export class App {
         title: 'Largest model call',
         value: topCall ? `€${topCall.estimatedEur.toFixed(4)}` : 'None',
         detail: topCall
-          ? `Raw event #${topCall.index + 1} used ${topCall.totalTokens.toLocaleString()} tokens and accounts for about ${topCallShare.toFixed(0)}% of this run.`
+          ? `Raw event index #${topCall.index} used ${topCall.totalTokens.toLocaleString()} tokens and accounts for about ${topCallShare.toFixed(0)}% of this run.`
           : 'No token-bearing model calls were imported for this session.',
         tone: topCallShare >= 25 ? 'high' : topCallShare >= 10 ? 'medium' : 'low',
       },
@@ -1410,15 +1400,6 @@ export class App {
       growth: firstAvg > 0 ? ((lastAvg - firstAvg) / firstAvg) * 100 : 0,
       count: llmEvents.length,
     };
-  }
-
-  private compactionSignalCount(session: LedgerSession): number {
-    const explicitEvents =
-      session.advancedSignals?.compaction.explicitEvents ?? session.traceSummary.compactionEvents ?? 0;
-    const inputTokenDrops =
-      session.advancedSignals?.compaction.inputTokenDrops?.length ?? session.traceSummary.inputTokenDrops ?? 0;
-
-    return explicitEvents + inputTokenDrops;
   }
 
   private sumTokens(rows: { tokens: TokenBreakdown }[], field: keyof TokenBreakdown): number {

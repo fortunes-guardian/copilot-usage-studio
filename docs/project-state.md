@@ -70,20 +70,15 @@ Principles:
 - The UI is functional but visually busy.
 - Tooltips are better, but still use native browser title behavior.
 - Aggregated analytics are useful but still early. Outlier detection is a simple statistical signal with driver hints; it now separates a few obvious cases such as long agent runs and suspicious low-activity spikes, but it should become more nuanced as more real sessions are imported.
-- Advanced evidence is imported but mostly hidden from the primary UI. Reasoning text presence and request-cap comparison were too technical to be useful as top-level cards. Compaction is shown only as a concise run-triage marker when there is countable evidence.
+- Advanced evidence is imported but mostly hidden from the primary UI. Reasoning text presence and request-cap comparison were too technical to be useful as top-level cards.
 - No app-owned database yet. Scans overwrite `public/data/sessions.json`.
 - Pricing tables are duplicated across UI/scanner/verifier and should eventually have one source of truth.
 
 ## Latest Implemented Step
 
-Built the per-turn cost breakdown in the selected-run Cost debugger:
+Removed an unsupported session-summary signal after testing real VS Code agent sessions. The observed local signals were not strong enough to distinguish manual summary actions, automatic summary actions, repeated summaries, or ordinary context selection changes.
 
-- Replaced the old `Largest model calls` card list with `Per-turn cost breakdown`.
-- Shows every token-bearing model call imported from VS Code debug logs.
-- Shows call number, timestamp, raw event number, model, pricing row, input/output tokens, estimated cost, input/output cost split, share of session cost, and nearby prior context.
-- Added a `Timeline` mode for causality and a `Largest first` mode for quickly finding the biggest burn.
-
-Why: session totals explain that a run was expensive. Per-turn cost shows where it became expensive.
+Why: this app should explain cost from evidence the developer can trust. Token movement and summary-shaped raw payloads can remain useful for future investigation, but they should not become UI labels until the data source is clearer.
 
 `Context growth` is expected in many agent runs. It is shown because accumulated context can explain rising token cost, not because growth is automatically a bug.
 

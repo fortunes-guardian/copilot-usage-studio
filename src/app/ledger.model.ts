@@ -52,8 +52,6 @@ export interface TraceSummary {
   reasoningEvents?: number;
   maxInputTokens?: number;
   maxRequestTokens?: number;
-  compactionEvents?: number;
-  inputTokenDrops?: number;
 }
 
 export interface TraceEvent {
@@ -80,19 +78,6 @@ export interface AdvancedSignals {
     visible: boolean;
     level: string;
     events: number;
-    source: string;
-    help: string;
-  };
-  compaction: {
-    detected: boolean;
-    explicitEvents: number;
-    inputTokenDrops: Array<{
-      fromTurn: number;
-      toTurn: number;
-      previous: number;
-      current: number;
-      drop: number;
-    }>;
     source: string;
     help: string;
   };

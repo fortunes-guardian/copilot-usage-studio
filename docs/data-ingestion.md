@@ -131,7 +131,6 @@ Current cost-signal labels:
 - `Mixed models`: more than one model appears in `modelBreakdown`.
 - `Cache unknown`: no cache read/write token fields were imported for the session.
 - `State enriched`: `vscodeState` metadata is present.
-- `Compacted 1 time` / `Compacted N times`: explicit compaction/summarization evidence or a strong input-token drop was imported.
 
 Why these labels exist: the cost debugger has enough detail to explain a run, but a developer needs quick visual judgement before reading every table. The labels should stay explainable and tuneable.
 
@@ -139,12 +138,11 @@ Advanced evidence is imported under `advancedSignals`, but most of it is not sho
 
 - `advancedSignals.reasoning.visible` means the raw log included `agent_response.attrs.reasoning`.
 - `advancedSignals.reasoning.level` is intentionally blank for the current observed logs. The logs show reasoning text, not the user-facing low/medium/high/xhigh reasoning setting.
-- `advancedSignals.compaction.detected` is true only for explicit compaction/summarization markers or a large input-token reset after a long request sequence.
 - `advancedSignals.context.maxInputTokens` is the largest imported `llm_request.attrs.inputTokens`.
 - `advancedSignals.context.maxRequestTokens` comes from `llm_request.attrs.maxTokens` when present.
 - `advancedSignals.context.requestCapShare` compares max input tokens with that observed request cap.
 
-Why: reasoning, compaction, and context pressure are potentially valuable cost-debugging signals, but weak or overly technical evidence should not clutter the main debugger. The UI currently surfaces compaction only as a concise run-triage marker when there is countable evidence. Reasoning text presence and request-cap comparison stay in the data contract for future investigation, but they are not useful enough to show as primary product signals yet.
+Why: reasoning and context pressure are potentially valuable cost-debugging signals, but weak or overly technical evidence should not clutter the main debugger. Reasoning text presence, request-cap comparison, and raw token movement stay as investigation context rather than primary product claims.
 
 ## Per-turn cost breakdown
 

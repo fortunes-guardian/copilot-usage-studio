@@ -86,15 +86,13 @@ Status: pruned back.
 
 Done:
 
-- Import `ttft`, `maxTokens`, reasoning-text presence, compaction-marker counts, large input-token drops, and max observed input tokens from VS Code debug logs.
+- Import `ttft`, `maxTokens`, reasoning-text presence, and max observed input tokens from VS Code debug logs.
 - Removed weak advanced evidence cards from the primary UI.
-- Show compaction only as a concise run-triage marker when there is countable evidence.
 - Keep reasoning text presence and request-cap comparison in the generated data contract for future investigation.
 
 Build:
 
 - Reasoning/thinking level display only if VS Code debug logs, state DBs, or official/source-backed metadata expose it directly.
-- Better compaction detection after more real compacted sessions are imported.
 - Context-window usage only after the app stores reliable model context-window sizes and can compare max observed input tokens against that window.
 
 Why: these may become useful cost-debugging signals, but they must earn their place in the UI. The app should not turn weak or overly technical clues into top-level product concepts.
