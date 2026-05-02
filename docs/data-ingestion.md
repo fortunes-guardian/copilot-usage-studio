@@ -56,6 +56,8 @@ For debug logs with `llm_request` events:
 - `confidence` is `exact`.
 - `modelBreakdown` groups `llm_request` rows by normalized model id and stores raw model ids, turn count, token totals, estimated cost, and the pricing model used.
 - each token-bearing `traceEvents` row stores structured `model`, `rawModel`, `pricingModel`, `totalTokens`, and `estimatedCost` fields.
+- each `llm_request` trace row also preserves `ttftMs` and `maxTokens` when VS Code logged them.
+- each `agent_response` trace row records whether a reasoning text field was present.
 
 The word `exact` means exact for the local VS Code debug-log token fields that were imported. It does not mean exact final billing. GitHub billing reconciliation can still differ because cache accounting and provider-side billing adjustments are not present in the local log.
 
@@ -129,10 +131,26 @@ Current cost-signal labels:
 - `Mixed models`: more than one model appears in `modelBreakdown`.
 - `Cache unknown`: no cache read/write token fields were imported for the session.
 - `State enriched`: `vscodeState` metadata is present.
+- `Compacted 1 time` / `Compacted N times`: explicit compaction/summarization evidence or a strong input-token drop was imported.
 
 Why these labels exist: the cost debugger has enough detail to explain a run, but a developer needs quick visual judgement before reading every table. The labels should stay explainable and tuneable.
 
-Advanced signals such as reasoning level, compaction, and context-window pressure are not derived yet. Why: the current imported facts do not reliably expose reasoning level or model context-window limits, and compaction should not be guessed from a user message alone. Future detection should record the exact evidence used.
+Advanced evidence is imported under `advancedSignals`, but most of it is not shown directly in the primary UI.
+
+- `advancedSignals.reasoning.visible` means the raw log included `agent_response.attrs.reasoning`.
+- `advancedSignals.reasoning.level` is intentionally blank for the current observed logs. The logs show reasoning text, not the user-facing low/medium/high/xhigh reasoning setting.
+- `advancedSignals.compaction.detected` is true only for explicit compaction/summarization markers or a large input-token reset after a long request sequence.
+- `advancedSignals.context.maxInputTokens` is the largest imported `llm_request.attrs.inputTokens`.
+- `advancedSignals.context.maxRequestTokens` comes from `llm_request.attrs.maxTokens` when present.
+- `advancedSignals.context.requestCapShare` compares max input tokens with that observed request cap.
+
+Why: reasoning, compaction, and context pressure are potentially valuable cost-debugging signals, but weak or overly technical evidence should not clutter the main debugger. The UI currently surfaces compaction only as a concise run-triage marker when there is countable evidence. Reasoning text presence and request-cap comparison stay in the data contract for future investigation, but they are not useful enough to show as primary product signals yet.
+
+## Future per-turn cost breakdown
+
+A per-turn breakdown should expand the current largest-model-calls view into an ordered ledger of token-bearing model calls. Each row should show the turn index, timestamp, model, pricing row, input tokens, output tokens, estimated cost, and share of session cost.
+
+Why: session totals answer "how expensive was this run?" Per-turn costs answer "where did the cost happen?" That is the sharper debugging tool when a developer wants to know whether cost came from the first prompt, accumulated context, repo/tool output, a model switch, or a late-session spike.
 
 ## SQLite workspace state
 

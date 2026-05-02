@@ -49,6 +49,11 @@ export interface TraceSummary {
   totalTokens: number;
   errors: number;
   totalEvents: number;
+  reasoningEvents?: number;
+  maxInputTokens?: number;
+  maxRequestTokens?: number;
+  compactionEvents?: number;
+  inputTokenDrops?: number;
 }
 
 export interface TraceEvent {
@@ -60,11 +65,45 @@ export interface TraceEvent {
   detail: string;
   inputTokens: number;
   outputTokens: number;
+  ttftMs?: number;
+  maxTokens?: number;
+  hasReasoning?: boolean;
   totalTokens?: number;
   model?: string;
   rawModel?: string;
   pricingModel?: string;
   estimatedCost?: CostBreakdown;
+}
+
+export interface AdvancedSignals {
+  reasoning: {
+    visible: boolean;
+    level: string;
+    events: number;
+    source: string;
+    help: string;
+  };
+  compaction: {
+    detected: boolean;
+    explicitEvents: number;
+    inputTokenDrops: Array<{
+      fromTurn: number;
+      toTurn: number;
+      previous: number;
+      current: number;
+      drop: number;
+    }>;
+    source: string;
+    help: string;
+  };
+  context: {
+    maxInputTokens: number;
+    maxRequestTokens: number;
+    outputCaps: number[];
+    requestCapShare: number | null;
+    source: string;
+    help: string;
+  };
 }
 
 export interface LedgerSession {
@@ -88,6 +127,7 @@ export interface LedgerSession {
   cost: CostBreakdown;
   confidence: EstimateConfidence;
   traceSummary: TraceSummary;
+  advancedSignals?: AdvancedSignals;
   traceEvents: TraceEvent[];
   vscodeState?: VscodeStateEnrichment;
   turns: LedgerTurn[];

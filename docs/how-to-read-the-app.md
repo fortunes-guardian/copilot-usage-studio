@@ -82,6 +82,7 @@ Signals are quick explanations, not separate billing rows:
 - **Mixed models** means more than one model contributed to the estimate.
 - **Cache unknown** means local logs did not expose provider cache read/write billing fields.
 - **State enriched** means VS Code `state.vscdb` improved the label or metadata.
+- **Compacted 1 time** or **Compacted N times** means the scanner found explicit compaction/summarization evidence or a strong input-token reset.
 
 ## Source Quality
 
@@ -121,10 +122,14 @@ Then refresh the app.
 
 If a long or compacted session appears to stop early, check `traceSummary.totalEvents` against the visible log count. The scanner currently keeps up to `1000` trace events per session.
 
-## Future Signals
+## Per-Turn Cost Breakdown
 
-Reasoning level, compaction, and context-window pressure are useful, but they should only appear as facts when the local data supports them.
+The current **Largest model calls** section is the first version of this idea. A fuller per-turn breakdown would show every token-bearing model call in order, with:
 
-- **Reasoning level** needs an explicit field in VS Code debug logs.
-- **Compaction** needs an explicit marker or a strong token-pattern signal.
-- **Context-window pressure** needs known model context-window sizes plus observed max input tokens.
+- turn number and timestamp
+- model and pricing row
+- input tokens, output tokens, and estimated cost
+- share of the session cost
+- nearby event detail, such as the user prompt or tool phase
+
+Why this matters: total session cost tells you that a run was expensive, but per-turn cost tells you where it became expensive. It should make questions like "which step burned tokens?" and "did the cost spike after repo reads, tool results, or compaction?" much easier to answer.

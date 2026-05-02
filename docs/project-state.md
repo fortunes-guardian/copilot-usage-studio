@@ -70,26 +70,20 @@ Principles:
 - The UI is functional but visually busy.
 - Tooltips are better, but still use native browser title behavior.
 - Aggregated analytics are useful but still early. Outlier detection is a simple statistical signal with driver hints; it now separates a few obvious cases such as long agent runs and suspicious low-activity spikes, but it should become more nuanced as more real sessions are imported.
-- Advanced signals such as reasoning level, compaction, and context-window pressure need stronger log/model evidence before becoming UI facts.
+- Advanced evidence is imported but mostly hidden from the primary UI. Reasoning text presence and request-cap comparison were too technical to be useful as top-level cards. Compaction is shown only as a concise run-triage marker when there is countable evidence.
 - No app-owned database yet. Scans overwrite `public/data/sessions.json`.
 - Pricing tables are duplicated across UI/scanner/verifier and should eventually have one source of truth.
 
 ## Latest Implemented Step
 
-Built the multi-session Analytics view:
+Pruned weak advanced evidence from the primary selected-run view:
 
-- Separate top-level navigation item between Sessions and Prices.
-- Scope is explicit: sidebar-filtered sessions plus Analytics controls.
-- Adds visible controls for time range, workspace, model, and day/week/month grouping.
-- Adds a reset for Analytics-only controls without clearing sidebar filters.
-- Shows a no-data state when sidebar filters or Analytics controls exclude every session.
-- Shows total estimate, total tokens, average cost, average tokens, and cost per 1k tokens.
-- Highlights highest-token and most expensive runs with click-through back to the selected-run debugger.
-- Shows model/pricing-row aggregation, grouped trend rows, size distribution, and outlier signals.
-- Outlier copy now points to likely drivers such as input/context dominance, expensive model share, context growth, high tool-call count, plausible long agent work, or suspicious low-activity spikes.
-- Visual sanity pass fixed the current responsive shell enough for now: mid-width screens use a slimmer sidebar, small screens compact the session list so content is reachable sooner, and dense cost/model tables scroll horizontally instead of hiding right-side columns.
+- Removed the Advanced Evidence card section from the UI.
+- Removed `Reasoning visible`, `Reasoning evidence`, `Reasoning level`, and `Request cap pressure` from visible triage.
+- Kept compaction only as `Compacted 1 time` / `Compacted N times` when the scanner has explicit marker or strong token-reset evidence.
+- Kept the raw `advancedSignals` data contract so future sessions can still be investigated without showing weak signals prematurely.
 
-Why: one-run debugging and two-run comparison are now covered. The next product question is "what is normal across my sessions, and which runs deserve attention?"
+Why: the selected-run debugger should answer "why was this expensive?" directly. Reasoning-text counts and request-cap percentages were technically careful, but not useful enough for the main product surface.
 
 `Context growth` is expected in many agent runs. It is shown because accumulated context can explain rising token cost, not because growth is automatically a bug.
 
@@ -102,12 +96,13 @@ Current size thresholds:
 
 ## Next Best Step
 
-Improve evidence-backed advanced signals.
+Build a proper per-turn cost breakdown.
 
 Build:
 
-- More nuanced outlier language after importing more real sessions.
-- Evidence-backed reasoning level, compaction, and context-window pressure only when the logs/model metadata support it.
-- A later style pass can redesign the layout; do not over-invest in the current look.
+- Replace or expand `Largest model calls` with an ordered model-call ledger.
+- Show turn index, timestamp, model, pricing row, input tokens, output tokens, estimated cost, and share of session cost.
+- Keep the largest-call sort as a toggle or secondary view.
+- Add enough nearby event detail to explain what each expensive call was doing without dumping raw logs.
 
-Why this next: the dashboard now has the right placement, cohort controls, and a basic responsive sanity pass. The next value comes from making the explanations sharper without inventing facts the local logs do not support.
+Why this next: session totals say a run was expensive. Per-turn costs show where it became expensive, which is the sharper debugging answer for "what burned the tokens?"

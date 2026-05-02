@@ -316,6 +316,74 @@ function eventModelCostFields(rawModel, inputTokens, outputTokens) {
   };
 }
 
+function explicitCompactionMarker(event) {
+  const text = `${event.name ?? ''} ${event.attrs?.details ?? ''} ${event.attrs?.content ?? ''}`;
+  return /\b(compact|compaction|summari[sz](e|ed|ing|ation)|full context|context window)\b/i.test(text);
+}
+
+function debugEvidence(llmRequests, agentResponses, allEvents) {
+  const inputSeries = llmRequests.map((event) => Number(event.attrs?.inputTokens ?? 0));
+  const outputCaps = [
+    ...new Set(llmRequests.map((event) => Number(event.attrs?.maxTokens ?? 0)).filter((value) => value > 0)),
+  ].sort((a, b) => a - b);
+  const maxInputTokens = Math.max(0, ...inputSeries);
+  const maxRequestTokens = Math.max(0, ...outputCaps);
+  const reasoningEvents = agentResponses.filter((event) => String(event.attrs?.reasoning ?? '').trim()).length;
+  const explicitCompactionEvents = allEvents.filter(explicitCompactionMarker).length;
+  const inputTokenDrops = [];
+
+  for (let index = 1; index < inputSeries.length; index += 1) {
+    const previous = inputSeries[index - 1];
+    const current = inputSeries[index];
+    const drop = previous - current;
+
+    if (previous >= 50_000 && drop >= Math.max(20_000, previous * 0.35)) {
+      inputTokenDrops.push({ fromTurn: index - 1, toTurn: index, previous, current, drop });
+    }
+  }
+
+  return {
+    reasoning: {
+      visible: reasoningEvents > 0,
+      level: '',
+      events: reasoningEvents,
+      source: reasoningEvents > 0 ? 'agent_response.attrs.reasoning' : '',
+      help:
+        reasoningEvents > 0
+          ? 'VS Code debug logs include reasoning text on agent_response events, but these logs do not expose a low/medium/high/xhigh reasoning-level field.'
+          : 'No reasoning text field was present on imported agent_response events.',
+    },
+    compaction: {
+      detected: explicitCompactionEvents > 0 || inputTokenDrops.length > 0,
+      explicitEvents: explicitCompactionEvents,
+      inputTokenDrops,
+      source:
+        explicitCompactionEvents > 0
+          ? 'explicit log text'
+          : inputTokenDrops.length > 0
+            ? 'large input-token drop'
+            : '',
+      help:
+        explicitCompactionEvents > 0
+          ? 'The raw debug log contains text that looks like a compaction or summarization marker.'
+          : inputTokenDrops.length > 0
+            ? 'No explicit marker was found, but input tokens dropped sharply after a long context. Treat this as a signal to inspect, not proof.'
+            : 'No explicit compaction marker or large input-token reset was found in the imported debug log.',
+    },
+    context: {
+      maxInputTokens,
+      maxRequestTokens,
+      outputCaps,
+      requestCapShare: maxRequestTokens > 0 ? maxInputTokens / maxRequestTokens : null,
+      source: maxRequestTokens > 0 ? 'llm_request.attrs.inputTokens and attrs.maxTokens' : 'llm_request.attrs.inputTokens',
+      help:
+        maxRequestTokens > 0
+          ? 'Compares the largest observed input token count with the request maxTokens field present in VS Code debug logs. This is an observed pressure signal, not a provider context-window guarantee.'
+          : 'Largest observed model input token count. The log did not include a request cap to compare against.',
+    },
+  };
+}
+
 function modelBreakdownFromLlmRequests(llmRequests) {
   const byModel = new Map();
 
@@ -475,6 +543,7 @@ function sessionFromDebugLog(sessionDir, workspaceDir) {
     new Date(
       Number(lastEvent?.ts ?? statSync(join(sessionDir, 'main.jsonl')).mtimeMs),
     ).toISOString();
+  const evidence = debugEvidence(llmRequests, assistantEvents, main);
 
   const turns = [
     ...userMessages.map((event) => ({
@@ -525,7 +594,13 @@ function sessionFromDebugLog(sessionDir, workspaceDir) {
       totalTokens: input + output,
       errors: errorEvents.length,
       totalEvents: main.length,
+      reasoningEvents: evidence.reasoning.events,
+      maxInputTokens: evidence.context.maxInputTokens,
+      maxRequestTokens: evidence.context.maxRequestTokens,
+      compactionEvents: evidence.compaction.explicitEvents,
+      inputTokenDrops: evidence.compaction.inputTokenDrops.length,
     },
+    advancedSignals: evidence,
     traceEvents: capTraceEvents(
       main.map((event, index) => {
         const inputTokens = event.type === 'llm_request' ? Number(event.attrs?.inputTokens ?? 0) : 0;
@@ -541,6 +616,9 @@ function sessionFromDebugLog(sessionDir, workspaceDir) {
           detail: eventDetail(event),
           inputTokens,
           outputTokens,
+          ttftMs: event.type === 'llm_request' ? Number(event.attrs?.ttft ?? 0) : 0,
+          maxTokens: event.type === 'llm_request' ? Number(event.attrs?.maxTokens ?? 0) : 0,
+          hasReasoning: event.type === 'agent_response' && Boolean(String(event.attrs?.reasoning ?? '').trim()),
           ...(event.type === 'llm_request'
             ? eventModelCostFields(event.attrs?.model, inputTokens, outputTokens)
             : {}),
@@ -620,6 +698,35 @@ function sessionFromChatSnapshot(file, workspaceDir) {
       totalTokens: input + output,
       errors: 0,
       totalEvents: records.length,
+      reasoningEvents: 0,
+      maxInputTokens: input,
+      maxRequestTokens: 0,
+      compactionEvents: 0,
+      inputTokenDrops: 0,
+    },
+    advancedSignals: {
+      reasoning: {
+        visible: false,
+        level: '',
+        events: 0,
+        source: '',
+        help: 'Chat snapshots do not expose agent_response reasoning text or a reasoning-level field.',
+      },
+      compaction: {
+        detected: false,
+        explicitEvents: 0,
+        inputTokenDrops: [],
+        source: '',
+        help: 'Chat snapshots do not expose enough request-by-request context evidence for compaction detection.',
+      },
+      context: {
+        maxInputTokens: input,
+        maxRequestTokens: 0,
+        outputCaps: [],
+        requestCapShare: null,
+        source: 'estimated visible chat text',
+        help: 'Chat snapshots only provide visible text context here, so context pressure is not reliable for cost debugging.',
+      },
     },
     traceEvents: capTraceEvents(
       requests.flatMap((request, index) => {

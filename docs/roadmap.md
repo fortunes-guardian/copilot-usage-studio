@@ -81,15 +81,37 @@ Why: after one run and two-run comparison are understandable, the next developer
 
 ## Phase 5: Advanced Session Signals
 
+Status: pruned back.
+
+Done:
+
+- Import `ttft`, `maxTokens`, reasoning-text presence, compaction-marker counts, large input-token drops, and max observed input tokens from VS Code debug logs.
+- Removed weak advanced evidence cards from the primary UI.
+- Show compaction only as a concise run-triage marker when there is countable evidence.
+- Keep reasoning text presence and request-cap comparison in the generated data contract for future investigation.
+
 Build:
 
-- Reasoning/thinking level display if VS Code debug logs expose it directly.
-- Context compaction detection when there is evidence, such as explicit log markers, summary/compaction event names, or a sharp input-token reset after a long run.
-- Context-window usage if the app stores reliable model context-window sizes and can compare max observed input tokens against that window.
+- Reasoning/thinking level display only if VS Code debug logs, state DBs, or official/source-backed metadata expose it directly.
+- Better compaction detection after more real compacted sessions are imported.
+- Context-window usage only after the app stores reliable model context-window sizes and can compare max observed input tokens against that window.
 
-Why: these are useful cost-debugging signals, but they must be evidence-backed. The UI should not invent reasoning level, compaction, or context-window pressure from weak clues.
+Why: these may become useful cost-debugging signals, but they must earn their place in the UI. The app should not turn weak or overly technical clues into top-level product concepts.
 
-## Phase 6: UX And Style Rework
+## Phase 6: Per-Turn Cost Breakdown
+
+Status: next.
+
+Build:
+
+- Replace or expand the current `Largest model calls` section with an ordered model-call ledger.
+- Show each token-bearing model call with index, timestamp, model, pricing row, input tokens, output tokens, estimated cost, and share of session cost.
+- Keep a sorted "largest first" mode so high-cost calls remain easy to find.
+- Add nearby event context so a developer can tell whether the call followed repo reads, tool results, compaction, or a user prompt.
+
+Why: session totals explain that a run was expensive. Per-turn cost explains where it became expensive.
+
+## Phase 7: UX And Style Rework
 
 Build:
 
@@ -101,7 +123,7 @@ Build:
 
 Why: the app has complex information. Better style should reduce cognitive load, not hide details.
 
-## Phase 7: App-Owned SQLite
+## Phase 8: App-Owned SQLite
 
 Build:
 
@@ -113,7 +135,7 @@ Build:
 
 Why: VS Code `state.vscdb` is external editor state and should stay read-only enrichment. App-owned SQLite becomes useful once the app has durable user state.
 
-## Phase 8: Billing Reconciliation
+## Phase 9: Billing Reconciliation
 
 Status: later, not the current focus.
 
