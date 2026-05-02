@@ -15,6 +15,7 @@ import {
 
 type SessionSize = 'Small' | 'Medium' | 'Large' | 'Very large';
 type WarningTone = 'info' | 'medium' | 'high';
+type SessionSourceFilter = 'all' | 'debug-log' | 'chat-snapshot' | 'exact' | 'estimated';
 
 interface SessionWarning {
   label: string;
@@ -43,6 +44,9 @@ export class App {
   protected readonly compareA = signal<string | null>(null);
   protected readonly compareB = signal<string | null>(null);
   protected readonly query = signal('');
+  protected readonly sizeFilter = signal<'all' | SessionSize>('all');
+  protected readonly warningFilter = signal<string>('all');
+  protected readonly sourceFilter = signal<SessionSourceFilter>('all');
   protected readonly traceView = signal<'logs' | 'flow'>('logs');
   protected readonly activeView = signal<'sessions' | 'pricing'>('sessions');
   protected readonly pricingVersion = PRICING_VERSION;
@@ -76,9 +80,28 @@ export class App {
       'The GitHub model pricing row used to estimate this model. Unknown models keep their display label and show any pricing fallback separately.',
   };
   protected readonly sessionTriageHelp =
-    'Fast read derived from imported tokens, model mix, cache visibility, context growth, and VS Code state enrichment.';
+    'Fast read derived from imported tokens, model mix, cache visibility, context growth, and VS Code state enrichment. These are cost-debugging signals, not billing rows.';
+  protected readonly sizeOptions: Array<'all' | SessionSize> = ['all', 'Small', 'Medium', 'Large', 'Very large'];
+  protected readonly sourceOptions: Array<{ value: SessionSourceFilter; label: string }> = [
+    { value: 'all', label: 'All sources' },
+    { value: 'debug-log', label: 'Debug logs' },
+    { value: 'chat-snapshot', label: 'Chat snapshots' },
+    { value: 'exact', label: 'Exact local data' },
+    { value: 'estimated', label: 'Estimated data' },
+  ];
 
   protected readonly sessions = computed(() => this.ledger()?.sessions ?? []);
+  protected readonly warningOptions = computed(() => {
+    const labels = new Set<string>();
+
+    for (const session of this.sessions()) {
+      for (const warning of this.sessionTriage(session).warnings) {
+        labels.add(warning.label);
+      }
+    }
+
+    return ['all', ...[...labels].sort()];
+  });
   protected readonly pricingRows = computed(() =>
     Object.entries(MODEL_PRICES_USD_PER_MILLION).map(([model, price]) => ({
       model,
@@ -137,17 +160,16 @@ export class App {
   });
   protected readonly filteredSessions = computed(() => {
     const query = this.query().trim().toLowerCase();
+    const sizeFilter = this.sizeFilter();
+    const warningFilter = this.warningFilter();
+    const sourceFilter = this.sourceFilter();
     const sessions = [...this.sessions()].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
 
-    if (!query) {
-      return sessions;
-    }
-
     return sessions.filter((session) =>
-      [session.firstPrompt, session.title, session.workspace, session.model, session.tags.join(' ')]
-        .join(' ')
-        .toLowerCase()
-        .includes(query),
+      this.matchesQuery(session, query) &&
+      this.matchesSizeFilter(session, sizeFilter) &&
+      this.matchesWarningFilter(session, warningFilter) &&
+      this.matchesSourceFilter(session, sourceFilter),
     );
   });
 
@@ -225,6 +247,18 @@ export class App {
     this.query.set(value);
   }
 
+  protected setSizeFilter(value: 'all' | SessionSize): void {
+    this.sizeFilter.set(value);
+  }
+
+  protected setWarningFilter(value: string): void {
+    this.warningFilter.set(value);
+  }
+
+  protected setSourceFilter(value: SessionSourceFilter): void {
+    this.sourceFilter.set(value);
+  }
+
   protected sessionTriage(session: LedgerSession): SessionTriage {
     const totalTokens = this.sessionTotalTokens(session);
     const size = this.sessionSize(totalTokens);
@@ -248,10 +282,10 @@ export class App {
 
     if (contextGrowth !== null && contextGrowth >= 25) {
       warnings.push({
-        label: 'Context grew',
-        tone: contextGrowth >= 80 ? 'high' : 'medium',
+        label: 'Context growth',
+        tone: contextGrowth >= 80 ? 'medium' : 'info',
         help:
-          'Later model calls received noticeably more input tokens than early calls. Long agent runs can get expensive when context keeps accumulating.',
+          'Expected in many agent runs: later model calls received more input tokens than early calls. It matters because accumulated context is often resent and can become a major cost driver.',
       });
     }
 
@@ -292,6 +326,41 @@ export class App {
 
   protected sessionSizeHelp(triage: SessionTriage): string {
     return `${triage.size} session based on ${triage.totalTokens.toLocaleString()} imported tokens. Current thresholds: Small under 50k, Medium under 200k, Large under 600k, Very large at 600k or more.`;
+  }
+
+  private matchesQuery(session: LedgerSession, query: string): boolean {
+    if (!query) {
+      return true;
+    }
+
+    return [session.firstPrompt, session.title, session.workspace, session.model, session.tags.join(' ')]
+      .join(' ')
+      .toLowerCase()
+      .includes(query);
+  }
+
+  private matchesSizeFilter(session: LedgerSession, value: 'all' | SessionSize): boolean {
+    return value === 'all' || this.sessionTriage(session).size === value;
+  }
+
+  private matchesWarningFilter(session: LedgerSession, value: string): boolean {
+    return value === 'all' || this.sessionTriage(session).warnings.some((warning) => warning.label === value);
+  }
+
+  private matchesSourceFilter(session: LedgerSession, value: SessionSourceFilter): boolean {
+    if (value === 'all') {
+      return true;
+    }
+
+    if (value === 'debug-log') {
+      return session.sourceKind === 'vscode-copilot-debug-log';
+    }
+
+    if (value === 'chat-snapshot') {
+      return session.sourceKind === 'vscode-chat-session-snapshot';
+    }
+
+    return session.confidence === value;
   }
 
   protected sourceKindHelp(sourceKind: string): string {

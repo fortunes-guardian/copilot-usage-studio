@@ -1,6 +1,6 @@
 # Roadmap
 
-This roadmap follows `docs/intent.md`: first make one selected run excellent, then make comparisons useful.
+First make one selected run excellent, then make comparisons useful.
 
 ## Phase 1: Selected Run Cost Debugger
 
@@ -15,12 +15,11 @@ Done:
 - Show cost drivers: input burn, largest model call, context growth, model mix, and tool activity.
 - Add source-confidence help for ingest, source, confidence, cache, and cost terms.
 - Show logs and agent flow chart with token/cost detail.
-- Add session size and warning labels.
+- Add session size and cost-signal labels.
+- Add session filters for size, source quality, and cost signal.
 
 Next:
 
-- Improve wording and layout of the selected-run header.
-- Improve session-list scanning around size, warnings, source quality, model, and cost.
 - Replace native title tooltips with a small custom help popover if the native behavior feels too hidden.
 
 Why: the core workflow is “I ran an agent, why was this expensive?” The selected run has to be readable before comparison gets deeper.
@@ -32,12 +31,13 @@ Status: started.
 Done:
 
 - Session size labels: `Small`, `Medium`, `Large`, `Very large`.
-- Warning labels: `High input context`, `Context grew`, `Mixed models`, `Cache unknown`, `State enriched`.
+- Cost-signal labels: `High input context`, `Context growth`, `Mixed models`, `Cache unknown`, `State enriched`.
+- Filters for size, cost signal, and source quality.
+- Better session-list scanning: cost, model, size, source quality, and tokens.
 
 Build:
 
-- Better session-list scanning: cost, model, size, source quality, and warning filters.
-- Filters for workspace, model, source quality, and time window.
+- Filters for workspace, model, and time window.
 
 Why: a developer should spot suspicious runs before opening each one.
 

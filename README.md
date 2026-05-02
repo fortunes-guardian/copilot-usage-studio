@@ -12,7 +12,6 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
 
 - [docs/project-state.md](docs/project-state.md): current state, what works, what is next.
 - [docs/how-to-read-the-app.md](docs/how-to-read-the-app.md): plain-English guide to the UI.
-- [docs/intent.md](docs/intent.md): product direction.
 - [docs/roadmap.md](docs/roadmap.md): planned build order.
 - [docs/data-ingestion.md](docs/data-ingestion.md): where the data comes from and what it means.
 - [docs/pricing.md](docs/pricing.md): GitHub price source and calculation rules.
@@ -21,8 +20,9 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
 
 - Imports VS Code Copilot debug-log sessions.
 - Enriches titles and metadata from VS Code `state.vscdb`.
+- Filters sessions by size, cost signal, and source quality.
 - Shows a selected-run Cost debugger:
-  - run size and warning labels
+  - run size and cost-signal labels
   - cost drivers
   - input/output token categories
   - per-model pricing rows

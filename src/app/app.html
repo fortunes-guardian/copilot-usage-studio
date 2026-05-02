@@ -27,6 +27,35 @@
       />
     </label>
 
+    <div class="filters" aria-label="Session filters">
+      <label>
+        <span>Size</span>
+        <select [ngModel]="sizeFilter()" (ngModelChange)="setSizeFilter($event)">
+          @for (size of sizeOptions; track size) {
+            <option [value]="size">{{ size === 'all' ? 'All sizes' : size }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        <span>Signal</span>
+        <select [ngModel]="warningFilter()" (ngModelChange)="setWarningFilter($event)">
+          @for (warning of warningOptions(); track warning) {
+            <option [value]="warning">{{ warning === 'all' ? 'All signals' : warning }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        <span>Source</span>
+        <select [ngModel]="sourceFilter()" (ngModelChange)="setSourceFilter($event)">
+          @for (source of sourceOptions; track source.value) {
+            <option [value]="source.value">{{ source.label }}</option>
+          }
+        </select>
+      </label>
+    </div>
+
+    <p class="filter-count">{{ filteredSessions().length }} of {{ sessions().length }} sessions shown</p>
+
     <div class="session-list">
       @for (session of filteredSessions(); track trackBySessionId($index, session)) {
         <button
@@ -55,7 +84,12 @@
             <span>{{ session.startedAt | date: 'MMM d, HH:mm' }}</span>
             <strong>€{{ session.cost.eur | number: '1.2-2' }}</strong>
           </span>
+          <span class="session-scan">
+            {{ session.traceSummary.totalTokens | number }} tokens · {{ sourceKindLabel(session.sourceKind) }}
+          </span>
         </button>
+      } @empty {
+        <p class="empty dark">No sessions match these filters.</p>
       }
     </div>
   </aside>
@@ -221,6 +255,10 @@
               </span>
             </div>
             <h2>{{ session.title }}</h2>
+            <p class="detail-subtitle">
+              {{ session.model }} · {{ session.traceSummary.modelTurns | number }} model turns ·
+              {{ session.traceSummary.totalTokens | number }} tokens
+            </p>
           </div>
           <div class="price">
             <span>Estimated cost</span>

@@ -94,7 +94,7 @@ The app displays:
 
 - first prompt, workspace, model, timestamps, tags, source kind, token source
 - VS Code Agent Debug Log style session details: session type, location, status, created time, and last activity
-- session size and warning labels for fast triage
+- session size and cost-signal labels for fast triage
 - trace summary cards: model turns, tool calls, total tokens, errors, and total events
 - a cost debugger with cost drivers, token categories, per-model pricing rows, and the largest model calls
 - a capped trace event preview for logs and flow-chart views
@@ -117,10 +117,10 @@ Current size thresholds:
 - `Large`: `200,000` to `599,999` imported tokens.
 - `Very large`: `600,000` or more imported tokens.
 
-Current warning labels:
+Current cost-signal labels:
 
 - `High input context`: total input tokens are at least `150,000`, or one model call has at least `100,000` input tokens.
-- `Context grew`: average input tokens near the end of the run are at least `25%` higher than near the start.
+- `Context growth`: average input tokens near the end of the run are at least `25%` higher than near the start. This is expected in many agent runs; it is shown because accumulated context can explain cost.
 - `Mixed models`: more than one model appears in `modelBreakdown`.
 - `Cache unknown`: no cache read/write token fields were imported for the session.
 - `State enriched`: `vscodeState` metadata is present.

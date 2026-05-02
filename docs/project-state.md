@@ -14,18 +14,28 @@ The app should help a developer answer:
 
 This is not trying to be a full billing dashboard yet. Billing reconciliation can come later. The first product should make one selected run excellent and understandable.
 
+Principles:
+
+- One run excellent first.
+- Transparency over magic.
+- Local-first data.
+- Debug logs are preferred for cost.
+- VS Code SQLite is enrichment, not pricing.
+- Human labels beat raw internal strings in the UI.
+
 ## What Works Now
 
 - Scans local VS Code Copilot debug logs.
 - Enriches sessions from VS Code `state.vscdb` for better titles and metadata.
 - Generates `public/data/sessions.json` as the app contract.
 - Shows sessions, source metadata, summary metrics, and trace logs.
+- Filters sessions by size, source quality, and cost-debugging signal.
 - Shows a GitHub prices page with the pricing rows used by estimates.
 - Calculates cost from imported token counts and GitHub model prices.
 - Shows a selected-run Cost debugger with:
   - source/confidence explanation
   - estimate-scope note for missing cache billing fields
-  - run size and warning labels
+  - run size and cost-signal labels
   - cost driver cards
   - token category totals
   - per-model pricing rows
@@ -41,7 +51,7 @@ This is not trying to be a full billing dashboard yet. Billing reconciliation ca
 - Cache billing is not visible in the local debug logs observed so far. Do not present zero cache fields as proof of zero provider-side cache billing.
 - The UI should explain local estimates clearly instead of pretending they are GitHub invoice numbers.
 - The generated ledger should carry structured cost facts. The UI should not parse model/cost data out of display strings.
-- Run size and warning labels are derived UI triage. They should help scanning, but they should not silently become billing facts.
+- Run size and cost-signal labels are derived UI triage. They should help scanning, but they should not silently become billing facts.
 
 ## Current Rough Edges
 
@@ -53,16 +63,18 @@ This is not trying to be a full billing dashboard yet. Billing reconciliation ca
 
 ## Latest Implemented Step
 
-Built session size and warning labels for the selected run:
+Built session size and cost-signal labels for the selected run:
 
 - `Small`, `Medium`, `Large`, `Very large`
 - `High input context`
-- `Context grew`
+- `Context growth`
 - `Mixed models`
 - `Cache unknown`
 - `State enriched`
 
 Why: it turns the current facts into quick, scannable judgment without starting the larger style overhaul.
+
+`Context growth` is expected in many agent runs. It is shown because accumulated context can explain rising token cost, not because growth is automatically a bug.
 
 Current size thresholds:
 
@@ -73,12 +85,12 @@ Current size thresholds:
 
 ## Next Best Step
 
-Improve the selected-run header and session list scanning.
+Improve comparison now that session triage is easier.
 
 Build:
 
-- Cleaner selected-run header wording and layout.
-- Better placement for run size, source quality, model, and estimate.
-- A first pass at filters for size/warnings/source quality.
+- Explain what changed between two selected runs.
+- Compare cost, input tokens, output tokens, model mix, tool calls, and context growth.
+- Make the comparison useful for testing prompt/workflow/model changes.
 
-Why this next: the app now has enough judgement signals. The next improvement is making them easier to scan without making the page busier.
+Why this next: the selected-run view and session list now have enough basic judgement. Comparison is the next developer workflow.

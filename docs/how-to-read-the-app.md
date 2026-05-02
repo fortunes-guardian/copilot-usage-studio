@@ -17,9 +17,15 @@ The estimate is for debugging. It is not a GitHub invoice.
 
 Open one session and read the Cost debugger.
 
-Start with:
+Start with the session list:
 
-- **Run Triage**: quick labels for size and warnings before reading the details.
+- Filter by size when you want only large runs.
+- Filter by signal when you want runs with a particular cost pattern.
+- Filter by source when you only want exact debug-log-backed sessions.
+
+Then open one session and read the Cost debugger.
+
+- **Run Triage**: quick labels for size and cost signals before reading the details.
 - **Cost drivers**: quick diagnosis of what pushed the cost up.
 - **Input**: usually the biggest cost source in agent runs because repo context and tool results get sent into the model.
 - **Largest model calls**: the individual calls that burned the most tokens.
@@ -34,10 +40,10 @@ The app now labels each selected run by size:
 - **Large**: `200k` to under `600k`.
 - **Very large**: `600k` or more.
 
-Warnings are quick explanations, not separate billing rows:
+Signals are quick explanations, not separate billing rows:
 
 - **High input context** means the run sent a lot of prompt/context tokens into the model.
-- **Context grew** means later model calls received much larger input payloads than early calls.
+- **Context growth** means later model calls received larger input payloads than early calls. This is expected in many agent runs; it matters because accumulated context can increase cost.
 - **Mixed models** means more than one model contributed to the estimate.
 - **Cache unknown** means local logs did not expose provider cache read/write billing fields.
 - **State enriched** means VS Code `state.vscdb` improved the label or metadata.
