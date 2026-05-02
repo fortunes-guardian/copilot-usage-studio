@@ -93,6 +93,15 @@ Not all local data is equally strong.
 
 **State DBs** are metadata only. They help with names, labels, location, and restored-session details. They do not drive cost.
 
+## Model Versus Pricing Row
+
+The app keeps two related fields:
+
+- **Model**: what VS Code logged for the model call.
+- **Pricing row**: the GitHub price row used for the estimate.
+
+Usually they match after normalization. If they do not match, the app is using a fallback pricing row because the logged model is not in the local price table. That fallback should be treated as a visible estimate assumption, not a hidden fact.
+
 ## Cache Tokens
 
 If the UI says cache billing is not visible locally, that does not mean cache billing was zero.

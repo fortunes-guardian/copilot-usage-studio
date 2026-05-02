@@ -139,13 +139,43 @@ Done:
 
 Build:
 
+- Fix pricing fallback visibility. If the raw/display model differs from the pricing row, show that plainly in the selected-run hero, Cost debugger, Turns ledger, Compare, and Pricing usage surfaces.
+- Fix selected-session/filter consistency. Either open the first visible session when filters change or show a clear "selected run is outside current filters" state.
+- Restyle the Overview `Run Triage` labels as compact chips instead of large circles.
 - Better responsive tables.
 - Proper help popovers.
 - More debugger-like polish.
+- Start component/service extraction once the current UI shape settles.
 
 Why: the app has complex information. Better style should reduce cognitive load, not hide details.
 
-## Phase 8: Trace Event Inspector
+## Phase 8: Code And Data Reliability
+
+Status: proposed near-term hardening.
+
+Build:
+
+- Create one shared pricing table source for scanner, verifier, and UI.
+- Centralize model normalization and pricing fallback rules.
+- Add fixture-based scanner tests for:
+  - exact debug-log token totals
+  - mixed-model sessions
+  - unknown model fallback
+  - empty debug logs
+  - weak chat snapshots
+  - optional transcript availability
+- Add UI tests for:
+  - selected-run tabs
+  - source/size/signal filters
+  - unknown model pricing fallback display
+  - Analytics empty states
+  - Compare delta copy
+- Add loading and error states for the generated ledger fetch.
+- Split the large root component into focused pieces after the current debugger layout stabilizes.
+
+Why: the app is now past prototype shape. The risky parts are no longer just "can we show the data?" They are "can pricing, source confidence, and filters stay correct as the UI grows?"
+
+## Phase 9: Trace Event Inspector
 
 Status: proposed next UI optimization.
 
@@ -161,7 +191,7 @@ Build:
 
 Why: the Trace view is currently good for scanning, but debugging needs selection. VS Code's own Agent Debug Logs let a user click an event and inspect details. This app should do the same, with cost fields added.
 
-## Phase 9: Input Attribution And MCP Impact
+## Phase 10: Input Attribution And MCP Impact
 
 Status: later, needs careful evidence boundaries.
 
@@ -172,7 +202,7 @@ Debugger questions:
 
 Build:
 
-- Add an `Input attribution` panel for expensive model calls.
+- Add an `Input attribution` panel for expensive model calls after Trace inspection and payload summaries exist.
 - Break the request payload into visible buckets when the debug log exposes them: user prompt, environment/workspace context, custom instructions, tool references, tool results, MCP tool calls/results, prior conversation, and system/developer material.
 - Group tool and MCP activity by server/tool name, with counts and nearby model-call cost.
 - Show "affected nearby cost" first, then only show token/cost allocation for a bucket when the app can calculate it from source-backed request payload sections.
@@ -186,7 +216,7 @@ Evidence boundary:
 - Tool/MCP/discovery events can be counted and placed near model calls.
 - Per-section input attribution may be derived from raw request payload fields when available, but it is not the same as provider billing unless segment token counts are logged directly.
 
-## Phase 10: App-Owned SQLite
+## Phase 11: App-Owned SQLite
 
 Build:
 
@@ -198,7 +228,7 @@ Build:
 
 Why: VS Code `state.vscdb` is external editor state and should stay read-only enrichment. App-owned SQLite becomes useful once the app has durable user state.
 
-## Phase 11: Billing Reconciliation
+## Phase 12: Billing Reconciliation
 
 Status: later, not the current focus.
 

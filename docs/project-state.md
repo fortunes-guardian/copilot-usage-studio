@@ -82,6 +82,9 @@ Principles:
 
 - The UI is functional but visually busy.
 - Tooltips are better, but still use native browser title behavior.
+- Unknown model pricing fallback is too easy to miss. Current imported `gpt-4o` sessions are displayed as `gpt-4o` but priced with the `GPT-5.4` fallback row because `gpt-4o` is not in the local GitHub price table. The data carries `model` and `pricingModel`, but the selected-run UI should make fallback pricing explicit.
+- Sidebar filters can hide the selected session while the main panel still shows it. This is technically consistent with `selectedId`, but confusing for a debugging workspace because the visible session list no longer contains the open run.
+- The Overview `Run Triage` panel currently renders badges as large circular/oval objects. That makes quick labels look decorative and wastes space.
 - Trace rows are scan-friendly but not yet inspectable. A developer should be able to click a raw event and see the full details behind the row.
 - VS Code transcript files under `GitHub.copilot-chat/transcripts/<session-id>.jsonl` can contain richer Chat Debug timeline events, but they are inconsistent. In the current workspace, some sessions have rich transcripts and weak debug logs, while another has useful debug logs and only a `session.start` transcript. The scanner does not import transcripts yet, and core cost features should not depend on them.
 - The app can count tool/MCP activity and place it near model calls, but it does not yet attribute model input tokens to specific request sections such as instructions, MCP tool results, or workspace context.
@@ -89,6 +92,26 @@ Principles:
 - Advanced evidence is imported but mostly hidden from the primary UI. Reasoning text presence and request-cap comparison were too technical to be useful as top-level cards.
 - No app-owned database yet. Scans overwrite `public/data/sessions.json`.
 - Pricing tables are duplicated across UI/scanner/verifier and should eventually have one source of truth.
+- `app.ts`, `app.html`, and `app.css` are very large for one Angular component. That was fine during product discovery, but it now slows safe UI work and makes regressions easier.
+
+## Review Notes
+
+Latest review: May 2, 2026.
+
+Verified:
+
+- `npm run verify:data` passes for the current generated ledger.
+- The live app has no browser console warnings/errors from the Angular page during the review.
+- Current generated data has `5` imported debug-log sessions, all with trace event counts matching `traceSummary.totalEvents`.
+- Two current sessions use `gpt-4o` as the raw/display model but fall back to the `GPT-5.4` pricing row.
+
+Code improvements to schedule:
+
+- Move ledger loading/filtering/analytics/comparison logic out of the root component into focused services or helper modules.
+- Move pricing into a single shared data source consumed by the scanner, verifier, and UI. The same model matching and fallback behavior should be tested once, not reimplemented three times.
+- Add ingestion fixtures for debug logs, weak chat snapshots, unknown models, mixed models, and fragile transcript availability.
+- Add UI tests for the selected-run tabs, source/size filters, pricing fallback display, Analytics empty states, and Compare deltas.
+- Add an explicit loading/error state for `/data/sessions.json` so a missing or malformed generated ledger fails visibly.
 
 ## Latest Implemented Step
 
@@ -119,6 +142,10 @@ Continue the UI overhaul page by page.
 
 Build:
 
+- Fix known credibility/UX bugs before adding deeper attribution:
+  - make pricing fallback obvious when `model !== pricingModel`
+  - keep selected-run state consistent with sidebar filters or show a clear "selected run is outside current filters" state
+  - restyle the Overview triage labels as compact chips
 - Make Trace events clickable and show a detail inspector/drawer with the selected event's normalized fields.
 - Preserve richer bounded debug-log payload summaries during scan so the inspector is useful without reading VS Code JSONL directly.
 - Treat Chat Debug transcripts as optional enrichment only. If imported later, show transcript availability and source labels clearly, and never require transcripts for cost totals.
