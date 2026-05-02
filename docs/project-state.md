@@ -40,7 +40,7 @@ Principles:
   - cost driver cards
   - token category totals
   - per-model pricing rows
-  - largest model calls
+  - per-turn model-call cost breakdown with timeline/largest-first modes
 - Shows an agent flow chart with token/cost detail.
 - Compares two runs with metric deltas, cost-driver explanation, context-growth change, and model/pricing-row movement.
 - Shows a separate Analytics view for multi-session questions across the current filter set:
@@ -76,14 +76,14 @@ Principles:
 
 ## Latest Implemented Step
 
-Pruned weak advanced evidence from the primary selected-run view:
+Built the per-turn cost breakdown in the selected-run Cost debugger:
 
-- Removed the Advanced Evidence card section from the UI.
-- Removed `Reasoning visible`, `Reasoning evidence`, `Reasoning level`, and `Request cap pressure` from visible triage.
-- Kept compaction only as `Compacted 1 time` / `Compacted N times` when the scanner has explicit marker or strong token-reset evidence.
-- Kept the raw `advancedSignals` data contract so future sessions can still be investigated without showing weak signals prematurely.
+- Replaced the old `Largest model calls` card list with `Per-turn cost breakdown`.
+- Shows every token-bearing model call imported from VS Code debug logs.
+- Shows call number, timestamp, raw event number, model, pricing row, input/output tokens, estimated cost, input/output cost split, share of session cost, and nearby prior context.
+- Added a `Timeline` mode for causality and a `Largest first` mode for quickly finding the biggest burn.
 
-Why: the selected-run debugger should answer "why was this expensive?" directly. Reasoning-text counts and request-cap percentages were technically careful, but not useful enough for the main product surface.
+Why: session totals explain that a run was expensive. Per-turn cost shows where it became expensive.
 
 `Context growth` is expected in many agent runs. It is shown because accumulated context can explain rising token cost, not because growth is automatically a bug.
 
@@ -96,13 +96,13 @@ Current size thresholds:
 
 ## Next Best Step
 
-Build a proper per-turn cost breakdown.
+Fix responsive layout and reduce visual friction.
 
 Build:
 
-- Replace or expand `Largest model calls` with an ordered model-call ledger.
-- Show turn index, timestamp, model, pricing row, input tokens, output tokens, estimated cost, and share of session cost.
-- Keep the largest-call sort as a toggle or secondary view.
-- Add enough nearby event detail to explain what each expensive call was doing without dumping raw logs.
+- When the viewport narrows, keep the selected-run content primary and collapse or move the sidebar instead of letting the sidebar dominate the screen.
+- Consider a mobile/narrow layout where filters and session list become a top drawer or compact selector.
+- Replace native title tooltips with a small custom help popover for important cost terms.
+- Tighten the Cost debugger hierarchy now that it has model rows, drivers, categories, and per-turn calls.
 
-Why this next: session totals say a run was expensive. Per-turn costs show where it became expensive, which is the sharper debugging answer for "what burned the tokens?"
+Why this next: the data/debugging feature is now stronger than the layout. The app should keep the current selected run readable even on narrower screens.

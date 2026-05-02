@@ -612,6 +612,77 @@
   overflow-wrap: anywhere;
 }
 
+.model-call-ledger {
+  display: grid;
+  gap: 10px;
+}
+
+.model-call-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.model-call-header h4 {
+  margin: 0;
+  color: #16202a;
+  font-size: 14px;
+}
+
+.model-call-header p {
+  margin: 4px 0 0;
+  color: #60717f;
+  font-size: 13px;
+}
+
+.segmented-control {
+  display: inline-flex;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid #cad8dd;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.segmented-control button {
+  min-height: 34px;
+  border: 0;
+  border-right: 1px solid #cad8dd;
+  padding: 7px 10px;
+  background: transparent;
+  color: #425466;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.segmented-control button:last-child {
+  border-right: 0;
+}
+
+.segmented-control button.active {
+  background: #245a62;
+  color: #fff;
+}
+
+.model-call-row {
+  grid-template-columns:
+    minmax(58px, 0.35fr)
+    minmax(92px, 0.55fr)
+    minmax(150px, 0.95fr)
+    minmax(145px, 0.85fr)
+    minmax(145px, 0.85fr)
+    minmax(64px, 0.35fr)
+    minmax(260px, 1.45fr);
+  min-width: 1000px;
+}
+
+.model-call-row span:last-child em {
+  overflow-wrap: anywhere;
+}
+
 .session-details dl {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);

@@ -26,7 +26,7 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
   - cost drivers
   - input/output token categories
   - per-model pricing rows
-  - largest model calls
+  - per-turn model-call cost breakdown
   - source-confidence explanations
 - Shows the GitHub pricing table used by the app.
 - Shows trace logs and an agent flow chart.

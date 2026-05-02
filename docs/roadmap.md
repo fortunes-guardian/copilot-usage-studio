@@ -4,7 +4,7 @@ First make one selected run excellent, then make comparisons useful, then aggreg
 
 ## Phase 1: Selected Run Cost Debugger
 
-Status: mostly built.
+Status: built, still needs polish.
 
 Done:
 
@@ -17,6 +17,7 @@ Done:
 - Show logs and agent flow chart with token/cost detail.
 - Add session size and cost-signal labels.
 - Add session filters for size, source quality, and cost signal.
+- Add a per-turn model-call cost breakdown with timeline and largest-first modes.
 
 Next:
 
@@ -100,22 +101,25 @@ Why: these may become useful cost-debugging signals, but they must earn their pl
 
 ## Phase 6: Per-Turn Cost Breakdown
 
-Status: next.
+Status: built.
 
-Build:
+Done:
 
-- Replace or expand the current `Largest model calls` section with an ordered model-call ledger.
-- Show each token-bearing model call with index, timestamp, model, pricing row, input tokens, output tokens, estimated cost, and share of session cost.
-- Keep a sorted "largest first" mode so high-cost calls remain easy to find.
-- Add nearby event context so a developer can tell whether the call followed repo reads, tool results, compaction, or a user prompt.
+- Replaced the current `Largest model calls` section with an ordered model-call ledger.
+- Shows each token-bearing model call with index, timestamp, model, pricing row, input tokens, output tokens, estimated cost, input/output cost split, and share of session cost.
+- Kept a sorted `Largest first` mode so high-cost calls remain easy to find.
+- Adds nearby prior-event context so a developer can tell what kind of activity preceded the expensive call.
 
 Why: session totals explain that a run was expensive. Per-turn cost explains where it became expensive.
 
 ## Phase 7: UX And Style Rework
 
+Status: next.
+
 Build:
 
 - Cleaner visual hierarchy.
+- Responsive sidebar/content behavior. On narrow screens, preserve the selected-run content and collapse or move the sidebar.
 - More compact data ingest section.
 - Better responsive tables.
 - Proper help popovers.

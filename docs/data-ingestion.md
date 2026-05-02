@@ -146,9 +146,14 @@ Advanced evidence is imported under `advancedSignals`, but most of it is not sho
 
 Why: reasoning, compaction, and context pressure are potentially valuable cost-debugging signals, but weak or overly technical evidence should not clutter the main debugger. The UI currently surfaces compaction only as a concise run-triage marker when there is countable evidence. Reasoning text presence and request-cap comparison stay in the data contract for future investigation, but they are not useful enough to show as primary product signals yet.
 
-## Future per-turn cost breakdown
+## Per-turn cost breakdown
 
-A per-turn breakdown should expand the current largest-model-calls view into an ordered ledger of token-bearing model calls. Each row should show the turn index, timestamp, model, pricing row, input tokens, output tokens, estimated cost, and share of session cost.
+The selected-run debugger now expands the older largest-model-calls view into an ordered ledger of token-bearing model calls. Each row shows the call index, raw event number, timestamp, model, pricing row, input tokens, output tokens, estimated cost, input/output cost split, share of session cost, and nearby prior context.
+
+The UI supports two reads:
+
+- `Timeline`: best for understanding where the session became expensive.
+- `Largest first`: best for quickly finding the biggest token/cost burn.
 
 Why: session totals answer "how expensive was this run?" Per-turn costs answer "where did the cost happen?" That is the sharper debugging tool when a developer wants to know whether cost came from the first prompt, accumulated context, repo/tool output, a model switch, or a late-session spike.
 

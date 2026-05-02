@@ -658,17 +658,58 @@
               }
             </div>
 
-            @if (cost.topTokenEvents.length) {
-              <div class="token-burners">
-                <h4>Largest model calls</h4>
-                <div>
-                  @for (event of cost.topTokenEvents; track event.index) {
-                    <article>
-                      <strong>#{{ event.index + 1 }} · {{ event.totalTokens | number }} tokens</strong>
-                      <span>{{ event.inputTokens | number }} in / {{ event.outputTokens | number }} out · {{ event.pricingModel }}</span>
-                      <em>about €{{ event.estimatedEur | number: '1.6-6' }}</em>
-                      <p>{{ event.detail }}</p>
-                    </article>
+            @if (cost.modelCallRows.length) {
+              <div class="model-call-ledger">
+                <div class="model-call-header">
+                  <div>
+                    <h4>Per-turn cost breakdown</h4>
+                    <p>Every token-bearing model call imported from the VS Code debug log.</p>
+                  </div>
+                  <div class="segmented-control" aria-label="Model call sort">
+                    <button type="button" [class.active]="modelCallSort() === 'timeline'" (click)="modelCallSort.set('timeline')">
+                      Timeline
+                    </button>
+                    <button type="button" [class.active]="modelCallSort() === 'largest'" (click)="modelCallSort.set('largest')">
+                      Largest first
+                    </button>
+                  </div>
+                </div>
+
+                <div class="cost-table model-call-table">
+                  <div class="cost-row model-call-row cost-row-heading">
+                    <span>Call</span>
+                    <span>When</span>
+                    <span>Model</span>
+                    <span>Tokens</span>
+                    <span>Cost</span>
+                    <span>Share</span>
+                    <span>Nearby context</span>
+                  </div>
+                  @for (event of cost.modelCallRows; track event.index) {
+                    <div class="cost-row model-call-row">
+                      <strong>#{{ event.callNumber }}</strong>
+                      <span>
+                        {{ event.timestamp | date: 'HH:mm:ss' }}
+                        <em>event #{{ event.index + 1 }}</em>
+                      </span>
+                      <span>
+                        {{ event.model || event.name }}
+                        <em>{{ event.pricingModel }}</em>
+                      </span>
+                      <span>
+                        {{ event.totalTokens | number }}
+                        <em>{{ event.inputTokens | number }} in / {{ event.outputTokens | number }} out</em>
+                      </span>
+                      <span>
+                        €{{ event.estimatedEur | number: '1.6-6' }}
+                        <em>{{ event.inputEur | number: '1.6-6' }} in / {{ event.outputEur | number: '1.6-6' }} out</em>
+                      </span>
+                      <span>{{ event.share | number: '1.0-0' }}%</span>
+                      <span>
+                        {{ event.contextLabel }}
+                        <em>{{ event.contextDetail }}</em>
+                      </span>
+                    </div>
                   }
                 </div>
               </div>

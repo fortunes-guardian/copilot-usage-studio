@@ -28,7 +28,7 @@ Then open one session and read the Cost debugger.
 - **Run Triage**: quick labels for size and cost signals before reading the details.
 - **Cost drivers**: quick diagnosis of what pushed the cost up.
 - **Input**: usually the biggest cost source in agent runs because repo context and tool results get sent into the model.
-- **Largest model calls**: the individual calls that burned the most tokens.
+- **Per-turn cost breakdown**: every token-bearing model call, either in timeline order or sorted by the biggest cost.
 - **Model table**: which models were used and which GitHub price row applied.
 
 ## Comparing Two Runs
@@ -124,12 +124,20 @@ If a long or compacted session appears to stop early, check `traceSummary.totalE
 
 ## Per-Turn Cost Breakdown
 
-The current **Largest model calls** section is the first version of this idea. A fuller per-turn breakdown would show every token-bearing model call in order, with:
+The **Per-turn cost breakdown** shows every token-bearing model call imported from the VS Code debug log.
 
-- turn number and timestamp
-- model and pricing row
-- input tokens, output tokens, and estimated cost
+Use **Timeline** when you want causality: what happened first, and where the cost started to climb.
+
+Use **Largest first** when you want the fastest answer to "what burned the most money?"
+
+Each row shows:
+
+- call number and raw log event number
+- timestamp
+- model and GitHub pricing row
+- input tokens, output tokens, and total tokens
+- estimated cost with input/output cost split
 - share of the session cost
-- nearby event detail, such as the user prompt or tool phase
+- nearby prior context, such as a user prompt or tool event
 
 Why this matters: total session cost tells you that a run was expensive, but per-turn cost tells you where it became expensive. It should make questions like "which step burned tokens?" and "did the cost spike after repo reads, tool results, or compaction?" much easier to answer.

@@ -19,6 +19,7 @@ type SessionSourceFilter = 'all' | 'debug-log' | 'chat-snapshot' | 'exact' | 'es
 type ActiveView = 'sessions' | 'analytics' | 'pricing';
 type AnalyticsTimeRange = 'all' | '7d' | '30d' | '90d';
 type AnalyticsGrouping = 'day' | 'week' | 'month';
+type ModelCallSort = 'timeline' | 'largest';
 
 interface SessionWarning {
   label: string;
@@ -86,6 +87,7 @@ export class App {
   protected readonly analyticsModelFilter = signal('all');
   protected readonly analyticsGrouping = signal<AnalyticsGrouping>('day');
   protected readonly traceView = signal<'logs' | 'flow'>('logs');
+  protected readonly modelCallSort = signal<ModelCallSort>('timeline');
   protected readonly activeView = signal<ActiveView>('sessions');
   protected readonly pricingVersion = PRICING_VERSION;
   protected readonly pricingSourceLabel = PRICING_SOURCE_LABEL;
@@ -175,6 +177,13 @@ export class App {
       this.explainModelCost(entry, ledger.usdToEur, session.cost.eur),
     );
     const categoryRows = this.explainCategoryCosts(modelRows);
+    const modelCallRows = this.modelCallRows(
+      session.traceEvents,
+      session.modelBreakdown,
+      ledger.usdToEur,
+      session.cost.eur,
+      this.modelCallSort(),
+    );
     const topTokenEvents = this.topTokenEvents(session.traceEvents, session.modelBreakdown, ledger.usdToEur);
     const costDrivers = this.explainCostDrivers(session, modelRows, topTokenEvents);
     const hasCacheData = session.tokens.cachedInput > 0 || session.tokens.cacheWrite > 0;
@@ -196,6 +205,7 @@ export class App {
       modelRows,
       categoryRows,
       costDrivers,
+      modelCallRows,
       topTokenEvents,
     };
   });
@@ -1197,25 +1207,56 @@ export class App {
   }
 
   private topTokenEvents(events: TraceEvent[], modelBreakdown: ModelBreakdown[], usdToEur: number) {
+    return this.pricedModelCallEvents(events, modelBreakdown, usdToEur)
+      .sort((a, b) => b.totalTokens - a.totalTokens)
+      .slice(0, 5);
+  }
+
+  private modelCallRows(
+    events: TraceEvent[],
+    modelBreakdown: ModelBreakdown[],
+    usdToEur: number,
+    sessionCostEur: number,
+    sort: ModelCallSort,
+  ) {
+    const rows = this.pricedModelCallEvents(events, modelBreakdown, usdToEur).map((event, index) => {
+      const context = this.nearbyContextForEvent(event, events);
+
+      return {
+        ...event,
+        callNumber: index + 1,
+        share: sessionCostEur > 0 ? (event.estimatedEur / sessionCostEur) * 100 : 0,
+        contextLabel: context.label,
+        contextDetail: context.detail,
+      };
+    });
+
+    return sort === 'largest'
+      ? [...rows].sort((a, b) => b.estimatedEur - a.estimatedEur || b.totalTokens - a.totalTokens)
+      : rows;
+  }
+
+  private pricedModelCallEvents(events: TraceEvent[], modelBreakdown: ModelBreakdown[], usdToEur: number) {
     return events
       .filter((event) => event.inputTokens || event.outputTokens)
       .map((event) => {
         const pricingModel = this.pricingModelForEvent(event, modelBreakdown);
         const price = MODEL_PRICES_USD_PER_MILLION[pricingModel] ?? MODEL_PRICES_USD_PER_MILLION['GPT-5.4'];
+        const inputEur = this.tokenCostEur(event.inputTokens, price.input, usdToEur);
+        const outputEur = this.tokenCostEur(event.outputTokens, price.output, usdToEur);
         const estimatedEur =
           event.estimatedCost?.eur ??
-          this.tokenCostEur(event.inputTokens, price.input, usdToEur) +
-            this.tokenCostEur(event.outputTokens, price.output, usdToEur);
+          inputEur + outputEur;
 
         return {
           ...event,
           totalTokens: event.totalTokens ?? event.inputTokens + event.outputTokens,
           pricingModel,
+          inputEur,
+          outputEur,
           estimatedEur,
         };
-      })
-      .sort((a, b) => b.totalTokens - a.totalTokens)
-      .slice(0, 5);
+      });
   }
 
   private flowTraceEvents(events: TraceEvent[], modelBreakdown: ModelBreakdown[], usdToEur: number) {
@@ -1260,6 +1301,48 @@ export class App {
 
   private tokenCostEur(tokens: number, usdPerMillion: number, usdToEur: number): number {
     return (tokens / 1_000_000) * usdPerMillion * usdToEur;
+  }
+
+  private nearbyContextForEvent(event: TraceEvent, events: TraceEvent[]): { label: string; detail: string } {
+    const prior = [...events]
+      .reverse()
+      .find(
+        (candidate) =>
+          candidate.index < event.index &&
+          candidate.detail &&
+          candidate.type !== 'llm_request' &&
+          candidate.type !== 'agent_response',
+      );
+
+    if (!prior) {
+      return {
+        label: 'No nearby context',
+        detail: this.compactText(event.detail),
+      };
+    }
+
+    return {
+      label: this.readableEventType(prior.type),
+      detail: this.compactText(prior.detail),
+    };
+  }
+
+  private readableEventType(type: string): string {
+    if (type === 'user_message') {
+      return 'After user prompt';
+    }
+
+    if (type.includes('tool')) {
+      return 'After tool event';
+    }
+
+    return `After ${type.replace(/_/g, ' ')}`;
+  }
+
+  private compactText(value: string, maxLength = 180): string {
+    const text = String(value ?? '').replace(/\s+/g, ' ').trim();
+
+    return text.length > maxLength ? `${text.slice(0, maxLength - 1)}...` : text;
   }
 
   private average(values: number[]): number {
