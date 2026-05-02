@@ -50,6 +50,7 @@ Principles:
   - model breakdown
   - trend rows
   - size distribution
+  - clearer empty states when cohort controls exclude all sessions
   - outlier signals with first-pass "why high cost?" explanations
 
 ## Important Design Decisions
@@ -68,7 +69,7 @@ Principles:
 
 - The UI is functional but visually busy.
 - Tooltips are better, but still use native browser title behavior.
-- Aggregated analytics are useful but still early. Outlier detection is a simple statistical signal with driver hints; it should become more nuanced as more real sessions are imported.
+- Aggregated analytics are useful but still early. Outlier detection is a simple statistical signal with driver hints; it now separates a few obvious cases such as long agent runs and suspicious low-activity spikes, but it should become more nuanced as more real sessions are imported.
 - Advanced signals such as reasoning level, compaction, and context-window pressure need stronger log/model evidence before becoming UI facts.
 - No app-owned database yet. Scans overwrite `public/data/sessions.json`.
 - Pricing tables are duplicated across UI/scanner/verifier and should eventually have one source of truth.
@@ -80,10 +81,13 @@ Built the multi-session Analytics view:
 - Separate top-level navigation item between Sessions and Prices.
 - Scope is explicit: sidebar-filtered sessions plus Analytics controls.
 - Adds visible controls for time range, workspace, model, and day/week/month grouping.
+- Adds a reset for Analytics-only controls without clearing sidebar filters.
+- Shows a no-data state when sidebar filters or Analytics controls exclude every session.
 - Shows total estimate, total tokens, average cost, average tokens, and cost per 1k tokens.
 - Highlights highest-token and most expensive runs with click-through back to the selected-run debugger.
 - Shows model/pricing-row aggregation, grouped trend rows, size distribution, and outlier signals.
-- Outlier copy now points to likely drivers such as input/context dominance, expensive model share, context growth, or high tool-call count.
+- Outlier copy now points to likely drivers such as input/context dominance, expensive model share, context growth, high tool-call count, plausible long agent work, or suspicious low-activity spikes.
+- Visual sanity pass fixed the current responsive shell enough for now: mid-width screens use a slimmer sidebar, small screens compact the session list so content is reachable sooner, and dense cost/model tables scroll horizontally instead of hiding right-side columns.
 
 Why: one-run debugging and two-run comparison are now covered. The next product question is "what is normal across my sessions, and which runs deserve attention?"
 
@@ -98,13 +102,12 @@ Current size thresholds:
 
 ## Next Best Step
 
-Improve Analytics polish and evidence-backed advanced signals.
+Improve evidence-backed advanced signals.
 
 Build:
 
-- Better empty states and responsive polish for Analytics once more sessions are imported.
-- More nuanced outlier language that separates "large because successful long run" from "large and suspicious".
+- More nuanced outlier language after importing more real sessions.
 - Evidence-backed reasoning level, compaction, and context-window pressure only when the logs/model metadata support it.
-- A small visual polish pass on Analytics so dense tables remain readable on narrow screens.
+- A later style pass can redesign the layout; do not over-invest in the current look.
 
-Why this next: the dashboard now has the right placement and cohort controls. The next value comes from making the explanations sharper without inventing facts the local logs do not support.
+Why this next: the dashboard now has the right placement, cohort controls, and a basic responsive sanity pass. The next value comes from making the explanations sharper without inventing facts the local logs do not support.

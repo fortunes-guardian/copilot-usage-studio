@@ -14,7 +14,7 @@ import {
 } from './pricing';
 
 type SessionSize = 'Small' | 'Medium' | 'Large' | 'Very large';
-type WarningTone = 'info' | 'medium' | 'high';
+type WarningTone = 'low' | 'info' | 'medium' | 'high';
 type SessionSourceFilter = 'all' | 'debug-log' | 'chat-snapshot' | 'exact' | 'estimated';
 type ActiveView = 'sessions' | 'analytics' | 'pricing';
 type AnalyticsTimeRange = 'all' | '7d' | '30d' | '90d';
@@ -330,10 +330,26 @@ export class App {
         };
       });
     const outliers = this.analyticsOutliers(sessions, avgCost, avgTokens);
+    const analyticsFiltersActive =
+      this.analyticsTimeRange() !== 'all' ||
+      this.analyticsWorkspaceFilter() !== 'all' ||
+      this.analyticsModelFilter() !== 'all' ||
+      this.analyticsGrouping() !== 'day';
+    const analyticsExcludedCount = Math.max(sidebarCount - count, 0);
 
     return {
       count,
       sidebarCount,
+      analyticsFiltersActive,
+      analyticsExcludedCount,
+      emptyTitle:
+        sidebarCount === 0
+          ? 'No sidebar-filtered sessions'
+          : 'No sessions in this Analytics cohort',
+      emptyDetail:
+        sidebarCount === 0
+          ? 'The sidebar search, size, signal, or source filters exclude every imported session.'
+          : `${analyticsExcludedCount.toLocaleString()} sidebar-filtered session${analyticsExcludedCount === 1 ? '' : 's'} excluded by the Analytics controls. Reset the Analytics filters to return to the sidebar cohort.`,
       scopeLabel:
         count === this.sessions().length && sidebarCount === this.sessions().length
           ? 'All imported sessions'
@@ -535,6 +551,13 @@ export class App {
 
   protected setAnalyticsGrouping(value: AnalyticsGrouping): void {
     this.analyticsGrouping.set(value);
+  }
+
+  protected resetAnalyticsFilters(): void {
+    this.analyticsTimeRange.set('all');
+    this.analyticsWorkspaceFilter.set('all');
+    this.analyticsModelFilter.set('all');
+    this.analyticsGrouping.set('day');
   }
 
   protected openSession(session: LedgerSession | null): void {
@@ -1014,6 +1037,14 @@ export class App {
     const topModel = this.maxBy(session.modelBreakdown, (row) => row.cost.eur);
     const topModelShare = topModel && session.cost.eur > 0 ? (topModel.cost.eur / session.cost.eur) * 100 : 0;
     const contextGrowth = this.contextGrowth(session);
+    const modelTurns = session.traceSummary.modelTurns;
+    const toolCalls = session.traceSummary.toolCalls;
+    const traceActivity = modelTurns + toolCalls;
+    const isVeryHighOutlier = Math.max(costScore, tokenScore) >= 2;
+
+    if (isVeryHighOutlier && traceActivity <= 3 && totalTokens >= 100_000) {
+      return `Suspicious spike: ${totalTokens.toLocaleString()} tokens with only ${traceActivity.toLocaleString()} imported model/tool events. Inspect the largest model call and source log shape.`;
+    }
 
     if (inputShare >= 85 && session.tokens.input >= 100_000) {
       return `Mostly input/context tokens (${inputShare.toFixed(0)}% of imported tokens). Check prompt context, repo reads, prior conversation, and tool results.`;
@@ -1027,8 +1058,12 @@ export class App {
       return `Average input grew ${contextGrowth.toFixed(0)}% from early to late model calls, so repeated context is likely driving the increase.`;
     }
 
-    if (session.traceSummary.toolCalls >= 20) {
-      return `${session.traceSummary.toolCalls.toLocaleString()} tool calls may have added results back into later model input.`;
+    if (toolCalls >= 20) {
+      return `${toolCalls.toLocaleString()} tool calls may have added results back into later model input.`;
+    }
+
+    if (session.traceSummary.errors === 0 && modelTurns >= 8 && toolCalls >= 8) {
+      return `Large but plausible long agent run: ${modelTurns.toLocaleString()} model turns and ${toolCalls.toLocaleString()} tool calls with no imported errors. Compare context growth before treating it as waste.`;
     }
 
     return costScore >= tokenScore

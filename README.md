@@ -33,6 +33,7 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
 - Compares two runs with cost/token deltas, driver explanations, context-growth movement, and model/pricing-row changes.
 - Shows a multi-session Analytics view for filtered sessions:
   - visible cohort controls for time range, workspace, model, and day/week/month grouping
+  - Analytics-only reset and no-data messaging when controls exclude every session
   - total and average cost/tokens
   - highest-token and most expensive runs
   - model breakdowns

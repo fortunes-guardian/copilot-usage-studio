@@ -68,11 +68,13 @@ Done:
 - Shows model/pricing-row breakdowns.
 - Shows grouped trend rows, size distribution, and outlier signals.
 - Explains likely outlier drivers such as input/context dominance, expensive model share, context growth, and high tool-call count.
+- Includes a reset for Analytics-only filters and a clear empty state when the current cohort has no sessions.
+- Separates a few obvious outlier cases, including plausible long agent runs and suspicious low-activity spikes.
 
 Next:
 
-- Improve Analytics empty states and responsive polish.
-- Improve outlier explanation so it can distinguish expected long work from suspicious token burn.
+- Browser-check Analytics at desktop and narrow widths.
+- Improve outlier explanation with more real imported sessions.
 - Add saved comparison/cohort concepts later if app-owned SQLite becomes the right durable state layer.
 
 Why: after one run and two-run comparison are understandable, the next developer question is “what is my normal usage pattern, and which runs are outliers?”

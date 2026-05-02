@@ -56,11 +56,13 @@ The Analytics view is intentionally separate from the selected-run debugger:
 
 The sidebar filters define the starting group. If you filter to exact debug-log sessions, Analytics only summarizes those sessions. The Analytics controls then narrow that group by time range, workspace, and model, and choose whether the trend is grouped by day, week, or month.
 
+The Analytics reset button resets only the Analytics controls. It does not clear sidebar filters. This is intentional: sidebar filters define the global working set, while Analytics controls define the dashboard cohort inside that working set.
+
 Read it in this order:
 
 - **Top metrics**: total cost/tokens, average cost/tokens, and cost per 1k tokens.
 - **Runs to inspect**: the highest-token and most expensive runs; click one to open the selected-run debugger.
-- **Outlier signals**: sessions that are unusually high compared with the current cohort, with a first-pass explanation of the likely driver.
+- **Outlier signals**: sessions that are unusually high compared with the current cohort, with a first-pass explanation of the likely driver. Current explanations can call out input/context dominance, model price rows, context growth, tool activity, plausible long agent work, or suspicious low-activity spikes.
 - **Model breakdown**: which model/pricing rows are contributing the cost.
 - **Distribution and trend**: whether cost is spread across many runs or concentrated in a few periods.
 

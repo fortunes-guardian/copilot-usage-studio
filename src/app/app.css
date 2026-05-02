@@ -1,3 +1,5 @@
+.shell, .shell * { box-sizing: border-box; }
+
 .shell {
   display: grid;
   grid-template-columns: 360px 1fr;
@@ -19,6 +21,7 @@
 .compare-header,
 .session-footer {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
@@ -103,11 +106,12 @@
 
 .view-nav {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
 .view-nav button {
+  min-width: 0;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 6px;
   padding: 9px 10px;
@@ -174,17 +178,21 @@
 .session-title {
   font-weight: 800;
   line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 
 .session-meta,
 .session-footer {
   color: #b6c3ce;
   font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
 .session-footer strong {
   color: #f7fafc;
 }
+
+.sidebar, .session-list, .session-card { min-width: 0; }
 
 .badge-row { display: flex; flex-wrap: wrap; gap: 7px; }
 
@@ -524,7 +532,7 @@
   display: grid;
   border: 1px solid #dfe6ed;
   border-radius: 8px;
-  overflow: hidden;
+  overflow: auto hidden;
   background: #fff;
 }
 
@@ -539,6 +547,7 @@
     minmax(64px, 0.35fr);
   gap: 12px;
   align-items: start;
+  min-width: 820px;
   padding: 11px 12px;
   border-bottom: 1px solid #edf2f5;
 }
@@ -803,6 +812,16 @@
 }
 
 .pricing-header p { margin: 6px 0 0; color: #60717f; }
+.ghost-button {
+  border: 1px solid #c9d7de;
+  border-radius: 6px;
+  padding: 9px 12px;
+  color: #245a62;
+  background: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+.ghost-button:hover { border-color: #7fb0b7; }
 .analytics-controls {
   display: grid;
   grid-template-columns: repeat(4, minmax(145px, 1fr));
@@ -816,14 +835,28 @@
 .analytics-controls select { width: 100%; border: 1px solid #d5dde5; border-radius: 8px; padding: 9px 10px; background: #fff; color: #16202a; }
 .analytics-scope { display: flex; flex-wrap: wrap; gap: 8px; margin-top: -8px; }
 .analytics-scope span { border: 1px solid #dfe6ed; border-radius: 999px; padding: 5px 9px; color: #245a62; background: #f8fafb; font-size: 12px; font-weight: 800; }
+.analytics-empty {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  border: 1px solid #dfe6ed;
+  border-radius: 8px;
+  padding: 18px;
+  background: #fff;
+}
+.analytics-empty h3 { margin: 0; color: #16202a; font-size: 17px; }
+.analytics-empty p { margin: 0; color: #60717f; max-width: 720px; }
 .analytics-split { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr); gap: 16px; }
 .analytics-split h3 { margin: 0 0 10px; color: #16202a; font-size: 16px; }
 .highlight-list, .stat-list { display: grid; gap: 9px; }
 .highlight-list button, .stat-list div { display: grid; gap: 4px; width: 100%; border: 1px solid #dfe6ed; border-radius: 8px; padding: 12px; background: #fff; color: #16202a; text-align: left; }
 .highlight-list button { cursor: pointer; }
+.highlight-list button:disabled { cursor: default; opacity: 0.65; }
 .highlight-list span, .highlight-list em, .stat-list span, .stat-list em { color: #60717f; font-size: 13px; font-style: normal; }
 .highlight-list strong, .stat-list strong { color: #16202a; }
 .analytics-model-row { grid-template-columns: minmax(170px, 1.3fr) minmax(72px, 0.45fr) minmax(150px, 1fr) minmax(90px, 0.55fr) minmax(90px, 0.55fr) minmax(64px, 0.35fr); }
+
+.compact-table .cost-row { min-width: 680px; }
 
 .pricing-header,
 .pricing-source {
@@ -956,14 +989,47 @@
   color: #8795a1 !important;
 }
 
+@media (max-width: 1200px) and (min-width: 901px) {
+  .shell {
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+
+  .sidebar {
+    gap: 16px;
+    padding: 20px;
+  }
+
+  .brand h1 {
+    font-size: 22px;
+  }
+
+  .view-nav {
+    grid-template-columns: 1fr;
+  }
+
+  .session-card {
+    padding: 12px;
+  }
+}
+
 @media (max-width: 900px) {
   .shell {
     grid-template-columns: 1fr;
   }
 
   .sidebar {
+    gap: 14px;
     min-height: auto;
   }
+
+  .session-list {
+    max-height: 240px;
+    padding-right: 4px;
+  }
+
+  .brand { display: grid; justify-content: start; }
+
+  .view-nav { grid-template-columns: 1fr; }
 
   .summary-grid,
   .analytics-controls,
@@ -981,6 +1047,8 @@
   .pricing-row {
     grid-template-columns: 1fr;
   }
+
+  .cost-row, .compact-table .cost-row { min-width: 0; }
 
   .detail-header,
   .compare-header,
@@ -1001,5 +1069,34 @@
 
   .session-details dl {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .sidebar {
+    padding: 20px 16px;
+  }
+
+  .session-list {
+    max-height: 150px;
+  }
+
+  .session-card {
+    gap: 5px;
+    padding: 10px;
+  }
+
+  .session-title {
+    font-size: 14px;
+  }
+
+  .session-meta,
+  .session-card .badge-row {
+    display: none;
+  }
+
+  .session-footer {
+    gap: 8px;
+    font-size: 12px;
   }
 }
