@@ -116,6 +116,8 @@ describe('App', () => {
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('h1')?.textContent).toContain('Copilot Cost Ledger');
-    expect(compiled.textContent).toContain('1 imported from 1 workspaces');
+    expect(compiled.textContent).toContain('1 sessions imported');
+    expect(compiled.textContent).toContain('Run Triage');
+    expect(compiled.textContent).toContain('Cache unknown');
   });
 });

@@ -22,6 +22,7 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
 - Imports VS Code Copilot debug-log sessions.
 - Enriches titles and metadata from VS Code `state.vscdb`.
 - Shows a selected-run Cost debugger:
+  - run size and warning labels
   - cost drivers
   - input/output token categories
   - per-model pricing rows

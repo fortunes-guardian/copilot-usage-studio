@@ -98,9 +98,6 @@
   background: rgba(82, 180, 169, 0.16);
   font-size: 12px;
   font-weight: 700;
-}
-
-.status {
   cursor: help;
 }
 
@@ -186,6 +183,44 @@
 
 .session-footer strong {
   color: #f7fafc;
+}
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.triage-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  border: 1px solid #d8e2e8;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: #f7fafb;
+  color: #445766;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.sidebar .triage-badge {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  color: #dce8ef;
+}
+
+.triage-badge.medium {
+  border-color: #e6c98f;
+  background: #fff8ea;
+  color: #7a4d09;
+}
+
+.triage-badge.high {
+  border-color: #e7b6a6;
+  background: #fff3ef;
+  color: #8a391f;
 }
 
 .content {
@@ -606,6 +641,14 @@
   margin: 0;
   color: #332a24;
   overflow-wrap: anywhere;
+}
+
+.session-triage {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #e2ebef;
+  border-radius: 8px;
+  padding: 14px;
 }
 
 .trace-tools {

@@ -94,6 +94,7 @@ The app displays:
 
 - first prompt, workspace, model, timestamps, tags, source kind, token source
 - VS Code Agent Debug Log style session details: session type, location, status, created time, and last activity
+- session size and warning labels for fast triage
 - trace summary cards: model turns, tool calls, total tokens, errors, and total events
 - a cost debugger with cost drivers, token categories, per-model pricing rows, and the largest model calls
 - a capped trace event preview for logs and flow-chart views
@@ -106,6 +107,25 @@ The trace event preview cap is intentionally high enough for normal debug sessio
 Cost drivers are UI-level diagnosis, not new billing facts. They summarize the generated ledger into practical signals: input cost share, the largest model call, context growth across model calls, model mix, and tool-call density. Why: developers need a quick answer to "what made this run expensive?" before they dig into raw logs.
 
 Source-confidence terms in the UI should carry inline help. Labels such as debug logs, chat snapshots, state DBs, state enriched, exact local totals, estimated totals, cached input, and cache write all need short explanations at the point of use. Why: this app is only credible if it says why a source is strong, what it does not know, and which fields are local estimates rather than GitHub billing facts.
+
+Run triage labels are derived in the UI from the generated ledger. They are intentionally not stored as scanner output yet because the thresholds are product decisions that may change as more sessions are reviewed.
+
+Current size thresholds:
+
+- `Small`: fewer than `50,000` imported tokens.
+- `Medium`: `50,000` to `199,999` imported tokens.
+- `Large`: `200,000` to `599,999` imported tokens.
+- `Very large`: `600,000` or more imported tokens.
+
+Current warning labels:
+
+- `High input context`: total input tokens are at least `150,000`, or one model call has at least `100,000` input tokens.
+- `Context grew`: average input tokens near the end of the run are at least `25%` higher than near the start.
+- `Mixed models`: more than one model appears in `modelBreakdown`.
+- `Cache unknown`: no cache read/write token fields were imported for the session.
+- `State enriched`: `vscodeState` metadata is present.
+
+Why these labels exist: the cost debugger has enough detail to explain a run, but a developer needs quick visual judgement before reading every table. The labels should stay explainable and tuneable.
 
 ## SQLite workspace state
 

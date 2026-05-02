@@ -13,6 +13,22 @@ import {
   PRICING_VERSION,
 } from './pricing';
 
+type SessionSize = 'Small' | 'Medium' | 'Large' | 'Very large';
+type WarningTone = 'info' | 'medium' | 'high';
+
+interface SessionWarning {
+  label: string;
+  tone: WarningTone;
+  help: string;
+}
+
+interface SessionTriage {
+  size: SessionSize;
+  sizeTone: WarningTone;
+  totalTokens: number;
+  warnings: SessionWarning[];
+}
+
 @Component({
   selector: 'app-root',
   imports: [DatePipe, DecimalPipe, FormsModule, NgClass],
@@ -59,6 +75,8 @@ export class App {
     priceRow:
       'The GitHub model pricing row used to estimate this model. Unknown models keep their display label and show any pricing fallback separately.',
   };
+  protected readonly sessionTriageHelp =
+    'Fast read derived from imported tokens, model mix, cache visibility, context growth, and VS Code state enrichment.';
 
   protected readonly sessions = computed(() => this.ledger()?.sessions ?? []);
   protected readonly pricingRows = computed(() =>
@@ -137,6 +155,10 @@ export class App {
     const id = this.selectedId() ?? this.filteredSessions()[0]?.id;
     return this.sessions().find((session) => session.id === id) ?? null;
   });
+  protected readonly selectedTriage = computed(() => {
+    const session = this.selectedSession();
+    return session ? this.sessionTriage(session) : null;
+  });
 
   protected readonly summary = computed(() => {
     const sessions = this.sessions();
@@ -201,6 +223,75 @@ export class App {
 
   protected setQuery(value: string): void {
     this.query.set(value);
+  }
+
+  protected sessionTriage(session: LedgerSession): SessionTriage {
+    const totalTokens = this.sessionTotalTokens(session);
+    const size = this.sessionSize(totalTokens);
+    const warnings: SessionWarning[] = [];
+    const contextGrowth = this.contextGrowth(session);
+    const maxInput = Math.max(
+      ...session.traceEvents
+        .filter((event) => event.type === 'llm_request')
+        .map((event) => event.inputTokens),
+      0,
+    );
+
+    if (session.tokens.input >= 150_000 || maxInput >= 100_000) {
+      warnings.push({
+        label: 'High input context',
+        tone: 'high',
+        help:
+          'Large prompt/context payloads are being sent into the model. This usually means repo context, prior conversation, or tool results are driving cost.',
+      });
+    }
+
+    if (contextGrowth !== null && contextGrowth >= 25) {
+      warnings.push({
+        label: 'Context grew',
+        tone: contextGrowth >= 80 ? 'high' : 'medium',
+        help:
+          'Later model calls received noticeably more input tokens than early calls. Long agent runs can get expensive when context keeps accumulating.',
+      });
+    }
+
+    if (session.modelBreakdown.length > 1) {
+      warnings.push({
+        label: 'Mixed models',
+        tone: 'medium',
+        help:
+          'This run used more than one model. Cost is the sum of each model row, so model switches can make estimates harder to read at a glance.',
+      });
+    }
+
+    if (session.tokens.cachedInput === 0 && session.tokens.cacheWrite === 0) {
+      warnings.push({
+        label: 'Cache unknown',
+        tone: 'info',
+        help:
+          'The local VS Code debug logs imported here do not expose provider cache read/write billing fields. Do not read this as proof that provider-side cache billing was zero.',
+      });
+    }
+
+    if (session.vscodeState) {
+      warnings.push({
+        label: 'State enriched',
+        tone: 'info',
+        help:
+          'The title or metadata was improved from VS Code state.vscdb. Pricing still comes from token-bearing debug-log events.',
+      });
+    }
+
+    return {
+      size,
+      sizeTone: size === 'Very large' ? 'high' : size === 'Large' ? 'medium' : 'info',
+      totalTokens,
+      warnings,
+    };
+  }
+
+  protected sessionSizeHelp(triage: SessionTriage): string {
+    return `${triage.size} session based on ${triage.totalTokens.toLocaleString()} imported tokens. Current thresholds: Small under 50k, Medium under 200k, Large under 600k, Very large at 600k or more.`;
   }
 
   protected sourceKindHelp(sourceKind: string): string {
@@ -354,14 +445,11 @@ export class App {
     const topCallShare = topCall && sessionCost > 0 ? (topCall.estimatedEur / sessionCost) * 100 : 0;
     const topModel = [...modelRows].sort((a, b) => b.totalEur - a.totalEur)[0];
     const topModelShare = topModel && sessionCost > 0 ? (topModel.totalEur / sessionCost) * 100 : 0;
-    const llmEvents = session.traceEvents
-      .filter((event) => event.type === 'llm_request' && (event.inputTokens || event.outputTokens))
-      .sort((a, b) => a.index - b.index);
-    const firstInputs = llmEvents.slice(0, 3).map((event) => event.inputTokens);
-    const lastInputs = llmEvents.slice(-3).map((event) => event.inputTokens);
-    const firstAvg = this.average(firstInputs);
-    const lastAvg = this.average(lastInputs);
-    const growth = firstAvg > 0 ? ((lastAvg - firstAvg) / firstAvg) * 100 : 0;
+    const contextStats = this.contextStats(session);
+    const growth = contextStats?.growth ?? 0;
+    const firstAvg = contextStats?.firstAvg ?? 0;
+    const lastAvg = contextStats?.lastAvg ?? 0;
+    const llmEventCount = contextStats?.count ?? 0;
     const toolCalls = session.traceSummary.toolCalls;
     const toolsPerTurn = session.traceSummary.modelTurns > 0 ? toolCalls / session.traceSummary.modelTurns : 0;
     const mixedModelCount = modelRows.length;
@@ -386,9 +474,9 @@ export class App {
       },
       {
         title: 'Context growth',
-        value: llmEvents.length >= 2 ? `${growth >= 0 ? '+' : ''}${growth.toFixed(0)}%` : 'n/a',
+        value: llmEventCount >= 2 ? `${growth >= 0 ? '+' : ''}${growth.toFixed(0)}%` : 'n/a',
         detail:
-          llmEvents.length >= 2
+          llmEventCount >= 2
             ? `Average input moved from ${Math.round(firstAvg).toLocaleString()} tokens at the start to ${Math.round(lastAvg).toLocaleString()} near the end.`
             : 'Not enough model calls to detect whether context grew during the run.',
         tone: growth >= 80 ? 'high' : growth >= 25 ? 'medium' : 'low',
@@ -481,6 +569,50 @@ export class App {
 
   private average(values: number[]): number {
     return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+  }
+
+  private sessionTotalTokens(session: LedgerSession): number {
+    return session.tokens.input + session.tokens.cachedInput + session.tokens.cacheWrite + session.tokens.output;
+  }
+
+  private sessionSize(tokens: number): SessionSize {
+    if (tokens >= 600_000) {
+      return 'Very large';
+    }
+
+    if (tokens >= 200_000) {
+      return 'Large';
+    }
+
+    if (tokens >= 50_000) {
+      return 'Medium';
+    }
+
+    return 'Small';
+  }
+
+  private contextGrowth(session: LedgerSession): number | null {
+    return this.contextStats(session)?.growth ?? null;
+  }
+
+  private contextStats(session: LedgerSession): { firstAvg: number; lastAvg: number; growth: number; count: number } | null {
+    const llmEvents = session.traceEvents
+      .filter((event) => event.type === 'llm_request' && (event.inputTokens || event.outputTokens))
+      .sort((a, b) => a.index - b.index);
+
+    if (llmEvents.length < 2) {
+      return null;
+    }
+
+    const firstAvg = this.average(llmEvents.slice(0, 3).map((event) => event.inputTokens));
+    const lastAvg = this.average(llmEvents.slice(-3).map((event) => event.inputTokens));
+
+    return {
+      firstAvg,
+      lastAvg,
+      growth: firstAvg > 0 ? ((lastAvg - firstAvg) / firstAvg) * 100 : 0,
+      count: llmEvents.length,
+    };
   }
 
   private sumTokens(rows: { tokens: TokenBreakdown }[], field: keyof TokenBreakdown): number {

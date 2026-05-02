@@ -13,11 +13,12 @@ This file is for short-lived issues found while using the app. Fixed items are s
 - Header source chips use human labels like `Exact local data` and `Debug-log token counts` instead of raw internal strings.
 - Data ingest summary is more compact.
 - Cache visibility now appears under `Estimate scope`, so it reads as a limitation note rather than the answer to “why this run cost X”.
+- Session cards and the selected-run view now show run size and warning labels, so expensive-looking sessions are easier to spot before reading tables.
 
 ## Open
 
 - Consider whether the product name should stay `Copilot Cost Ledger` or move toward `Copilot Cost Debugger`.
 - Major style rework: visual hierarchy, spacing, responsive tables, and a calmer debugger-like polish.
+- Add filters for size, warning labels, model, source quality, and workspace once more sessions are imported.
 - Frontend code cleanup once the feature shape settles.
 - More focused frontend tests after the main flows are stable.
-

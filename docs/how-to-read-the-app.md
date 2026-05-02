@@ -19,10 +19,28 @@ Open one session and read the Cost debugger.
 
 Start with:
 
+- **Run Triage**: quick labels for size and warnings before reading the details.
 - **Cost drivers**: quick diagnosis of what pushed the cost up.
 - **Input**: usually the biggest cost source in agent runs because repo context and tool results get sent into the model.
 - **Largest model calls**: the individual calls that burned the most tokens.
 - **Model table**: which models were used and which GitHub price row applied.
+
+## Run Triage Labels
+
+The app now labels each selected run by size:
+
+- **Small**: under `50k` imported tokens.
+- **Medium**: `50k` to under `200k`.
+- **Large**: `200k` to under `600k`.
+- **Very large**: `600k` or more.
+
+Warnings are quick explanations, not separate billing rows:
+
+- **High input context** means the run sent a lot of prompt/context tokens into the model.
+- **Context grew** means later model calls received much larger input payloads than early calls.
+- **Mixed models** means more than one model contributed to the estimate.
+- **Cache unknown** means local logs did not expose provider cache read/write billing fields.
+- **State enriched** means VS Code `state.vscdb` improved the label or metadata.
 
 ## Source Quality
 
@@ -61,4 +79,3 @@ npm run verify:data
 Then refresh the app.
 
 If a long or compacted session appears to stop early, check `traceSummary.totalEvents` against the visible log count. The scanner currently keeps up to `1000` trace events per session.
-

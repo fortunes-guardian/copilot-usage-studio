@@ -39,6 +39,18 @@
           <span class="session-meta">
             {{ session.workspace }} · {{ session.model }}
           </span>
+          @if (sessionTriage(session); as triage) {
+            <span class="badge-row compact">
+              <span class="triage-badge" [ngClass]="triage.sizeTone" [title]="sessionSizeHelp(triage)">
+                {{ triage.size }}
+              </span>
+              @for (warning of triage.warnings.slice(0, 2); track warning.label) {
+                <span class="triage-badge" [ngClass]="warning.tone" [title]="warning.help">
+                  {{ warning.label }}
+                </span>
+              }
+            </span>
+          }
           <span class="session-footer">
             <span>{{ session.startedAt | date: 'MMM d, HH:mm' }}</span>
             <strong>€{{ session.cost.eur | number: '1.2-2' }}</strong>
@@ -193,6 +205,12 @@
           <div>
             <div class="source-meta">
               <span>{{ session.workspace }}</span>
+              @if (selectedTriage(); as triage) {
+                <span [title]="sessionSizeHelp(triage)">
+                  {{ triage.size }}
+                  <span class="help-dot" [title]="sessionSizeHelp(triage)" [attr.aria-label]="sessionSizeHelp(triage)" tabindex="0">?</span>
+                </span>
+              }
               <span [title]="confidenceHelp(session.confidence)">
                 {{ confidenceLabel(session.confidence) }}
                 <span class="help-dot" [title]="confidenceHelp(session.confidence)" [attr.aria-label]="confidenceHelp(session.confidence)" tabindex="0">?</span>
@@ -244,6 +262,15 @@
                 <span class="help-dot" [title]="sourceKindHelp(session.sourceKind)" [attr.aria-label]="sourceKindHelp(session.sourceKind)" tabindex="0">?</span>
               </dd>
             </div>
+            @if (selectedTriage(); as triage) {
+              <div>
+                <dt>Run size</dt>
+                <dd>
+                  {{ triage.size }} · {{ triage.totalTokens | number }} tokens
+                  <span class="help-dot" [title]="sessionSizeHelp(triage)" [attr.aria-label]="sessionSizeHelp(triage)" tabindex="0">?</span>
+                </dd>
+              </div>
+            }
             @if (session.vscodeState; as state) {
               <div>
                 <dt>Permission</dt>
@@ -256,6 +283,29 @@
             }
           </dl>
         </section>
+
+        @if (selectedTriage(); as triage) {
+          <section class="session-triage">
+            <div>
+              <h3>Run Triage</h3>
+              <p>
+                Quick labels for spotting why this session deserves attention.
+                <span class="help-dot" [title]="sessionTriageHelp" [attr.aria-label]="sessionTriageHelp" tabindex="0">?</span>
+              </p>
+            </div>
+            <div class="badge-row">
+              <span class="triage-badge size" [ngClass]="triage.sizeTone" [title]="sessionSizeHelp(triage)">
+                {{ triage.size }}
+              </span>
+              @for (warning of triage.warnings; track warning.label) {
+                <span class="triage-badge" [ngClass]="warning.tone" [title]="warning.help">
+                  {{ warning.label }}
+                  <span class="help-dot" [title]="warning.help" [attr.aria-label]="warning.help" tabindex="0">?</span>
+                </span>
+              }
+            </div>
+          </section>
+        }
 
         <section class="session-summary">
           <h3>Summary</h3>
