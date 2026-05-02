@@ -12,8 +12,11 @@
       <button type="button" [class.active]="activeView() === 'sessions'" (click)="activeView.set('sessions')">
         Sessions
       </button>
+      <button type="button" [class.active]="activeView() === 'analytics'" (click)="activeView.set('analytics')">
+        Analytics
+      </button>
       <button type="button" [class.active]="activeView() === 'pricing'" (click)="activeView.set('pricing')">
-        GitHub prices
+        Prices
       </button>
     </nav>
 
@@ -177,6 +180,122 @@
           }
         </div>
       </section>
+    } @else if (activeView() === 'analytics') {
+      @if (analytics(); as stats) {
+        <section class="pricing-page">
+          <div class="pricing-header">
+            <div>
+              <p class="eyebrow">Multi-session analytics</p>
+              <h2>{{ stats.scopeLabel }}</h2>
+              <p>
+                {{ stats.count }} of {{ sessions().length }} sessions included by the current sidebar filters.
+                <span class="help-dot" [title]="help.analyticsScope" [attr.aria-label]="help.analyticsScope" tabindex="0">?</span>
+              </p>
+            </div>
+          </div>
+
+          <section class="summary-grid">
+            @for (metric of stats.metrics; track metric.label) {
+              <article class="metric">
+                <span>
+                  {{ metric.label }}
+                  <span class="help-dot" [title]="metric.help" [attr.aria-label]="metric.help" tabindex="0">?</span>
+                </span>
+                <strong>{{ metric.value }}</strong>
+              </article>
+            }
+          </section>
+
+          <section class="analytics-split">
+            <div>
+              <h3>Runs to inspect</h3>
+              <div class="highlight-list">
+                @for (highlight of stats.highlights; track highlight.label) {
+                  <button type="button" (click)="openSession(highlight.session)" [disabled]="!highlight.session">
+                    <span>
+                      {{ highlight.label }}
+                      <span class="help-dot" [title]="highlight.help" [attr.aria-label]="highlight.help" tabindex="0">?</span>
+                    </span>
+                    <strong>{{ highlight.value }}</strong>
+                    @if (highlight.session) {
+                      <em>{{ highlight.session.title }}</em>
+                    }
+                  </button>
+                }
+              </div>
+            </div>
+
+            <div>
+              <h3>Outlier signals</h3>
+              <div class="highlight-list">
+                @for (outlier of stats.outliers; track outlier.session.id) {
+                  <button type="button" (click)="openSession(outlier.session)">
+                    <span>{{ outlier.tokens | number }} tokens · €{{ outlier.session.cost.eur | number: '1.2-4' }}</span>
+                    <strong>{{ outlier.session.title }}</strong>
+                    <em>{{ outlier.reason }}</em>
+                  </button>
+                } @empty {
+                  <p class="empty">No outliers in the current filter set.</p>
+                }
+              </div>
+            </div>
+          </section>
+
+          <section class="analytics-split">
+            <div>
+              <h3>Model breakdown</h3>
+              <div class="cost-table compact-table">
+                <div class="cost-row analytics-model-row cost-row-heading">
+                  <span>Model</span>
+                  <span>Sessions</span>
+                  <span>Tokens</span>
+                  <span>Cost</span>
+                  <span>Cost / 1k</span>
+                  <span>Share</span>
+                </div>
+                @for (model of stats.modelRows; track model.model + model.pricingModel) {
+                  <div class="cost-row analytics-model-row">
+                    <strong>{{ model.model }}<em>{{ model.pricingModel }}</em></strong>
+                    <span>{{ model.sessionCount | number }}</span>
+                    <span>{{ model.tokens | number }}<em>{{ model.input | number }} in / {{ model.output | number }} out</em></span>
+                    <span>€{{ model.cost | number: '1.2-4' }}</span>
+                    <span>€{{ model.costPer1k | number: '1.4-4' }}</span>
+                    <span>{{ model.share | number: '1.0-0' }}%</span>
+                  </div>
+                } @empty {
+                  <p class="empty">No model rows for the current filter set.</p>
+                }
+              </div>
+            </div>
+
+            <div>
+              <h3>Distribution</h3>
+              <div class="stat-list">
+                @for (bucket of stats.distribution; track bucket.size) {
+                  <div>
+                    <span>{{ bucket.size }}</span>
+                    <strong>{{ bucket.count | number }} runs</strong>
+                    <em>{{ bucket.tokens | number }} tokens · €{{ bucket.cost | number: '1.2-4' }} · {{ bucket.share | number: '1.0-0' }}%</em>
+                  </div>
+                }
+              </div>
+
+              <h3>Recent daily trend</h3>
+              <div class="stat-list">
+                @for (day of stats.dayRows; track day.day) {
+                  <div>
+                    <span>{{ day.day | date: 'MMM d, y' }}</span>
+                    <strong>{{ day.count | number }} runs</strong>
+                    <em>{{ day.tokens | number }} tokens · €{{ day.cost | number: '1.2-4' }}</em>
+                  </div>
+                } @empty {
+                  <p class="empty">No daily rows for the current filter set.</p>
+                }
+              </div>
+            </div>
+          </section>
+        </section>
+      }
     } @else {
     <section class="summary-grid">
       <article class="metric">

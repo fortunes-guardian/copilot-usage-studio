@@ -43,6 +43,13 @@ Principles:
   - largest model calls
 - Shows an agent flow chart with token/cost detail.
 - Compares two runs with metric deltas, cost-driver explanation, context-growth change, and model/pricing-row movement.
+- Shows a separate Analytics view for multi-session questions across the current filter set:
+  - totals and averages
+  - highest-token and most expensive sessions
+  - model breakdown
+  - daily trend
+  - size distribution
+  - outlier signals
 
 ## Important Design Decisions
 
@@ -53,26 +60,29 @@ Principles:
 - The UI should explain local estimates clearly instead of pretending they are GitHub invoice numbers.
 - The generated ledger should carry structured cost facts. The UI should not parse model/cost data out of display strings.
 - Run size and cost-signal labels are derived UI triage. They should help scanning, but they should not silently become billing facts.
+- Multi-session analytics are deliberately separate from the selected-run debugger. The analytics view answers "what is normal across included sessions?" while the Sessions view answers "why did this one run cost what it cost?"
+- Analytics use the current sidebar filters. This makes "relevant sessions" explicit: search, size, signal, and source filters define the cohort.
 
 ## Current Rough Edges
 
 - The UI is functional but visually busy.
 - Tooltips are better, but still use native browser title behavior.
-- No aggregated analytics dashboard yet.
+- Aggregated analytics are built, but still basic. Time grouping is daily only, and anomaly detection is a simple statistical signal.
 - Advanced signals such as reasoning level, compaction, and context-window pressure need stronger log/model evidence before becoming UI facts.
 - No app-owned database yet. Scans overwrite `public/data/sessions.json`.
 - Pricing tables are duplicated across UI/scanner/verifier and should eventually have one source of truth.
 
 ## Latest Implemented Step
 
-Replaced the old basic comparison section with an advanced run comparison:
+Built the multi-session Analytics view:
 
-- headline explanation of how run B differs from run A
-- deltas for cost, input tokens, output tokens, model turns, tool calls, and context growth
-- driver cards for cost movement, priced token driver, model pricing, context shape, and agent activity
-- model/pricing-row movement table
+- Separate top-level navigation item between Sessions and Prices.
+- Scope is explicit: all imported sessions or the current filtered set.
+- Shows total estimate, total tokens, average cost, average tokens, and cost per 1k tokens.
+- Highlights highest-token and most expensive runs with click-through back to the selected-run debugger.
+- Shows model/pricing-row aggregation, daily trend, size distribution, and outlier signals.
 
-Why: this makes comparison useful for testing prompt, workflow, MCP setup, or model changes. It also keeps the important caveat visible: cheaper is only better if the run still succeeded.
+Why: one-run debugging and two-run comparison are now covered. The next product question is "what is normal across my sessions, and which runs deserve attention?"
 
 `Context growth` is expected in many agent runs. It is shown because accumulated context can explain rising token cost, not because growth is automatically a bug.
 
@@ -85,14 +95,13 @@ Current size thresholds:
 
 ## Next Best Step
 
-Build the multi-session analytics dashboard.
+Improve analytics filtering and grouping.
 
 Build:
 
-- Average token usage and average cost per relevant session.
-- Highest-token and most expensive sessions.
-- Total tokens and total estimated cost across the ledger.
-- Model breakdowns.
-- Cost-efficiency and anomaly signals, such as cost per 1k tokens and outlier runs.
+- Workspace, model, and time-window filters.
+- Week/month grouping once there are enough imported days.
+- Better outlier language that separates "large because successful long run" from "large and suspicious".
+- A small visual polish pass on Analytics so dense tables remain readable on narrow screens.
 
-Why this next: one-run debugging and two-run comparison are now covered. The next product question is “what is normal across my sessions, and what deserves attention?”
+Why this next: the dashboard has the right placement and first metrics. Better filters make it useful once more sessions are imported.

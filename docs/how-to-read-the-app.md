@@ -44,6 +44,26 @@ Read it in this order:
 
 Cheaper is not automatically better. A cheaper run that failed, skipped work, or produced a worse answer is not a win.
 
+## Reading Analytics
+
+Use **Analytics** for questions about more than one session.
+
+The Analytics view is intentionally separate from the selected-run debugger:
+
+- **Sessions** explains one selected run.
+- **Compare runs** explains how run B differs from run A.
+- **Analytics** explains the current group of sessions.
+
+The sidebar filters define the group. If you filter to exact debug-log sessions, Analytics only summarizes those sessions. If you search for one workspace or model, the totals and outlier signals change to that filtered set.
+
+Read it in this order:
+
+- **Top metrics**: total cost/tokens, average cost/tokens, and cost per 1k tokens.
+- **Runs to inspect**: the highest-token and most expensive runs; click one to open the selected-run debugger.
+- **Outlier signals**: sessions that are unusually high compared with the current filter set.
+- **Model breakdown**: which model/pricing rows are contributing the cost.
+- **Distribution and daily trend**: whether cost is spread across many runs or concentrated in a few.
+
 ## Run Triage Labels
 
 The app now labels each selected run by size:

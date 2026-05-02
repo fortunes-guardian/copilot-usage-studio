@@ -31,6 +31,11 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
 - Shows the GitHub pricing table used by the app.
 - Shows trace logs and an agent flow chart.
 - Compares two runs with cost/token deltas, driver explanations, context-growth movement, and model/pricing-row changes.
+- Shows a multi-session Analytics view for filtered sessions:
+  - total and average cost/tokens
+  - highest-token and most expensive runs
+  - model breakdowns
+  - daily trend, size distribution, and outlier signals
 
 ## Run The App
 

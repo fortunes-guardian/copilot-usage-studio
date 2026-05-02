@@ -16,6 +16,7 @@ import {
 type SessionSize = 'Small' | 'Medium' | 'Large' | 'Very large';
 type WarningTone = 'info' | 'medium' | 'high';
 type SessionSourceFilter = 'all' | 'debug-log' | 'chat-snapshot' | 'exact' | 'estimated';
+type ActiveView = 'sessions' | 'analytics' | 'pricing';
 
 interface SessionWarning {
   label: string;
@@ -48,6 +49,19 @@ interface ComparisonDriver {
   detail: string;
 }
 
+interface AnalyticsMetric {
+  label: string;
+  value: string;
+  help: string;
+}
+
+interface AnalyticsHighlight {
+  label: string;
+  session: LedgerSession | null;
+  value: string;
+  help: string;
+}
+
 @Component({
   selector: 'app-root',
   imports: [DatePipe, DecimalPipe, FormsModule, NgClass],
@@ -66,7 +80,7 @@ export class App {
   protected readonly warningFilter = signal<string>('all');
   protected readonly sourceFilter = signal<SessionSourceFilter>('all');
   protected readonly traceView = signal<'logs' | 'flow'>('logs');
-  protected readonly activeView = signal<'sessions' | 'pricing'>('sessions');
+  protected readonly activeView = signal<ActiveView>('sessions');
   protected readonly pricingVersion = PRICING_VERSION;
   protected readonly pricingSourceLabel = PRICING_SOURCE_LABEL;
   protected readonly pricingSourceUrl = PRICING_SOURCE_URL;
@@ -96,6 +110,8 @@ export class App {
       'Provider cache creation tokens when the billing source exposes them. GitHub lists this mainly for Anthropic pricing rows.',
     priceRow:
       'The GitHub model pricing row used to estimate this model. Unknown models keep their display label and show any pricing fallback separately.',
+    analyticsScope:
+      'Multi-session analytics use the sessions currently included by the sidebar filters. Search, size, signal, and source filters all change this page.',
   };
   protected readonly sessionTriageHelp =
     'Fast read derived from imported tokens, model mix, cache visibility, context growth, and VS Code state enrichment. These are cost-debugging signals, not billing rows.';
@@ -216,6 +232,86 @@ export class App {
     );
 
     return { count: sessions.length, ...totals };
+  });
+
+  protected readonly analytics = computed(() => {
+    const sessions = this.filteredSessions();
+    const count = sessions.length;
+    const totalTokens = sessions.reduce((sum, session) => sum + this.sessionTotalTokens(session), 0);
+    const totalCost = sessions.reduce((sum, session) => sum + session.cost.eur, 0);
+    const avgTokens = count ? totalTokens / count : 0;
+    const avgCost = count ? totalCost / count : 0;
+    const costPer1k = totalTokens ? (totalCost / totalTokens) * 1000 : 0;
+    const highestTokens = this.maxBy(sessions, (session) => this.sessionTotalTokens(session));
+    const highestCost = this.maxBy(sessions, (session) => session.cost.eur);
+    const modelRows = this.analyticsModelRows(sessions, totalCost);
+    const dayRows = this.analyticsDayRows(sessions);
+    const distribution = this.sizeOptions
+      .filter((size): size is SessionSize => size !== 'all')
+      .map((size) => {
+        const bucket = sessions.filter((session) => this.sessionSize(this.sessionTotalTokens(session)) === size);
+        const tokens = bucket.reduce((sum, session) => sum + this.sessionTotalTokens(session), 0);
+        const cost = bucket.reduce((sum, session) => sum + session.cost.eur, 0);
+
+        return {
+          size,
+          count: bucket.length,
+          tokens,
+          cost,
+          share: totalCost > 0 ? (cost / totalCost) * 100 : 0,
+        };
+      });
+    const outliers = this.analyticsOutliers(sessions, avgCost, avgTokens);
+
+    return {
+      count,
+      scopeLabel: count === this.sessions().length ? 'All imported sessions' : 'Filtered sessions',
+      metrics: [
+        {
+          label: 'Total estimate',
+          value: `€${totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          help: 'Sum of local cost estimates for the sessions currently included by the sidebar filters.',
+        },
+        {
+          label: 'Total tokens',
+          value: totalTokens.toLocaleString(),
+          help: 'Input, output, cache-read, and cache-write token fields combined across included sessions.',
+        },
+        {
+          label: 'Avg cost / run',
+          value: `€${avgCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`,
+          help: 'Mean estimated cost per included session.',
+        },
+        {
+          label: 'Avg tokens / run',
+          value: Math.round(avgTokens).toLocaleString(),
+          help: 'Mean imported token count per included session.',
+        },
+        {
+          label: 'Cost / 1k tokens',
+          value: `€${costPer1k.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`,
+          help: 'Estimated EUR per 1,000 imported tokens. This moves when model mix or input/output mix changes.',
+        },
+      ] satisfies AnalyticsMetric[],
+      highlights: [
+        {
+          label: 'Highest-token run',
+          session: highestTokens,
+          value: highestTokens ? `${this.sessionTotalTokens(highestTokens).toLocaleString()} tokens` : 'n/a',
+          help: 'The included session with the largest imported token total.',
+        },
+        {
+          label: 'Most expensive run',
+          session: highestCost,
+          value: highestCost ? `€${highestCost.cost.eur.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}` : 'n/a',
+          help: 'The included session with the highest local cost estimate.',
+        },
+      ] satisfies AnalyticsHighlight[],
+      modelRows,
+      dayRows,
+      distribution,
+      outliers,
+    };
   });
 
   protected readonly comparison = computed(() => {
@@ -345,6 +441,15 @@ export class App {
 
   protected setSourceFilter(value: SessionSourceFilter): void {
     this.sourceFilter.set(value);
+  }
+
+  protected openSession(session: LedgerSession | null): void {
+    if (!session) {
+      return;
+    }
+
+    this.selectedId.set(session.id);
+    this.activeView.set('sessions');
   }
 
   protected sessionTriage(session: LedgerSession): SessionTriage {
@@ -680,6 +785,99 @@ export class App {
     };
   }
 
+  private analyticsModelRows(sessions: LedgerSession[], totalCost: number) {
+    const rows = new Map<
+      string,
+      {
+        model: string;
+        pricingModel: string;
+        turns: number;
+        sessions: Set<string>;
+        tokens: number;
+        input: number;
+        output: number;
+        cost: number;
+      }
+    >();
+
+    for (const session of sessions) {
+      for (const entry of session.modelBreakdown) {
+        const key = `${entry.model}::${entry.pricingModel}`;
+        const current =
+          rows.get(key) ??
+          {
+            model: entry.model,
+            pricingModel: entry.pricingModel,
+            turns: 0,
+            sessions: new Set<string>(),
+            tokens: 0,
+            input: 0,
+            output: 0,
+            cost: 0,
+          };
+
+        current.turns += entry.turns;
+        current.sessions.add(session.id);
+        current.tokens += this.tokenTotal(entry.tokens);
+        current.input += entry.tokens.input;
+        current.output += entry.tokens.output;
+        current.cost += entry.cost.eur;
+        rows.set(key, current);
+      }
+    }
+
+    return [...rows.values()]
+      .map((row) => ({
+        ...row,
+        sessionCount: row.sessions.size,
+        costPer1k: row.tokens ? (row.cost / row.tokens) * 1000 : 0,
+        share: totalCost > 0 ? (row.cost / totalCost) * 100 : 0,
+      }))
+      .sort((a, b) => b.cost - a.cost);
+  }
+
+  private analyticsDayRows(sessions: LedgerSession[]) {
+    const rows = new Map<string, { day: string; count: number; tokens: number; cost: number }>();
+
+    for (const session of sessions) {
+      const day = session.startedAt.slice(0, 10) || 'unknown';
+      const current = rows.get(day) ?? { day, count: 0, tokens: 0, cost: 0 };
+
+      current.count += 1;
+      current.tokens += this.sessionTotalTokens(session);
+      current.cost += session.cost.eur;
+      rows.set(day, current);
+    }
+
+    return [...rows.values()].sort((a, b) => b.day.localeCompare(a.day)).slice(0, 8);
+  }
+
+  private analyticsOutliers(sessions: LedgerSession[], avgCost: number, avgTokens: number) {
+    if (!sessions.length) {
+      return [];
+    }
+
+    const costStd = this.standardDeviation(sessions.map((session) => session.cost.eur));
+    const tokenStd = this.standardDeviation(sessions.map((session) => this.sessionTotalTokens(session)));
+
+    return sessions
+      .map((session) => {
+        const tokens = this.sessionTotalTokens(session);
+        const costScore = costStd > 0 ? (session.cost.eur - avgCost) / costStd : 0;
+        const tokenScore = tokenStd > 0 ? (tokens - avgTokens) / tokenStd : 0;
+        const score = Math.max(costScore, tokenScore);
+        const reason =
+          costScore >= tokenScore
+            ? `Cost is ${costScore.toFixed(1)} standard deviations above the filtered average.`
+            : `Tokens are ${tokenScore.toFixed(1)} standard deviations above the filtered average.`;
+
+        return { session, tokens, score, reason };
+      })
+      .filter((row) => row.score >= 1 || sessions.length <= 5)
+      .sort((a, b) => b.score - a.score || b.session.cost.eur - a.session.cost.eur)
+      .slice(0, 5);
+  }
+
   private comparisonSummary(
     costDelta: number,
     totalTokenDelta: number,
@@ -867,6 +1065,21 @@ export class App {
 
   private tokenTotal(tokens: TokenBreakdown): number {
     return tokens.input + tokens.cachedInput + tokens.cacheWrite + tokens.output;
+  }
+
+  private maxBy<T>(items: T[], valueFor: (item: T) => number): T | null {
+    return items.reduce<T | null>((best, item) => (!best || valueFor(item) > valueFor(best) ? item : best), null);
+  }
+
+  private standardDeviation(values: number[]): number {
+    if (values.length < 2) {
+      return 0;
+    }
+
+    const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+    const variance = values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length;
+
+    return Math.sqrt(variance);
   }
 
   private sessionSize(tokens: number): SessionSize {

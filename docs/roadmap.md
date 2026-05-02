@@ -56,21 +56,22 @@ Why: comparison is useful when testing prompts, models, MCP setup, or workflow c
 
 ## Phase 4: Multi-Session Analytics Dashboard
 
-Build:
+Status: built, first pass.
 
-- Aggregate metrics across relevant imported sessions:
-  - session count
-  - average tokens per session
-  - average cost per session
-  - highest-token session
-  - most expensive session
-  - global total tokens
-  - global total estimated cost
-- Breakdowns by model and, once there is enough data, by day/week/month.
-- Derived metrics:
-  - cost per 1k tokens
-  - spikes and anomalies
-  - distribution of many small runs vs a few large runs
+Done:
+
+- Added a separate `Analytics` top-level view between `Sessions` and `Prices`.
+- Uses the current sidebar filters as the analytics cohort.
+- Shows session count, total tokens, total estimated cost, average tokens, average cost, and cost per 1k tokens.
+- Highlights highest-token and most expensive sessions.
+- Shows model/pricing-row breakdowns.
+- Shows daily trend rows, size distribution, and outlier signals.
+
+Next:
+
+- Add workspace, model, and time-window filters.
+- Add week/month grouping once more date spread exists.
+- Improve outlier explanation so it can distinguish expected long work from suspicious token burn.
 
 Why: after one run and two-run comparison are understandable, the next developer question is “what is my normal usage pattern, and which runs are outliers?”
 

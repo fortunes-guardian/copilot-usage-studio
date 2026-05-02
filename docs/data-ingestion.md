@@ -99,6 +99,7 @@ The app displays:
 - a cost debugger with cost drivers, token categories, per-model pricing rows, and the largest model calls
 - a capped trace event preview for logs and flow-chart views
 - comparison deltas between two imported sessions
+- multi-session analytics across the current UI filter set
 
 The flow chart uses structured trace event pricing fields for model-call costs. The cost debugger uses the session and model-level token totals; both are generated during ingestion from the same `llm_request` source.
 
@@ -107,6 +108,8 @@ The trace event preview cap is intentionally high enough for normal debug sessio
 Cost drivers are UI-level diagnosis, not new billing facts. They summarize the generated ledger into practical signals: input cost share, the largest model call, context growth across model calls, model mix, and tool-call density. Why: developers need a quick answer to "what made this run expensive?" before they dig into raw logs.
 
 Comparison is also UI-level diagnosis. It compares two generated sessions without mutating the ledger: cost, token categories, model turns, tool calls, context growth, and model/pricing rows. Why: the practical developer workflow is often "I changed the prompt/workflow/model; did that make the run cheaper, and what moved?"
+
+Analytics is UI-level aggregation over generated sessions. It does not create new ingestion facts. It sums cost/tokens, groups model breakdown rows, computes cost per 1k tokens, buckets sessions by size, and flags simple statistical outliers. Why: this answers "what is normal for the sessions I am looking at?" without mixing cohort-level signals into the selected-run debugger.
 
 Source-confidence terms in the UI should carry inline help. Labels such as debug logs, chat snapshots, state DBs, state enriched, exact local totals, estimated totals, cached input, and cache write all need short explanations at the point of use. Why: this app is only credible if it says why a source is strong, what it does not know, and which fields are local estimates rather than GitHub billing facts.
 

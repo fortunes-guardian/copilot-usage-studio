@@ -103,7 +103,7 @@
 
 .view-nav {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 
@@ -802,6 +802,16 @@
   gap: 18px;
 }
 
+.pricing-header p { margin: 6px 0 0; color: #60717f; }
+.analytics-split { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr); gap: 16px; }
+.analytics-split h3 { margin: 0 0 10px; color: #16202a; font-size: 16px; }
+.highlight-list, .stat-list { display: grid; gap: 9px; }
+.highlight-list button, .stat-list div { display: grid; gap: 4px; width: 100%; border: 1px solid #dfe6ed; border-radius: 8px; padding: 12px; background: #fff; color: #16202a; text-align: left; }
+.highlight-list button { cursor: pointer; }
+.highlight-list span, .highlight-list em, .stat-list span, .stat-list em { color: #60717f; font-size: 13px; font-style: normal; }
+.highlight-list strong, .stat-list strong { color: #16202a; }
+.analytics-model-row { grid-template-columns: minmax(170px, 1.3fr) minmax(72px, 0.45fr) minmax(150px, 1fr) minmax(90px, 0.55fr) minmax(90px, 0.55fr) minmax(64px, 0.35fr); }
+
 .pricing-header,
 .pricing-source {
   display: flex;
@@ -943,6 +953,7 @@
   }
 
   .summary-grid,
+  .analytics-split,
   .facts,
   .cost-categories,
   .driver-grid,
