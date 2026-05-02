@@ -57,6 +57,7 @@ Principles:
   - Compare promoted out of the selected-session stack
   - selected-run content stays primary on narrow screens, with the session rail moving below it
   - dark diagnostic design tokens for panels, tables, badges, and cost signals
+  - selected-run hierarchy now leads with the run hero, summary, and Cost debugger before supporting metadata
 
 ## Important Design Decisions
 
@@ -83,9 +84,15 @@ Principles:
 
 ## Latest Implemented Step
 
-Started the Midnight Ledger UI overhaul. The first pass changes the app shell and visual system without changing the cost/data model.
+Continued the Midnight Ledger UI overhaul by cleaning up the Sessions view.
 
-Why: the app has enough cost-debugging features now that layout is the bottleneck. Compare should not live underneath a selected run, and narrow screens should keep the selected-run content readable instead of letting the session rail dominate.
+What changed:
+
+- Removed the hidden legacy Compare block from the Sessions template.
+- Kept Compare as a clean top-level view only.
+- Reordered the selected-run page so the Cost debugger is part of the main read, while Session Details and Run Triage move into supporting panels below it.
+
+Why: the app has enough cost-debugging features now that layout is the bottleneck. A developer opening one run should see "what did this cost and why?" before lower-priority metadata.
 
 Recently removed an unsupported session-summary signal after testing real VS Code agent sessions. The observed local signals were not strong enough to distinguish manual summary actions, automatic summary actions, repeated summaries, or ordinary context selection changes.
 
@@ -104,10 +111,9 @@ Continue the UI overhaul page by page.
 
 Build:
 
-- Tighten the Sessions view hierarchy around the selected-run Cost debugger.
-- Remove the hidden legacy Compare block from the Sessions template once the page split settles.
 - Consider a mobile/narrow layout where filters and session list become a top drawer or compact selector instead of sitting below content.
 - Replace native title tooltips with a small custom help popover for important cost terms.
 - Split the large `app.html`/`app.css` into smaller page/components as the UI stabilizes.
+- Continue visual polish of Sessions: compact the ingest panel, tune table density, and make the Cost debugger feel like the primary surface.
 
 Why this next: the data/debugging feature is now stronger than the layout. The app should keep the current selected run readable even on narrower screens.

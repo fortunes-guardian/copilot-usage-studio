@@ -125,12 +125,13 @@ Done:
 
 - Added the new app shell foundation.
 - Promoted Compare into the top navigation.
+- Removed the old hidden Compare copy from the Sessions view.
+- Reordered the selected-run view so the run hero, summary, and Cost debugger come before supporting metadata.
 - Applied the first dark diagnostic design-token layer.
 - Changed narrow layout behavior so the session rail moves below the content instead of replacing it.
 
 Build:
 
-- Cleaner selected-run hierarchy.
 - More compact data ingest section.
 - Better responsive tables.
 - Proper help popovers.
