@@ -54,15 +54,15 @@ The Analytics view is intentionally separate from the selected-run debugger:
 - **Compare runs** explains how run B differs from run A.
 - **Analytics** explains the current group of sessions.
 
-The sidebar filters define the group. If you filter to exact debug-log sessions, Analytics only summarizes those sessions. If you search for one workspace or model, the totals and outlier signals change to that filtered set.
+The sidebar filters define the starting group. If you filter to exact debug-log sessions, Analytics only summarizes those sessions. The Analytics controls then narrow that group by time range, workspace, and model, and choose whether the trend is grouped by day, week, or month.
 
 Read it in this order:
 
 - **Top metrics**: total cost/tokens, average cost/tokens, and cost per 1k tokens.
 - **Runs to inspect**: the highest-token and most expensive runs; click one to open the selected-run debugger.
-- **Outlier signals**: sessions that are unusually high compared with the current filter set.
+- **Outlier signals**: sessions that are unusually high compared with the current cohort, with a first-pass explanation of the likely driver.
 - **Model breakdown**: which model/pricing rows are contributing the cost.
-- **Distribution and daily trend**: whether cost is spread across many runs or concentrated in a few.
+- **Distribution and trend**: whether cost is spread across many runs or concentrated in a few periods.
 
 ## Run Triage Labels
 

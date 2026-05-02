@@ -61,17 +61,19 @@ Status: built, first pass.
 Done:
 
 - Added a separate `Analytics` top-level view between `Sessions` and `Prices`.
-- Uses the current sidebar filters as the analytics cohort.
+- Starts from the current sidebar filters as the analytics universe.
+- Adds Analytics-specific controls for time range, workspace, model, and day/week/month grouping.
 - Shows session count, total tokens, total estimated cost, average tokens, average cost, and cost per 1k tokens.
 - Highlights highest-token and most expensive sessions.
 - Shows model/pricing-row breakdowns.
-- Shows daily trend rows, size distribution, and outlier signals.
+- Shows grouped trend rows, size distribution, and outlier signals.
+- Explains likely outlier drivers such as input/context dominance, expensive model share, context growth, and high tool-call count.
 
 Next:
 
-- Add workspace, model, and time-window filters.
-- Add week/month grouping once more date spread exists.
+- Improve Analytics empty states and responsive polish.
 - Improve outlier explanation so it can distinguish expected long work from suspicious token burn.
+- Add saved comparison/cohort concepts later if app-owned SQLite becomes the right durable state layer.
 
 Why: after one run and two-run comparison are understandable, the next developer question is “what is my normal usage pattern, and which runs are outliers?”
 

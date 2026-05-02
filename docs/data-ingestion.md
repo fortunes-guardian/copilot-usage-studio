@@ -109,7 +109,7 @@ Cost drivers are UI-level diagnosis, not new billing facts. They summarize the g
 
 Comparison is also UI-level diagnosis. It compares two generated sessions without mutating the ledger: cost, token categories, model turns, tool calls, context growth, and model/pricing rows. Why: the practical developer workflow is often "I changed the prompt/workflow/model; did that make the run cheaper, and what moved?"
 
-Analytics is UI-level aggregation over generated sessions. It does not create new ingestion facts. It sums cost/tokens, groups model breakdown rows, computes cost per 1k tokens, buckets sessions by size, and flags simple statistical outliers. Why: this answers "what is normal for the sessions I am looking at?" without mixing cohort-level signals into the selected-run debugger.
+Analytics is UI-level aggregation over generated sessions. It does not create new ingestion facts. It starts from the sidebar-filtered sessions, then applies UI cohort controls for time range, workspace, model, and day/week/month trend grouping. It sums cost/tokens, groups model breakdown rows, computes cost per 1k tokens, buckets sessions by size, and flags simple statistical outliers with driver hints. Why: this answers "what is normal for the sessions I am looking at?" without mixing cohort-level signals into the selected-run debugger.
 
 Source-confidence terms in the UI should carry inline help. Labels such as debug logs, chat snapshots, state DBs, state enriched, exact local totals, estimated totals, cached input, and cache write all need short explanations at the point of use. Why: this app is only credible if it says why a source is strong, what it does not know, and which fields are local estimates rather than GitHub billing facts.
 

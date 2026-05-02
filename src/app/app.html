@@ -188,10 +188,52 @@
               <p class="eyebrow">Multi-session analytics</p>
               <h2>{{ stats.scopeLabel }}</h2>
               <p>
-                {{ stats.count }} of {{ sessions().length }} sessions included by the current sidebar filters.
+                {{ stats.count }} of {{ stats.sidebarCount }} sidebar-filtered sessions included in this analytics cohort.
                 <span class="help-dot" [title]="help.analyticsScope" [attr.aria-label]="help.analyticsScope" tabindex="0">?</span>
               </p>
             </div>
+          </div>
+
+          <section class="analytics-controls" aria-label="Analytics cohort controls">
+            <label>
+              <span>Time range</span>
+              <select [ngModel]="analyticsTimeRange()" (ngModelChange)="setAnalyticsTimeRange($event)">
+                @for (option of analyticsTimeOptions; track option.value) {
+                  <option [value]="option.value">{{ option.label }}</option>
+                }
+              </select>
+            </label>
+            <label>
+              <span>Workspace</span>
+              <select [ngModel]="analyticsWorkspaceFilter()" (ngModelChange)="setAnalyticsWorkspaceFilter($event)">
+                @for (workspace of analyticsWorkspaceOptions(); track workspace) {
+                  <option [value]="workspace">{{ workspace === 'all' ? 'All workspaces' : workspace }}</option>
+                }
+              </select>
+            </label>
+            <label>
+              <span>Model</span>
+              <select [ngModel]="analyticsModelFilter()" (ngModelChange)="setAnalyticsModelFilter($event)">
+                @for (model of analyticsModelOptions(); track model) {
+                  <option [value]="model">{{ model === 'all' ? 'All models' : model }}</option>
+                }
+              </select>
+            </label>
+            <label>
+              <span>Trend</span>
+              <select [ngModel]="analyticsGrouping()" (ngModelChange)="setAnalyticsGrouping($event)">
+                @for (option of analyticsGroupingOptions; track option.value) {
+                  <option [value]="option.value">{{ option.label }}</option>
+                }
+              </select>
+            </label>
+          </section>
+
+          <div class="analytics-scope">
+            <span>{{ stats.timeRangeLabel }}</span>
+            <span>{{ stats.workspaceLabel }}</span>
+            <span>{{ stats.modelLabel }}</span>
+            <span>{{ stats.groupingLabel }}</span>
           </div>
 
           <section class="summary-grid">
@@ -280,16 +322,16 @@
                 }
               </div>
 
-              <h3>Recent daily trend</h3>
+              <h3>Recent trend</h3>
               <div class="stat-list">
-                @for (day of stats.dayRows; track day.day) {
+                @for (row of stats.trendRows; track row.key) {
                   <div>
-                    <span>{{ day.day | date: 'MMM d, y' }}</span>
-                    <strong>{{ day.count | number }} runs</strong>
-                    <em>{{ day.tokens | number }} tokens · €{{ day.cost | number: '1.2-4' }}</em>
+                    <span>{{ row.label }}</span>
+                    <strong>{{ row.count | number }} runs</strong>
+                    <em>{{ row.tokens | number }} tokens · €{{ row.cost | number: '1.2-4' }}</em>
                   </div>
                 } @empty {
-                  <p class="empty">No daily rows for the current filter set.</p>
+                  <p class="empty">No trend rows for the current analytics cohort.</p>
                 }
               </div>
             </div>

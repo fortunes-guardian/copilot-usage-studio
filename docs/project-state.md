@@ -44,12 +44,13 @@ Principles:
 - Shows an agent flow chart with token/cost detail.
 - Compares two runs with metric deltas, cost-driver explanation, context-growth change, and model/pricing-row movement.
 - Shows a separate Analytics view for multi-session questions across the current filter set:
+  - time range, workspace, model, and day/week/month grouping controls
   - totals and averages
   - highest-token and most expensive sessions
   - model breakdown
-  - daily trend
+  - trend rows
   - size distribution
-  - outlier signals
+  - outlier signals with first-pass "why high cost?" explanations
 
 ## Important Design Decisions
 
@@ -61,13 +62,13 @@ Principles:
 - The generated ledger should carry structured cost facts. The UI should not parse model/cost data out of display strings.
 - Run size and cost-signal labels are derived UI triage. They should help scanning, but they should not silently become billing facts.
 - Multi-session analytics are deliberately separate from the selected-run debugger. The analytics view answers "what is normal across included sessions?" while the Sessions view answers "why did this one run cost what it cost?"
-- Analytics use the current sidebar filters. This makes "relevant sessions" explicit: search, size, signal, and source filters define the cohort.
+- Analytics start from the current sidebar filters, then apply Analytics-specific cohort controls. This keeps global search/source/quality filtering consistent while making time range, workspace, model, and trend grouping visible on the dashboard itself.
 
 ## Current Rough Edges
 
 - The UI is functional but visually busy.
 - Tooltips are better, but still use native browser title behavior.
-- Aggregated analytics are built, but still basic. Time grouping is daily only, and anomaly detection is a simple statistical signal.
+- Aggregated analytics are useful but still early. Outlier detection is a simple statistical signal with driver hints; it should become more nuanced as more real sessions are imported.
 - Advanced signals such as reasoning level, compaction, and context-window pressure need stronger log/model evidence before becoming UI facts.
 - No app-owned database yet. Scans overwrite `public/data/sessions.json`.
 - Pricing tables are duplicated across UI/scanner/verifier and should eventually have one source of truth.
@@ -77,10 +78,12 @@ Principles:
 Built the multi-session Analytics view:
 
 - Separate top-level navigation item between Sessions and Prices.
-- Scope is explicit: all imported sessions or the current filtered set.
+- Scope is explicit: sidebar-filtered sessions plus Analytics controls.
+- Adds visible controls for time range, workspace, model, and day/week/month grouping.
 - Shows total estimate, total tokens, average cost, average tokens, and cost per 1k tokens.
 - Highlights highest-token and most expensive runs with click-through back to the selected-run debugger.
-- Shows model/pricing-row aggregation, daily trend, size distribution, and outlier signals.
+- Shows model/pricing-row aggregation, grouped trend rows, size distribution, and outlier signals.
+- Outlier copy now points to likely drivers such as input/context dominance, expensive model share, context growth, or high tool-call count.
 
 Why: one-run debugging and two-run comparison are now covered. The next product question is "what is normal across my sessions, and which runs deserve attention?"
 
@@ -95,13 +98,13 @@ Current size thresholds:
 
 ## Next Best Step
 
-Improve analytics filtering and grouping.
+Improve Analytics polish and evidence-backed advanced signals.
 
 Build:
 
-- Workspace, model, and time-window filters.
-- Week/month grouping once there are enough imported days.
-- Better outlier language that separates "large because successful long run" from "large and suspicious".
+- Better empty states and responsive polish for Analytics once more sessions are imported.
+- More nuanced outlier language that separates "large because successful long run" from "large and suspicious".
+- Evidence-backed reasoning level, compaction, and context-window pressure only when the logs/model metadata support it.
 - A small visual polish pass on Analytics so dense tables remain readable on narrow screens.
 
-Why this next: the dashboard has the right placement and first metrics. Better filters make it useful once more sessions are imported.
+Why this next: the dashboard now has the right placement and cohort controls. The next value comes from making the explanations sharper without inventing facts the local logs do not support.

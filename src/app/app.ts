@@ -17,6 +17,8 @@ type SessionSize = 'Small' | 'Medium' | 'Large' | 'Very large';
 type WarningTone = 'info' | 'medium' | 'high';
 type SessionSourceFilter = 'all' | 'debug-log' | 'chat-snapshot' | 'exact' | 'estimated';
 type ActiveView = 'sessions' | 'analytics' | 'pricing';
+type AnalyticsTimeRange = 'all' | '7d' | '30d' | '90d';
+type AnalyticsGrouping = 'day' | 'week' | 'month';
 
 interface SessionWarning {
   label: string;
@@ -79,6 +81,10 @@ export class App {
   protected readonly sizeFilter = signal<'all' | SessionSize>('all');
   protected readonly warningFilter = signal<string>('all');
   protected readonly sourceFilter = signal<SessionSourceFilter>('all');
+  protected readonly analyticsTimeRange = signal<AnalyticsTimeRange>('all');
+  protected readonly analyticsWorkspaceFilter = signal('all');
+  protected readonly analyticsModelFilter = signal('all');
+  protected readonly analyticsGrouping = signal<AnalyticsGrouping>('day');
   protected readonly traceView = signal<'logs' | 'flow'>('logs');
   protected readonly activeView = signal<ActiveView>('sessions');
   protected readonly pricingVersion = PRICING_VERSION;
@@ -111,7 +117,7 @@ export class App {
     priceRow:
       'The GitHub model pricing row used to estimate this model. Unknown models keep their display label and show any pricing fallback separately.',
     analyticsScope:
-      'Multi-session analytics use the sessions currently included by the sidebar filters. Search, size, signal, and source filters all change this page.',
+      'Multi-session analytics start from the sessions currently included by the sidebar filters, then apply the Analytics controls on this page.',
   };
   protected readonly sessionTriageHelp =
     'Fast read derived from imported tokens, model mix, cache visibility, context growth, and VS Code state enrichment. These are cost-debugging signals, not billing rows.';
@@ -122,6 +128,17 @@ export class App {
     { value: 'chat-snapshot', label: 'Chat snapshots' },
     { value: 'exact', label: 'Exact local data' },
     { value: 'estimated', label: 'Estimated data' },
+  ];
+  protected readonly analyticsTimeOptions: Array<{ value: AnalyticsTimeRange; label: string }> = [
+    { value: 'all', label: 'All time' },
+    { value: '7d', label: 'Last 7 days' },
+    { value: '30d', label: 'Last 30 days' },
+    { value: '90d', label: 'Last 90 days' },
+  ];
+  protected readonly analyticsGroupingOptions: Array<{ value: AnalyticsGrouping; label: string }> = [
+    { value: 'day', label: 'By day' },
+    { value: 'week', label: 'By week' },
+    { value: 'month', label: 'By month' },
   ];
 
   protected readonly sessions = computed(() => this.ledger()?.sessions ?? []);
@@ -206,6 +223,56 @@ export class App {
       this.matchesSourceFilter(session, sourceFilter),
     );
   });
+  protected readonly analyticsWorkspaceOptions = computed(() => {
+    const workspaces = new Set(this.filteredSessions().map((session) => session.workspace).filter(Boolean));
+    const selected = this.analyticsWorkspaceFilter();
+    if (selected !== 'all') {
+      workspaces.add(selected);
+    }
+
+    return ['all', ...[...workspaces].sort()];
+  });
+  protected readonly analyticsModelOptions = computed(() => {
+    const models = new Set<string>();
+
+    for (const session of this.filteredSessions()) {
+      for (const row of session.modelBreakdown) {
+        models.add(row.pricingModel || row.model);
+      }
+    }
+
+    const selected = this.analyticsModelFilter();
+    if (selected !== 'all') {
+      models.add(selected);
+    }
+
+    return ['all', ...[...models].sort()];
+  });
+  protected readonly analyticsSessions = computed(() => {
+    const timeRange = this.analyticsTimeRange();
+    const workspace = this.analyticsWorkspaceFilter();
+    const model = this.analyticsModelFilter();
+    const cutoff = this.analyticsCutoff(this.filteredSessions(), timeRange);
+
+    return this.filteredSessions().filter((session) => {
+      if (cutoff && new Date(session.startedAt).getTime() < cutoff) {
+        return false;
+      }
+
+      if (workspace !== 'all' && session.workspace !== workspace) {
+        return false;
+      }
+
+      if (
+        model !== 'all' &&
+        !session.modelBreakdown.some((row) => row.pricingModel === model || row.model === model)
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  });
 
   protected readonly selectedSession = computed(() => {
     const id = this.selectedId() ?? this.filteredSessions()[0]?.id;
@@ -235,8 +302,9 @@ export class App {
   });
 
   protected readonly analytics = computed(() => {
-    const sessions = this.filteredSessions();
+    const sessions = this.analyticsSessions();
     const count = sessions.length;
+    const sidebarCount = this.filteredSessions().length;
     const totalTokens = sessions.reduce((sum, session) => sum + this.sessionTotalTokens(session), 0);
     const totalCost = sessions.reduce((sum, session) => sum + session.cost.eur, 0);
     const avgTokens = count ? totalTokens / count : 0;
@@ -245,7 +313,7 @@ export class App {
     const highestTokens = this.maxBy(sessions, (session) => this.sessionTotalTokens(session));
     const highestCost = this.maxBy(sessions, (session) => session.cost.eur);
     const modelRows = this.analyticsModelRows(sessions, totalCost);
-    const dayRows = this.analyticsDayRows(sessions);
+    const trendRows = this.analyticsTrendRows(sessions, this.analyticsGrouping());
     const distribution = this.sizeOptions
       .filter((size): size is SessionSize => size !== 'all')
       .map((size) => {
@@ -265,7 +333,17 @@ export class App {
 
     return {
       count,
-      scopeLabel: count === this.sessions().length ? 'All imported sessions' : 'Filtered sessions',
+      sidebarCount,
+      scopeLabel:
+        count === this.sessions().length && sidebarCount === this.sessions().length
+          ? 'All imported sessions'
+          : 'Filtered sessions',
+      timeRangeLabel:
+        this.analyticsTimeOptions.find((option) => option.value === this.analyticsTimeRange())?.label ?? 'All time',
+      workspaceLabel: this.analyticsWorkspaceFilter() === 'all' ? 'All workspaces' : this.analyticsWorkspaceFilter(),
+      modelLabel: this.analyticsModelFilter() === 'all' ? 'All models' : this.analyticsModelFilter(),
+      groupingLabel:
+        this.analyticsGroupingOptions.find((option) => option.value === this.analyticsGrouping())?.label ?? 'By day',
       metrics: [
         {
           label: 'Total estimate',
@@ -308,7 +386,7 @@ export class App {
         },
       ] satisfies AnalyticsHighlight[],
       modelRows,
-      dayRows,
+      trendRows,
       distribution,
       outliers,
     };
@@ -441,6 +519,22 @@ export class App {
 
   protected setSourceFilter(value: SessionSourceFilter): void {
     this.sourceFilter.set(value);
+  }
+
+  protected setAnalyticsTimeRange(value: AnalyticsTimeRange): void {
+    this.analyticsTimeRange.set(value);
+  }
+
+  protected setAnalyticsWorkspaceFilter(value: string): void {
+    this.analyticsWorkspaceFilter.set(value);
+  }
+
+  protected setAnalyticsModelFilter(value: string): void {
+    this.analyticsModelFilter.set(value);
+  }
+
+  protected setAnalyticsGrouping(value: AnalyticsGrouping): void {
+    this.analyticsGrouping.set(value);
   }
 
   protected openSession(session: LedgerSession | null): void {
@@ -836,20 +930,20 @@ export class App {
       .sort((a, b) => b.cost - a.cost);
   }
 
-  private analyticsDayRows(sessions: LedgerSession[]) {
-    const rows = new Map<string, { day: string; count: number; tokens: number; cost: number }>();
+  private analyticsTrendRows(sessions: LedgerSession[], grouping: AnalyticsGrouping) {
+    const rows = new Map<string, { key: string; label: string; count: number; tokens: number; cost: number }>();
 
     for (const session of sessions) {
-      const day = session.startedAt.slice(0, 10) || 'unknown';
-      const current = rows.get(day) ?? { day, count: 0, tokens: 0, cost: 0 };
+      const group = this.analyticsGroupKey(session.startedAt, grouping);
+      const current = rows.get(group.key) ?? { ...group, count: 0, tokens: 0, cost: 0 };
 
       current.count += 1;
       current.tokens += this.sessionTotalTokens(session);
       current.cost += session.cost.eur;
-      rows.set(day, current);
+      rows.set(group.key, current);
     }
 
-    return [...rows.values()].sort((a, b) => b.day.localeCompare(a.day)).slice(0, 8);
+    return [...rows.values()].sort((a, b) => b.key.localeCompare(a.key)).slice(0, 8);
   }
 
   private analyticsOutliers(sessions: LedgerSession[], avgCost: number, avgTokens: number) {
@@ -866,16 +960,84 @@ export class App {
         const costScore = costStd > 0 ? (session.cost.eur - avgCost) / costStd : 0;
         const tokenScore = tokenStd > 0 ? (tokens - avgTokens) / tokenStd : 0;
         const score = Math.max(costScore, tokenScore);
-        const reason =
-          costScore >= tokenScore
-            ? `Cost is ${costScore.toFixed(1)} standard deviations above the filtered average.`
-            : `Tokens are ${tokenScore.toFixed(1)} standard deviations above the filtered average.`;
+        const reason = this.analyticsOutlierReason(session, costScore, tokenScore);
 
         return { session, tokens, score, reason };
       })
       .filter((row) => row.score >= 1 || sessions.length <= 5)
       .sort((a, b) => b.score - a.score || b.session.cost.eur - a.session.cost.eur)
       .slice(0, 5);
+  }
+
+  private analyticsCutoff(sessions: LedgerSession[], timeRange: AnalyticsTimeRange): number | null {
+    if (timeRange === 'all' || !sessions.length) {
+      return null;
+    }
+
+    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
+    const latest = Math.max(...sessions.map((session) => new Date(session.startedAt).getTime()).filter(Number.isFinite));
+
+    if (!Number.isFinite(latest)) {
+      return null;
+    }
+
+    return latest - days * 24 * 60 * 60 * 1000;
+  }
+
+  private analyticsGroupKey(startedAt: string, grouping: AnalyticsGrouping): { key: string; label: string } {
+    const date = new Date(startedAt);
+
+    if (!Number.isFinite(date.getTime())) {
+      return { key: 'unknown', label: 'Unknown date' };
+    }
+
+    const day = this.isoDate(date);
+
+    if (grouping === 'day') {
+      return { key: day, label: day };
+    }
+
+    if (grouping === 'month') {
+      return { key: day.slice(0, 7), label: day.slice(0, 7) };
+    }
+
+    const weekStart = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+    const dayOfWeek = weekStart.getUTCDay() || 7;
+    weekStart.setUTCDate(weekStart.getUTCDate() - dayOfWeek + 1);
+
+    return { key: this.isoDate(weekStart), label: `Week of ${this.isoDate(weekStart)}` };
+  }
+
+  private analyticsOutlierReason(session: LedgerSession, costScore: number, tokenScore: number): string {
+    const totalTokens = this.sessionTotalTokens(session);
+    const inputShare = totalTokens ? (session.tokens.input / totalTokens) * 100 : 0;
+    const topModel = this.maxBy(session.modelBreakdown, (row) => row.cost.eur);
+    const topModelShare = topModel && session.cost.eur > 0 ? (topModel.cost.eur / session.cost.eur) * 100 : 0;
+    const contextGrowth = this.contextGrowth(session);
+
+    if (inputShare >= 85 && session.tokens.input >= 100_000) {
+      return `Mostly input/context tokens (${inputShare.toFixed(0)}% of imported tokens). Check prompt context, repo reads, prior conversation, and tool results.`;
+    }
+
+    if (topModel && topModelShare >= 70) {
+      return `${topModel.pricingModel} produced ${topModelShare.toFixed(0)}% of this run's estimate. Model mix is the first thing to inspect.`;
+    }
+
+    if (contextGrowth !== null && contextGrowth >= 50) {
+      return `Average input grew ${contextGrowth.toFixed(0)}% from early to late model calls, so repeated context is likely driving the increase.`;
+    }
+
+    if (session.traceSummary.toolCalls >= 20) {
+      return `${session.traceSummary.toolCalls.toLocaleString()} tool calls may have added results back into later model input.`;
+    }
+
+    return costScore >= tokenScore
+      ? `Cost is ${costScore.toFixed(1)} standard deviations above this cohort. Check model price rows and output mix.`
+      : `Tokens are ${tokenScore.toFixed(1)} standard deviations above this cohort. Check input context and model-turn count.`;
+  }
+
+  private isoDate(date: Date): string {
+    return date.toISOString().slice(0, 10);
   }
 
   private comparisonSummary(
