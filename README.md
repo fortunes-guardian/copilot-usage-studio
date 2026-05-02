@@ -23,11 +23,16 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
 - Filters sessions by size, cost signal, and source quality.
 - Shows a selected-run Cost debugger:
   - run size and cost-signal labels
+  - a primary-driver answer for the current estimate
   - cost drivers
   - input/output token categories
   - per-model pricing rows
-  - per-turn model-call cost breakdown
   - source-confidence explanations
+- Splits each selected run into debugger subviews:
+  - `Overview` for summary, metadata, and triage
+  - `Cost` for estimate explanation, drivers, and price rows
+  - `Turns` for per-turn model-call insights and the detailed ledger
+  - `Trace` for raw logs and agent flow
 - Shows the GitHub pricing table used by the app.
 - Shows trace logs and an agent flow chart.
 - Compares two runs with cost/token deltas, driver explanations, context-growth movement, and model/pricing-row changes.
@@ -41,7 +46,8 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
 - Started the Midnight Ledger UI overhaul:
   - top-level navigation for Sessions, Compare, Analytics, and Prices
   - Compare separated from the selected-run stack and no longer rendered inside Sessions
-  - selected-run pages now lead with run cost, summary, and Cost debugger before supporting metadata
+  - selected-run pages now use Overview, Cost, Turns, and Trace subviews instead of one stacked report
+  - Cost and Turns now lead with debugger-style answer panels before the detailed tables
   - narrow screens keep selected content primary while the session rail moves below it
 
 ## Run The App
@@ -78,6 +84,14 @@ Secondary source:
 ```
 
 These chat snapshots can explain conversation context, but they are weaker for cost because they do not reliably include the full request token count.
+
+Observed but not trusted for core cost:
+
+```text
+%APPDATA%\Code\User\workspaceStorage\<workspace-id>\GitHub.copilot-chat\transcripts\<session-id>.jsonl
+```
+
+These Chat Debug transcript files can contain richer tool/chat timeline details, but they are inconsistent across sessions and may not match what VS Code shows after restart. They should only be optional inspection enrichment, not the pricing or token source.
 
 ## Pricing
 

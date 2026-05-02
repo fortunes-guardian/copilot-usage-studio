@@ -31,6 +31,23 @@ Why it is fallback only: chat snapshots preserve conversation state, but they do
 
 Chat snapshot files without a `requests` array are skipped and counted in `ingestion.skippedChatSnapshotsWithoutRequests`.
 
+There is also a useful but fragile adjacent source:
+
+```text
+%APPDATA%\Code\User\workspaceStorage\<workspace-id>\GitHub.copilot-chat\transcripts\<session-id>.jsonl
+```
+
+Observed transcript ids can match debug-log session ids. These transcript files can preserve a richer Chat Debug timeline with events such as `assistant.message`, `assistant.turn_start`, `assistant.turn_end`, `tool.execution_start`, and `tool.execution_complete`. They can include tool request names, arguments, completion success, assistant reasoning text, and user messages.
+
+Important boundary: these files are not consistently complete. In the current workspace, one session has rich transcript events while its debug log only contains `session_start`; another session has dozens of debug-log events while its transcript contains only `session.start`. After a VS Code restart, the Chat Debug view may no longer show the same visible log tree even though some old transcript files still exist on disk. That makes transcripts useful for optional inspection, but too fragile to become the cost source or a required ingestion dependency.
+
+Why this matters: VS Code has at least two adjacent debug surfaces:
+
+- Agent Debug Logs: better source for model ids, token totals, pricing estimates, discovery/customization events, and the selected-run cost spine.
+- Chat Debug transcripts: sometimes better source for readable step-level chat/tool detail, but not reliable enough to drive core cost facts.
+
+Design decision: the scanner may eventually import transcript details only as optional enrichment with clear source labels and availability counts. Missing transcript detail must not downgrade or invalidate a debug-log session.
+
 ## What counts as an imported session
 
 Debug-log folders are imported only when they contain at least one meaningful chat signal:
@@ -154,6 +171,14 @@ The UI supports two reads:
 - `Largest first`: best for quickly finding the biggest token/cost burn.
 
 Why: session totals answer "how expensive was this run?" Per-turn costs answer "where did the cost happen?" That is the sharper debugging tool when a developer wants to know whether cost came from the first prompt, accumulated context, repo/tool output, a model switch, or a late-session spike.
+
+## Future request-payload attribution
+
+Observed VS Code debug-log `llm_request` events can include large request payload fields such as `attrs.userRequest`, `attrs.inputMessages`, `attrs.systemPromptFile`, and `attrs.toolsFile`. Transcript events can add tool request and execution detail that is easier to read than the raw model request payload when those transcript events are present. These fields are not yet preserved in the generated app contract; the current `traceEvents.detail` field is a short display summary.
+
+Future instruction, MCP, and context attribution should use structured payload extraction from those fields instead of parsing the rendered row text. The scanner should normalize request sections into explicit buckets such as user prompt, workspace context, instructions, tool references, tool results, MCP tool calls/results, prior conversation, and system/developer material.
+
+Important boundary: current exact local token counts are exact at the `llm_request` level. Unless VS Code logs per-section token counts, any split across instructions, MCP servers, tool results, or workspace context is an attribution estimate calculated from available payload sections. That can still be useful for optimization, but the UI must label it differently from model-call token totals.
 
 ## SQLite workspace state
 

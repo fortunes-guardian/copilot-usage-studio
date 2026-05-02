@@ -219,6 +219,11 @@
   padding: 28px;
 }
 
+.workspace-overview {
+  display: grid;
+  gap: 12px;
+}
+
 .summary-grid,
 .facts,
 .comparison-grid {
@@ -279,43 +284,71 @@
   font-size: 16px;
 }
 
-.ingestion {
-  grid-template-columns: minmax(200px, 0.8fr) 2.2fr;
-  align-items: start;
-  gap: 14px;
-  padding: 16px 18px;
-}
-
-.ingestion p {
+.ingestion p,
+.ingestion-lede span {
   margin: 5px 0 0;
   color: #60717f;
   font-size: 13px;
 }
 
+.compact-ingestion {
+  grid-template-columns: minmax(210px, 0.65fr) minmax(0, 1.35fr);
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+}
+
+.ingestion-lede {
+  min-width: 0;
+}
+
+.ingestion-lede strong {
+  display: block;
+  margin-top: 3px;
+  color: #16202a;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.ingestion-lede span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
 .ingestion dl {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
   margin: 0;
 }
 
 .ingestion dl > div {
-  display: grid;
-  gap: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  border: 1px solid #e6edf2;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #f8fafb;
 }
 
 .ingestion dt {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  min-width: 0;
   color: #60717f;
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 1.2;
 }
 
 .ingestion dd {
+  flex: 0 0 auto;
   margin: 0;
   color: #16202a;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
 }
 
@@ -417,6 +450,114 @@
   color: #245a62;
   font-weight: 800;
   white-space: nowrap;
+}
+
+.diagnostic-hero {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.85fr) minmax(0, 1.15fr);
+  gap: 12px;
+}
+
+.primary-diagnosis,
+.diagnostic-facts > div,
+.turn-insight-grid article {
+  border: 1px solid #dfe8ec;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.primary-diagnosis {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 100%;
+  padding: 18px;
+}
+
+.primary-diagnosis span,
+.diagnostic-facts span,
+.turn-insight-grid span,
+.section-label p {
+  color: #60717f;
+  font-size: 12px;
+}
+
+.primary-diagnosis span,
+.diagnostic-facts span,
+.turn-insight-grid span {
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.primary-diagnosis strong {
+  color: #16202a;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.primary-diagnosis p,
+.turn-insight-grid p {
+  margin: 0;
+  color: #3f4f5d;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.diagnostic-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.diagnostic-facts > div,
+.turn-insight-grid article {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+}
+
+.diagnostic-facts strong,
+.turn-insight-grid strong {
+  color: #16202a;
+  font-size: 19px;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.diagnostic-facts em {
+  color: #60717f;
+  font-size: 13px;
+  font-style: normal;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.compact-source-callout {
+  align-items: center;
+  border: 1px solid #dfe8ec;
+  border-left-width: 4px;
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #fff;
+}
+
+.section-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 14px;
+  margin-bottom: -6px;
+}
+
+.section-label h4 {
+  margin: 0;
+  color: #16202a;
+  font-size: 15px;
+}
+
+.section-label p {
+  margin: 0;
 }
 
 .cost-drivers {
@@ -634,6 +775,12 @@
   margin: 4px 0 0;
   color: #60717f;
   font-size: 13px;
+}
+
+.turn-insight-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
 }
 
 .segmented-control {
@@ -1352,7 +1499,7 @@
   margin: 0;
 }
 
-.sessions-page > .ingestion {
+.sessions-page .ingestion {
   margin: 0;
 }
 
@@ -1391,6 +1538,46 @@
   line-height: 1;
 }
 
+.run-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  gap: 8px;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.run-tabs button {
+  min-height: 40px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.run-tabs button:hover {
+  border-color: var(--line);
+  color: var(--text);
+}
+
+.run-tabs button.active {
+  border-color: rgba(124, 92, 255, 0.45);
+  background: linear-gradient(135deg, rgba(124, 92, 255, 0.24), rgba(31, 209, 165, 0.1));
+  color: var(--text-strong);
+}
+
+.run-panel {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  background: var(--surface);
+}
+
 .session-summary,
 .trace-tools,
 .supporting-grid {
@@ -1420,9 +1607,14 @@
 .price strong,
 .detail h2,
 .ingestion h2,
+.ingestion-lede strong,
 .compare h2,
 .pricing-header h2,
 .source-callout strong,
+.primary-diagnosis strong,
+.diagnostic-facts strong,
+.turn-insight-grid strong,
+.section-label h4,
 .cost-drivers h4,
 .token-burners h4,
 .cost-categories strong,
@@ -1450,6 +1642,10 @@
 .pricing-row span,
 .pricing-note p,
 .source-callout p,
+.primary-diagnosis p,
+.diagnostic-facts em,
+.turn-insight-grid p,
+.section-label p,
 .cost-drivers > div:first-child p,
 .driver-grid p,
 .cost-categories span,
@@ -1466,6 +1662,7 @@
 .flow-node p,
 .analytics-empty p,
 .session-details dt,
+.ingestion-lede span,
 .empty,
 .muted {
   color: var(--muted);
@@ -1499,9 +1696,12 @@
 .facts > div,
 .comparison-grid > div,
 .cost-explainer,
+.primary-diagnosis,
+.diagnostic-facts > div,
 .cost-categories article,
 .cost-table,
 .driver-grid article,
+.turn-insight-grid article,
 .event-log,
 .event-row,
 .flow-node,
@@ -1521,8 +1721,11 @@
 
 .facts > div,
 .comparison-grid > div,
+.ingestion dl > div,
 .cost-categories article,
 .driver-grid article,
+.diagnostic-facts > div,
+.turn-insight-grid article,
 .highlight-list button,
 .stat-list div,
 .event-row,
@@ -1532,6 +1735,10 @@
 .pricing-row-heading,
 .cost-row-heading {
   background: var(--surface-soft);
+}
+
+.ingestion dl > div {
+  border-color: var(--line);
 }
 
 .pricing-note,
@@ -1561,6 +1768,31 @@
 
 .driver-grid p {
   color: var(--text);
+}
+
+.primary-diagnosis {
+  border-color: rgba(124, 92, 255, 0.38);
+  background:
+    linear-gradient(135deg, rgba(124, 92, 255, 0.2), rgba(31, 209, 165, 0.08)),
+    var(--surface-soft);
+}
+
+.primary-diagnosis span,
+.diagnostic-facts span,
+.turn-insight-grid span {
+  color: var(--muted-2);
+}
+
+.primary-diagnosis p,
+.turn-insight-grid p,
+.diagnostic-facts em {
+  color: var(--text);
+}
+
+.compact-source-callout {
+  border-color: var(--line);
+  border-left-color: var(--accent-2);
+  background: var(--surface-soft);
 }
 
 .source-pill,
@@ -1677,6 +1909,20 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .compact-ingestion {
+    grid-template-columns: 1fr;
+  }
+
+  .compact-ingestion dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .diagnostic-hero,
+  .diagnostic-facts,
+  .turn-insight-grid {
+    grid-template-columns: 1fr;
+  }
+
   .supporting-grid {
     grid-template-columns: 1fr;
   }
@@ -1695,9 +1941,21 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .run-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .summary-grid,
   .metrics {
     grid-template-columns: 1fr;
+  }
+
+  .compact-ingestion dl {
+    grid-template-columns: 1fr;
+  }
+
+  .section-label {
+    display: grid;
   }
 }
 .shell, :host {

@@ -472,60 +472,62 @@
       </section>
     } @else if (activeView() === 'sessions') {
     <section class="sessions-page">
-    <section class="summary-grid">
-      <article class="metric">
-        <span>Sessions</span>
-        <strong>{{ summary().count }}</strong>
-      </article>
-      <article class="metric">
-        <span>Total estimate</span>
-        <strong>€{{ summary().eur | number: '1.2-2' }}</strong>
-      </article>
-      <article class="metric">
-        <span>Input tokens</span>
-        <strong>{{ summary().input | number }}</strong>
-      </article>
-      <article class="metric">
-        <span>Output tokens</span>
-        <strong>{{ summary().output | number }}</strong>
-      </article>
-    </section>
-
-    @if (ledger()?.ingestion; as ingestion) {
-      <section class="ingestion">
-        <div>
-          <p class="eyebrow">Data ingest</p>
-          <h2>{{ ingestion.importedSessions }} sessions imported</h2>
-          <p>{{ ingestion.scannedWorkspaces }} workspaces scanned · {{ ingestion.enrichedFromStateDbs }} state-enriched</p>
-        </div>
-        <dl>
-          <div>
-            <dt>Debug logs <span class="help-dot" [title]="help.debugLogs" [attr.aria-label]="help.debugLogs" tabindex="0">?</span></dt>
-            <dd>{{ ingestion.importedDebugLogSessions | number }}</dd>
-          </div>
-          <div>
-            <dt>Chat snapshots <span class="help-dot" [title]="help.chatSnapshots" [attr.aria-label]="help.chatSnapshots" tabindex="0">?</span></dt>
-            <dd>{{ ingestion.importedChatSnapshotSessions | number }}</dd>
-          </div>
-          <div>
-            <dt>State DBs <span class="help-dot" [title]="help.stateDbs" [attr.aria-label]="help.stateDbs" tabindex="0">?</span></dt>
-            <dd>{{ ingestion.scannedStateDbs | number }}</dd>
-          </div>
-          <div>
-            <dt>State enriched <span class="help-dot" [title]="help.stateEnriched" [attr.aria-label]="help.stateEnriched" tabindex="0">?</span></dt>
-            <dd>{{ ingestion.enrichedFromStateDbs | number }}</dd>
-          </div>
-          <div>
-            <dt>Empty debug logs skipped <span class="help-dot" [title]="help.emptyDebugLogs" [attr.aria-label]="help.emptyDebugLogs" tabindex="0">?</span></dt>
-            <dd>{{ ingestion.skippedEmptyDebugLogs | number }}</dd>
-          </div>
-          <div>
-            <dt>Snapshots without requests <span class="help-dot" [title]="help.snapshotsWithoutRequests" [attr.aria-label]="help.snapshotsWithoutRequests" tabindex="0">?</span></dt>
-            <dd>{{ ingestion.skippedChatSnapshotsWithoutRequests | number }}</dd>
-          </div>
-        </dl>
+    <section class="workspace-overview" aria-label="Session workspace overview">
+      <section class="summary-grid">
+        <article class="metric">
+          <span>Sessions</span>
+          <strong>{{ summary().count }}</strong>
+        </article>
+        <article class="metric">
+          <span>Total estimate</span>
+          <strong>€{{ summary().eur | number: '1.2-2' }}</strong>
+        </article>
+        <article class="metric">
+          <span>Input tokens</span>
+          <strong>{{ summary().input | number }}</strong>
+        </article>
+        <article class="metric">
+          <span>Output tokens</span>
+          <strong>{{ summary().output | number }}</strong>
+        </article>
       </section>
-    }
+
+      @if (ledger()?.ingestion; as ingestion) {
+        <section class="ingestion compact-ingestion" aria-label="Data provenance">
+          <div class="ingestion-lede">
+            <p class="eyebrow">Data provenance</p>
+            <strong>{{ ingestion.importedSessions }} sessions imported</strong>
+            <span>{{ ingestion.scannedWorkspaces }} workspaces scanned · {{ ingestion.enrichedFromStateDbs }} state-enriched</span>
+          </div>
+          <dl>
+            <div>
+              <dt>Debug logs <span class="help-dot" [title]="help.debugLogs" [attr.aria-label]="help.debugLogs" tabindex="0">?</span></dt>
+              <dd>{{ ingestion.importedDebugLogSessions | number }}</dd>
+            </div>
+            <div>
+              <dt>Chat snapshots <span class="help-dot" [title]="help.chatSnapshots" [attr.aria-label]="help.chatSnapshots" tabindex="0">?</span></dt>
+              <dd>{{ ingestion.importedChatSnapshotSessions | number }}</dd>
+            </div>
+            <div>
+              <dt>State DBs <span class="help-dot" [title]="help.stateDbs" [attr.aria-label]="help.stateDbs" tabindex="0">?</span></dt>
+              <dd>{{ ingestion.scannedStateDbs | number }}</dd>
+            </div>
+            <div>
+              <dt>State enriched <span class="help-dot" [title]="help.stateEnriched" [attr.aria-label]="help.stateEnriched" tabindex="0">?</span></dt>
+              <dd>{{ ingestion.enrichedFromStateDbs | number }}</dd>
+            </div>
+            <div>
+              <dt>Empty logs skipped <span class="help-dot" [title]="help.emptyDebugLogs" [attr.aria-label]="help.emptyDebugLogs" tabindex="0">?</span></dt>
+              <dd>{{ ingestion.skippedEmptyDebugLogs | number }}</dd>
+            </div>
+            <div>
+              <dt>No-request snapshots <span class="help-dot" [title]="help.snapshotsWithoutRequests" [attr.aria-label]="help.snapshotsWithoutRequests" tabindex="0">?</span></dt>
+              <dd>{{ ingestion.skippedChatSnapshotsWithoutRequests | number }}</dd>
+            </div>
+          </dl>
+        </section>
+      }
+    </section>
 
     @if (selectedSession(); as session) {
       <section class="detail">
@@ -560,6 +562,22 @@
           </div>
         </div>
 
+        <nav class="run-tabs" aria-label="Selected run sections">
+          <button type="button" [class.active]="selectedRunView() === 'overview'" (click)="selectedRunView.set('overview')">
+            Overview
+          </button>
+          <button type="button" [class.active]="selectedRunView() === 'cost'" (click)="selectedRunView.set('cost')">
+            Cost
+          </button>
+          <button type="button" [class.active]="selectedRunView() === 'turns'" (click)="selectedRunView.set('turns')">
+            Turns
+          </button>
+          <button type="button" [class.active]="selectedRunView() === 'trace'" (click)="selectedRunView.set('trace')">
+            Trace
+          </button>
+        </nav>
+
+        @if (selectedRunView() === 'overview') {
         <section class="session-summary">
           <h3>Summary</h3>
           <div class="facts trace-cards">
@@ -585,7 +603,9 @@
             </div>
           </div>
         </section>
+        }
 
+        @if (selectedRunView() === 'cost') {
         @if (costExplanation(); as cost) {
           <section class="cost-explainer">
             <div class="cost-explainer-header">
@@ -599,7 +619,37 @@
               </span>
             </div>
 
-            <div class="source-callout">
+            <section class="diagnostic-hero" aria-label="Cost answer">
+              <article class="primary-diagnosis">
+                <span>Primary driver</span>
+                <strong>{{ cost.costAnswer.category }}</strong>
+                <p>{{ cost.costAnswer.categoryDetail }}</p>
+              </article>
+              <div class="diagnostic-facts">
+                <div>
+                  <span>Driver share</span>
+                  <strong>{{ cost.costAnswer.categoryShare | number: '1.0-0' }}%</strong>
+                  <em>{{ cost.costAnswer.inputShare | number: '1.0-0' }}% input / {{ cost.costAnswer.outputShare | number: '1.0-0' }}% output</em>
+                </div>
+                <div>
+                  <span>Top model</span>
+                  <strong>{{ cost.costAnswer.topModelLabel }}</strong>
+                  <em>{{ cost.costAnswer.topModelShare | number: '1.0-0' }}% of estimate</em>
+                </div>
+                <div>
+                  <span>Top call</span>
+                  <strong>{{ cost.costAnswer.topCallLabel }}</strong>
+                  <em>{{ cost.costAnswer.topCallShare | number: '1.0-0' }}% · {{ cost.costAnswer.topCallDetail }}</em>
+                </div>
+                <div>
+                  <span>Cost / 1k tokens</span>
+                  <strong>€{{ cost.costAnswer.costPer1k | number: '1.4-4' }}</strong>
+                  <em>Using imported token totals</em>
+                </div>
+              </div>
+            </section>
+
+            <div class="source-callout compact-source-callout">
               <div>
                 <span>Estimate scope</span>
                 <strong>
@@ -627,6 +677,10 @@
               </div>
             </section>
 
+            <div class="section-label">
+              <h4>Token categories</h4>
+              <p>Which priced token buckets make up the estimate.</p>
+            </div>
             <div class="cost-categories">
               @for (category of cost.categoryRows; track category.label) {
                 <article
@@ -648,6 +702,10 @@
               }
             </div>
 
+            <div class="section-label">
+              <h4>Model price rows</h4>
+              <p>The exact GitHub pricing rows used for this run estimate.</p>
+            </div>
             <div class="cost-table">
               <div class="cost-row cost-row-heading">
                 <span>Model</span>
@@ -695,24 +753,40 @@
                 </div>
               }
             </div>
+          </section>
+        }
+        }
 
-            @if (cost.modelCallRows.length) {
-              <div class="model-call-ledger">
-                <div class="model-call-header">
-                  <div>
-                    <h4>Per-turn cost breakdown</h4>
-                    <p>Every token-bearing model call imported from the VS Code debug log.</p>
-                  </div>
-                  <div class="segmented-control" aria-label="Model call sort">
-                    <button type="button" [class.active]="modelCallSort() === 'timeline'" (click)="modelCallSort.set('timeline')">
-                      Timeline
-                    </button>
-                    <button type="button" [class.active]="modelCallSort() === 'largest'" (click)="modelCallSort.set('largest')">
-                      Largest first
-                    </button>
-                  </div>
+        @if (selectedRunView() === 'turns') {
+          @if (costExplanation(); as cost) {
+            <section class="model-call-ledger run-panel">
+              <div class="model-call-header">
+                <div>
+                  <p class="eyebrow">Turn ledger</p>
+                  <h3>Per-turn cost breakdown</h3>
+                  <p>Every token-bearing model call imported from the VS Code debug log.</p>
                 </div>
+                <div class="segmented-control" aria-label="Model call sort">
+                  <button type="button" [class.active]="modelCallSort() === 'timeline'" (click)="modelCallSort.set('timeline')">
+                    Timeline
+                  </button>
+                  <button type="button" [class.active]="modelCallSort() === 'largest'" (click)="modelCallSort.set('largest')">
+                    Largest first
+                  </button>
+                </div>
+              </div>
 
+              <div class="turn-insight-grid" aria-label="Turn ledger highlights">
+                @for (insight of cost.turnInsights; track insight.label) {
+                  <article>
+                    <span>{{ insight.label }}</span>
+                    <strong>{{ insight.value }}</strong>
+                    <p>{{ insight.detail }}</p>
+                  </article>
+                }
+              </div>
+
+              @if (cost.modelCallRows.length) {
                 <div class="cost-table model-call-table">
                   <div class="cost-row model-call-row cost-row-heading">
                     <span>Call</span>
@@ -750,11 +824,14 @@
                     </div>
                   }
                 </div>
-              </div>
-            }
-          </section>
+              } @else {
+                <p class="empty">This imported session has no token-bearing model call rows.</p>
+              }
+            </section>
+          }
         }
 
+        @if (selectedRunView() === 'overview') {
         <section class="supporting-grid">
           <section class="session-details">
             <h3>Session Details</h3>
@@ -835,7 +912,9 @@
             </section>
           }
         </section>
+        }
 
+        @if (selectedRunView() === 'trace') {
         <section class="trace-tools">
           <h3>Explore Trace Data</h3>
           <div class="trace-actions">
@@ -877,6 +956,7 @@
             </div>
           }
         </section>
+        }
       </section>
     }
     </section>

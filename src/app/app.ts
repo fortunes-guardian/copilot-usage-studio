@@ -20,6 +20,7 @@ type ActiveView = 'sessions' | 'compare' | 'analytics' | 'pricing';
 type AnalyticsTimeRange = 'all' | '7d' | '30d' | '90d';
 type AnalyticsGrouping = 'day' | 'week' | 'month';
 type ModelCallSort = 'timeline' | 'largest';
+type SelectedRunView = 'overview' | 'cost' | 'turns' | 'trace';
 
 interface SessionWarning {
   label: string;
@@ -89,6 +90,7 @@ export class App {
   protected readonly traceView = signal<'logs' | 'flow'>('logs');
   protected readonly modelCallSort = signal<ModelCallSort>('timeline');
   protected readonly activeView = signal<ActiveView>('sessions');
+  protected readonly selectedRunView = signal<SelectedRunView>('overview');
   protected readonly pricingVersion = PRICING_VERSION;
   protected readonly pricingSourceLabel = PRICING_SOURCE_LABEL;
   protected readonly pricingSourceUrl = PRICING_SOURCE_URL;
@@ -187,6 +189,8 @@ export class App {
     const topTokenEvents = this.topTokenEvents(session.traceEvents, session.modelBreakdown, ledger.usdToEur);
     const costDrivers = this.explainCostDrivers(session, modelRows, topTokenEvents);
     const hasCacheData = session.tokens.cachedInput > 0 || session.tokens.cacheWrite > 0;
+    const costAnswer = this.costAnswer(session, modelRows, modelCallRows);
+    const turnInsights = this.turnInsights(modelCallRows);
 
     return {
       hasCacheData,
@@ -204,9 +208,11 @@ export class App {
         : 'The VS Code debug-log events imported for this session expose inputTokens and outputTokens, but not billing cache read/write fields. The estimate therefore prices visible local input/output totals and keeps cache accounting explicit as unavailable.',
       modelRows,
       categoryRows,
+      costAnswer,
       costDrivers,
       modelCallRows,
       topTokenEvents,
+      turnInsights,
     };
   });
   protected readonly flowEvents = computed(() => {
@@ -525,6 +531,7 @@ export class App {
 
   protected selectSession(session: LedgerSession): void {
     this.selectedId.set(session.id);
+    this.selectedRunView.set('overview');
   }
 
   protected trackBySessionId(_: number, session: LedgerSession): string {
@@ -577,6 +584,7 @@ export class App {
 
     this.selectedId.set(session.id);
     this.activeView.set('sessions');
+    this.selectedRunView.set('overview');
   }
 
   protected sessionTriage(session: LedgerSession): SessionTriage {
@@ -816,6 +824,87 @@ export class App {
         tokens: this.sumTokens(modelRows, 'cacheWrite'),
         eur: modelRows.reduce((sum, row) => sum + row.cacheWriteEur, 0),
         description: 'Provider cache creation tokens. GitHub lists this mainly for Anthropic models.',
+      },
+    ];
+  }
+
+  private costAnswer(
+    session: LedgerSession,
+    modelRows: ReturnType<App['explainModelCost']>[],
+    modelCallRows: ReturnType<App['modelCallRows']>,
+  ) {
+    const sessionCost = Math.max(session.cost.eur, 0);
+    const totalTokens = this.sessionTotalTokens(session);
+    const inputEur = modelRows.reduce((sum, row) => sum + row.inputEur, 0);
+    const outputEur = modelRows.reduce((sum, row) => sum + row.outputEur, 0);
+    const inputShare = sessionCost > 0 ? (inputEur / sessionCost) * 100 : 0;
+    const outputShare = sessionCost > 0 ? (outputEur / sessionCost) * 100 : 0;
+    const topModel = [...modelRows].sort((a, b) => b.totalEur - a.totalEur)[0] ?? null;
+    const topModelShare = topModel && sessionCost > 0 ? (topModel.totalEur / sessionCost) * 100 : 0;
+    const topCall = [...modelCallRows].sort((a, b) => b.estimatedEur - a.estimatedEur)[0] ?? null;
+    const topCallShare = topCall && sessionCost > 0 ? (topCall.estimatedEur / sessionCost) * 100 : 0;
+    const category = inputShare >= outputShare ? 'Input/context' : 'Output';
+    const categoryShare = Math.max(inputShare, outputShare);
+    const costPer1k = totalTokens ? (sessionCost / totalTokens) * 1000 : 0;
+
+    return {
+      category,
+      categoryShare,
+      categoryDetail:
+        category === 'Input/context'
+          ? 'Most of the estimate comes from tokens sent into the model: prompt, prior chat, repo context, and tool results.'
+          : 'Most of the estimate comes from generated model output. Inspect long responses or repeated generation.',
+      costPer1k,
+      inputShare,
+      outputShare,
+      topModelLabel: topModel?.model ?? session.model,
+      topModelShare,
+      topCallLabel: topCall ? `#${topCall.callNumber}` : 'None',
+      topCallShare,
+      topCallDetail: topCall
+        ? `Raw event #${topCall.index}, ${topCall.totalTokens.toLocaleString()} tokens.`
+        : 'No token-bearing model call rows were imported.',
+    };
+  }
+
+  private turnInsights(modelCallRows: ReturnType<App['modelCallRows']>) {
+    const totalCost = modelCallRows.reduce((sum, row) => sum + row.estimatedEur, 0);
+    const mostExpensive = [...modelCallRows].sort((a, b) => b.estimatedEur - a.estimatedEur)[0] ?? null;
+    const largestInput = [...modelCallRows].sort((a, b) => b.inputTokens - a.inputTokens)[0] ?? null;
+    const largestOutput = [...modelCallRows].sort((a, b) => b.outputTokens - a.outputTokens)[0] ?? null;
+    const averageCost = modelCallRows.length ? totalCost / modelCallRows.length : 0;
+
+    return [
+      {
+        label: 'Model calls',
+        value: modelCallRows.length.toLocaleString(),
+        detail: 'Token-bearing llm_request events imported from the VS Code debug log.',
+      },
+      {
+        label: 'Most expensive call',
+        value: mostExpensive ? `#${mostExpensive.callNumber} · €${mostExpensive.estimatedEur.toFixed(4)}` : 'None',
+        detail: mostExpensive
+          ? `${mostExpensive.totalTokens.toLocaleString()} tokens, raw event #${mostExpensive.index}.`
+          : 'No priced model call rows are available.',
+      },
+      {
+        label: 'Largest input',
+        value: largestInput ? `#${largestInput.callNumber} · ${largestInput.inputTokens.toLocaleString()}` : 'None',
+        detail: largestInput
+          ? 'This is the biggest prompt/context payload sent into the model.'
+          : 'No input token totals were imported.',
+      },
+      {
+        label: 'Largest output',
+        value: largestOutput ? `#${largestOutput.callNumber} · ${largestOutput.outputTokens.toLocaleString()}` : 'None',
+        detail: largestOutput
+          ? 'This is the largest generated response in the imported model calls.'
+          : 'No output token totals were imported.',
+      },
+      {
+        label: 'Avg cost / call',
+        value: `€${averageCost.toFixed(4)}`,
+        detail: 'Useful for spotting whether cost came from one spike or many steady calls.',
       },
     ];
   }

@@ -18,6 +18,8 @@ Done:
 - Add session size and cost-signal labels.
 - Add session filters for size, source quality, and cost signal.
 - Add a per-turn model-call cost breakdown with timeline and largest-first modes.
+- Split selected-run debugging into `Overview`, `Cost`, `Turns`, and `Trace` subviews.
+- Add Cost and Turns answer panels so the user sees the likely driver before reading detailed tables.
 
 Next:
 
@@ -107,6 +109,8 @@ Done:
 - Shows each token-bearing model call with index, timestamp, model, pricing row, input tokens, output tokens, estimated cost, input/output cost split, and share of session cost.
 - Kept a sorted `Largest first` mode so high-cost calls remain easy to find.
 - Adds nearby prior-event context so a developer can tell what kind of activity preceded the expensive call.
+- Moved the model-call ledger into the selected-run `Turns` subview so Cost explains the estimate and Turns explains where it happened.
+- Added a Turn insights strip: model-call count, most expensive call, largest input, largest output, and average cost per call.
 
 Why: session totals explain that a run was expensive. Per-turn cost explains where it became expensive.
 
@@ -127,19 +131,62 @@ Done:
 - Promoted Compare into the top navigation.
 - Removed the old hidden Compare copy from the Sessions view.
 - Reordered the selected-run view so the run hero, summary, and Cost debugger come before supporting metadata.
+- Compacted Data provenance into the top Sessions workspace overview.
+- Added selected-run subviews for Overview, Cost, Turns, and Trace.
+- Made Cost and Turns lead with diagnostic answer panels before the detailed tables.
 - Applied the first dark diagnostic design-token layer.
 - Changed narrow layout behavior so the session rail moves below the content instead of replacing it.
 
 Build:
 
-- More compact data ingest section.
 - Better responsive tables.
 - Proper help popovers.
 - More debugger-like polish.
 
 Why: the app has complex information. Better style should reduce cognitive load, not hide details.
 
-## Phase 8: App-Owned SQLite
+## Phase 8: Trace Event Inspector
+
+Status: proposed next UI optimization.
+
+Build:
+
+- Make Trace log rows clickable.
+- Open a right-side detail drawer or inline inspector for the selected event.
+- Show the full normalized event fields: raw index, timestamp, type, name, status, token totals, model, pricing row, estimated cost, latency fields, and source detail.
+- Link model-call rows in `Turns` to the matching raw event in `Trace`.
+- Add event filters for model calls, tool calls, discovery/customization events, user messages, and agent responses.
+- Preserve enough debug-log payload summary during ingestion to make this useful without forcing the UI to parse raw VS Code JSONL directly. Current `traceEvents.detail` strings are too short for a good inspector by themselves.
+- Consider optional enrichment from matching `GitHub.copilot-chat/transcripts/<session-id>.jsonl` only after the UI can show source availability and confidence. Transcripts can be rich, but they are not consistently complete across sessions or restarts.
+
+Why: the Trace view is currently good for scanning, but debugging needs selection. VS Code's own Agent Debug Logs let a user click an event and inspect details. This app should do the same, with cost fields added.
+
+## Phase 9: Input Attribution And MCP Impact
+
+Status: later, needs careful evidence boundaries.
+
+Debugger questions:
+
+- What effect on token and cost did my GitHub/custom instructions have?
+- What effect on token and cost did MCP servers, skills, slash commands, agents, hooks, or other customizations have?
+
+Build:
+
+- Add an `Input attribution` panel for expensive model calls.
+- Break the request payload into visible buckets when the debug log exposes them: user prompt, environment/workspace context, custom instructions, tool references, tool results, MCP tool calls/results, prior conversation, and system/developer material.
+- Group tool and MCP activity by server/tool name, with counts and nearby model-call cost.
+- Show "affected nearby cost" first, then only show token/cost allocation for a bucket when the app can calculate it from source-backed request payload sections.
+- Add comparison support for MCP/tool setup changes: which servers/tools appeared, which disappeared, and how model-call input moved afterward.
+
+Why: the practical optimization question is "what is making my developers' runs expensive?" If 20 developers have many MCP servers enabled, the app should help identify which servers and tool results are inflating request context. The app must avoid pretending it has exact per-section billing unless the source data supports it.
+
+Evidence boundary:
+
+- Exact local cost currently exists at the `llm_request` level.
+- Tool/MCP/discovery events can be counted and placed near model calls.
+- Per-section input attribution may be derived from raw request payload fields when available, but it is not the same as provider billing unless segment token counts are logged directly.
+
+## Phase 10: App-Owned SQLite
 
 Build:
 
@@ -151,7 +198,7 @@ Build:
 
 Why: VS Code `state.vscdb` is external editor state and should stay read-only enrichment. App-owned SQLite becomes useful once the app has durable user state.
 
-## Phase 9: Billing Reconciliation
+## Phase 11: Billing Reconciliation
 
 Status: later, not the current focus.
 
