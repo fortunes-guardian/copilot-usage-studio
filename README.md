@@ -30,7 +30,7 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
   - source-confidence explanations
 - Shows the GitHub pricing table used by the app.
 - Shows trace logs and an agent flow chart.
-- Compares two runs at a basic token/cost level.
+- Compares two runs with cost/token deltas, driver explanations, context-growth movement, and model/pricing-row changes.
 
 ## Run The App
 

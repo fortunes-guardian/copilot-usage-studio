@@ -106,6 +106,8 @@ The trace event preview cap is intentionally high enough for normal debug sessio
 
 Cost drivers are UI-level diagnosis, not new billing facts. They summarize the generated ledger into practical signals: input cost share, the largest model call, context growth across model calls, model mix, and tool-call density. Why: developers need a quick answer to "what made this run expensive?" before they dig into raw logs.
 
+Comparison is also UI-level diagnosis. It compares two generated sessions without mutating the ledger: cost, token categories, model turns, tool calls, context growth, and model/pricing rows. Why: the practical developer workflow is often "I changed the prompt/workflow/model; did that make the run cheaper, and what moved?"
+
 Source-confidence terms in the UI should carry inline help. Labels such as debug logs, chat snapshots, state DBs, state enriched, exact local totals, estimated totals, cached input, and cache write all need short explanations at the point of use. Why: this app is only credible if it says why a source is strong, what it does not know, and which fields are local estimates rather than GitHub billing facts.
 
 Run triage labels are derived in the UI from the generated ledger. They are intentionally not stored as scanner output yet because the thresholds are product decisions that may change as more sessions are reviewed.
@@ -126,6 +128,8 @@ Current cost-signal labels:
 - `State enriched`: `vscodeState` metadata is present.
 
 Why these labels exist: the cost debugger has enough detail to explain a run, but a developer needs quick visual judgement before reading every table. The labels should stay explainable and tuneable.
+
+Advanced signals such as reasoning level, compaction, and context-window pressure are not derived yet. Why: the current imported facts do not reliably expose reasoning level or model context-window limits, and compaction should not be guessed from a user message alone. Future detection should record the exact evidence used.
 
 ## SQLite workspace state
 

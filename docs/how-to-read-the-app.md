@@ -31,6 +31,19 @@ Then open one session and read the Cost debugger.
 - **Largest model calls**: the individual calls that burned the most tokens.
 - **Model table**: which models were used and which GitHub price row applied.
 
+## Comparing Two Runs
+
+Use **Compare runs** when you made a change and want to know whether it helped.
+
+Read it in this order:
+
+- **Headline delta**: how run B changed versus run A.
+- **Metric cards**: cost, input tokens, output tokens, model turns, tool calls, and context growth.
+- **What changed**: the app's best explanation of the movement.
+- **Model and price-row movement**: whether cost changed because the model/pricing mix changed.
+
+Cheaper is not automatically better. A cheaper run that failed, skipped work, or produced a worse answer is not a win.
+
 ## Run Triage Labels
 
 The app now labels each selected run by size:
@@ -85,3 +98,11 @@ npm run verify:data
 Then refresh the app.
 
 If a long or compacted session appears to stop early, check `traceSummary.totalEvents` against the visible log count. The scanner currently keeps up to `1000` trace events per session.
+
+## Future Signals
+
+Reasoning level, compaction, and context-window pressure are useful, but they should only appear as facts when the local data supports them.
+
+- **Reasoning level** needs an explicit field in VS Code debug logs.
+- **Compaction** needs an explicit marker or a strong token-pattern signal.
+- **Context-window pressure** needs known model context-window sizes plus observed max input tokens.

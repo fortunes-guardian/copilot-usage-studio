@@ -1,6 +1,6 @@
 # Roadmap
 
-First make one selected run excellent, then make comparisons useful.
+First make one selected run excellent, then make comparisons useful, then aggregate across sessions.
 
 ## Phase 1: Selected Run Cost Debugger
 
@@ -43,7 +43,9 @@ Why: a developer should spot suspicious runs before opening each one.
 
 ## Phase 3: Better Comparison
 
-Build:
+Status: built.
+
+Done:
 
 - Side-by-side selected-run comparison.
 - Explain what changed: cost, input tokens, output tokens, model mix, tool count, context growth.
@@ -52,7 +54,37 @@ Build:
 
 Why: comparison is useful when testing prompts, models, MCP setup, or workflow changes.
 
-## Phase 4: UX And Style Rework
+## Phase 4: Multi-Session Analytics Dashboard
+
+Build:
+
+- Aggregate metrics across relevant imported sessions:
+  - session count
+  - average tokens per session
+  - average cost per session
+  - highest-token session
+  - most expensive session
+  - global total tokens
+  - global total estimated cost
+- Breakdowns by model and, once there is enough data, by day/week/month.
+- Derived metrics:
+  - cost per 1k tokens
+  - spikes and anomalies
+  - distribution of many small runs vs a few large runs
+
+Why: after one run and two-run comparison are understandable, the next developer question is “what is my normal usage pattern, and which runs are outliers?”
+
+## Phase 5: Advanced Session Signals
+
+Build:
+
+- Reasoning/thinking level display if VS Code debug logs expose it directly.
+- Context compaction detection when there is evidence, such as explicit log markers, summary/compaction event names, or a sharp input-token reset after a long run.
+- Context-window usage if the app stores reliable model context-window sizes and can compare max observed input tokens against that window.
+
+Why: these are useful cost-debugging signals, but they must be evidence-backed. The UI should not invent reasoning level, compaction, or context-window pressure from weak clues.
+
+## Phase 6: UX And Style Rework
 
 Build:
 
@@ -64,7 +96,7 @@ Build:
 
 Why: the app has complex information. Better style should reduce cognitive load, not hide details.
 
-## Phase 5: App-Owned SQLite
+## Phase 7: App-Owned SQLite
 
 Build:
 
@@ -76,7 +108,7 @@ Build:
 
 Why: VS Code `state.vscdb` is external editor state and should stay read-only enrichment. App-owned SQLite becomes useful once the app has durable user state.
 
-## Phase 6: Billing Reconciliation
+## Phase 8: Billing Reconciliation
 
 Status: later, not the current focus.
 

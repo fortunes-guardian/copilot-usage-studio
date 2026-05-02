@@ -11,6 +11,7 @@ The app should help a developer answer:
 - Which run was expensive?
 - Which model, token category, or model call caused the cost?
 - Can I compare two runs and see whether a prompt/workflow change helped?
+- What is normal across all imported runs, and which sessions are outliers?
 
 This is not trying to be a full billing dashboard yet. Billing reconciliation can come later. The first product should make one selected run excellent and understandable.
 
@@ -41,7 +42,7 @@ Principles:
   - per-model pricing rows
   - largest model calls
 - Shows an agent flow chart with token/cost detail.
-- Compares two runs at a basic level.
+- Compares two runs with metric deltas, cost-driver explanation, context-growth change, and model/pricing-row movement.
 
 ## Important Design Decisions
 
@@ -57,22 +58,21 @@ Principles:
 
 - The UI is functional but visually busy.
 - Tooltips are better, but still use native browser title behavior.
-- The comparison section is still shallow compared with the selected-run debugger.
+- No aggregated analytics dashboard yet.
+- Advanced signals such as reasoning level, compaction, and context-window pressure need stronger log/model evidence before becoming UI facts.
 - No app-owned database yet. Scans overwrite `public/data/sessions.json`.
 - Pricing tables are duplicated across UI/scanner/verifier and should eventually have one source of truth.
 
 ## Latest Implemented Step
 
-Built session size and cost-signal labels for the selected run:
+Replaced the old basic comparison section with an advanced run comparison:
 
-- `Small`, `Medium`, `Large`, `Very large`
-- `High input context`
-- `Context growth`
-- `Mixed models`
-- `Cache unknown`
-- `State enriched`
+- headline explanation of how run B differs from run A
+- deltas for cost, input tokens, output tokens, model turns, tool calls, and context growth
+- driver cards for cost movement, priced token driver, model pricing, context shape, and agent activity
+- model/pricing-row movement table
 
-Why: it turns the current facts into quick, scannable judgment without starting the larger style overhaul.
+Why: this makes comparison useful for testing prompt, workflow, MCP setup, or model changes. It also keeps the important caveat visible: cheaper is only better if the run still succeeded.
 
 `Context growth` is expected in many agent runs. It is shown because accumulated context can explain rising token cost, not because growth is automatically a bug.
 
@@ -85,12 +85,14 @@ Current size thresholds:
 
 ## Next Best Step
 
-Improve comparison now that session triage is easier.
+Build the multi-session analytics dashboard.
 
 Build:
 
-- Explain what changed between two selected runs.
-- Compare cost, input tokens, output tokens, model mix, tool calls, and context growth.
-- Make the comparison useful for testing prompt/workflow/model changes.
+- Average token usage and average cost per relevant session.
+- Highest-token and most expensive sessions.
+- Total tokens and total estimated cost across the ledger.
+- Model breakdowns.
+- Cost-efficiency and anomaly signals, such as cost per 1k tokens and outlier runs.
 
-Why this next: the selected-run view and session list now have enough basic judgement. Comparison is the next developer workflow.
+Why this next: one-run debugging and two-run comparison are now covered. The next product question is “what is normal across my sessions, and what deserves attention?”
