@@ -1,16 +1,19 @@
 <main class="shell">
-  <aside class="sidebar">
+  <header class="topbar">
     <div class="brand">
+      <span class="brand-mark" aria-hidden="true">CL</span>
       <div>
         <p class="eyebrow">Local ledger</p>
         <h1>Copilot Cost Ledger</h1>
       </div>
-      <span class="status" [title]="help.appEstimate">Estimate</span>
     </div>
 
     <nav class="view-nav" aria-label="Ledger views">
       <button type="button" [class.active]="activeView() === 'sessions'" (click)="activeView.set('sessions')">
         Sessions
+      </button>
+      <button type="button" [class.active]="activeView() === 'compare'" (click)="activeView.set('compare')">
+        Compare
       </button>
       <button type="button" [class.active]="activeView() === 'analytics'" (click)="activeView.set('analytics')">
         Analytics
@@ -20,82 +23,89 @@
       </button>
     </nav>
 
-    <label class="search">
-      <span>Search</span>
-      <input
-        type="search"
-        [ngModel]="query()"
-        (ngModelChange)="setQuery($event)"
-        placeholder="Prompt, repo, model, tag"
-      />
-    </label>
+    <span class="status" [title]="help.appEstimate">Estimate</span>
+  </header>
 
-    <div class="filters" aria-label="Session filters">
-      <label>
-        <span>Size</span>
-        <select [ngModel]="sizeFilter()" (ngModelChange)="setSizeFilter($event)">
-          @for (size of sizeOptions; track size) {
-            <option [value]="size">{{ size === 'all' ? 'All sizes' : size }}</option>
-          }
-        </select>
-      </label>
-      <label>
-        <span>Signal</span>
-        <select [ngModel]="warningFilter()" (ngModelChange)="setWarningFilter($event)">
-          @for (warning of warningOptions(); track warning) {
-            <option [value]="warning">{{ warning === 'all' ? 'All signals' : warning }}</option>
-          }
-        </select>
-      </label>
-      <label>
-        <span>Source</span>
-        <select [ngModel]="sourceFilter()" (ngModelChange)="setSourceFilter($event)">
-          @for (source of sourceOptions; track source.value) {
-            <option [value]="source.value">{{ source.label }}</option>
-          }
-        </select>
-      </label>
-    </div>
+  <div class="app-body" [class.with-rail]="activeView() === 'sessions'">
+    @if (activeView() === 'sessions') {
+      <aside class="sidebar">
+        <label class="search">
+          <span>Search</span>
+          <input
+            type="search"
+            [ngModel]="query()"
+            (ngModelChange)="setQuery($event)"
+            placeholder="Prompt, repo, model, tag"
+          />
+        </label>
 
-    <p class="filter-count">{{ filteredSessions().length }} of {{ sessions().length }} sessions shown</p>
+        <div class="filters" aria-label="Session filters">
+          <label>
+            <span>Size</span>
+            <select [ngModel]="sizeFilter()" (ngModelChange)="setSizeFilter($event)">
+              @for (size of sizeOptions; track size) {
+                <option [value]="size">{{ size === 'all' ? 'All sizes' : size }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            <span>Signal</span>
+            <select [ngModel]="warningFilter()" (ngModelChange)="setWarningFilter($event)">
+              @for (warning of warningOptions(); track warning) {
+                <option [value]="warning">{{ warning === 'all' ? 'All signals' : warning }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            <span>Source</span>
+            <select [ngModel]="sourceFilter()" (ngModelChange)="setSourceFilter($event)">
+              @for (source of sourceOptions; track source.value) {
+                <option [value]="source.value">{{ source.label }}</option>
+              }
+            </select>
+          </label>
+        </div>
 
-    <div class="session-list">
-      @for (session of filteredSessions(); track trackBySessionId($index, session)) {
-        <button
-          type="button"
-          class="session-card"
-          [class.active]="selectedSession()?.id === session.id"
-          (click)="selectSession(session)"
-        >
-          <span class="session-title">{{ session.firstPrompt }}</span>
-          <span class="session-meta">
-            {{ session.workspace }} · {{ session.model }}
-          </span>
-          @if (sessionTriage(session); as triage) {
-            <span class="badge-row compact">
-              <span class="triage-badge" [ngClass]="triage.sizeTone" [title]="sessionSizeHelp(triage)">
-                {{ triage.size }}
+        <p class="filter-count">{{ filteredSessions().length }} of {{ sessions().length }} sessions shown</p>
+
+        <div class="session-list">
+          @for (session of filteredSessions(); track trackBySessionId($index, session)) {
+            <button
+              type="button"
+              class="session-card"
+              [class.active]="selectedSession()?.id === session.id"
+              (click)="selectSession(session)"
+            >
+              <span class="session-title">{{ session.firstPrompt }}</span>
+              <span class="session-meta">
+                {{ session.workspace }} · {{ session.model }}
               </span>
-              @for (warning of triage.warnings.slice(0, 2); track warning.label) {
-                <span class="triage-badge" [ngClass]="warning.tone" [title]="warning.help">
-                  {{ warning.label }}
+              @if (sessionTriage(session); as triage) {
+                <span class="badge-row compact">
+                  <span class="triage-badge" [ngClass]="triage.sizeTone" [title]="sessionSizeHelp(triage)">
+                    {{ triage.size }}
+                  </span>
+                  @for (warning of triage.warnings.slice(0, 2); track warning.label) {
+                    <span class="triage-badge" [ngClass]="warning.tone" [title]="warning.help">
+                      {{ warning.label }}
+                    </span>
+                  }
                 </span>
               }
-            </span>
+              <span class="session-footer">
+                <span>{{ session.startedAt | date: 'MMM d, HH:mm' }}</span>
+                <strong>€{{ session.cost.eur | number: '1.2-2' }}</strong>
+              </span>
+              <span class="session-scan">
+                {{ session.traceSummary.totalTokens | number }} tokens · {{ sourceKindLabel(session.sourceKind) }}
+              </span>
+            </button>
+          } @empty {
+            <p class="empty dark">No sessions match these filters.</p>
           }
-          <span class="session-footer">
-            <span>{{ session.startedAt | date: 'MMM d, HH:mm' }}</span>
-            <strong>€{{ session.cost.eur | number: '1.2-2' }}</strong>
-          </span>
-          <span class="session-scan">
-            {{ session.traceSummary.totalTokens | number }} tokens · {{ sourceKindLabel(session.sourceKind) }}
-          </span>
-        </button>
-      } @empty {
-        <p class="empty dark">No sessions match these filters.</p>
-      }
-    </div>
-  </aside>
+        </div>
+      </aside>
+    }
 
   <section class="content">
     @if (activeView() === 'pricing') {
@@ -354,7 +364,113 @@
           }
         </section>
       }
-    } @else {
+    } @else if (activeView() === 'compare') {
+      <section class="compare">
+        <div class="compare-header">
+          <div>
+            <p class="eyebrow">Evaluation</p>
+            <h2>Compare runs</h2>
+          </div>
+          <div class="selectors">
+            <select [ngModel]="compareA()" (ngModelChange)="compareA.set($event)">
+              @for (session of sessions(); track session.id) {
+                <option [value]="session.id">{{ session.title }}</option>
+              }
+            </select>
+            <select [ngModel]="compareB()" (ngModelChange)="compareB.set($event)">
+              @for (session of sessions(); track session.id) {
+                <option [value]="session.id">{{ session.title }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        @if (comparison(); as diff) {
+          <div class="source-callout">
+            <div>
+              <span>Comparison read</span>
+              <strong [class.saving]="diff.costDelta < 0">
+                {{ diff.costDelta < 0 ? '-' : '+' }}€{{ abs(diff.costDelta) | number: '1.2-4' }}
+              </strong>
+              <p>{{ diff.summary }}</p>
+            </div>
+          </div>
+
+          <div class="comparison-grid advanced">
+            @for (metric of diff.metrics; track metric.label) {
+              <div>
+                <span>
+                  {{ metric.label }}
+                  <span class="help-dot" [title]="metric.help" [attr.aria-label]="metric.help" tabindex="0">?</span>
+                </span>
+                @if (metric.format === 'currency') {
+                  <strong [class.saving]="metric.lowerIsBetter && metric.delta < 0">
+                    {{ metric.delta < 0 ? '-' : '+' }}€{{ abs(metric.delta) | number: '1.2-4' }}
+                  </strong>
+                  <em>A €{{ metric.a | number: '1.2-4' }} / B €{{ metric.b | number: '1.2-4' }}</em>
+                } @else if (metric.format === 'percent') {
+                  <strong [class.saving]="metric.lowerIsBetter && metric.delta < 0">
+                    {{ metric.delta >= 0 ? '+' : '' }}{{ metric.delta | number: '1.0-0' }} pts
+                  </strong>
+                  <em>A {{ metric.a | number: '1.0-0' }}% / B {{ metric.b | number: '1.0-0' }}%</em>
+                } @else {
+                  <strong [class.saving]="metric.lowerIsBetter && metric.delta < 0">
+                    {{ metric.delta >= 0 ? '+' : '' }}{{ metric.delta | number }}
+                  </strong>
+                  <em>
+                    A {{ metric.a | number }} / B {{ metric.b | number }}
+                    @if (metric.percent !== null) {
+                      · {{ metric.percent >= 0 ? '+' : '' }}{{ metric.percent | number: '1.0-0' }}%
+                    }
+                  </em>
+                }
+              </div>
+            }
+          </div>
+
+          <section class="comparison-drivers">
+            <h3>What changed</h3>
+            <div class="driver-grid">
+              @for (driver of diff.drivers; track driver.title) {
+                <article [ngClass]="driver.tone">
+                  <span>{{ driver.title }}</span>
+                  <strong>{{ driver.value }}</strong>
+                  <p>{{ driver.detail }}</p>
+                </article>
+              }
+            </div>
+          </section>
+
+          <section class="comparison-models">
+            <h3>Model and price-row movement</h3>
+            <div class="cost-table compact-table">
+              <div class="cost-row cost-row-heading">
+                <span>Model</span>
+                <span>Price row</span>
+                <span>Cost A / B</span>
+                <span>Token delta</span>
+                <span>Turns A / B</span>
+                <span>Cost delta</span>
+              </div>
+              @for (model of diff.modelRows; track model.model + model.pricingModel) {
+                <div class="cost-row">
+                  <strong>{{ model.model }}</strong>
+                  <span>{{ model.pricingModel }}</span>
+                  <span>€{{ model.aCost | number: '1.4-6' }} / €{{ model.bCost | number: '1.4-6' }}</span>
+                  <span>{{ model.tokenDelta >= 0 ? '+' : '' }}{{ model.tokenDelta | number }}</span>
+                  <span>{{ model.aTurns | number }} / {{ model.bTurns | number }}</span>
+                  <span [class.saving]="model.costDelta < 0">
+                    {{ model.costDelta < 0 ? '-' : '+' }}€{{ abs(model.costDelta) | number: '1.4-6' }}
+                  </span>
+                </div>
+              }
+            </div>
+          </section>
+        } @else {
+          <p class="empty">Pick two different sessions to compare cost and token deltas.</p>
+        }
+      </section>
+    } @else if (activeView() === 'sessions') {
     <section class="summary-grid">
       <article class="metric">
         <span>Sessions</span>
@@ -868,4 +984,5 @@
     </section>
     }
   </section>
+  </div>
 </main>

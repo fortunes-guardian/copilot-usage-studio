@@ -112,12 +112,25 @@ Why: session totals explain that a run was expensive. Per-turn cost explains whe
 
 ## Phase 7: UX And Style Rework
 
-Status: next.
+Status: started.
+
+Direction:
+
+- Midnight Ledger theme.
+- Custom Angular/CSS first, no component library yet.
+- Top-level navigation for Sessions, Compare, Analytics, and Prices.
+- Selected-run content stays primary on narrow screens.
+
+Done:
+
+- Added the new app shell foundation.
+- Promoted Compare into the top navigation.
+- Applied the first dark diagnostic design-token layer.
+- Changed narrow layout behavior so the session rail moves below the content instead of replacing it.
 
 Build:
 
-- Cleaner visual hierarchy.
-- Responsive sidebar/content behavior. On narrow screens, preserve the selected-run content and collapse or move the sidebar.
+- Cleaner selected-run hierarchy.
 - More compact data ingest section.
 - Better responsive tables.
 - Proper help popovers.

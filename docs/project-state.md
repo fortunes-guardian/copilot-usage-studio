@@ -52,6 +52,11 @@ Principles:
   - size distribution
   - clearer empty states when cohort controls exclude all sessions
   - outlier signals with first-pass "why high cost?" explanations
+- Started the Midnight Ledger UI overhaul:
+  - top-level app bar with Sessions, Compare, Analytics, and Prices
+  - Compare promoted out of the selected-session stack
+  - selected-run content stays primary on narrow screens, with the session rail moving below it
+  - dark diagnostic design tokens for panels, tables, badges, and cost signals
 
 ## Important Design Decisions
 
@@ -64,6 +69,8 @@ Principles:
 - Run size and cost-signal labels are derived UI triage. They should help scanning, but they should not silently become billing facts.
 - Multi-session analytics are deliberately separate from the selected-run debugger. The analytics view answers "what is normal across included sessions?" while the Sessions view answers "why did this one run cost what it cost?"
 - Analytics start from the current sidebar filters, then apply Analytics-specific cohort controls. This keeps global search/source/quality filtering consistent while making time range, workspace, model, and trend grouping visible on the dashboard itself.
+- The UI overhaul is starting with custom Angular/CSS rather than a component library. The app needs tight control over dense diagnostic layout, tables, and cost explanations before it needs generic widgets.
+- The selected run remains the primary object on narrow screens. The session rail is useful navigation, but it should not hide the current debugging surface.
 
 ## Current Rough Edges
 
@@ -76,9 +83,11 @@ Principles:
 
 ## Latest Implemented Step
 
-Removed an unsupported session-summary signal after testing real VS Code agent sessions. The observed local signals were not strong enough to distinguish manual summary actions, automatic summary actions, repeated summaries, or ordinary context selection changes.
+Started the Midnight Ledger UI overhaul. The first pass changes the app shell and visual system without changing the cost/data model.
 
-Why: this app should explain cost from evidence the developer can trust. Token movement and summary-shaped raw payloads can remain useful for future investigation, but they should not become UI labels until the data source is clearer.
+Why: the app has enough cost-debugging features now that layout is the bottleneck. Compare should not live underneath a selected run, and narrow screens should keep the selected-run content readable instead of letting the session rail dominate.
+
+Recently removed an unsupported session-summary signal after testing real VS Code agent sessions. The observed local signals were not strong enough to distinguish manual summary actions, automatic summary actions, repeated summaries, or ordinary context selection changes.
 
 `Context growth` is expected in many agent runs. It is shown because accumulated context can explain rising token cost, not because growth is automatically a bug.
 
@@ -91,13 +100,14 @@ Current size thresholds:
 
 ## Next Best Step
 
-Fix responsive layout and reduce visual friction.
+Continue the UI overhaul page by page.
 
 Build:
 
-- When the viewport narrows, keep the selected-run content primary and collapse or move the sidebar instead of letting the sidebar dominate the screen.
-- Consider a mobile/narrow layout where filters and session list become a top drawer or compact selector.
+- Tighten the Sessions view hierarchy around the selected-run Cost debugger.
+- Remove the hidden legacy Compare block from the Sessions template once the page split settles.
+- Consider a mobile/narrow layout where filters and session list become a top drawer or compact selector instead of sitting below content.
 - Replace native title tooltips with a small custom help popover for important cost terms.
-- Tighten the Cost debugger hierarchy now that it has model rows, drivers, categories, and per-turn calls.
+- Split the large `app.html`/`app.css` into smaller page/components as the UI stabilizes.
 
 Why this next: the data/debugging feature is now stronger than the layout. The app should keep the current selected run readable even on narrower screens.

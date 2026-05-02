@@ -16,7 +16,7 @@ import {
 type SessionSize = 'Small' | 'Medium' | 'Large' | 'Very large';
 type WarningTone = 'low' | 'info' | 'medium' | 'high';
 type SessionSourceFilter = 'all' | 'debug-log' | 'chat-snapshot' | 'exact' | 'estimated';
-type ActiveView = 'sessions' | 'analytics' | 'pricing';
+type ActiveView = 'sessions' | 'compare' | 'analytics' | 'pricing';
 type AnalyticsTimeRange = 'all' | '7d' | '30d' | '90d';
 type AnalyticsGrouping = 'day' | 'week' | 'month';
 type ModelCallSort = 'timeline' | 'largest';

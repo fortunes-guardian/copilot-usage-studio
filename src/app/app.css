@@ -1171,3 +1171,454 @@
     font-size: 12px;
   }
 }
+
+/* Midnight Ledger overhaul foundation */
+.shell {
+  --bg: #0d1118;
+  --top: #101824;
+  --rail: #0a0e15;
+  --surface: #151d29;
+  --surface-raised: #192333;
+  --surface-soft: #111923;
+  --text: #eef5ff;
+  --text-strong: #ffffff;
+  --muted: #93a4b8;
+  --muted-2: #6f8094;
+  --line: #263445;
+  --line-strong: #34475e;
+  --accent: #7c5cff;
+  --accent-2: #1fd1a5;
+  --warning: #ffba4a;
+  --danger: #ff6b5f;
+  --accent-soft: rgba(124, 92, 255, 0.2);
+  --teal-soft: rgba(31, 209, 165, 0.13);
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto minmax(120px, 1fr);
+  gap: 18px;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding: 14px 22px;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(124, 92, 255, 0.16), transparent 28%),
+    var(--top);
+}
+
+.brand {
+  justify-content: flex-start;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, var(--accent), #4d9cff);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.brand h1 {
+  margin-top: 2px;
+  color: var(--text-strong);
+  font-size: 18px;
+}
+
+.eyebrow {
+  color: var(--muted-2);
+}
+
+.topbar .eyebrow {
+  color: #8fa0b5;
+}
+
+.status {
+  justify-self: end;
+  border-color: rgba(31, 209, 165, 0.35);
+  background: var(--teal-soft);
+  color: #bbfff0;
+}
+
+.view-nav {
+  display: inline-flex;
+  justify-self: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 4px;
+  background: rgba(10, 14, 21, 0.68);
+}
+
+.view-nav button {
+  border: 0;
+  border-radius: 7px;
+  padding: 8px 12px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.view-nav button.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.app-body {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: calc(100vh - 65px);
+  min-width: 0;
+  background: var(--bg);
+}
+
+.app-body.with-rail {
+  grid-template-columns: 330px minmax(0, 1fr);
+}
+
+.sidebar {
+  position: sticky;
+  top: 65px;
+  align-self: start;
+  min-width: 0;
+  height: calc(100vh - 65px);
+  min-height: 0;
+  border-right: 1px solid var(--line);
+  padding: 18px;
+  background: var(--rail);
+}
+
+.content {
+  min-width: 0;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 80% 0%, rgba(124, 92, 255, 0.12), transparent 30%),
+    var(--bg);
+}
+
+.with-rail .compare {
+  display: none;
+}
+
+.search,
+.filters label,
+.analytics-controls label {
+  color: var(--muted);
+}
+
+.search input,
+.filters select,
+.selectors select,
+.analytics-controls select {
+  border-color: var(--line);
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.session-list {
+  min-height: 0;
+}
+
+.session-card {
+  border-color: var(--line);
+  background: #111a25;
+}
+
+.session-card:hover {
+  border-color: var(--line-strong);
+  background: #142033;
+}
+
+.session-card.active {
+  border-color: var(--accent);
+  background: #201a3e;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.session-title,
+.session-footer strong,
+.metric strong,
+.facts strong,
+.comparison-grid strong,
+.price strong,
+.detail h2,
+.ingestion h2,
+.compare h2,
+.pricing-header h2,
+.source-callout strong,
+.cost-drivers h4,
+.token-burners h4,
+.cost-categories strong,
+.cost-row strong,
+.highlight-list strong,
+.stat-list strong,
+.analytics-empty h3,
+.analytics-split h3,
+.detail h3,
+.flow-node strong {
+  color: var(--text-strong);
+}
+
+.session-meta,
+.session-footer,
+.session-scan,
+.filter-count,
+.metric span,
+.facts span,
+.comparison-grid span,
+.comparison-grid em,
+.price span,
+.pricing-header p,
+.pricing-source span,
+.pricing-row span,
+.pricing-note p,
+.source-callout p,
+.cost-drivers > div:first-child p,
+.driver-grid p,
+.cost-categories span,
+.cost-categories em,
+.cost-row span,
+.cost-row em,
+.highlight-list span,
+.highlight-list em,
+.stat-list span,
+.stat-list em,
+.event-row span,
+.event-row em,
+.event-row p,
+.flow-node p,
+.analytics-empty p,
+.session-details dt,
+.empty,
+.muted {
+  color: var(--muted);
+}
+
+.session-details dd,
+.ingestion dd,
+.pricing-source strong,
+.pricing-row strong,
+.pricing-row em,
+.analytics-model-row em,
+.detail-subtitle {
+  color: var(--text);
+}
+
+.session-details dd {
+  color: #cbd7e6;
+}
+
+.metric,
+.detail,
+.ingestion,
+.compare,
+.pricing-source,
+.pricing-table,
+.pricing-row,
+.analytics-controls,
+.analytics-empty,
+.highlight-list button,
+.stat-list div,
+.facts > div,
+.comparison-grid > div,
+.cost-explainer,
+.cost-categories article,
+.cost-table,
+.driver-grid article,
+.event-log,
+.event-row,
+.flow-node,
+.session-triage {
+  border-color: var(--line);
+  background: var(--surface);
+}
+
+.detail,
+.ingestion,
+.compare,
+.cost-explainer,
+.pricing-source,
+.analytics-controls {
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
+}
+
+.facts > div,
+.comparison-grid > div,
+.cost-categories article,
+.driver-grid article,
+.highlight-list button,
+.stat-list div,
+.event-row,
+.flow-node,
+.source-callout,
+.analytics-empty,
+.pricing-row-heading,
+.cost-row-heading {
+  background: var(--surface-soft);
+}
+
+.pricing-note,
+.source-callout {
+  border-left-color: var(--accent-2);
+}
+
+.driver-grid article {
+  border-top-color: var(--accent);
+}
+
+.driver-grid article.medium {
+  border-top-color: var(--warning);
+}
+
+.driver-grid article.high {
+  border-top-color: var(--danger);
+}
+
+.source-pill,
+.used-pill,
+.analytics-scope span,
+.trace-actions button.active {
+  border-color: rgba(31, 209, 165, 0.35);
+  background: var(--teal-soft);
+  color: #bbfff0 !important;
+}
+
+.triage-badge,
+.source-meta > span {
+  border-color: var(--line);
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.triage-badge.medium {
+  border-color: rgba(255, 186, 74, 0.45);
+  background: rgba(255, 186, 74, 0.12);
+  color: #ffe0a0;
+}
+
+.triage-badge.high {
+  border-color: rgba(255, 107, 95, 0.5);
+  background: rgba(255, 107, 95, 0.12);
+  color: #ffc2bd;
+}
+
+.help-dot {
+  color: #9fb0c6;
+}
+
+.trace-actions button,
+.ghost-button,
+.pricing-header a,
+.segmented-control {
+  border-color: var(--line);
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.segmented-control button {
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+.segmented-control button.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.event-row.user-message {
+  border-left-color: var(--accent-2);
+  background: rgba(31, 209, 165, 0.08);
+}
+
+.event-row.error {
+  background: rgba(255, 107, 95, 0.08);
+}
+
+.flow-node span {
+  background: var(--accent);
+}
+
+@media (max-width: 1100px) {
+  .app-body.with-rail {
+    grid-template-columns: 280px minmax(0, 1fr);
+  }
+
+  .topbar {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
+
+  .view-nav,
+  .status {
+    justify-self: stretch;
+  }
+
+  .status {
+    width: fit-content;
+  }
+}
+
+@media (max-width: 900px) {
+  .app-body.with-rail {
+    grid-template-columns: 1fr;
+  }
+
+  .content {
+    order: 1;
+    padding: 18px;
+  }
+
+  .sidebar {
+    order: 2;
+    position: static;
+    height: auto;
+    max-height: 45vh;
+    border-top: 1px solid var(--line);
+    border-right: 0;
+    overflow: auto;
+  }
+
+  .view-nav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .summary-grid,
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .topbar {
+    padding: 12px 14px;
+  }
+
+  .brand h1 {
+    font-size: 16px;
+  }
+
+  .view-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .summary-grid,
+  .metrics {
+    grid-template-columns: 1fr;
+  }
+}
+.shell, :host {
+  background: #0d1118;
+}

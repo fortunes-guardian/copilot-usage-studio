@@ -38,6 +38,10 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
   - highest-token and most expensive runs
   - model breakdowns
   - trend rows, size distribution, and clearer outlier signals
+- Started the Midnight Ledger UI overhaul:
+  - top-level navigation for Sessions, Compare, Analytics, and Prices
+  - Compare separated from the selected-run stack
+  - narrow screens keep selected content primary while the session rail moves below it
 
 ## Run The App
 
