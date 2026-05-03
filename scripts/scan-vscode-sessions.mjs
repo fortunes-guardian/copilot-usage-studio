@@ -6,34 +6,13 @@ const usdToEur = Number(process.env.USD_TO_EUR ?? '0.93');
 const outFile = resolve(process.argv[2] ?? 'public/data/sessions.json');
 const explicitRoots = process.argv.length > 3 ? process.argv.slice(3) : [];
 const ledgerSchemaVersion = 1;
-const pricingVersion = 'github-copilot-usage-pricing-2026-06-01';
-const pricingSourceUrl = 'https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing';
+const pricingData = JSON.parse(readFileSync(new URL('../data/github-copilot-pricing.json', import.meta.url), 'utf8'));
+const pricingVersion = pricingData.version;
+const pricingSourceUrl = pricingData.sourceUrl;
+const fallbackPricingModel = pricingData.fallbackModel;
 const traceEventLimit = 1000;
 
-const pricing = {
-  'GPT-4.1': { input: 2, cachedInput: 0.5, output: 8 },
-  'GPT-5 mini': { input: 0.25, cachedInput: 0.025, output: 2 },
-  'GPT-5.2': { input: 1.75, cachedInput: 0.175, output: 14 },
-  'GPT-5.2-Codex': { input: 1.75, cachedInput: 0.175, output: 14 },
-  'GPT-5.3-Codex': { input: 1.75, cachedInput: 0.175, output: 14 },
-  'GPT-5.4': { input: 2.5, cachedInput: 0.25, output: 15 },
-  'GPT-5.4 mini': { input: 0.75, cachedInput: 0.075, output: 4.5 },
-  'GPT-5.4 nano': { input: 0.2, cachedInput: 0.02, output: 1.25 },
-  'GPT-5.5': { input: 5, cachedInput: 0.5, output: 30 },
-  'Claude Haiku 4.5': { input: 1, cachedInput: 0.1, cacheWrite: 1.25, output: 5 },
-  'Claude Sonnet 4': { input: 3, cachedInput: 0.3, cacheWrite: 3.75, output: 15 },
-  'Claude Sonnet 4.5': { input: 3, cachedInput: 0.3, cacheWrite: 3.75, output: 15 },
-  'Claude Sonnet 4.6': { input: 3, cachedInput: 0.3, cacheWrite: 3.75, output: 15 },
-  'Claude Opus 4.5': { input: 5, cachedInput: 0.5, cacheWrite: 6.25, output: 25 },
-  'Claude Opus 4.6': { input: 5, cachedInput: 0.5, cacheWrite: 6.25, output: 25 },
-  'Claude Opus 4.7': { input: 5, cachedInput: 0.5, cacheWrite: 6.25, output: 25 },
-  'Gemini 2.5 Pro': { input: 1.25, cachedInput: 0.125, output: 10 },
-  'Gemini 3 Flash': { input: 0.5, cachedInput: 0.05, output: 3 },
-  'Gemini 3.1 Pro': { input: 2, cachedInput: 0.2, output: 12 },
-  'Grok Code Fast 1': { input: 0.2, cachedInput: 0.02, output: 1.5 },
-  'Raptor mini': { input: 0.25, cachedInput: 0.025, output: 2 },
-  Goldeneye: { input: 1.25, cachedInput: 0.125, output: 10 },
-};
+const pricing = pricingData.models;
 
 const diagnostics = {
   scannedRoots: [],
@@ -287,7 +266,7 @@ function normalizeModel(model) {
 }
 
 function costUsd(model, tokens) {
-  const price = pricing[model] ?? pricing['GPT-5.4'];
+  const price = pricing[model] ?? pricing[fallbackPricingModel];
   return (
     (tokens.input / 1_000_000) * price.input +
     (tokens.cachedInput / 1_000_000) * price.cachedInput +
@@ -298,7 +277,7 @@ function costUsd(model, tokens) {
 
 function eventModelCostFields(rawModel, inputTokens, outputTokens) {
   const normalizedModel = normalizeModel(rawModel);
-  const pricingModel = pricing[normalizedModel] ? normalizedModel : 'GPT-5.4';
+  const pricingModel = pricing[normalizedModel] ? normalizedModel : fallbackPricingModel;
   const tokens = {
     input: Number(inputTokens ?? 0),
     cachedInput: 0,
@@ -364,7 +343,7 @@ function modelBreakdownFromLlmRequests(llmRequests) {
       turns: 0,
       tokens: { input: 0, cachedInput: 0, cacheWrite: 0, output: 0 },
       cost: { usd: 0, eur: 0 },
-      pricingModel: pricing[displayModel] ? displayModel : 'GPT-5.4',
+      pricingModel: pricing[displayModel] ? displayModel : fallbackPricingModel,
     };
 
     current.rawModels.add(rawModel || 'unknown');
@@ -429,6 +408,94 @@ function eventDetail(event) {
   }
 
   return String(event.attrs?.details ?? event.name ?? event.type ?? '').slice(0, 140);
+}
+
+function boundedText(value, maxLength = 260) {
+  const compact = String(value ?? '').replace(/\s+/g, ' ').trim();
+  return compact.length > maxLength ? `${compact.slice(0, maxLength - 1)}...` : compact;
+}
+
+function summaryValue(value) {
+  if (value === undefined || value === null || value === '') {
+    return '';
+  }
+
+  if (typeof value === 'string') {
+    return boundedText(value);
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+
+  return boundedText(JSON.stringify(compactObject(value)));
+}
+
+function compactObject(value) {
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+
+  const result = {};
+  const skip = new Set(['content', 'response', 'result', 'output', 'stdout', 'stderr']);
+
+  for (const [key, nestedValue] of Object.entries(value)) {
+    if (skip.has(key)) {
+      continue;
+    }
+
+    if (nestedValue === undefined || nestedValue === null) {
+      continue;
+    }
+
+    result[key] =
+      typeof nestedValue === 'object'
+        ? boundedText(JSON.stringify(nestedValue), 120)
+        : boundedText(nestedValue, 120);
+
+    if (Object.keys(result).length >= 6) {
+      break;
+    }
+  }
+
+  return result;
+}
+
+function eventAttributeSummary(event) {
+  const attrs = event.attrs ?? {};
+  const data = event.data ?? {};
+  const candidates = [
+    ['model', attrs.model],
+    ['inputTokens', attrs.inputTokens],
+    ['outputTokens', attrs.outputTokens],
+    ['maxTokens', attrs.maxTokens],
+    ['ttft', attrs.ttft],
+    ['toolName', data.toolName ?? attrs.toolName],
+    ['details', attrs.details],
+    ['content', attrs.content],
+    ['response', event.type === 'agent_response' ? parseAssistantResponse(attrs.response) : undefined],
+    ['data', data && Object.keys(data).length ? data : undefined],
+  ];
+
+  const fields = [];
+  const seen = new Set();
+
+  for (const [label, value] of candidates) {
+    const summarized = summaryValue(value);
+
+    if (!summarized || seen.has(label)) {
+      continue;
+    }
+
+    fields.push({ label, value: summarized });
+    seen.add(label);
+
+    if (fields.length >= 6) {
+      break;
+    }
+  }
+
+  return fields;
 }
 
 function capTraceEvents(events) {
@@ -578,6 +645,7 @@ function sessionFromDebugLog(sessionDir, workspaceDir) {
           name: String(event.name ?? event.type ?? 'unknown'),
           status: String(event.status ?? 'unknown'),
           detail: eventDetail(event),
+          attributes: eventAttributeSummary(event),
           inputTokens,
           outputTokens,
           ttftMs: event.type === 'llm_request' ? Number(event.attrs?.ttft ?? 0) : 0,
@@ -619,7 +687,7 @@ function sessionFromChatSnapshot(file, workspaceDir) {
   );
   const tokens = { input, cachedInput: 0, cacheWrite: 0, output };
   const usd = costUsd(model, tokens);
-  const pricingModel = pricing[model] ? model : 'GPT-5.4';
+  const pricingModel = pricing[model] ? model : fallbackPricingModel;
   const startedAt = new Date(Number(snapshot.creationDate ?? statSync(file).mtimeMs)).toISOString();
   const endedAt = statSync(file).mtime.toISOString();
 

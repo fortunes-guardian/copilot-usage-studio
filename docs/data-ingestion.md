@@ -75,6 +75,7 @@ For debug logs with `llm_request` events:
 - each token-bearing `traceEvents` row stores structured `model`, `rawModel`, `pricingModel`, `totalTokens`, and `estimatedCost` fields.
 - each `llm_request` trace row also preserves `ttftMs` and `maxTokens` when VS Code logged them.
 - each `agent_response` trace row records whether a reasoning text field was present.
+- future scans preserve a small bounded `attributes` summary for common fields such as model, token counts, tool name, details, user content preview, or response preview. This is for the Trace inspector only; it is not a raw JSONL dump.
 
 The word `exact` means exact for the local VS Code debug-log token fields that were imported. It does not mean exact final billing. GitHub billing reconciliation can still differ because cache accounting and provider-side billing adjustments are not present in the local log.
 
@@ -101,6 +102,8 @@ Costs are estimates calculated from token totals and the local pricing table. Th
 
 The current pricing version is `github-copilot-usage-pricing-2026-06-01`. `USD_TO_EUR` defaults to `0.93` unless overridden for a scan.
 
+The GitHub rate card lives in `data/github-copilot-pricing.json`. The scanner, verifier, and UI all read this same file. Why: pricing is part of the data contract. If the app calculates cost with one table and explains it with another, the debugger becomes untrustworthy.
+
 When a debug-log session uses more than one model, cost is calculated per `modelBreakdown` entry and then summed into `cost.usd` and `cost.eur`. Why: applying one session-level model price to all tokens is wrong for mixed runs and hides model-switching behavior.
 
 The price table is copied from GitHub's public Copilot model pricing documentation, then exposed in the UI as a first-class `GitHub prices` view. Why: cost estimates should be inspectable from their inputs. A user should not have to trust a hidden rate card.
@@ -116,11 +119,11 @@ The app displays:
 - session size and cost-signal labels for fast triage
 - trace summary cards: model turns, tool calls, total tokens, errors, and total events
 - a cost debugger with cost drivers, token categories, per-model pricing rows, and the largest model calls
-- a capped trace event preview for logs and flow-chart views
+- a capped trace event preview for logs, a clickable Trace inspector, and flow-chart views
 - comparison deltas between two imported sessions
 - multi-session analytics across the current UI filter set
 
-The flow chart uses structured trace event pricing fields for model-call costs. The cost debugger uses the session and model-level token totals; both are generated during ingestion from the same `llm_request` source.
+The flow chart and Trace inspector use structured trace event pricing fields for model-call costs. The cost debugger uses the session and model-level token totals; both are generated during ingestion from the same `llm_request` source.
 
 The trace event preview cap is intentionally high enough for normal debug sessions (`1000` events). Why: compacted or long-running sessions can append important activity late in the same debug log. Keeping only the first slice hides exactly the recent events a developer is trying to inspect. The session summary still records the raw `traceSummary.totalEvents`, so any future truncation should be visible rather than silently changing totals.
 

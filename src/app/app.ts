@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 
 import { LedgerData, LedgerSession, ModelBreakdown, TokenBreakdown, TraceEvent } from './ledger.model';
 import {
+  FALLBACK_PRICING_MODEL,
   MODEL_PRICES_USD_PER_MILLION,
   PRICING_EFFECTIVE_DATE,
   PRICING_IMPORTED_AT,
@@ -21,6 +22,8 @@ type AnalyticsTimeRange = 'all' | '7d' | '30d' | '90d';
 type AnalyticsGrouping = 'day' | 'week' | 'month';
 type ModelCallSort = 'timeline' | 'largest';
 type SelectedRunView = 'overview' | 'cost' | 'turns' | 'trace';
+type TraceFilter = 'all' | 'model' | 'tool' | 'discovery' | 'message' | 'response' | 'error';
+type LedgerLoadState = 'loading' | 'ready' | 'error';
 
 interface SessionWarning {
   label: string;
@@ -76,6 +79,8 @@ export class App {
   private readonly http = inject(HttpClient);
 
   protected readonly ledger = signal<LedgerData | null>(null);
+  protected readonly ledgerLoadState = signal<LedgerLoadState>('loading');
+  protected readonly ledgerLoadError = signal<string | null>(null);
   protected readonly selectedId = signal<string | null>(null);
   protected readonly compareA = signal<string | null>(null);
   protected readonly compareB = signal<string | null>(null);
@@ -88,6 +93,8 @@ export class App {
   protected readonly analyticsModelFilter = signal('all');
   protected readonly analyticsGrouping = signal<AnalyticsGrouping>('day');
   protected readonly traceView = signal<'logs' | 'flow'>('logs');
+  protected readonly traceFilter = signal<TraceFilter>('all');
+  protected readonly selectedTraceEventIndex = signal<number | null>(null);
   protected readonly modelCallSort = signal<ModelCallSort>('timeline');
   protected readonly activeView = signal<ActiveView>('sessions');
   protected readonly selectedRunView = signal<SelectedRunView>('overview');
@@ -145,6 +152,15 @@ export class App {
     { value: 'day', label: 'By day' },
     { value: 'week', label: 'By week' },
     { value: 'month', label: 'By month' },
+  ];
+  protected readonly traceFilterOptions: Array<{ value: TraceFilter; label: string }> = [
+    { value: 'all', label: 'All events' },
+    { value: 'model', label: 'Model calls' },
+    { value: 'tool', label: 'Tools' },
+    { value: 'discovery', label: 'Discovery' },
+    { value: 'message', label: 'User messages' },
+    { value: 'response', label: 'Agent responses' },
+    { value: 'error', label: 'Errors' },
   ];
 
   protected readonly sessions = computed(() => this.ledger()?.sessions ?? []);
@@ -236,6 +252,32 @@ export class App {
     }
 
     return this.flowTraceEvents(session.traceEvents, session.modelBreakdown, ledger.usdToEur);
+  });
+  protected readonly filteredTraceEvents = computed(() => {
+    const session = this.selectedSession();
+
+    if (!session) {
+      return [];
+    }
+
+    return session.traceEvents.filter((event) => this.matchesTraceFilter(event, this.traceFilter()));
+  });
+  protected readonly selectedTraceEvent = computed(() => {
+    const events = this.filteredTraceEvents();
+    const selectedIndex = this.selectedTraceEventIndex();
+
+    return events.find((event) => event.index === selectedIndex) ?? events[0] ?? null;
+  });
+  protected readonly selectedTraceEventDetails = computed(() => {
+    const event = this.selectedTraceEvent();
+    const session = this.selectedSession();
+    const ledger = this.ledger();
+
+    if (!event || !session || !ledger) {
+      return null;
+    }
+
+    return this.traceEventDetails(event, session.modelBreakdown, ledger.usdToEur);
   });
   protected readonly filteredSessions = computed(() => {
     const query = this.query().trim().toLowerCase();
@@ -553,17 +595,26 @@ export class App {
   protected readonly abs = Math.abs;
 
   constructor() {
-    this.http.get<LedgerData>('/data/sessions.json').subscribe((ledger) => {
-      this.ledger.set(ledger);
-      this.selectedId.set(ledger.sessions[0]?.id ?? null);
-      this.compareA.set(ledger.sessions[0]?.id ?? null);
-      this.compareB.set(ledger.sessions[1]?.id ?? null);
+    this.http.get<LedgerData>('/data/sessions.json').subscribe({
+      next: (ledger) => {
+        this.ledger.set(ledger);
+        this.ledgerLoadState.set('ready');
+        this.ledgerLoadError.set(null);
+        this.selectedId.set(ledger.sessions[0]?.id ?? null);
+        this.compareA.set(ledger.sessions[0]?.id ?? null);
+        this.compareB.set(ledger.sessions[1]?.id ?? null);
+      },
+      error: (error: unknown) => {
+        this.ledgerLoadState.set('error');
+        this.ledgerLoadError.set(this.ledgerErrorMessage(error));
+      },
     });
   }
 
   protected selectSession(session: LedgerSession): void {
     this.selectedId.set(session.id);
     this.selectedRunView.set('overview');
+    this.selectedTraceEventIndex.set(null);
   }
 
   protected openFirstFilteredSession(): void {
@@ -617,6 +668,22 @@ export class App {
     this.analyticsGrouping.set('day');
   }
 
+  protected setTraceFilter(value: TraceFilter): void {
+    this.traceFilter.set(value);
+    this.selectedTraceEventIndex.set(null);
+  }
+
+  protected selectTraceEvent(event: TraceEvent): void {
+    this.selectedTraceEventIndex.set(event.index);
+  }
+
+  protected openTraceEvent(index: number): void {
+    this.selectedRunView.set('trace');
+    this.traceView.set('logs');
+    this.traceFilter.set('all');
+    this.selectedTraceEventIndex.set(index);
+  }
+
   protected pricingFallbackReason(model: string, pricingModel: string): string {
     if (model === pricingModel && MODEL_PRICES_USD_PER_MILLION[model]) {
       return 'This model matched a GitHub price row directly.';
@@ -633,6 +700,7 @@ export class App {
     this.selectedId.set(session.id);
     this.activeView.set('sessions');
     this.selectedRunView.set('overview');
+    this.selectedTraceEventIndex.set(null);
   }
 
   protected sessionTriage(session: LedgerSession): SessionTriage {
@@ -821,7 +889,7 @@ export class App {
 
   private explainModelCost(entry: ModelBreakdown, usdToEur: number, sessionCostEur: number) {
     const pricingModel = entry.pricingModel || entry.model;
-    const price = MODEL_PRICES_USD_PER_MILLION[pricingModel] ?? MODEL_PRICES_USD_PER_MILLION['GPT-5.4'];
+    const price = MODEL_PRICES_USD_PER_MILLION[pricingModel] ?? MODEL_PRICES_USD_PER_MILLION[FALLBACK_PRICING_MODEL];
     const inputEur = this.tokenCostEur(entry.tokens.input, price.input, usdToEur);
     const cachedInputEur = this.tokenCostEur(entry.tokens.cachedInput, price.cachedInput, usdToEur);
     const cacheWriteEur = this.tokenCostEur(entry.tokens.cacheWrite, price.cacheWrite ?? 0, usdToEur);
@@ -1370,7 +1438,7 @@ export class App {
       .filter((event) => event.inputTokens || event.outputTokens)
       .map((event) => {
         const pricingModel = this.pricingModelForEvent(event, modelBreakdown);
-        const price = MODEL_PRICES_USD_PER_MILLION[pricingModel] ?? MODEL_PRICES_USD_PER_MILLION['GPT-5.4'];
+        const price = MODEL_PRICES_USD_PER_MILLION[pricingModel] ?? MODEL_PRICES_USD_PER_MILLION[FALLBACK_PRICING_MODEL];
         const inputEur = this.tokenCostEur(event.inputTokens, price.input, usdToEur);
         const outputEur = this.tokenCostEur(event.outputTokens, price.output, usdToEur);
         const estimatedEur =
@@ -1394,7 +1462,7 @@ export class App {
       .filter((event) => this.isFlowEvent(event))
       .map((event, index) => {
         const pricingModel = this.pricingModelForEvent(event, modelBreakdown);
-        const price = MODEL_PRICES_USD_PER_MILLION[pricingModel] ?? MODEL_PRICES_USD_PER_MILLION['GPT-5.4'];
+        const price = MODEL_PRICES_USD_PER_MILLION[pricingModel] ?? MODEL_PRICES_USD_PER_MILLION[FALLBACK_PRICING_MODEL];
         const estimatedEur =
           event.estimatedCost?.eur ??
           this.tokenCostEur(event.inputTokens, price.input, usdToEur) +
@@ -1419,6 +1487,82 @@ export class App {
     );
   }
 
+  private matchesTraceFilter(event: TraceEvent, filter: TraceFilter): boolean {
+    if (filter === 'all') {
+      return true;
+    }
+
+    if (filter === 'model') {
+      return Boolean(event.inputTokens || event.outputTokens || event.type === 'llm_request');
+    }
+
+    if (filter === 'tool') {
+      return event.type.includes('tool') || this.toolLikeEventNames().some((name) => event.name.toLowerCase().includes(name));
+    }
+
+    if (filter === 'discovery') {
+      return event.type === 'discovery' || event.name.toLowerCase().includes('discovery') || event.detail.toLowerCase().includes('resolved ');
+    }
+
+    if (filter === 'message') {
+      return event.type === 'user_message';
+    }
+
+    if (filter === 'response') {
+      return event.type === 'agent_response' || event.type === 'assistant.message';
+    }
+
+    return event.status !== 'ok' && event.status !== 'unknown';
+  }
+
+  private traceEventDetails(event: TraceEvent, modelBreakdown: ModelBreakdown[], usdToEur: number) {
+    const pricingModel = this.pricingModelForEvent(event, modelBreakdown);
+    const price = MODEL_PRICES_USD_PER_MILLION[pricingModel] ?? MODEL_PRICES_USD_PER_MILLION[FALLBACK_PRICING_MODEL];
+    const inputEur = this.tokenCostEur(event.inputTokens, price.input, usdToEur);
+    const outputEur = this.tokenCostEur(event.outputTokens, price.output, usdToEur);
+    const estimatedEur = event.estimatedCost?.eur ?? inputEur + outputEur;
+    const totalTokens = event.totalTokens ?? event.inputTokens + event.outputTokens;
+    const rawModel = event.rawModel || event.model || this.modelFromEventDetail(event.detail);
+    const normalizedFields = [
+      { label: 'Raw index', value: `#${event.index}` },
+      { label: 'Timestamp', value: event.timestamp },
+      { label: 'Type', value: event.type },
+      { label: 'Name', value: event.name },
+      { label: 'Status', value: event.status },
+      ...(event.model ? [{ label: 'Model', value: event.model }] : []),
+      ...(rawModel ? [{ label: 'Raw model', value: rawModel }] : []),
+      ...(event.inputTokens || event.outputTokens
+        ? [
+            { label: 'Input tokens', value: event.inputTokens.toLocaleString() },
+            { label: 'Output tokens', value: event.outputTokens.toLocaleString() },
+            { label: 'Total tokens', value: totalTokens.toLocaleString() },
+            { label: 'Pricing row', value: pricingModel },
+            { label: 'Estimated cost', value: `€${estimatedEur.toLocaleString(undefined, { minimumFractionDigits: 6, maximumFractionDigits: 6 })}` },
+          ]
+        : []),
+      ...(event.ttftMs ? [{ label: 'TTFT', value: `${event.ttftMs.toLocaleString()} ms` }] : []),
+      ...(event.maxTokens ? [{ label: 'Max tokens', value: event.maxTokens.toLocaleString() }] : []),
+      ...(event.hasReasoning ? [{ label: 'Reasoning text', value: 'Present in debug log payload' }] : []),
+    ];
+
+    return {
+      normalizedFields,
+      attributeFields: event.attributes ?? [],
+      detail: event.detail || 'No detail text imported for this event.',
+      hasCost: Boolean(event.inputTokens || event.outputTokens),
+      inputEur,
+      outputEur,
+      estimatedEur,
+      totalTokens,
+      pricingModel,
+      usesFallbackPrice: this.usesPricingFallback(rawModel, pricingModel),
+    };
+  }
+
+  private toolLikeEventNames(): string[] {
+    return ['read_file', 'list_dir', 'grep_search', 'semantic_search', 'fetch_webpage', 'apply_patch', 'run_in_terminal'];
+  }
+
   private pricingModelForEvent(event: TraceEvent, modelBreakdown: ModelBreakdown[]): string {
     if (event.pricingModel) {
       return event.pricingModel;
@@ -1426,7 +1570,7 @@ export class App {
 
     const sessionPricingModel = modelBreakdown.length === 1 ? modelBreakdown[0].pricingModel : null;
     const parsedModel = event.model ?? this.modelFromEventDetail(event.detail);
-    return this.matchPricingModel(parsedModel) ?? sessionPricingModel ?? 'GPT-5.4';
+    return this.matchPricingModel(parsedModel) ?? sessionPricingModel ?? FALLBACK_PRICING_MODEL;
   }
 
   private tokenCostEur(tokens: number, usdPerMillion: number, usdToEur: number): number {
@@ -1589,5 +1733,13 @@ export class App {
       .replace(/[^a-z0-9]+/g, ' ')
       .trim()
       .replace(/\s+/g, ' ');
+  }
+
+  private ledgerErrorMessage(error: unknown): string {
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+      return error.message;
+    }
+
+    return 'The generated ledger could not be loaded. Run npm run scan and npm run verify:data.';
   }
 }

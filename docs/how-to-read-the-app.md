@@ -159,3 +159,23 @@ Each row shows:
 Why this matters: total session cost tells you that a run was expensive, but per-turn cost tells you where it became expensive. It should make questions like "which step burned tokens?" and "did the cost spike after repo reads or tool results?" much easier to answer.
 
 The app uses the debug log's zero-based raw event index. If the scanner reports marker `#183`, look for `raw index #183` in the per-turn table or `#183` in View Logs.
+
+## Trace Inspector
+
+Use **Trace** when you want evidence for a specific event.
+
+The log can be filtered to:
+
+- all events
+- model calls
+- tools
+- discovery/customization events
+- user messages
+- agent responses
+- errors
+
+Clicking an event opens the inspector. For model calls, the inspector shows the raw event index, timestamp, model, pricing row, input/output tokens, estimated event cost, and latency/cap fields when VS Code logged them.
+
+The **Turns** ledger links each model call back to Trace. Use that path when the question is: "this turn looks expensive; what exact log event produced that number?"
+
+The inspector shows bounded summaries, not the full raw JSONL payload. That is intentional: the app should expose useful local evidence without turning `public/data/sessions.json` into a raw log dump.

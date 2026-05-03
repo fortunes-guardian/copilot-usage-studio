@@ -18,12 +18,15 @@ The source table says prices are per 1 million tokens and take effect on June 1,
 
 ## Where Pricing Lives
 
-- UI pricing constants: `src/app/pricing.ts`
-- Scanner pricing mirror: `scripts/scan-vscode-sessions.mjs`
-- Verifier pricing mirror: `scripts/verify-ledger-data.mjs`
+- Shared rate-card data: `data/github-copilot-pricing.json`
+- UI adapter: `src/app/pricing.ts`
+- Scanner consumer: `scripts/scan-vscode-sessions.mjs`
+- Verifier consumer: `scripts/verify-ledger-data.mjs`
 - Generated ledger metadata: `public/data/sessions.json`
 
-The duplication is deliberate for the current MVP. The scanner must calculate costs without importing Angular code, and the verifier must independently check the generated ledger. A later cleanup can move the table into a shared JSON file consumed by all three.
+The rate card is a versioned JSON file so the scanner, verifier, and UI use the same pricing rows and fallback model. This avoids a quiet class of bugs where the UI explains one price table while the scanner calculated with another.
+
+`src/app/pricing.ts` is intentionally just an Angular-facing adapter around the shared JSON. It adds TypeScript types and the `estimateCostUsd` helper, but it is not the source of truth.
 
 ## Calculation
 

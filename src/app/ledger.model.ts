@@ -61,6 +61,7 @@ export interface TraceEvent {
   name: string;
   status: string;
   detail: string;
+  attributes?: Array<{ label: string; value: string }>;
   inputTokens: number;
   outputTokens: number;
   ttftMs?: number;

@@ -15,6 +15,7 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
 - [docs/roadmap.md](docs/roadmap.md): planned build order.
 - [docs/data-ingestion.md](docs/data-ingestion.md): where the data comes from and what it means.
 - [docs/pricing.md](docs/pricing.md): GitHub price source and calculation rules.
+- [docs/local-deployment.md](docs/local-deployment.md): local run, build, and future packaging options.
 
 ## What Works Now
 
@@ -32,9 +33,9 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
   - `Overview` for summary, metadata, and triage
   - `Cost` for estimate explanation, drivers, and price rows
   - `Turns` for per-turn model-call insights and the detailed ledger
-  - `Trace` for raw logs and agent flow
+  - `Trace` for filterable raw logs, clickable event inspection, and agent flow
 - Shows the GitHub pricing table used by the app.
-- Shows trace logs and an agent flow chart.
+- Shows trace logs, a clickable event inspector, and an agent flow chart.
 - Compares two runs with cost/token deltas, driver explanations, context-growth movement, and model/pricing-row changes.
 - Shows a multi-session Analytics view for filtered sessions:
   - visible cohort controls for time range, workspace, model, and day/week/month grouping
@@ -53,10 +54,25 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
 ## Run The App
 
 ```bash
+npm install
+npm run scan
+npm run verify:data
 npm start
 ```
 
 Then open the Angular dev server URL.
+
+This is the recommended mode while the project is still changing quickly.
+
+For a local production build:
+
+```bash
+npm run scan
+npm run verify:data
+npm run build
+```
+
+See [docs/local-deployment.md](docs/local-deployment.md) for packaging options and why the app stays local-first.
 
 ## Refresh Local Session Data
 
@@ -106,6 +122,8 @@ github-copilot-usage-pricing-2026-06-01
 ```
 
 Rates are USD per 1 million tokens. The scanner converts USD estimates to EUR using `USD_TO_EUR`, defaulting to `0.93`.
+
+The versioned pricing data lives in `data/github-copilot-pricing.json`. The scanner, verifier, and UI all read from that same file.
 
 Important: this app shows a local estimate, not a GitHub invoice. Local VS Code logs currently expose input/output tokens, but not provider cache read/write billing fields.
 

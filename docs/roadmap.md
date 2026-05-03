@@ -154,9 +154,13 @@ Why: the app has complex information. Better style should reduce cognitive load,
 
 Status: proposed near-term hardening.
 
+Done:
+
+- Moved GitHub Copilot pricing into one shared JSON file used by the scanner, verifier, and UI.
+- Added a visible app data loading/error state for `/data/sessions.json`.
+
 Build:
 
-- Create one shared pricing table source for scanner, verifier, and UI.
 - Centralize model normalization and pricing fallback rules.
 - Add fixture-based scanner tests for:
   - exact debug-log token totals
@@ -171,16 +175,30 @@ Build:
   - unknown model pricing fallback display
   - Analytics empty states
   - Compare delta copy
-- Add loading and error states for the generated ledger fetch.
 - Split the large root component into focused pieces after the current debugger layout stabilizes.
 
 Why: the app is now past prototype shape. The risky parts are no longer just "can we show the data?" They are "can pricing, source confidence, and filters stay correct as the UI grows?"
 
-## Phase 9: Trace Event Inspector
+## Phase 8.5: Local Packaging
 
-Status: proposed next UI optimization.
+Status: documented.
+
+Done:
+
+- Added [local deployment notes](local-deployment.md) covering dev mode, static local builds, future desktop wrapper, and future CLI.
 
 Build:
+
+- Decide whether the next practical distribution target is a static local build with a small serve command or a desktop wrapper.
+- Add a one-command refresh flow after the scanner interface settles.
+
+Why: this project should stay local-first because the useful source data lives on the developer machine and may contain prompts, file paths, repo context, and tool results.
+
+## Phase 9: Trace Event Inspector
+
+Status: built first pass.
+
+Done:
 
 - Make Trace log rows clickable.
 - Open a right-side detail drawer or inline inspector for the selected event.
@@ -188,6 +206,11 @@ Build:
 - Link model-call rows in `Turns` to the matching raw event in `Trace`.
 - Add event filters for model calls, tool calls, discovery/customization events, user messages, and agent responses.
 - Preserve enough debug-log payload summary during ingestion to make this useful without forcing the UI to parse raw VS Code JSONL directly. Current `traceEvents.detail` strings are too short for a good inspector by themselves.
+
+Still to improve:
+
+- Tune inspector layout as more real logs are imported.
+- Add more useful bounded summaries for common VS Code debug-log event shapes when the source payload exposes them.
 - Consider optional enrichment from matching `GitHub.copilot-chat/transcripts/<session-id>.jsonl` only after the UI can show source availability and confidence. Transcripts can be rich, but they are not consistently complete across sessions or restarts.
 
 Why: the Trace view is currently good for scanning, but debugging needs selection. VS Code's own Agent Debug Logs let a user click an event and inspect details. This app should do the same, with cost fields added.
