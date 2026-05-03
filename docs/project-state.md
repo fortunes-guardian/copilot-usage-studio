@@ -36,7 +36,8 @@ Principles:
 - Uses one shared GitHub pricing JSON file for the scanner, verifier, and UI.
 - Shows a visible loading/error state if the generated ledger data cannot be loaded.
 - Ledger loading now lives in `LedgerDataService` instead of the root component.
-- The Prices page and ledger loading/error panel are standalone Angular components.
+- The Prices page, Compare page, and ledger loading/error panel are standalone Angular components.
+- Shared cost helpers now hold reusable model-cost, token-total, context-growth, percent-delta, and pricing-fallback utility logic.
 - Shows a selected-run Cost debugger with:
   - source/confidence explanation
   - estimate-scope note for missing cache billing fields
@@ -94,7 +95,7 @@ Principles:
 - Aggregated analytics are useful but still early. Outlier detection is a simple statistical signal with driver hints; it now separates a few obvious cases such as long agent runs and suspicious low-activity spikes, but it should become more nuanced as more real sessions are imported.
 - Advanced evidence is imported but mostly hidden from the primary UI. Reasoning text presence and request-cap comparison were too technical to be useful as top-level cards.
 - No app-owned database yet. Scans overwrite `public/data/sessions.json`.
-- `app.ts`, `app.html`, and `app.css` are still large, though the first extraction pass has started. More selected-run and analytics sections should move into focused components/services.
+- `app.ts`, `app.html`, and `app.css` are still large, though the component extraction is underway. More selected-run and analytics sections should move into focused components/services.
 
 ## Review Notes
 
@@ -105,18 +106,32 @@ Verified:
 - `npm run verify:data` passes for the current generated ledger.
 - `npm test -- --watch=false` passes.
 - `npm run build` passes without the previous component CSS budget warning.
-- The live app has no browser console warnings/errors from the Angular page during the review.
+- The live app has no browser console warnings/errors from the Angular page during the review, including the extracted Compare page.
 - Current generated data has `5` imported debug-log sessions, all with trace event counts matching `traceSummary.totalEvents`.
 - Two current sessions use `gpt-4o` as the raw/display model but fall back to the `GPT-5.4` pricing row.
 
 Code improvements to schedule:
 
-- Move filtering/analytics/comparison and selected-run explanation logic out of the root component into focused services or helper modules.
+- Move filtering, analytics, and selected-run explanation logic out of the root component into focused services or helper modules.
 - Centralize model normalization and pricing fallback rules. Pricing rows now have one shared source, but matching/fallback behavior still exists in both the scanner/verifier and UI.
 - Add ingestion fixtures for debug logs, weak chat snapshots, unknown models, mixed models, and fragile transcript availability.
 - Add UI tests for the selected-run tabs, source/size filters, pricing fallback display, Analytics empty states, and Compare deltas.
 
 ## Latest Implemented Step
+
+Continued the monolith split by extracting Compare.
+
+What changed:
+
+- Extracted `ComparePageComponent` from the root template and moved its comparison UI into standalone HTML/CSS.
+- Removed Compare analysis methods from `app.ts`.
+- Added `ledger-cost-utils.ts` for reusable pricing/token/context helpers used by the extracted Compare page.
+- Removed obsolete Compare selectors from the root stylesheet.
+- Verified Compare in the browser: heading, selectors, comparison summary, and clean console.
+
+Why: Compare is a stable top-level view and no longer belongs inside the root shell. Pulling it out lowers root-template noise and gives the next UI polish pass a contained surface.
+
+## Previous Implemented Step
 
 Started the monolith split.
 
@@ -126,11 +141,11 @@ What changed:
 - Extracted `PricingPageComponent` from the root template.
 - Extracted `LedgerStatePanelComponent` for loading/error display.
 - Removed obsolete pricing-page styles and unused token-burner styles from the root stylesheet.
-- The production build now passes without the previous `app.css` component style budget warning.
+- The production build passed without the previous `app.css` component style budget warning.
 
 Why: the app is past throwaway prototype shape. Pulling stable surfaces into focused components makes future UI work safer, and it keeps Angular's style budget useful instead of training us to ignore it.
 
-## Previous Implemented Step
+## Older Implemented Step
 
 Hardened pricing and local deployment basics.
 
@@ -175,7 +190,7 @@ Keep tightening reliability and the UI/code structure before attempting evidence
 
 Build:
 
-- Continue splitting the large root component into smaller services/components, starting with selected-run helpers, Analytics, and Compare.
+- Continue splitting the large root component into smaller services/components, starting with Analytics and selected-run subviews.
 - Add fixture-based scanner/verifier tests for mixed models, unknown model fallback, and missing/malformed generated data.
 - Centralize model normalization and pricing fallback rules so model matching cannot drift between scanner and UI.
 - Treat Chat Debug transcripts as optional enrichment only. If imported later, show transcript availability and source labels clearly, and never require transcripts for cost totals.

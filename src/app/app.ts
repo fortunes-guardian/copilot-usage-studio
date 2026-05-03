@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { LedgerDataService } from './ledger-data.service';
 import { LedgerStatePanelComponent } from './ledger-state-panel.component';
 import { LedgerSession, ModelBreakdown, TokenBreakdown, TraceEvent } from './ledger.model';
+import { ComparePageComponent } from './compare-page.component';
 import { PricingPageComponent } from './pricing-page.component';
 import {
   FALLBACK_PRICING_MODEL,
@@ -35,24 +36,6 @@ interface SessionTriage {
   warnings: SessionWarning[];
 }
 
-interface ComparisonMetric {
-  label: string;
-  a: number;
-  b: number;
-  delta: number;
-  percent: number | null;
-  format: 'currency' | 'number' | 'percent';
-  lowerIsBetter: boolean;
-  help: string;
-}
-
-interface ComparisonDriver {
-  title: string;
-  value: string;
-  tone: WarningTone;
-  detail: string;
-}
-
 interface AnalyticsMetric {
   label: string;
   value: string;
@@ -68,7 +51,15 @@ interface AnalyticsHighlight {
 
 @Component({
   selector: 'app-root',
-  imports: [DatePipe, DecimalPipe, FormsModule, NgClass, LedgerStatePanelComponent, PricingPageComponent],
+  imports: [
+    DatePipe,
+    DecimalPipe,
+    FormsModule,
+    NgClass,
+    ComparePageComponent,
+    LedgerStatePanelComponent,
+    PricingPageComponent,
+  ],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -471,101 +462,6 @@ export class App {
     };
   });
 
-  protected readonly comparison = computed(() => {
-    const ledger = this.ledger();
-    const a = this.sessions().find((session) => session.id === this.compareA());
-    const b = this.sessions().find((session) => session.id === this.compareB());
-
-    if (!ledger || !a || !b || a.id === b.id) {
-      return null;
-    }
-
-    const aAnalysis = this.sessionComparisonAnalysis(a, ledger.usdToEur);
-    const bAnalysis = this.sessionComparisonAnalysis(b, ledger.usdToEur);
-    const totalTokenDelta = bAnalysis.totalTokens - aAnalysis.totalTokens;
-    const costDelta = b.cost.eur - a.cost.eur;
-    const inputCostDelta = bAnalysis.inputEur - aAnalysis.inputEur;
-    const outputCostDelta = bAnalysis.outputEur - aAnalysis.outputEur;
-    const toolDelta = b.traceSummary.toolCalls - a.traceSummary.toolCalls;
-    const turnDelta = b.traceSummary.modelTurns - a.traceSummary.modelTurns;
-    const contextGrowthDelta = bAnalysis.contextGrowth - aAnalysis.contextGrowth;
-
-    return {
-      a,
-      b,
-      aAnalysis,
-      bAnalysis,
-      costDelta,
-      totalTokenDelta,
-      percent: this.percentDelta(a.cost.eur, b.cost.eur),
-      summary: this.comparisonSummary(costDelta, totalTokenDelta, inputCostDelta, outputCostDelta, toolDelta, turnDelta),
-      metrics: [
-        {
-          label: 'Estimated cost',
-          a: a.cost.eur,
-          b: b.cost.eur,
-          delta: costDelta,
-          percent: this.percentDelta(a.cost.eur, b.cost.eur),
-          format: 'currency',
-          lowerIsBetter: true,
-          help: 'Local estimate from imported VS Code token totals and GitHub price rows.',
-        },
-        {
-          label: 'Input tokens',
-          a: a.tokens.input,
-          b: b.tokens.input,
-          delta: b.tokens.input - a.tokens.input,
-          percent: this.percentDelta(a.tokens.input, b.tokens.input),
-          format: 'number',
-          lowerIsBetter: true,
-          help: 'Prompt, repo context, prior conversation, and tool results sent into the model.',
-        },
-        {
-          label: 'Output tokens',
-          a: a.tokens.output,
-          b: b.tokens.output,
-          delta: b.tokens.output - a.tokens.output,
-          percent: this.percentDelta(a.tokens.output, b.tokens.output),
-          format: 'number',
-          lowerIsBetter: false,
-          help: 'Generated response tokens. More output can be useful, but it still affects cost.',
-        },
-        {
-          label: 'Model turns',
-          a: a.traceSummary.modelTurns,
-          b: b.traceSummary.modelTurns,
-          delta: turnDelta,
-          percent: this.percentDelta(a.traceSummary.modelTurns, b.traceSummary.modelTurns),
-          format: 'number',
-          lowerIsBetter: false,
-          help: 'Model request count. More turns often means more accumulated context gets resent.',
-        },
-        {
-          label: 'Tool calls',
-          a: a.traceSummary.toolCalls,
-          b: b.traceSummary.toolCalls,
-          delta: toolDelta,
-          percent: this.percentDelta(a.traceSummary.toolCalls, b.traceSummary.toolCalls),
-          format: 'number',
-          lowerIsBetter: false,
-          help: 'Tool activity. Tool results can become later input context.',
-        },
-        {
-          label: 'Context growth',
-          a: aAnalysis.contextGrowth,
-          b: bAnalysis.contextGrowth,
-          delta: contextGrowthDelta,
-          percent: null,
-          format: 'percent',
-          lowerIsBetter: true,
-          help: 'How much average input tokens grew from early model calls to late model calls.',
-        },
-      ] satisfies ComparisonMetric[],
-      drivers: this.comparisonDrivers(aAnalysis, bAnalysis, costDelta, inputCostDelta, outputCostDelta, toolDelta, turnDelta),
-      modelRows: this.compareModelRows(aAnalysis.modelRows, bAnalysis.modelRows),
-    };
-  });
-  protected readonly abs = Math.abs;
   private initializedFromLedger = false;
 
   constructor() {
@@ -1067,28 +963,6 @@ export class App {
     ];
   }
 
-  private sessionComparisonAnalysis(session: LedgerSession, usdToEur: number) {
-    const modelRows = session.modelBreakdown.map((entry) => this.explainModelCost(entry, usdToEur, session.cost.eur));
-    const contextStats = this.contextStats(session);
-    const topModel = [...modelRows].sort((a, b) => b.totalEur - a.totalEur)[0] ?? null;
-
-    return {
-      session,
-      modelRows,
-      totalTokens: this.sessionTotalTokens(session),
-      inputEur: modelRows.reduce((sum, row) => sum + row.inputEur, 0),
-      outputEur: modelRows.reduce((sum, row) => sum + row.outputEur, 0),
-      cachedInputEur: modelRows.reduce((sum, row) => sum + row.cachedInputEur, 0),
-      cacheWriteEur: modelRows.reduce((sum, row) => sum + row.cacheWriteEur, 0),
-      contextGrowth: contextStats?.growth ?? 0,
-      firstInputAvg: contextStats?.firstAvg ?? 0,
-      lastInputAvg: contextStats?.lastAvg ?? 0,
-      topModel,
-      modelNames: new Set(modelRows.map((row) => row.model)),
-      pricingRows: new Set(modelRows.map((row) => row.pricingModel)),
-    };
-  }
-
   private analyticsModelRows(sessions: LedgerSession[], totalCost: number) {
     const rows = new Map<
       string,
@@ -1261,118 +1135,6 @@ export class App {
 
   private isoDate(date: Date): string {
     return date.toISOString().slice(0, 10);
-  }
-
-  private comparisonSummary(
-    costDelta: number,
-    totalTokenDelta: number,
-    inputCostDelta: number,
-    outputCostDelta: number,
-    toolDelta: number,
-    turnDelta: number,
-  ): string {
-    const direction = costDelta > 0 ? 'more expensive' : costDelta < 0 ? 'cheaper' : 'about the same cost';
-    const tokenDirection = totalTokenDelta > 0 ? 'more' : totalTokenDelta < 0 ? 'fewer' : 'the same number of';
-    const costDriver =
-      Math.abs(inputCostDelta) >= Math.abs(outputCostDelta)
-        ? 'input/context tokens'
-        : 'generated output tokens';
-    const activity =
-      Math.abs(turnDelta) >= Math.abs(toolDelta)
-        ? `${Math.abs(turnDelta).toLocaleString()} ${turnDelta >= 0 ? 'more' : 'fewer'} model turns`
-        : `${Math.abs(toolDelta).toLocaleString()} ${toolDelta >= 0 ? 'more' : 'fewer'} tool calls`;
-
-    if (costDelta === 0 && totalTokenDelta === 0) {
-      return 'These runs look equivalent on imported cost and token totals. Check logs if behavior differed qualitatively.';
-    }
-
-    return `Run B is ${direction}, with ${Math.abs(totalTokenDelta).toLocaleString()} ${tokenDirection} imported tokens. The largest priced movement is ${costDriver}; activity changed by ${activity}.`;
-  }
-
-  private comparisonDrivers(
-    a: ReturnType<App['sessionComparisonAnalysis']>,
-    b: ReturnType<App['sessionComparisonAnalysis']>,
-    costDelta: number,
-    inputCostDelta: number,
-    outputCostDelta: number,
-    toolDelta: number,
-    turnDelta: number,
-  ): ComparisonDriver[] {
-    const modelChanged = this.setsDiffer(a.modelNames, b.modelNames) || this.setsDiffer(a.pricingRows, b.pricingRows);
-    const contextDelta = b.contextGrowth - a.contextGrowth;
-    const topModelChanged = a.topModel?.pricingModel !== b.topModel?.pricingModel;
-
-    return [
-      {
-        title: 'Cost movement',
-        value: costDelta > 0 ? 'Higher' : costDelta < 0 ? 'Lower' : 'Flat',
-        tone: costDelta > 0 ? 'high' : costDelta < 0 ? 'info' : 'medium',
-        detail:
-          costDelta === 0
-            ? 'The imported estimate did not materially change between these two runs.'
-            : `Run B moved by ${costDelta > 0 ? '+' : '-'}€${Math.abs(costDelta).toFixed(4)}. Cheaper is only better if the run still did the job.`,
-      },
-      {
-        title: 'Priced token driver',
-        value: Math.abs(inputCostDelta) >= Math.abs(outputCostDelta) ? 'Input' : 'Output',
-        tone: Math.abs(inputCostDelta) >= Math.abs(outputCostDelta) ? 'high' : 'medium',
-        detail:
-          Math.abs(inputCostDelta) >= Math.abs(outputCostDelta)
-            ? `Input/context cost moved by ${inputCostDelta >= 0 ? '+' : '-'}€${Math.abs(inputCostDelta).toFixed(4)}. This is usually repo context, prior chat, or tool results.`
-            : `Output cost moved by ${outputCostDelta >= 0 ? '+' : '-'}€${Math.abs(outputCostDelta).toFixed(4)}. The later run generated more or less text.`,
-      },
-      {
-        title: 'Model pricing',
-        value: modelChanged ? 'Changed' : 'Same',
-        tone: modelChanged || topModelChanged ? 'medium' : 'info',
-        detail: modelChanged
-          ? `The model or pricing-row mix changed. A: ${[...a.pricingRows].join(', ')}. B: ${[...b.pricingRows].join(', ')}.`
-          : `Both runs used the same imported pricing row mix: ${[...b.pricingRows].join(', ')}.`,
-      },
-      {
-        title: 'Context shape',
-        value: `${contextDelta >= 0 ? '+' : ''}${contextDelta.toFixed(0)} pts`,
-        tone: contextDelta >= 50 ? 'high' : Math.abs(contextDelta) >= 20 ? 'medium' : 'info',
-        detail: `Average input growth moved from ${a.contextGrowth.toFixed(0)}% to ${b.contextGrowth.toFixed(0)}%. This is a cost signal, not proof of a problem.`,
-      },
-      {
-        title: 'Agent activity',
-        value: `${turnDelta >= 0 ? '+' : ''}${turnDelta} turns`,
-        tone: turnDelta > 3 || toolDelta > 10 ? 'medium' : 'info',
-        detail: `Run B has ${Math.abs(turnDelta)} ${turnDelta >= 0 ? 'more' : 'fewer'} model turns and ${Math.abs(toolDelta)} ${toolDelta >= 0 ? 'more' : 'fewer'} tool calls.`,
-      },
-    ];
-  }
-
-  private compareModelRows(
-    aRows: ReturnType<App['explainModelCost']>[],
-    bRows: ReturnType<App['explainModelCost']>[],
-  ) {
-    const keys = new Set([...aRows, ...bRows].map((row) => `${row.model}::${row.pricingModel}`));
-
-    return [...keys]
-      .map((key) => {
-        const [model, pricingModel] = key.split('::');
-        const a = aRows.find((row) => row.model === model && row.pricingModel === pricingModel);
-        const b = bRows.find((row) => row.model === model && row.pricingModel === pricingModel);
-        const aTokens = a ? this.tokenTotal(a.tokens) : 0;
-        const bTokens = b ? this.tokenTotal(b.tokens) : 0;
-
-        return {
-          model,
-          pricingModel,
-          usesFallbackPrice: this.usesPricingFallback(model, pricingModel),
-          aCost: a?.totalEur ?? 0,
-          bCost: b?.totalEur ?? 0,
-          costDelta: (b?.totalEur ?? 0) - (a?.totalEur ?? 0),
-          aTokens,
-          bTokens,
-          tokenDelta: bTokens - aTokens,
-          aTurns: a?.turns ?? 0,
-          bTurns: b?.turns ?? 0,
-        };
-      })
-      .sort((a, b) => Math.abs(b.costDelta) - Math.abs(a.costDelta));
   }
 
   private topTokenEvents(events: TraceEvent[], modelBreakdown: ModelBreakdown[], usdToEur: number) {
@@ -1660,18 +1422,6 @@ export class App {
 
   private sumTokens(rows: { tokens: TokenBreakdown }[], field: keyof TokenBreakdown): number {
     return rows.reduce((sum, row) => sum + row.tokens[field], 0);
-  }
-
-  private percentDelta(a: number, b: number): number | null {
-    return a === 0 ? null : ((b - a) / a) * 100;
-  }
-
-  private setsDiffer(a: Set<string>, b: Set<string>): boolean {
-    if (a.size !== b.size) {
-      return true;
-    }
-
-    return [...a].some((value) => !b.has(value));
   }
 
   private modelFromEventDetail(detail: string): string {

@@ -18,7 +18,6 @@
 
 .brand,
 .detail-header,
-.compare-header,
 .session-footer {
   display: flex;
   flex-wrap: wrap;
@@ -28,8 +27,7 @@
 }
 
 .brand h1,
-.detail h2,
-.compare h2 {
+.detail h2 {
   margin: 4px 0 0;
   letter-spacing: 0;
 }
@@ -135,8 +133,7 @@
 }
 
 .search input,
-.filters select,
-.selectors select {
+.filters select {
   width: 100%;
   border: 1px solid #d5dde5;
   border-radius: 8px;
@@ -225,8 +222,7 @@
 }
 
 .summary-grid,
-.facts,
-.comparison-grid {
+.facts {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
@@ -234,8 +230,7 @@
 
 .metric,
 .detail,
-.ingestion,
-.compare {
+.ingestion {
   border: 1px solid #dfe6ed;
   border-radius: 8px;
   background: #fff;
@@ -249,7 +244,6 @@
 
 .metric span,
 .facts span,
-.comparison-grid span,
 .price span {
   color: #60717f;
   font-size: 13px;
@@ -257,7 +251,6 @@
 
 .metric strong,
 .facts strong,
-.comparison-grid strong,
 .price strong {
   color: #16202a;
   font-size: 24px;
@@ -265,16 +258,14 @@
 }
 
 .detail,
-.ingestion,
-.compare {
+.ingestion {
   display: grid;
   gap: 18px;
   padding: 22px;
 }
 
 .detail h2,
-.ingestion h2,
-.compare h2 {
+.ingestion h2 {
   font-size: 26px;
 }
 
@@ -358,8 +349,7 @@
   min-width: 140px;
 }
 
-.facts > div,
-.comparison-grid > div {
+.facts > div {
   display: grid;
   gap: 5px;
   border: 1px solid #e6edf2;
@@ -1174,12 +1164,6 @@
   font-weight: 800;
 }
 
-.selectors {
-  display: grid;
-  grid-template-columns: minmax(180px, 260px) minmax(180px, 260px);
-  gap: 10px;
-}
-
 .saving {
   color: #067a46 !important;
 }
@@ -1309,17 +1293,14 @@
   .driver-grid,
   .cost-row,
   .trace-cards,
-  .comparison-grid,
   .ingestion,
-  .ingestion dl,
-  .selectors {
+  .ingestion dl {
     grid-template-columns: 1fr;
   }
 
   .cost-row, .compact-table .cost-row { min-width: 0; }
 
   .detail-header,
-  .compare-header,
   .cost-explainer-header,
   .source-callout,
   .pricing-header {
@@ -1513,7 +1494,6 @@
 
 .search input,
 .filters select,
-.selectors select,
 .analytics-controls select {
   border-color: var(--line);
   background: var(--surface-soft);
@@ -1654,12 +1634,10 @@
 .session-footer strong,
 .metric strong,
 .facts strong,
-.comparison-grid strong,
 .price strong,
 .detail h2,
 .ingestion h2,
 .ingestion-lede strong,
-.compare h2,
 .pricing-header h2,
 .source-callout strong,
 .primary-diagnosis strong,
@@ -1684,8 +1662,6 @@
 .filter-count,
 .metric span,
 .facts span,
-.comparison-grid span,
-.comparison-grid em,
 .price span,
 .pricing-header p,
 .source-callout p,
@@ -1729,13 +1705,11 @@
 .metric,
 .detail,
 .ingestion,
-.compare,
 .analytics-controls,
 .analytics-empty,
 .highlight-list button,
 .stat-list div,
 .facts > div,
-.comparison-grid > div,
 .cost-explainer,
 .primary-diagnosis,
 .diagnostic-facts > div,
@@ -1754,14 +1728,12 @@
 
 .detail,
 .ingestion,
-.compare,
 .cost-explainer,
 .analytics-controls {
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
 }
 
 .facts > div,
-.comparison-grid > div,
 .ingestion dl > div,
 .cost-categories article,
 .driver-grid article,

@@ -1,0 +1,110 @@
+<section class="compare">
+  <div class="compare-header">
+    <div>
+      <p class="eyebrow">Evaluation</p>
+      <h2>Compare runs</h2>
+    </div>
+    <div class="selectors">
+      <select [ngModel]="selectedAId()" (ngModelChange)="setCompareA($event)">
+        @for (session of sessionOptions(); track session.id) {
+          <option [value]="session.id">{{ session.title }}</option>
+        }
+      </select>
+      <select [ngModel]="selectedBId()" (ngModelChange)="setCompareB($event)">
+        @for (session of sessionOptions(); track session.id) {
+          <option [value]="session.id">{{ session.title }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  @if (comparison(); as diff) {
+    <div class="source-callout">
+      <div>
+        <span>Comparison read</span>
+        <strong [class.saving]="diff.costDelta < 0">
+          {{ diff.costDelta < 0 ? '-' : '+' }}€{{ abs(diff.costDelta) | number: '1.2-4' }}
+        </strong>
+        <p>{{ diff.summary }}</p>
+      </div>
+    </div>
+
+    <div class="comparison-grid advanced">
+      @for (metric of diff.metrics; track metric.label) {
+        <div>
+          <span>
+            {{ metric.label }}
+            <span class="help-dot" [title]="metric.help" [attr.aria-label]="metric.help" tabindex="0">?</span>
+          </span>
+          @if (metric.format === 'currency') {
+            <strong [class.saving]="metric.lowerIsBetter && metric.delta < 0">
+              {{ metric.delta < 0 ? '-' : '+' }}€{{ abs(metric.delta) | number: '1.2-4' }}
+            </strong>
+            <em>A €{{ metric.a | number: '1.2-4' }} / B €{{ metric.b | number: '1.2-4' }}</em>
+          } @else if (metric.format === 'percent') {
+            <strong [class.saving]="metric.lowerIsBetter && metric.delta < 0">
+              {{ metric.delta >= 0 ? '+' : '' }}{{ metric.delta | number: '1.0-0' }} pts
+            </strong>
+            <em>A {{ metric.a | number: '1.0-0' }}% / B {{ metric.b | number: '1.0-0' }}%</em>
+          } @else {
+            <strong [class.saving]="metric.lowerIsBetter && metric.delta < 0">
+              {{ metric.delta >= 0 ? '+' : '' }}{{ metric.delta | number }}
+            </strong>
+            <em>
+              A {{ metric.a | number }} / B {{ metric.b | number }}
+              @if (metric.percent !== null) {
+                · {{ metric.percent >= 0 ? '+' : '' }}{{ metric.percent | number: '1.0-0' }}%
+              }
+            </em>
+          }
+        </div>
+      }
+    </div>
+
+    <section class="comparison-drivers">
+      <h3>What changed</h3>
+      <div class="driver-grid">
+        @for (driver of diff.drivers; track driver.title) {
+          <article [ngClass]="driver.tone">
+            <span>{{ driver.title }}</span>
+            <strong>{{ driver.value }}</strong>
+            <p>{{ driver.detail }}</p>
+          </article>
+        }
+      </div>
+    </section>
+
+    <section class="comparison-models">
+      <h3>Model and price-row movement</h3>
+      <div class="cost-table compact-table">
+        <div class="cost-row cost-row-heading">
+          <span>Model</span>
+          <span>Price row</span>
+          <span>Cost A / B</span>
+          <span>Token delta</span>
+          <span>Turns A / B</span>
+          <span>Cost delta</span>
+        </div>
+        @for (model of diff.modelRows; track model.model + model.pricingModel) {
+          <div class="cost-row">
+            <strong>{{ model.model }}</strong>
+            <span>
+              {{ model.pricingModel }}
+              @if (model.usesFallbackPrice) {
+                <em class="warning-text" [title]="pricingFallbackReason(model.model, model.pricingModel)">fallback pricing</em>
+              }
+            </span>
+            <span>€{{ model.aCost | number: '1.4-6' }} / €{{ model.bCost | number: '1.4-6' }}</span>
+            <span>{{ model.tokenDelta >= 0 ? '+' : '' }}{{ model.tokenDelta | number }}</span>
+            <span>{{ model.aTurns | number }} / {{ model.bTurns | number }}</span>
+            <span [class.saving]="model.costDelta < 0">
+              {{ model.costDelta < 0 ? '-' : '+' }}€{{ abs(model.costDelta) | number: '1.4-6' }}
+            </span>
+          </div>
+        }
+      </div>
+    </section>
+  } @else {
+    <p class="empty">Pick two different sessions to compare cost and token deltas.</p>
+  }
+</section>

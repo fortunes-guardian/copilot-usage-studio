@@ -54,6 +54,7 @@ Done:
 - Explain what changed: cost, input tokens, output tokens, model mix, tool count, context growth.
 - Highlight model switches and price-row changes.
 - Show “winner/loser” language carefully: cheaper is not always better if the run failed.
+- Extracted Compare into its own top-level Angular component so it is no longer embedded in the root shell template.
 
 Why: comparison is useful when testing prompts, models, MCP setup, or workflow changes.
 
@@ -142,6 +143,7 @@ Done:
 - Fixed the top navigation grid for the four top-level views.
 - Extracted the Prices page into a standalone component.
 - Extracted the generated-ledger loading/error panel into a standalone component.
+- Extracted the Compare page into a standalone component with its own template and styles.
 - Removed enough obsolete root CSS for production builds to pass without the component style budget warning.
 
 Build:
@@ -149,7 +151,7 @@ Build:
 - Better responsive tables.
 - Proper help popovers.
 - More debugger-like polish.
-- Continue component extraction for selected-run subviews, Analytics, and Compare.
+- Continue component extraction for selected-run subviews and Analytics.
 
 Why: the app has complex information. Better style should reduce cognitive load, not hide details.
 
@@ -162,6 +164,7 @@ Done:
 - Moved GitHub Copilot pricing into one shared JSON file used by the scanner, verifier, and UI.
 - Added a visible app data loading/error state for `/data/sessions.json`.
 - Moved generated ledger loading into `LedgerDataService`.
+- Added shared UI cost helpers for model-cost rows, token totals, context growth, percent deltas, and pricing fallback explanations.
 
 Build:
 
@@ -179,7 +182,7 @@ Build:
   - unknown model pricing fallback display
   - Analytics empty states
   - Compare delta copy
-- Move selected-run explanation, analytics, and comparison logic out of the root component into focused helpers/services.
+- Move selected-run explanation and analytics logic out of the root component into focused helpers/services.
 
 Why: the app is now past prototype shape. The risky parts are no longer just "can we show the data?" They are "can pricing, source confidence, and filters stay correct as the UI grows?"
 
