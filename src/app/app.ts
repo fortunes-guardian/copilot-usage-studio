@@ -120,6 +120,8 @@ export class App {
       'Provider cache creation tokens when the billing source exposes them. GitHub lists this mainly for Anthropic pricing rows.',
     priceRow:
       'The GitHub model pricing row used to estimate this model. Unknown models keep their display label and show any pricing fallback separately.',
+    pricingFallback:
+      'The raw model name from VS Code did not match a GitHub price row in the local pricing table, so the estimate uses the displayed fallback price row. Treat this as an explicit estimate assumption.',
     analyticsScope:
       'Multi-session analytics start from the sessions currently included by the sidebar filters, then apply the Analytics controls on this page.',
   };
@@ -164,6 +166,16 @@ export class App {
       cacheWrite: price.cacheWrite ?? 0,
       usedByImportedSessions: this.sessions().some((session) =>
         session.modelBreakdown.some((entry) => entry.pricingModel === model),
+      ),
+      usedDirectly: this.sessions().some((session) =>
+        session.modelBreakdown.some(
+          (entry) => entry.pricingModel === model && !this.usesPricingFallback(entry.model, entry.pricingModel),
+        ),
+      ),
+      usedAsFallback: this.sessions().some((session) =>
+        session.modelBreakdown.some(
+          (entry) => entry.pricingModel === model && this.usesPricingFallback(entry.model, entry.pricingModel),
+        ),
       ),
     })),
   );
@@ -293,6 +305,26 @@ export class App {
   protected readonly selectedSession = computed(() => {
     const id = this.selectedId() ?? this.filteredSessions()[0]?.id;
     return this.sessions().find((session) => session.id === id) ?? null;
+  });
+  protected readonly selectedSessionOutsideFilters = computed(() => {
+    const session = this.selectedSession();
+
+    return Boolean(session && !this.filteredSessions().some((filteredSession) => filteredSession.id === session.id));
+  });
+  protected readonly selectedPricingFallbacks = computed(() => {
+    const session = this.selectedSession();
+
+    if (!session) {
+      return [];
+    }
+
+    return session.modelBreakdown
+      .filter((entry) => this.usesPricingFallback(entry.model, entry.pricingModel))
+      .map((entry) => ({
+        model: entry.model,
+        pricingModel: entry.pricingModel,
+        turns: entry.turns,
+      }));
   });
   protected readonly selectedTriage = computed(() => {
     const session = this.selectedSession();
@@ -534,6 +566,14 @@ export class App {
     this.selectedRunView.set('overview');
   }
 
+  protected openFirstFilteredSession(): void {
+    const session = this.filteredSessions()[0];
+
+    if (session) {
+      this.selectSession(session);
+    }
+  }
+
   protected trackBySessionId(_: number, session: LedgerSession): string {
     return session.id;
   }
@@ -575,6 +615,14 @@ export class App {
     this.analyticsWorkspaceFilter.set('all');
     this.analyticsModelFilter.set('all');
     this.analyticsGrouping.set('day');
+  }
+
+  protected pricingFallbackReason(model: string, pricingModel: string): string {
+    if (model === pricingModel && MODEL_PRICES_USD_PER_MILLION[model]) {
+      return 'This model matched a GitHub price row directly.';
+    }
+
+    return `${model || 'Unknown model'} is priced with the ${pricingModel} row because that raw model id is not in the local GitHub pricing table.`;
   }
 
   protected openSession(session: LedgerSession | null): void {
@@ -795,7 +843,7 @@ export class App {
       outputEur,
       totalEur,
       share: sessionCostEur > 0 ? (totalEur / sessionCostEur) * 100 : 0,
-      usesFallbackPrice: pricingModel !== entry.model || !MODEL_PRICES_USD_PER_MILLION[entry.model],
+      usesFallbackPrice: this.usesPricingFallback(entry.model, pricingModel),
     };
   }
 
@@ -1048,6 +1096,7 @@ export class App {
         sessionCount: row.sessions.size,
         costPer1k: row.tokens ? (row.cost / row.tokens) * 1000 : 0,
         share: totalCost > 0 ? (row.cost / totalCost) * 100 : 0,
+        usesFallbackPrice: this.usesPricingFallback(row.model, row.pricingModel),
       }))
       .sort((a, b) => b.cost - a.cost);
   }
@@ -1272,6 +1321,7 @@ export class App {
         return {
           model,
           pricingModel,
+          usesFallbackPrice: this.usesPricingFallback(model, pricingModel),
           aCost: a?.totalEur ?? 0,
           bCost: b?.totalEur ?? 0,
           costDelta: (b?.totalEur ?? 0) - (a?.totalEur ?? 0),
@@ -1331,6 +1381,7 @@ export class App {
           ...event,
           totalTokens: event.totalTokens ?? event.inputTokens + event.outputTokens,
           pricingModel,
+          usesFallbackPrice: this.usesPricingFallback(event.model || this.modelFromEventDetail(event.detail), pricingModel),
           inputEur,
           outputEur,
           estimatedEur,
@@ -1522,6 +1573,13 @@ export class App {
       Object.keys(MODEL_PRICES_USD_PER_MILLION).find((model) => rawKey.includes(this.modelKey(model))) ??
       null
     );
+  }
+
+  private usesPricingFallback(model: string | null | undefined, pricingModel: string | null | undefined): boolean {
+    const rawModel = model || '';
+    const priceRow = pricingModel || rawModel;
+
+    return priceRow !== rawModel || !MODEL_PRICES_USD_PER_MILLION[rawModel];
   }
 
   private modelKey(model: string): string {

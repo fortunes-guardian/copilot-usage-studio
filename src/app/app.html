@@ -181,7 +181,13 @@
               <span>${{ price.output | number: '1.0-3' }}</span>
               <span>
                 @if (price.usedByImportedSessions) {
-                  <span class="used-pill">In ledger</span>
+                  @if (price.usedDirectly && price.usedAsFallback) {
+                    <span class="used-pill fallback-used" [title]="help.pricingFallback">Direct + fallback</span>
+                  } @else if (price.usedAsFallback) {
+                    <span class="used-pill fallback-used" [title]="help.pricingFallback">Fallback row</span>
+                  } @else {
+                    <span class="used-pill">Direct match</span>
+                  }
                 } @else {
                   <span class="muted">Not yet</span>
                 }
@@ -322,7 +328,13 @@
                   </div>
                   @for (model of stats.modelRows; track model.model + model.pricingModel) {
                     <div class="cost-row analytics-model-row">
-                      <strong>{{ model.model }}<em>{{ model.pricingModel }}</em></strong>
+                      <strong>
+                        {{ model.model }}
+                        <em>{{ model.pricingModel }}</em>
+                        @if (model.usesFallbackPrice) {
+                          <em class="warning-text">fallback pricing</em>
+                        }
+                      </strong>
                       <span>{{ model.sessionCount | number }}</span>
                       <span>{{ model.tokens | number }}<em>{{ model.input | number }} in / {{ model.output | number }} out</em></span>
                       <span>€{{ model.cost | number: '1.2-4' }}</span>
@@ -455,7 +467,12 @@
               @for (model of diff.modelRows; track model.model + model.pricingModel) {
                 <div class="cost-row">
                   <strong>{{ model.model }}</strong>
-                  <span>{{ model.pricingModel }}</span>
+                  <span>
+                    {{ model.pricingModel }}
+                    @if (model.usesFallbackPrice) {
+                      <em class="warning-text" [title]="pricingFallbackReason(model.model, model.pricingModel)">fallback pricing</em>
+                    }
+                  </span>
                   <span>€{{ model.aCost | number: '1.4-6' }} / €{{ model.bCost | number: '1.4-6' }}</span>
                   <span>{{ model.tokenDelta >= 0 ? '+' : '' }}{{ model.tokenDelta | number }}</span>
                   <span>{{ model.aTurns | number }} / {{ model.bTurns | number }}</span>
@@ -549,6 +566,12 @@
                 {{ tokenSourceLabel(session.tokenSource) }}
                 <span class="help-dot" [title]="tokenSourceHelp(session.tokenSource)" [attr.aria-label]="tokenSourceHelp(session.tokenSource)" tabindex="0">?</span>
               </span>
+              @if (selectedPricingFallbacks().length) {
+                <span class="assumption-pill" [title]="help.pricingFallback">
+                  Fallback pricing
+                  <span class="help-dot" [title]="help.pricingFallback" [attr.aria-label]="help.pricingFallback" tabindex="0">?</span>
+                </span>
+              }
             </div>
             <h2>{{ session.title }}</h2>
             <p class="detail-subtitle">
@@ -561,6 +584,37 @@
             <strong>€{{ session.cost.eur | number: '1.2-2' }}</strong>
           </div>
         </div>
+
+        @if (selectedSessionOutsideFilters()) {
+          <div class="source-callout filter-mismatch-callout">
+            <div>
+              <span>Open run is outside the current filters</span>
+              <strong>{{ filteredSessions().length }} sessions visible in the rail</strong>
+              <p>The selected run stays open so you do not lose your place, but the sidebar filters currently hide it.</p>
+            </div>
+            @if (filteredSessions().length) {
+              <button type="button" class="ghost-button" (click)="openFirstFilteredSession()">Open first visible run</button>
+            }
+          </div>
+        }
+
+        @if (selectedPricingFallbacks().length) {
+          <div class="source-callout pricing-fallback-callout">
+            <div>
+              <span>Pricing assumption</span>
+              <strong>{{ selectedPricingFallbacks().length }} raw model id{{ selectedPricingFallbacks().length === 1 ? '' : 's' }} used fallback pricing</strong>
+              <p>
+                @for (fallback of selectedPricingFallbacks(); track fallback.model + fallback.pricingModel) {
+                  <span class="inline-fallback">
+                    {{ fallback.model }} priced as {{ fallback.pricingModel }}
+                    <span class="help-dot" [title]="pricingFallbackReason(fallback.model, fallback.pricingModel)" [attr.aria-label]="pricingFallbackReason(fallback.model, fallback.pricingModel)" tabindex="0">?</span>
+                  </span>
+                }
+              </p>
+            </div>
+            <button type="button" class="ghost-button" (click)="activeView.set('pricing')">View prices</button>
+          </div>
+        }
 
         <nav class="run-tabs" aria-label="Selected run sections">
           <button type="button" [class.active]="selectedRunView() === 'overview'" (click)="selectedRunView.set('overview')">
@@ -807,6 +861,9 @@
                       <span>
                         {{ event.model || event.name }}
                         <em>{{ event.pricingModel }}</em>
+                        @if (event.usesFallbackPrice) {
+                          <em class="warning-text">fallback pricing</em>
+                        }
                       </span>
                       <span>
                         {{ event.totalTokens | number }}

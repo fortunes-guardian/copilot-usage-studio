@@ -106,7 +106,7 @@
 
 .view-nav {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -452,6 +452,33 @@
   white-space: nowrap;
 }
 
+.source-callout button {
+  align-self: center;
+  white-space: nowrap;
+}
+
+.source-callout .inline-fallback {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 12px 4px 0;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: none;
+}
+
+.assumption-pill {
+  border-color: rgba(255, 186, 74, 0.42) !important;
+  background: rgba(255, 186, 74, 0.12) !important;
+  color: #ffe0a0 !important;
+}
+
+.filter-mismatch-callout,
+.pricing-fallback-callout {
+  margin-top: 14px;
+}
+
 .diagnostic-hero {
   display: grid;
   grid-template-columns: minmax(240px, 0.85fr) minmax(0, 1.15fr);
@@ -715,7 +742,7 @@
 }
 
 .warning-text {
-  color: #9c4f11 !important;
+  color: #b76b16 !important;
   font-weight: 800;
 }
 
@@ -853,9 +880,27 @@
 
 .session-triage {
   display: grid;
+  gap: 12px;
+  align-content: start;
   border: 1px solid #e2ebef;
   border-radius: 8px;
   padding: 14px;
+}
+
+.session-triage .badge-row {
+  align-items: flex-start;
+  align-content: flex-start;
+}
+
+.session-triage .triage-badge {
+  flex: 0 1 auto;
+  max-width: 100%;
+  padding: 5px 9px;
+  line-height: 1.2;
+}
+
+.session-triage .help-dot {
+  flex: 0 0 auto;
 }
 
 .trace-tools {
@@ -1201,6 +1246,11 @@
   color: #245a62 !important;
   font-size: 12px;
   font-weight: 800;
+}
+
+.used-pill.fallback-used {
+  background: #fff8ea;
+  color: #7a4d09 !important;
 }
 
 .muted {
@@ -1596,7 +1646,8 @@
 }
 
 .supporting-grid .session-triage {
-  min-height: 100%;
+  align-self: start;
+  min-height: 0;
 }
 
 .session-title,
@@ -1804,11 +1855,21 @@
   color: #bbfff0 !important;
 }
 
+.used-pill.fallback-used {
+  border-color: rgba(255, 186, 74, 0.45);
+  background: rgba(255, 186, 74, 0.12);
+  color: #ffe0a0 !important;
+}
+
 .triage-badge,
 .source-meta > span {
   border-color: var(--line);
   background: var(--surface-soft);
   color: var(--text);
+}
+
+.warning-text {
+  color: #ffcf75 !important;
 }
 
 .triage-badge.medium {

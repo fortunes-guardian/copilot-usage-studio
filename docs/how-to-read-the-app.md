@@ -102,6 +102,14 @@ The app keeps two related fields:
 
 Usually they match after normalization. If they do not match, the app is using a fallback pricing row because the logged model is not in the local price table. That fallback should be treated as a visible estimate assumption, not a hidden fact.
 
+Where fallback pricing appears:
+
+- the selected-run header shows a `Fallback pricing` chip
+- the selected run shows a `Pricing assumption` callout
+- Cost, Turns, Compare, Analytics, and Prices mark the fallback row directly
+
+Real-life meaning: the token totals can still be exact local debug-log totals, but the price applied to those tokens is an assumption until the local GitHub pricing table includes the logged model id.
+
 ## Cache Tokens
 
 If the UI says cache billing is not visible locally, that does not mean cache billing was zero.

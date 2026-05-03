@@ -136,12 +136,13 @@ Done:
 - Made Cost and Turns lead with diagnostic answer panels before the detailed tables.
 - Applied the first dark diagnostic design-token layer.
 - Changed narrow layout behavior so the session rail moves below the content instead of replacing it.
+- Made unknown-model pricing fallbacks visible across selected run, Cost, Turns, Compare, Analytics, and Prices.
+- Added a visible "open run is outside current filters" state when sidebar filters hide the selected session.
+- Restyled Overview Run Triage labels as compact chips.
+- Fixed the top navigation grid for the four top-level views.
 
 Build:
 
-- Fix pricing fallback visibility. If the raw/display model differs from the pricing row, show that plainly in the selected-run hero, Cost debugger, Turns ledger, Compare, and Pricing usage surfaces.
-- Fix selected-session/filter consistency. Either open the first visible session when filters change or show a clear "selected run is outside current filters" state.
-- Restyle the Overview `Run Triage` labels as compact chips instead of large circles.
 - Better responsive tables.
 - Proper help popovers.
 - More debugger-like polish.

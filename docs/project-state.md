@@ -63,6 +63,8 @@ Principles:
   - selected-run content stays primary on narrow screens, with the session rail moving below it
   - dark diagnostic design tokens for panels, tables, badges, and cost signals
   - selected-run hierarchy now uses Overview, Cost, Turns, and Trace instead of one stacked report
+  - fallback pricing assumptions are now visible in the selected-run header, Cost table, Turns ledger, Compare, Analytics, and Prices page
+  - sidebar filters now show a clear state when the open run is outside the visible filtered rail
 
 ## Important Design Decisions
 
@@ -82,9 +84,6 @@ Principles:
 
 - The UI is functional but visually busy.
 - Tooltips are better, but still use native browser title behavior.
-- Unknown model pricing fallback is too easy to miss. Current imported `gpt-4o` sessions are displayed as `gpt-4o` but priced with the `GPT-5.4` fallback row because `gpt-4o` is not in the local GitHub price table. The data carries `model` and `pricingModel`, but the selected-run UI should make fallback pricing explicit.
-- Sidebar filters can hide the selected session while the main panel still shows it. This is technically consistent with `selectedId`, but confusing for a debugging workspace because the visible session list no longer contains the open run.
-- The Overview `Run Triage` panel currently renders badges as large circular/oval objects. That makes quick labels look decorative and wastes space.
 - Trace rows are scan-friendly but not yet inspectable. A developer should be able to click a raw event and see the full details behind the row.
 - VS Code transcript files under `GitHub.copilot-chat/transcripts/<session-id>.jsonl` can contain richer Chat Debug timeline events, but they are inconsistent. In the current workspace, some sessions have rich transcripts and weak debug logs, while another has useful debug logs and only a `session.start` transcript. The scanner does not import transcripts yet, and core cost features should not depend on them.
 - The app can count tool/MCP activity and place it near model calls, but it does not yet attribute model input tokens to specific request sections such as instructions, MCP tool results, or workspace context.
@@ -115,15 +114,16 @@ Code improvements to schedule:
 
 ## Latest Implemented Step
 
-Continued the Midnight Ledger UI overhaul by making the `Cost` and `Turns` subviews behave more like debugger panels.
+Continued the Midnight Ledger UI overhaul by fixing the first credibility/UX issues before adding deeper attribution.
 
 What changed:
 
-- `Cost` now opens with a primary-driver answer, driver share, top model, top model call, and cost-per-1k summary.
-- `Turns` now opens with model-call count, most expensive call, largest input, largest output, and average cost per call before the detailed ledger.
-- Kept the detailed tables in place, but moved them under clearer section labels so they read as evidence rather than the first thing a developer has to decode.
+- Pricing fallback is explicit when the raw model differs from the GitHub pricing row. The app now marks fallback assumptions in the selected-run header, selected-run callout, Cost model rows, Turns rows, Compare rows, Analytics model rows, and Pricing usage column.
+- Sidebar filters can still hide the open run, but the UI now says that clearly and offers an action to open the first visible filtered run.
+- Overview Run Triage labels are compact chips instead of stretched decorative badges.
+- The top navigation grid now matches the four top-level pages.
 
-Why: a developer usually needs a quick answer first, then evidence. The detailed rows still matter, but the UI should say what to inspect before asking the user to read a table.
+Why: if the app is estimating cost, hidden assumptions are poisonous. The next UI work should make the evidence easier to inspect, but the current estimate needs to be honest first.
 
 Recently removed an unsupported session-summary signal after testing real VS Code agent sessions. The observed local signals were not strong enough to distinguish manual summary actions, automatic summary actions, repeated summaries, or ordinary context selection changes.
 
@@ -142,10 +142,6 @@ Continue the UI overhaul page by page.
 
 Build:
 
-- Fix known credibility/UX bugs before adding deeper attribution:
-  - make pricing fallback obvious when `model !== pricingModel`
-  - keep selected-run state consistent with sidebar filters or show a clear "selected run is outside current filters" state
-  - restyle the Overview triage labels as compact chips
 - Make Trace events clickable and show a detail inspector/drawer with the selected event's normalized fields.
 - Preserve richer bounded debug-log payload summaries during scan so the inspector is useful without reading VS Code JSONL directly.
 - Treat Chat Debug transcripts as optional enrichment only. If imported later, show transcript availability and source labels clearly, and never require transcripts for cost totals.
