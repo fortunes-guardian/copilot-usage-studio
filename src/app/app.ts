@@ -1,17 +1,15 @@
 import { DatePipe, DecimalPipe, NgClass } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { LedgerData, LedgerSession, ModelBreakdown, TokenBreakdown, TraceEvent } from './ledger.model';
+import { LedgerDataService } from './ledger-data.service';
+import { LedgerStatePanelComponent } from './ledger-state-panel.component';
+import { LedgerSession, ModelBreakdown, TokenBreakdown, TraceEvent } from './ledger.model';
+import { PricingPageComponent } from './pricing-page.component';
 import {
   FALLBACK_PRICING_MODEL,
   MODEL_PRICES_USD_PER_MILLION,
-  PRICING_EFFECTIVE_DATE,
-  PRICING_IMPORTED_AT,
-  PRICING_SOURCE_LABEL,
   PRICING_SOURCE_URL,
-  PRICING_VERSION,
 } from './pricing';
 
 type SessionSize = 'Small' | 'Medium' | 'Large' | 'Very large';
@@ -23,7 +21,6 @@ type AnalyticsGrouping = 'day' | 'week' | 'month';
 type ModelCallSort = 'timeline' | 'largest';
 type SelectedRunView = 'overview' | 'cost' | 'turns' | 'trace';
 type TraceFilter = 'all' | 'model' | 'tool' | 'discovery' | 'message' | 'response' | 'error';
-type LedgerLoadState = 'loading' | 'ready' | 'error';
 
 interface SessionWarning {
   label: string;
@@ -71,16 +68,16 @@ interface AnalyticsHighlight {
 
 @Component({
   selector: 'app-root',
-  imports: [DatePipe, DecimalPipe, FormsModule, NgClass],
+  imports: [DatePipe, DecimalPipe, FormsModule, NgClass, LedgerStatePanelComponent, PricingPageComponent],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
 export class App {
-  private readonly http = inject(HttpClient);
+  private readonly ledgerData = inject(LedgerDataService);
 
-  protected readonly ledger = signal<LedgerData | null>(null);
-  protected readonly ledgerLoadState = signal<LedgerLoadState>('loading');
-  protected readonly ledgerLoadError = signal<string | null>(null);
+  protected readonly ledger = this.ledgerData.ledger;
+  protected readonly ledgerLoadState = this.ledgerData.loadState;
+  protected readonly ledgerLoadError = this.ledgerData.loadError;
   protected readonly selectedId = signal<string | null>(null);
   protected readonly compareA = signal<string | null>(null);
   protected readonly compareB = signal<string | null>(null);
@@ -98,11 +95,7 @@ export class App {
   protected readonly modelCallSort = signal<ModelCallSort>('timeline');
   protected readonly activeView = signal<ActiveView>('sessions');
   protected readonly selectedRunView = signal<SelectedRunView>('overview');
-  protected readonly pricingVersion = PRICING_VERSION;
-  protected readonly pricingSourceLabel = PRICING_SOURCE_LABEL;
   protected readonly pricingSourceUrl = PRICING_SOURCE_URL;
-  protected readonly pricingEffectiveDate = PRICING_EFFECTIVE_DATE;
-  protected readonly pricingImportedAt = PRICING_IMPORTED_AT;
   protected readonly help = {
     appEstimate:
       'Estimated from local VS Code token counts and GitHub published model prices. This is useful for debugging a run, but it is not your GitHub bill.',
@@ -175,26 +168,6 @@ export class App {
 
     return ['all', ...[...labels].sort()];
   });
-  protected readonly pricingRows = computed(() =>
-    Object.entries(MODEL_PRICES_USD_PER_MILLION).map(([model, price]) => ({
-      model,
-      ...price,
-      cacheWrite: price.cacheWrite ?? 0,
-      usedByImportedSessions: this.sessions().some((session) =>
-        session.modelBreakdown.some((entry) => entry.pricingModel === model),
-      ),
-      usedDirectly: this.sessions().some((session) =>
-        session.modelBreakdown.some(
-          (entry) => entry.pricingModel === model && !this.usesPricingFallback(entry.model, entry.pricingModel),
-        ),
-      ),
-      usedAsFallback: this.sessions().some((session) =>
-        session.modelBreakdown.some(
-          (entry) => entry.pricingModel === model && this.usesPricingFallback(entry.model, entry.pricingModel),
-        ),
-      ),
-    })),
-  );
   protected readonly costExplanation = computed(() => {
     const session = this.selectedSession();
     const ledger = this.ledger();
@@ -593,21 +566,20 @@ export class App {
     };
   });
   protected readonly abs = Math.abs;
+  private initializedFromLedger = false;
 
   constructor() {
-    this.http.get<LedgerData>('/data/sessions.json').subscribe({
-      next: (ledger) => {
-        this.ledger.set(ledger);
-        this.ledgerLoadState.set('ready');
-        this.ledgerLoadError.set(null);
-        this.selectedId.set(ledger.sessions[0]?.id ?? null);
-        this.compareA.set(ledger.sessions[0]?.id ?? null);
-        this.compareB.set(ledger.sessions[1]?.id ?? null);
-      },
-      error: (error: unknown) => {
-        this.ledgerLoadState.set('error');
-        this.ledgerLoadError.set(this.ledgerErrorMessage(error));
-      },
+    effect(() => {
+      const ledger = this.ledger();
+
+      if (!ledger || this.initializedFromLedger) {
+        return;
+      }
+
+      this.initializedFromLedger = true;
+      this.selectedId.set(ledger.sessions[0]?.id ?? null);
+      this.compareA.set(ledger.sessions[0]?.id ?? null);
+      this.compareB.set(ledger.sessions[1]?.id ?? null);
     });
   }
 
@@ -1735,11 +1707,4 @@ export class App {
       .replace(/\s+/g, ' ');
   }
 
-  private ledgerErrorMessage(error: unknown): string {
-    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
-      return error.message;
-    }
-
-    return 'The generated ledger could not be loaded. Run npm run scan and npm run verify:data.';
-  }
 }

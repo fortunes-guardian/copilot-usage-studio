@@ -35,6 +35,8 @@ Principles:
 - Calculates cost from imported token counts and GitHub model prices.
 - Uses one shared GitHub pricing JSON file for the scanner, verifier, and UI.
 - Shows a visible loading/error state if the generated ledger data cannot be loaded.
+- Ledger loading now lives in `LedgerDataService` instead of the root component.
+- The Prices page and ledger loading/error panel are standalone Angular components.
 - Shows a selected-run Cost debugger with:
   - source/confidence explanation
   - estimate-scope note for missing cache billing fields
@@ -92,27 +94,43 @@ Principles:
 - Aggregated analytics are useful but still early. Outlier detection is a simple statistical signal with driver hints; it now separates a few obvious cases such as long agent runs and suspicious low-activity spikes, but it should become more nuanced as more real sessions are imported.
 - Advanced evidence is imported but mostly hidden from the primary UI. Reasoning text presence and request-cap comparison were too technical to be useful as top-level cards.
 - No app-owned database yet. Scans overwrite `public/data/sessions.json`.
-- `app.ts`, `app.html`, and `app.css` are very large for one Angular component. That was fine during product discovery, but it now slows safe UI work and makes regressions easier.
+- `app.ts`, `app.html`, and `app.css` are still large, though the first extraction pass has started. More selected-run and analytics sections should move into focused components/services.
 
 ## Review Notes
 
-Latest review: May 2, 2026.
+Latest review: May 3, 2026.
 
 Verified:
 
 - `npm run verify:data` passes for the current generated ledger.
+- `npm test -- --watch=false` passes.
+- `npm run build` passes without the previous component CSS budget warning.
 - The live app has no browser console warnings/errors from the Angular page during the review.
 - Current generated data has `5` imported debug-log sessions, all with trace event counts matching `traceSummary.totalEvents`.
 - Two current sessions use `gpt-4o` as the raw/display model but fall back to the `GPT-5.4` pricing row.
 
 Code improvements to schedule:
 
-- Move ledger loading/filtering/analytics/comparison logic out of the root component into focused services or helper modules.
+- Move filtering/analytics/comparison and selected-run explanation logic out of the root component into focused services or helper modules.
 - Centralize model normalization and pricing fallback rules. Pricing rows now have one shared source, but matching/fallback behavior still exists in both the scanner/verifier and UI.
 - Add ingestion fixtures for debug logs, weak chat snapshots, unknown models, mixed models, and fragile transcript availability.
 - Add UI tests for the selected-run tabs, source/size filters, pricing fallback display, Analytics empty states, and Compare deltas.
 
 ## Latest Implemented Step
+
+Started the monolith split.
+
+What changed:
+
+- Added `LedgerDataService` for `/data/sessions.json` loading, load state, and load errors.
+- Extracted `PricingPageComponent` from the root template.
+- Extracted `LedgerStatePanelComponent` for loading/error display.
+- Removed obsolete pricing-page styles and unused token-burner styles from the root stylesheet.
+- The production build now passes without the previous `app.css` component style budget warning.
+
+Why: the app is past throwaway prototype shape. Pulling stable surfaces into focused components makes future UI work safer, and it keeps Angular's style budget useful instead of training us to ignore it.
+
+## Previous Implemented Step
 
 Hardened pricing and local deployment basics.
 
@@ -126,7 +144,7 @@ What changed:
 
 Why: cost debugging depends on trust. A single shared rate card prevents scanner/UI drift, and a local deployment note keeps the project aligned with the local-first product direction.
 
-## Previous Implemented Step
+## Earlier Implemented Step
 
 Built the first Trace Event Inspector pass.
 
@@ -157,7 +175,7 @@ Keep tightening reliability and the UI/code structure before attempting evidence
 
 Build:
 
-- Split the large root component into smaller services/components, starting with pricing/data loading or selected-run helpers.
+- Continue splitting the large root component into smaller services/components, starting with selected-run helpers, Analytics, and Compare.
 - Add fixture-based scanner/verifier tests for mixed models, unknown model fallback, and missing/malformed generated data.
 - Centralize model normalization and pricing fallback rules so model matching cannot drift between scanner and UI.
 - Treat Chat Debug transcripts as optional enrichment only. If imported later, show transcript availability and source labels clearly, and never require transcripts for cost totals.

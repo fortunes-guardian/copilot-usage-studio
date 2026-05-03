@@ -140,13 +140,16 @@ Done:
 - Added a visible "open run is outside current filters" state when sidebar filters hide the selected session.
 - Restyled Overview Run Triage labels as compact chips.
 - Fixed the top navigation grid for the four top-level views.
+- Extracted the Prices page into a standalone component.
+- Extracted the generated-ledger loading/error panel into a standalone component.
+- Removed enough obsolete root CSS for production builds to pass without the component style budget warning.
 
 Build:
 
 - Better responsive tables.
 - Proper help popovers.
 - More debugger-like polish.
-- Start component/service extraction once the current UI shape settles.
+- Continue component extraction for selected-run subviews, Analytics, and Compare.
 
 Why: the app has complex information. Better style should reduce cognitive load, not hide details.
 
@@ -158,6 +161,7 @@ Done:
 
 - Moved GitHub Copilot pricing into one shared JSON file used by the scanner, verifier, and UI.
 - Added a visible app data loading/error state for `/data/sessions.json`.
+- Moved generated ledger loading into `LedgerDataService`.
 
 Build:
 
@@ -175,7 +179,7 @@ Build:
   - unknown model pricing fallback display
   - Analytics empty states
   - Compare delta copy
-- Split the large root component into focused pieces after the current debugger layout stabilizes.
+- Move selected-run explanation, analytics, and comparison logic out of the root component into focused helpers/services.
 
 Why: the app is now past prototype shape. The risky parts are no longer just "can we show the data?" They are "can pricing, source confidence, and filters stay correct as the UI grows?"
 

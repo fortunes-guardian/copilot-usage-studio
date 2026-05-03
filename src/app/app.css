@@ -434,8 +434,7 @@
   text-transform: uppercase;
 }
 
-.source-callout strong,
-.token-burners h4 {
+.source-callout strong {
   color: #16202a;
 }
 
@@ -466,35 +465,6 @@
   font-size: 13px;
   font-weight: 800;
   text-transform: none;
-}
-
-.state-panel {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 18px;
-  border: 1px solid #d8e4e8;
-  border-radius: 8px;
-  padding: 18px;
-  background: #f8fcfd;
-}
-
-.state-panel h2,
-.state-panel p {
-  margin: 0;
-}
-
-.state-panel p {
-  color: #536776;
-  line-height: 1.5;
-}
-
-.state-panel code {
-  font-size: 0.92em;
-}
-
-.state-panel.danger {
-  border-color: #f0b7ae;
-  background: #fff8f6;
 }
 
 .assumption-pill {
@@ -705,9 +675,7 @@
 .cost-categories span,
 .cost-categories em,
 .cost-row span,
-.cost-row em,
-.token-burners span,
-.token-burners em {
+.cost-row em {
   color: #60717f;
   font-size: 13px;
   font-style: normal;
@@ -773,40 +741,6 @@
 .warning-text {
   color: #b76b16 !important;
   font-weight: 800;
-}
-
-.token-burners {
-  display: grid;
-  gap: 10px;
-}
-
-.token-burners h4 {
-  margin: 0;
-  font-size: 14px;
-}
-
-.token-burners > div {
-  display: grid;
-  gap: 8px;
-}
-
-.token-burners article {
-  display: grid;
-  gap: 4px;
-  border: 1px solid #e6edf2;
-  border-radius: 8px;
-  padding: 11px 12px;
-  background: #fff;
-}
-
-.token-burners strong {
-  color: #16202a;
-}
-
-.token-burners p {
-  margin: 0;
-  color: #3f4f5d;
-  overflow-wrap: anywhere;
 }
 
 .model-call-ledger {
@@ -1307,8 +1241,7 @@
 
 .compact-table .cost-row { min-width: 680px; }
 
-.pricing-header,
-.pricing-source {
+.pricing-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -1320,123 +1253,6 @@
   color: #16202a;
   font-size: 28px;
   letter-spacing: 0;
-}
-
-.pricing-header a {
-  border: 1px solid #c9d7de;
-  border-radius: 6px;
-  padding: 9px 12px;
-  color: #245a62;
-  background: #fff;
-  font-weight: 800;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.pricing-source {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  border: 1px solid #dfe6ed;
-  border-radius: 8px;
-  padding: 16px;
-  background: #fff;
-}
-
-.pricing-source div {
-  display: grid;
-  gap: 5px;
-}
-
-.pricing-source span,
-.pricing-row span,
-.pricing-note p {
-  color: #60717f;
-}
-
-.pricing-source strong {
-  color: #16202a;
-  overflow-wrap: anywhere;
-}
-
-.pricing-note {
-  border-left: 4px solid #52b4a9;
-  padding: 4px 0 4px 16px;
-}
-
-.pricing-note strong {
-  color: #16202a;
-}
-
-.pricing-note p {
-  max-width: 920px;
-  margin: 6px 0 0;
-  line-height: 1.55;
-}
-
-.pricing-table {
-  display: grid;
-  border: 1px solid #dfe6ed;
-  border-radius: 8px;
-  overflow: hidden;
-  background: #fff;
-}
-
-.pricing-row {
-  display: grid;
-  grid-template-columns:
-    minmax(190px, 1.6fr)
-    minmax(100px, 0.8fr)
-    minmax(92px, 0.7fr)
-    minmax(105px, 0.8fr)
-    minmax(74px, 0.55fr)
-    minmax(98px, 0.65fr)
-    minmax(94px, 0.65fr)
-    minmax(74px, 0.55fr)
-    minmax(78px, 0.55fr);
-  gap: 12px;
-  align-items: center;
-  padding: 11px 14px;
-  border-bottom: 1px solid #edf2f5;
-}
-
-.pricing-row:last-child {
-  border-bottom: 0;
-}
-
-.pricing-row-heading {
-  background: #f3f7f9;
-  font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.pricing-row strong {
-  display: grid;
-  gap: 3px;
-  color: #16202a;
-}
-
-.pricing-row em {
-  color: #60717f;
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 500;
-}
-
-.used-pill {
-  display: inline-flex;
-  width: fit-content;
-  border-radius: 999px;
-  padding: 3px 7px;
-  background: #edf8f6;
-  color: #245a62 !important;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.used-pill.fallback-used {
-  background: #fff8ea;
-  color: #7a4d09 !important;
 }
 
 .muted {
@@ -1496,9 +1312,7 @@
   .comparison-grid,
   .ingestion,
   .ingestion dl,
-  .selectors,
-  .pricing-source,
-  .pricing-row {
+  .selectors {
     grid-template-columns: 1fr;
   }
 
@@ -1853,7 +1667,6 @@
 .turn-insight-grid strong,
 .section-label h4,
 .cost-drivers h4,
-.token-burners h4,
 .cost-categories strong,
 .cost-row strong,
 .highlight-list strong,
@@ -1875,9 +1688,6 @@
 .comparison-grid em,
 .price span,
 .pricing-header p,
-.pricing-source span,
-.pricing-row span,
-.pricing-note p,
 .source-callout p,
 .primary-diagnosis p,
 .diagnostic-facts em,
@@ -1897,7 +1707,6 @@
 .event-row em,
 .event-row p,
 .flow-node p,
-.state-panel p,
 .analytics-empty p,
 .session-details dt,
 .ingestion-lede span,
@@ -1908,9 +1717,6 @@
 
 .session-details dd,
 .ingestion dd,
-.pricing-source strong,
-.pricing-row strong,
-.pricing-row em,
 .analytics-model-row em,
 .detail-subtitle {
   color: var(--text);
@@ -1924,9 +1730,6 @@
 .detail,
 .ingestion,
 .compare,
-.pricing-source,
-.pricing-table,
-.pricing-row,
 .analytics-controls,
 .analytics-empty,
 .highlight-list button,
@@ -1944,7 +1747,6 @@
 .event-row,
 .trace-inspector,
 .flow-node,
-.state-panel,
 .session-triage {
   border-color: var(--line);
   background: var(--surface);
@@ -1954,7 +1756,6 @@
 .ingestion,
 .compare,
 .cost-explainer,
-.pricing-source,
 .analytics-controls {
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
 }
@@ -1971,23 +1772,15 @@
 .event-row,
 .flow-node,
 .source-callout,
-.state-panel,
 .analytics-empty,
-.pricing-row-heading,
 .cost-row-heading {
   background: var(--surface-soft);
-}
-
-.state-panel.danger {
-  border-color: rgba(255, 107, 95, 0.4);
-  background: rgba(255, 107, 95, 0.08);
 }
 
 .ingestion dl > div {
   border-color: var(--line);
 }
 
-.pricing-note,
 .source-callout {
   border-left-color: var(--accent-2);
 }
@@ -2080,18 +1873,11 @@
 }
 
 .source-pill,
-.used-pill,
 .analytics-scope span,
 .trace-actions button.active {
   border-color: rgba(31, 209, 165, 0.35);
   background: var(--teal-soft);
   color: #bbfff0 !important;
-}
-
-.used-pill.fallback-used {
-  border-color: rgba(255, 186, 74, 0.45);
-  background: rgba(255, 186, 74, 0.12);
-  color: #ffe0a0 !important;
 }
 
 .triage-badge,
@@ -2123,7 +1909,6 @@
 
 .trace-actions button,
 .ghost-button,
-.pricing-header a,
 .segmented-control {
   border-color: var(--line);
   background: var(--surface-soft);
