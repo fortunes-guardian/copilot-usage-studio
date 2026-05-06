@@ -272,31 +272,14 @@
         </nav>
 
         @if (selectedRunView() === 'overview') {
-        <section class="session-summary">
-          <h3>Summary</h3>
-          <div class="facts trace-cards">
-            <div>
-              <span>Model Turns</span>
-              <strong>{{ session.traceSummary.modelTurns | number }}</strong>
-            </div>
-            <div>
-              <span>Tool Calls</span>
-              <strong>{{ session.traceSummary.toolCalls | number }}</strong>
-            </div>
-            <div>
-              <span>Total Tokens</span>
-              <strong>{{ session.traceSummary.totalTokens | number }}</strong>
-            </div>
-            <div>
-              <span>Errors</span>
-              <strong>{{ session.traceSummary.errors | number }}</strong>
-            </div>
-            <div>
-              <span>Total Events</span>
-              <strong>{{ session.traceSummary.totalEvents | number }}</strong>
-            </div>
-          </div>
-        </section>
+          <app-session-overview
+            [session]="session"
+            [triage]="selectedTriage()"
+            [triageHelp]="sessionTriageHelp"
+            [sourceLabel]="sourceKindLabel(session.sourceKind)"
+            [sourceHelp]="sourceKindHelp(session.sourceKind)"
+            [sizeHelp]="selectedSizeHelp()"
+          ></app-session-overview>
         }
 
         @if (selectedRunView() === 'cost') {
@@ -555,89 +538,6 @@
               }
             </section>
           }
-        }
-
-        @if (selectedRunView() === 'overview') {
-        <section class="supporting-grid">
-          <section class="session-details">
-            <h3>Session Details</h3>
-            <dl>
-              <div>
-                <dt>Session Type</dt>
-                <dd>{{ session.sessionType }}</dd>
-              </div>
-              <div>
-                <dt>Location</dt>
-                <dd>{{ session.location }}</dd>
-              </div>
-              <div>
-                <dt>Status</dt>
-                <dd>{{ session.status }}</dd>
-              </div>
-              <div>
-                <dt>Created</dt>
-                <dd>{{ session.startedAt | date: 'M/d/yyyy, h:mm:ss a' }}</dd>
-              </div>
-              <div>
-                <dt>Last Activity</dt>
-                <dd>{{ session.endedAt | date: 'M/d/yyyy, h:mm:ss a' }}</dd>
-              </div>
-              <div>
-                <dt>Model</dt>
-                <dd>{{ session.model }}</dd>
-              </div>
-              <div>
-                <dt>Source</dt>
-                <dd>
-                  {{ sourceKindLabel(session.sourceKind) }}
-                  <span class="help-dot" [title]="sourceKindHelp(session.sourceKind)" [attr.aria-label]="sourceKindHelp(session.sourceKind)" tabindex="0">?</span>
-                </dd>
-              </div>
-              @if (selectedTriage(); as triage) {
-                <div>
-                  <dt>Run size</dt>
-                  <dd>
-                    {{ triage.size }} · {{ triage.totalTokens | number }} tokens
-                    <span class="help-dot" [title]="sessionSizeHelp(triage)" [attr.aria-label]="sessionSizeHelp(triage)" tabindex="0">?</span>
-                  </dd>
-                </div>
-              }
-              @if (session.vscodeState; as state) {
-                <div>
-                  <dt>Permission</dt>
-                  <dd>{{ state.permissionLevel || 'unknown' }}</dd>
-                </div>
-                <div>
-                  <dt>Pending Edits</dt>
-                  <dd>{{ state.hasPendingEdits ? 'Yes' : 'No' }}</dd>
-                </div>
-              }
-            </dl>
-          </section>
-
-          @if (selectedTriage(); as triage) {
-            <section class="session-triage">
-              <div>
-                <h3>Run Triage</h3>
-                <p>
-                  Quick labels for spotting why this session deserves attention.
-                  <span class="help-dot" [title]="sessionTriageHelp" [attr.aria-label]="sessionTriageHelp" tabindex="0">?</span>
-                </p>
-              </div>
-              <div class="badge-row">
-                <span class="triage-badge size" [ngClass]="triage.sizeTone" [title]="sessionSizeHelp(triage)">
-                  {{ triage.size }}
-                </span>
-                @for (warning of triage.warnings; track warning.label) {
-                  <span class="triage-badge" [ngClass]="warning.tone" [title]="warning.help">
-                    {{ warning.label }}
-                    <span class="help-dot" [title]="warning.help" [attr.aria-label]="warning.help" tabindex="0">?</span>
-                  </span>
-                }
-              </div>
-            </section>
-          }
-        </section>
         }
 
         @if (selectedRunView() === 'trace') {

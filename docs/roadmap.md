@@ -136,6 +136,7 @@ Done:
 - Compacted Data provenance into the top Sessions workspace overview.
 - Added selected-run subviews for Overview, Cost, Turns, and Trace.
 - Made Cost and Turns lead with diagnostic answer panels before the detailed tables.
+- Extracted the selected-run Overview subview into its own Angular component.
 - Applied the first dark diagnostic design-token layer.
 - Changed narrow layout behavior so the session rail moves below the content instead of replacing it.
 - Made unknown-model pricing fallbacks visible across selected run, Cost, Turns, Compare, Analytics, and Prices.
@@ -153,7 +154,7 @@ Build:
 - Better responsive tables.
 - Proper help popovers.
 - More debugger-like polish.
-- Continue component extraction for selected-run subviews.
+- Continue component extraction for selected-run Cost, Turns, and Trace subviews.
 
 Why: the app has complex information. Better style should reduce cognitive load, not hide details.
 
@@ -184,7 +185,7 @@ Build:
   - unknown model pricing fallback display
   - Analytics empty states
   - Compare delta copy
-- Move selected-run explanation logic out of the root component into focused helpers/services.
+- Move selected-run Cost, Turns, and Trace explanation logic out of the root component into focused helpers/services.
 
 Why: the app is now past prototype shape. The risky parts are no longer just "can we show the data?" They are "can pricing, source confidence, and filters stay correct as the UI grows?"
 

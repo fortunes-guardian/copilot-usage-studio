@@ -37,6 +37,7 @@ Principles:
 - Shows a visible loading/error state if the generated ledger data cannot be loaded.
 - Ledger loading now lives in `LedgerDataService` instead of the root component.
 - The Prices page, Compare page, Analytics page, and ledger loading/error panel are standalone Angular components.
+- The selected-run Overview subview is now a standalone Angular component.
 - Shared cost helpers now hold reusable model-cost, token-total, context-growth, percent-delta, and pricing-fallback utility logic.
 - Shows a selected-run Cost debugger with:
   - source/confidence explanation
@@ -121,6 +122,19 @@ Code improvements to schedule:
 
 ## Latest Implemented Step
 
+Continued the selected-run split by extracting Overview.
+
+What changed:
+
+- Added `SessionOverviewComponent` for the selected-run `Overview` subview.
+- Moved Summary, Session Details, and Run Triage markup and scoped styles out of the root template/root stylesheet.
+- Kept the root shell responsible for session selection and source/triage helper strings.
+- Browser-checked the Sessions Overview page after reload.
+
+Why: the selected-run debugger is the core surface. Pulling out a low-risk subview reduces root-component noise before extracting the more complex Cost, Turns, and Trace panels.
+
+## Previous Implemented Step
+
 Continued the monolith split by extracting Analytics.
 
 What changed:
@@ -133,7 +147,7 @@ What changed:
 
 Why: Analytics is a top-level page now, not a nested root-template section. Pulling it out reduces root-component risk and makes future dashboard polish safer.
 
-## Previous Implemented Step
+## Older Implemented Step
 
 Added the Billing Reality Check to the Cost debugger.
 
@@ -145,7 +159,7 @@ What changed:
 
 Why: the app can be excellent at cost debugging without pretending to be invoice-grade. Cache uncertainty needs to be visible at the moment a developer reads the estimate.
 
-## Older Implemented Step
+## Earlier Implemented Step
 
 Continued the monolith split by extracting Compare.
 
@@ -159,7 +173,7 @@ What changed:
 
 Why: Compare is a stable top-level view and no longer belongs inside the root shell. Pulling it out lowers root-template noise and gives the next UI polish pass a contained surface.
 
-## Earlier Implemented Step
+## Earlier Component Step
 
 Started the monolith split.
 
@@ -218,7 +232,7 @@ Keep tightening reliability and the UI/code structure before attempting evidence
 
 Build:
 
-- Continue splitting the large root component into smaller services/components, starting with selected-run subviews.
+- Continue splitting the large root component into smaller services/components, starting with the selected-run Cost, Turns, and Trace subviews.
 - Add fixture-based scanner/verifier tests for mixed models, unknown model fallback, and missing/malformed generated data.
 - Centralize model normalization and pricing fallback rules so model matching cannot drift between scanner and UI.
 - Treat Chat Debug transcripts as optional enrichment only. If imported later, show transcript availability and source labels clearly, and never require transcripts for cost totals.

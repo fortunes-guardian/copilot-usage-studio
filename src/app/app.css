@@ -221,8 +221,7 @@
   gap: 12px;
 }
 
-.summary-grid,
-.facts {
+.summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
@@ -243,14 +242,12 @@
 }
 
 .metric span,
-.facts span,
 .price span {
   color: #60717f;
   font-size: 13px;
 }
 
 .metric strong,
-.facts strong,
 .price strong {
   color: #16202a;
   font-size: 24px;
@@ -347,32 +344,6 @@
   display: grid;
   justify-items: end;
   min-width: 140px;
-}
-
-.facts > div {
-  display: grid;
-  gap: 5px;
-  border: 1px solid #e6edf2;
-  border-radius: 8px;
-  padding: 14px;
-  background: #f8fafb;
-}
-
-.facts strong {
-  overflow-wrap: anywhere;
-  font-size: 18px;
-}
-
-.trace-cards {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-}
-
-.session-summary .facts > div {
-  padding: 11px 12px;
-}
-
-.session-summary .facts strong {
-  font-size: 17px;
 }
 
 .cost-explainer {
@@ -835,52 +806,6 @@
   overflow-wrap: anywhere;
 }
 
-.session-details dl {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  gap: 12px 28px;
-  margin: 0;
-}
-
-.session-details dl > div {
-  display: contents;
-}
-
-.session-details dt {
-  color: #786d64;
-}
-
-.session-details dd {
-  margin: 0;
-  color: #332a24;
-  overflow-wrap: anywhere;
-}
-
-.session-triage {
-  display: grid;
-  gap: 12px;
-  align-content: start;
-  border: 1px solid #e2ebef;
-  border-radius: 8px;
-  padding: 14px;
-}
-
-.session-triage .badge-row {
-  align-items: flex-start;
-  align-content: flex-start;
-}
-
-.session-triage .triage-badge {
-  flex: 0 1 auto;
-  max-width: 100%;
-  padding: 5px 9px;
-  line-height: 1.2;
-}
-
-.session-triage .help-dot {
-  flex: 0 0 auto;
-}
-
 .trace-tools {
   display: grid;
   gap: 14px;
@@ -1277,13 +1202,11 @@
   .view-nav { grid-template-columns: 1fr; }
 
   .summary-grid,
-  .facts,
   .billing-reality,
   .billing-reality-facts,
   .cost-categories,
   .driver-grid,
   .cost-row,
-  .trace-cards,
   .ingestion,
   .ingestion dl {
     grid-template-columns: 1fr;
@@ -1307,9 +1230,6 @@
     grid-template-columns: 1fr;
   }
 
-  .session-details dl {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 600px) {
@@ -1597,32 +1517,14 @@
   background: var(--surface);
 }
 
-.session-summary,
-.trace-tools,
-.supporting-grid {
+.trace-tools {
   display: grid;
   gap: 14px;
-}
-
-.supporting-grid {
-  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
-  align-items: start;
-}
-
-.supporting-grid .session-details,
-.supporting-grid .session-triage {
-  margin: 0;
-}
-
-.supporting-grid .session-triage {
-  align-self: start;
-  min-height: 0;
 }
 
 .session-title,
 .session-footer strong,
 .metric strong,
-.facts strong,
 .price strong,
 .detail h2,
 .ingestion h2,
@@ -1646,7 +1548,6 @@
 .session-scan,
 .filter-count,
 .metric span,
-.facts span,
 .price span,
 .pricing-header p,
 .source-callout p,
@@ -1664,27 +1565,20 @@
 .event-row em,
 .event-row p,
 .flow-node p,
-.session-details dt,
 .ingestion-lede span,
 .empty,
 .muted {
   color: var(--muted);
 }
 
-.session-details dd,
 .ingestion dd,
 .detail-subtitle {
   color: var(--text);
 }
 
-.session-details dd {
-  color: #cbd7e6;
-}
-
 .metric,
 .detail,
 .ingestion,
-.facts > div,
 .cost-explainer,
 .primary-diagnosis,
 .diagnostic-facts > div,
@@ -1695,8 +1589,7 @@
 .event-log,
 .event-row,
 .trace-inspector,
-.flow-node,
-.session-triage {
+.flow-node {
   border-color: var(--line);
   background: var(--surface);
 }
@@ -1707,7 +1600,6 @@
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
 }
 
-.facts > div,
 .ingestion dl > div,
 .cost-categories article,
 .driver-grid article,
@@ -1951,9 +1843,6 @@
     position: static;
   }
 
-  .supporting-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 600px) {

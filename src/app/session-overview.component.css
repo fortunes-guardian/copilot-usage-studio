@@ -1,0 +1,127 @@
+:host {
+  display: grid;
+  gap: 14px;
+}
+
+.session-summary h3,
+.session-details h3,
+.session-triage h3 {
+  margin: 0 0 10px;
+  color: var(--text-strong);
+}
+
+.facts {
+  display: grid;
+  gap: 12px;
+}
+
+.facts > div {
+  display: grid;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 11px 12px;
+  background: var(--surface-soft);
+}
+
+.facts span,
+.session-details dt,
+.session-triage p {
+  color: var(--muted);
+}
+
+.facts strong {
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+  font-size: 17px;
+}
+
+.trace-cards {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.supporting-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  align-items: start;
+  gap: 14px;
+}
+
+.session-details dl {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 12px 28px;
+  margin: 0;
+}
+
+.session-details dl > div {
+  display: contents;
+}
+
+.session-details dd {
+  margin: 0;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.session-triage {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: var(--surface);
+}
+
+.session-triage p {
+  margin: 4px 0 0;
+}
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  align-content: flex-start;
+  gap: 7px;
+}
+
+.triage-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  max-width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.triage-badge.medium {
+  border-color: rgba(255, 186, 74, 0.42);
+  background: rgba(255, 186, 74, 0.12);
+  color: #ffe0a0;
+}
+
+.triage-badge.high {
+  border-color: rgba(240, 121, 90, 0.42);
+  background: rgba(240, 121, 90, 0.14);
+  color: #ffc2b4;
+}
+
+.help-dot {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 900px) {
+  .trace-cards,
+  .supporting-grid,
+  .session-details dl {
+    grid-template-columns: 1fr;
+  }
+}

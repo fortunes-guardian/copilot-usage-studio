@@ -8,6 +8,7 @@ import { LedgerDataService } from './ledger-data.service';
 import { LedgerStatePanelComponent } from './ledger-state-panel.component';
 import { LedgerSession, ModelBreakdown, TokenBreakdown, TraceEvent } from './ledger.model';
 import { PricingPageComponent } from './pricing-page.component';
+import { SessionOverviewComponent } from './session-overview.component';
 import {
   FALLBACK_PRICING_MODEL,
   MODEL_PRICES_USD_PER_MILLION,
@@ -46,6 +47,7 @@ interface SessionTriage {
     ComparePageComponent,
     LedgerStatePanelComponent,
     PricingPageComponent,
+    SessionOverviewComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',
@@ -257,6 +259,10 @@ export class App {
   protected readonly selectedTriage = computed(() => {
     const session = this.selectedSession();
     return session ? this.sessionTriage(session) : null;
+  });
+  protected readonly selectedSizeHelp = computed(() => {
+    const triage = this.selectedTriage();
+    return triage ? this.sessionSizeHelp(triage) : '';
   });
 
   protected readonly summary = computed(() => {
