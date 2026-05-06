@@ -34,6 +34,7 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
   - `Cost` for estimate explanation, drivers, and price rows
   - `Turns` for per-turn model-call insights and the detailed ledger
   - `Trace` for filterable raw logs, clickable event inspection, and agent flow
+- Shows a Billing Reality Check in the Cost view so cache-token visibility and invoice risk are explicit instead of hidden in pricing footnotes.
 - Shows the GitHub pricing table used by the app.
 - Shows trace logs, a clickable event inspector, and an agent flow chart.
 - Compares two runs with cost/token deltas, driver explanations, context-growth movement, and model/pricing-row changes.
@@ -125,7 +126,7 @@ Rates are USD per 1 million tokens. The scanner converts USD estimates to EUR us
 
 The versioned pricing data lives in `data/github-copilot-pricing.json`. The scanner, verifier, and UI all read from that same file.
 
-Important: this app shows a local estimate, not a GitHub invoice. Local VS Code logs currently expose input/output tokens, but not provider cache read/write billing fields.
+Important: this app shows a local estimate, not a GitHub invoice. Local VS Code logs currently expose input/output tokens, but not provider cache read/write billing fields. Output-heavy runs are still useful to debug from local logs; input/context-heavy runs may differ more from billing if provider-side cached input is significant.
 
 ## Useful Commands
 

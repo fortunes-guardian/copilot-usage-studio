@@ -81,6 +81,8 @@ The word `exact` means exact for the local VS Code debug-log token fields that w
 
 `cachedInput` and `cacheWrite` are currently zero for debug-log sessions because the local `llm_request` events observed so far expose `inputTokens` and `outputTokens`, not provider billing cache read/write fields. The UI should describe those cache fields as unavailable from this local source, not as proof that GitHub billed no cache activity.
 
+Cached input should be treated as a separate billing bucket, not as a subtraction from output. If a run has large output tokens, missing cache fields may not change the main cost story because output is still billed as output. If a run is input/context-heavy, missing cached-input visibility can materially change how close the local estimate is to a GitHub invoice.
+
 Model names are normalized for display without discarding the raw id. For example, `claude-sonnet-4.6` becomes `Claude Sonnet 4.6`, but the raw id remains in `modelBreakdown.rawModels`. Why: VS Code logs provider ids, while users expect readable model names and pricing needs a canonical key. Unknown models are not relabeled as a known model; they keep their raw label and use `pricingModel` to show any fallback pricing assumption.
 
 For chat snapshots:
@@ -117,6 +119,7 @@ The app displays:
 - first prompt, workspace, model, timestamps, tags, source kind, token source
 - VS Code Agent Debug Log style session details: session type, location, status, created time, and last activity
 - session size and cost-signal labels for fast triage
+- a Billing Reality Check in the Cost view that explains cache visibility and invoice-risk direction from the imported token mix
 - trace summary cards: model turns, tool calls, total tokens, errors, and total events
 - a cost debugger with cost drivers, token categories, per-model pricing rows, and the largest model calls
 - a capped trace event preview for logs, a clickable Trace inspector, and flow-chart views

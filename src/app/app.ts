@@ -2,10 +2,11 @@ import { DatePipe, DecimalPipe, NgClass } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { AnalyticsPageComponent } from './analytics-page.component';
+import { ComparePageComponent } from './compare-page.component';
 import { LedgerDataService } from './ledger-data.service';
 import { LedgerStatePanelComponent } from './ledger-state-panel.component';
 import { LedgerSession, ModelBreakdown, TokenBreakdown, TraceEvent } from './ledger.model';
-import { ComparePageComponent } from './compare-page.component';
 import { PricingPageComponent } from './pricing-page.component';
 import {
   FALLBACK_PRICING_MODEL,
@@ -17,8 +18,6 @@ type SessionSize = 'Small' | 'Medium' | 'Large' | 'Very large';
 type WarningTone = 'low' | 'info' | 'medium' | 'high';
 type SessionSourceFilter = 'all' | 'debug-log' | 'chat-snapshot' | 'exact' | 'estimated';
 type ActiveView = 'sessions' | 'compare' | 'analytics' | 'pricing';
-type AnalyticsTimeRange = 'all' | '7d' | '30d' | '90d';
-type AnalyticsGrouping = 'day' | 'week' | 'month';
 type ModelCallSort = 'timeline' | 'largest';
 type SelectedRunView = 'overview' | 'cost' | 'turns' | 'trace';
 type TraceFilter = 'all' | 'model' | 'tool' | 'discovery' | 'message' | 'response' | 'error';
@@ -36,22 +35,10 @@ interface SessionTriage {
   warnings: SessionWarning[];
 }
 
-interface AnalyticsMetric {
-  label: string;
-  value: string;
-  help: string;
-}
-
-interface AnalyticsHighlight {
-  label: string;
-  session: LedgerSession | null;
-  value: string;
-  help: string;
-}
-
 @Component({
   selector: 'app-root',
   imports: [
+    AnalyticsPageComponent,
     DatePipe,
     DecimalPipe,
     FormsModule,
@@ -76,10 +63,6 @@ export class App {
   protected readonly sizeFilter = signal<'all' | SessionSize>('all');
   protected readonly warningFilter = signal<string>('all');
   protected readonly sourceFilter = signal<SessionSourceFilter>('all');
-  protected readonly analyticsTimeRange = signal<AnalyticsTimeRange>('all');
-  protected readonly analyticsWorkspaceFilter = signal('all');
-  protected readonly analyticsModelFilter = signal('all');
-  protected readonly analyticsGrouping = signal<AnalyticsGrouping>('day');
   protected readonly traceView = signal<'logs' | 'flow'>('logs');
   protected readonly traceFilter = signal<TraceFilter>('all');
   protected readonly selectedTraceEventIndex = signal<number | null>(null);
@@ -113,8 +96,6 @@ export class App {
       'The GitHub model pricing row used to estimate this model. Unknown models keep their display label and show any pricing fallback separately.',
     pricingFallback:
       'The raw model name from VS Code did not match a GitHub price row in the local pricing table, so the estimate uses the displayed fallback price row. Treat this as an explicit estimate assumption.',
-    analyticsScope:
-      'Multi-session analytics start from the sessions currently included by the sidebar filters, then apply the Analytics controls on this page.',
   };
   protected readonly sessionTriageHelp =
     'Fast read derived from imported tokens, model mix, cache visibility, context growth, and VS Code state enrichment. These are cost-debugging signals, not billing rows.';
@@ -125,17 +106,6 @@ export class App {
     { value: 'chat-snapshot', label: 'Chat snapshots' },
     { value: 'exact', label: 'Exact local data' },
     { value: 'estimated', label: 'Estimated data' },
-  ];
-  protected readonly analyticsTimeOptions: Array<{ value: AnalyticsTimeRange; label: string }> = [
-    { value: 'all', label: 'All time' },
-    { value: '7d', label: 'Last 7 days' },
-    { value: '30d', label: 'Last 30 days' },
-    { value: '90d', label: 'Last 90 days' },
-  ];
-  protected readonly analyticsGroupingOptions: Array<{ value: AnalyticsGrouping; label: string }> = [
-    { value: 'day', label: 'By day' },
-    { value: 'week', label: 'By week' },
-    { value: 'month', label: 'By month' },
   ];
   protected readonly traceFilterOptions: Array<{ value: TraceFilter; label: string }> = [
     { value: 'all', label: 'All events' },
@@ -182,6 +152,7 @@ export class App {
     const costDrivers = this.explainCostDrivers(session, modelRows, topTokenEvents);
     const hasCacheData = session.tokens.cachedInput > 0 || session.tokens.cacheWrite > 0;
     const costAnswer = this.costAnswer(session, modelRows, modelCallRows);
+    const billingReality = this.billingRealityCheck(session, costAnswer, hasCacheData);
     const turnInsights = this.turnInsights(modelCallRows);
 
     return {
@@ -201,6 +172,7 @@ export class App {
       modelRows,
       categoryRows,
       costAnswer,
+      billingReality,
       costDrivers,
       modelCallRows,
       topTokenEvents,
@@ -257,56 +229,6 @@ export class App {
       this.matchesSourceFilter(session, sourceFilter),
     );
   });
-  protected readonly analyticsWorkspaceOptions = computed(() => {
-    const workspaces = new Set(this.filteredSessions().map((session) => session.workspace).filter(Boolean));
-    const selected = this.analyticsWorkspaceFilter();
-    if (selected !== 'all') {
-      workspaces.add(selected);
-    }
-
-    return ['all', ...[...workspaces].sort()];
-  });
-  protected readonly analyticsModelOptions = computed(() => {
-    const models = new Set<string>();
-
-    for (const session of this.filteredSessions()) {
-      for (const row of session.modelBreakdown) {
-        models.add(row.pricingModel || row.model);
-      }
-    }
-
-    const selected = this.analyticsModelFilter();
-    if (selected !== 'all') {
-      models.add(selected);
-    }
-
-    return ['all', ...[...models].sort()];
-  });
-  protected readonly analyticsSessions = computed(() => {
-    const timeRange = this.analyticsTimeRange();
-    const workspace = this.analyticsWorkspaceFilter();
-    const model = this.analyticsModelFilter();
-    const cutoff = this.analyticsCutoff(this.filteredSessions(), timeRange);
-
-    return this.filteredSessions().filter((session) => {
-      if (cutoff && new Date(session.startedAt).getTime() < cutoff) {
-        return false;
-      }
-
-      if (workspace !== 'all' && session.workspace !== workspace) {
-        return false;
-      }
-
-      if (
-        model !== 'all' &&
-        !session.modelBreakdown.some((row) => row.pricingModel === model || row.model === model)
-      ) {
-        return false;
-      }
-
-      return true;
-    });
-  });
 
   protected readonly selectedSession = computed(() => {
     const id = this.selectedId() ?? this.filteredSessions()[0]?.id;
@@ -353,113 +275,6 @@ export class App {
     );
 
     return { count: sessions.length, ...totals };
-  });
-
-  protected readonly analytics = computed(() => {
-    const sessions = this.analyticsSessions();
-    const count = sessions.length;
-    const sidebarCount = this.filteredSessions().length;
-    const totalTokens = sessions.reduce((sum, session) => sum + this.sessionTotalTokens(session), 0);
-    const totalCost = sessions.reduce((sum, session) => sum + session.cost.eur, 0);
-    const avgTokens = count ? totalTokens / count : 0;
-    const avgCost = count ? totalCost / count : 0;
-    const costPer1k = totalTokens ? (totalCost / totalTokens) * 1000 : 0;
-    const highestTokens = this.maxBy(sessions, (session) => this.sessionTotalTokens(session));
-    const highestCost = this.maxBy(sessions, (session) => session.cost.eur);
-    const modelRows = this.analyticsModelRows(sessions, totalCost);
-    const trendRows = this.analyticsTrendRows(sessions, this.analyticsGrouping());
-    const distribution = this.sizeOptions
-      .filter((size): size is SessionSize => size !== 'all')
-      .map((size) => {
-        const bucket = sessions.filter((session) => this.sessionSize(this.sessionTotalTokens(session)) === size);
-        const tokens = bucket.reduce((sum, session) => sum + this.sessionTotalTokens(session), 0);
-        const cost = bucket.reduce((sum, session) => sum + session.cost.eur, 0);
-
-        return {
-          size,
-          count: bucket.length,
-          tokens,
-          cost,
-          share: totalCost > 0 ? (cost / totalCost) * 100 : 0,
-        };
-      });
-    const outliers = this.analyticsOutliers(sessions, avgCost, avgTokens);
-    const analyticsFiltersActive =
-      this.analyticsTimeRange() !== 'all' ||
-      this.analyticsWorkspaceFilter() !== 'all' ||
-      this.analyticsModelFilter() !== 'all' ||
-      this.analyticsGrouping() !== 'day';
-    const analyticsExcludedCount = Math.max(sidebarCount - count, 0);
-
-    return {
-      count,
-      sidebarCount,
-      analyticsFiltersActive,
-      analyticsExcludedCount,
-      emptyTitle:
-        sidebarCount === 0
-          ? 'No sidebar-filtered sessions'
-          : 'No sessions in this Analytics cohort',
-      emptyDetail:
-        sidebarCount === 0
-          ? 'The sidebar search, size, signal, or source filters exclude every imported session.'
-          : `${analyticsExcludedCount.toLocaleString()} sidebar-filtered session${analyticsExcludedCount === 1 ? '' : 's'} excluded by the Analytics controls. Reset the Analytics filters to return to the sidebar cohort.`,
-      scopeLabel:
-        count === this.sessions().length && sidebarCount === this.sessions().length
-          ? 'All imported sessions'
-          : 'Filtered sessions',
-      timeRangeLabel:
-        this.analyticsTimeOptions.find((option) => option.value === this.analyticsTimeRange())?.label ?? 'All time',
-      workspaceLabel: this.analyticsWorkspaceFilter() === 'all' ? 'All workspaces' : this.analyticsWorkspaceFilter(),
-      modelLabel: this.analyticsModelFilter() === 'all' ? 'All models' : this.analyticsModelFilter(),
-      groupingLabel:
-        this.analyticsGroupingOptions.find((option) => option.value === this.analyticsGrouping())?.label ?? 'By day',
-      metrics: [
-        {
-          label: 'Total estimate',
-          value: `€${totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-          help: 'Sum of local cost estimates for the sessions currently included by the sidebar filters.',
-        },
-        {
-          label: 'Total tokens',
-          value: totalTokens.toLocaleString(),
-          help: 'Input, output, cache-read, and cache-write token fields combined across included sessions.',
-        },
-        {
-          label: 'Avg cost / run',
-          value: `€${avgCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`,
-          help: 'Mean estimated cost per included session.',
-        },
-        {
-          label: 'Avg tokens / run',
-          value: Math.round(avgTokens).toLocaleString(),
-          help: 'Mean imported token count per included session.',
-        },
-        {
-          label: 'Cost / 1k tokens',
-          value: `€${costPer1k.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`,
-          help: 'Estimated EUR per 1,000 imported tokens. This moves when model mix or input/output mix changes.',
-        },
-      ] satisfies AnalyticsMetric[],
-      highlights: [
-        {
-          label: 'Highest-token run',
-          session: highestTokens,
-          value: highestTokens ? `${this.sessionTotalTokens(highestTokens).toLocaleString()} tokens` : 'n/a',
-          help: 'The included session with the largest imported token total.',
-        },
-        {
-          label: 'Most expensive run',
-          session: highestCost,
-          value: highestCost ? `€${highestCost.cost.eur.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}` : 'n/a',
-          help: 'The included session with the highest local cost estimate.',
-        },
-      ] satisfies AnalyticsHighlight[],
-      modelRows,
-      trendRows,
-      distribution,
-      outliers,
-    };
   });
 
   private initializedFromLedger = false;
@@ -511,29 +326,6 @@ export class App {
 
   protected setSourceFilter(value: SessionSourceFilter): void {
     this.sourceFilter.set(value);
-  }
-
-  protected setAnalyticsTimeRange(value: AnalyticsTimeRange): void {
-    this.analyticsTimeRange.set(value);
-  }
-
-  protected setAnalyticsWorkspaceFilter(value: string): void {
-    this.analyticsWorkspaceFilter.set(value);
-  }
-
-  protected setAnalyticsModelFilter(value: string): void {
-    this.analyticsModelFilter.set(value);
-  }
-
-  protected setAnalyticsGrouping(value: AnalyticsGrouping): void {
-    this.analyticsGrouping.set(value);
-  }
-
-  protected resetAnalyticsFilters(): void {
-    this.analyticsTimeRange.set('all');
-    this.analyticsWorkspaceFilter.set('all');
-    this.analyticsModelFilter.set('all');
-    this.analyticsGrouping.set('day');
   }
 
   protected setTraceFilter(value: TraceFilter): void {
@@ -893,6 +685,54 @@ export class App {
     ];
   }
 
+  private billingRealityCheck(
+    session: LedgerSession,
+    costAnswer: ReturnType<App['costAnswer']>,
+    hasCacheData: boolean,
+  ) {
+    if (hasCacheData) {
+      return {
+        tone: 'low',
+        cacheVisibility: 'Cache fields present',
+        confidenceLabel: 'Cache-aware local estimate',
+        headline: 'This run includes cache token fields in the ledger.',
+        detail:
+          'The app can price normal input, cached input, cache write, and output separately for this run. It is still a local estimate, not an invoice.',
+      };
+    }
+
+    if (costAnswer.outputShare >= 70) {
+      return {
+        tone: 'low',
+        cacheVisibility: 'Cache fields unavailable',
+        confidenceLabel: 'Low cache impact likely',
+        headline: 'Output dominates this estimate.',
+        detail:
+          'Missing cached input is less likely to change the main story because generated output remains billed as output. Use the estimate to debug response size and repeated generation first.',
+      };
+    }
+
+    if (costAnswer.inputShare >= 60) {
+      return {
+        tone: 'high',
+        cacheVisibility: 'Cache fields unavailable',
+        confidenceLabel: 'Cache could materially change estimate',
+        headline: 'Input/context dominates this estimate.',
+        detail:
+          'VS Code logged input tokens, but did not split normal input from cached input. If much of this context was cached provider-side, the invoice may be lower than this local full-input estimate.',
+      };
+    }
+
+    return {
+      tone: session.confidence === 'exact' ? 'medium' : 'high',
+      cacheVisibility: 'Cache fields unavailable',
+      confidenceLabel: session.confidence === 'exact' ? 'Directional billing estimate' : 'Rough billing estimate',
+      headline: 'Cache impact is unknown for this token mix.',
+      detail:
+        'The imported data is still useful for finding the expensive turns and model mix, but it cannot prove how GitHub split input between normal and cached billing buckets.',
+    };
+  }
+
   private explainCostDrivers(
     session: LedgerSession,
     modelRows: ReturnType<App['explainModelCost']>[],
@@ -961,180 +801,6 @@ export class App {
         tone: toolsPerTurn >= 4 ? 'high' : toolsPerTurn >= 2 ? 'medium' : 'low',
       },
     ];
-  }
-
-  private analyticsModelRows(sessions: LedgerSession[], totalCost: number) {
-    const rows = new Map<
-      string,
-      {
-        model: string;
-        pricingModel: string;
-        turns: number;
-        sessions: Set<string>;
-        tokens: number;
-        input: number;
-        output: number;
-        cost: number;
-      }
-    >();
-
-    for (const session of sessions) {
-      for (const entry of session.modelBreakdown) {
-        const key = `${entry.model}::${entry.pricingModel}`;
-        const current =
-          rows.get(key) ??
-          {
-            model: entry.model,
-            pricingModel: entry.pricingModel,
-            turns: 0,
-            sessions: new Set<string>(),
-            tokens: 0,
-            input: 0,
-            output: 0,
-            cost: 0,
-          };
-
-        current.turns += entry.turns;
-        current.sessions.add(session.id);
-        current.tokens += this.tokenTotal(entry.tokens);
-        current.input += entry.tokens.input;
-        current.output += entry.tokens.output;
-        current.cost += entry.cost.eur;
-        rows.set(key, current);
-      }
-    }
-
-    return [...rows.values()]
-      .map((row) => ({
-        ...row,
-        sessionCount: row.sessions.size,
-        costPer1k: row.tokens ? (row.cost / row.tokens) * 1000 : 0,
-        share: totalCost > 0 ? (row.cost / totalCost) * 100 : 0,
-        usesFallbackPrice: this.usesPricingFallback(row.model, row.pricingModel),
-      }))
-      .sort((a, b) => b.cost - a.cost);
-  }
-
-  private analyticsTrendRows(sessions: LedgerSession[], grouping: AnalyticsGrouping) {
-    const rows = new Map<string, { key: string; label: string; count: number; tokens: number; cost: number }>();
-
-    for (const session of sessions) {
-      const group = this.analyticsGroupKey(session.startedAt, grouping);
-      const current = rows.get(group.key) ?? { ...group, count: 0, tokens: 0, cost: 0 };
-
-      current.count += 1;
-      current.tokens += this.sessionTotalTokens(session);
-      current.cost += session.cost.eur;
-      rows.set(group.key, current);
-    }
-
-    return [...rows.values()].sort((a, b) => b.key.localeCompare(a.key)).slice(0, 8);
-  }
-
-  private analyticsOutliers(sessions: LedgerSession[], avgCost: number, avgTokens: number) {
-    if (!sessions.length) {
-      return [];
-    }
-
-    const costStd = this.standardDeviation(sessions.map((session) => session.cost.eur));
-    const tokenStd = this.standardDeviation(sessions.map((session) => this.sessionTotalTokens(session)));
-
-    return sessions
-      .map((session) => {
-        const tokens = this.sessionTotalTokens(session);
-        const costScore = costStd > 0 ? (session.cost.eur - avgCost) / costStd : 0;
-        const tokenScore = tokenStd > 0 ? (tokens - avgTokens) / tokenStd : 0;
-        const score = Math.max(costScore, tokenScore);
-        const reason = this.analyticsOutlierReason(session, costScore, tokenScore);
-
-        return { session, tokens, score, reason };
-      })
-      .filter((row) => row.score >= 1 || sessions.length <= 5)
-      .sort((a, b) => b.score - a.score || b.session.cost.eur - a.session.cost.eur)
-      .slice(0, 5);
-  }
-
-  private analyticsCutoff(sessions: LedgerSession[], timeRange: AnalyticsTimeRange): number | null {
-    if (timeRange === 'all' || !sessions.length) {
-      return null;
-    }
-
-    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
-    const latest = Math.max(...sessions.map((session) => new Date(session.startedAt).getTime()).filter(Number.isFinite));
-
-    if (!Number.isFinite(latest)) {
-      return null;
-    }
-
-    return latest - days * 24 * 60 * 60 * 1000;
-  }
-
-  private analyticsGroupKey(startedAt: string, grouping: AnalyticsGrouping): { key: string; label: string } {
-    const date = new Date(startedAt);
-
-    if (!Number.isFinite(date.getTime())) {
-      return { key: 'unknown', label: 'Unknown date' };
-    }
-
-    const day = this.isoDate(date);
-
-    if (grouping === 'day') {
-      return { key: day, label: day };
-    }
-
-    if (grouping === 'month') {
-      return { key: day.slice(0, 7), label: day.slice(0, 7) };
-    }
-
-    const weekStart = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-    const dayOfWeek = weekStart.getUTCDay() || 7;
-    weekStart.setUTCDate(weekStart.getUTCDate() - dayOfWeek + 1);
-
-    return { key: this.isoDate(weekStart), label: `Week of ${this.isoDate(weekStart)}` };
-  }
-
-  private analyticsOutlierReason(session: LedgerSession, costScore: number, tokenScore: number): string {
-    const totalTokens = this.sessionTotalTokens(session);
-    const inputShare = totalTokens ? (session.tokens.input / totalTokens) * 100 : 0;
-    const topModel = this.maxBy(session.modelBreakdown, (row) => row.cost.eur);
-    const topModelShare = topModel && session.cost.eur > 0 ? (topModel.cost.eur / session.cost.eur) * 100 : 0;
-    const contextGrowth = this.contextGrowth(session);
-    const modelTurns = session.traceSummary.modelTurns;
-    const toolCalls = session.traceSummary.toolCalls;
-    const traceActivity = modelTurns + toolCalls;
-    const isVeryHighOutlier = Math.max(costScore, tokenScore) >= 2;
-
-    if (isVeryHighOutlier && traceActivity <= 3 && totalTokens >= 100_000) {
-      return `Suspicious spike: ${totalTokens.toLocaleString()} tokens with only ${traceActivity.toLocaleString()} imported model/tool events. Inspect the largest model call and source log shape.`;
-    }
-
-    if (inputShare >= 85 && session.tokens.input >= 100_000) {
-      return `Mostly input/context tokens (${inputShare.toFixed(0)}% of imported tokens). Check prompt context, repo reads, prior conversation, and tool results.`;
-    }
-
-    if (topModel && topModelShare >= 70) {
-      return `${topModel.pricingModel} produced ${topModelShare.toFixed(0)}% of this run's estimate. Model mix is the first thing to inspect.`;
-    }
-
-    if (contextGrowth !== null && contextGrowth >= 50) {
-      return `Average input grew ${contextGrowth.toFixed(0)}% from early to late model calls, so repeated context is likely driving the increase.`;
-    }
-
-    if (toolCalls >= 20) {
-      return `${toolCalls.toLocaleString()} tool calls may have added results back into later model input.`;
-    }
-
-    if (session.traceSummary.errors === 0 && modelTurns >= 8 && toolCalls >= 8) {
-      return `Large but plausible long agent run: ${modelTurns.toLocaleString()} model turns and ${toolCalls.toLocaleString()} tool calls with no imported errors. Compare context growth before treating it as waste.`;
-    }
-
-    return costScore >= tokenScore
-      ? `Cost is ${costScore.toFixed(1)} standard deviations above this cohort. Check model price rows and output mix.`
-      : `Tokens are ${tokenScore.toFixed(1)} standard deviations above this cohort. Check input context and model-turn count.`;
-  }
-
-  private isoDate(date: Date): string {
-    return date.toISOString().slice(0, 10);
   }
 
   private topTokenEvents(events: TraceEvent[], modelBreakdown: ModelBreakdown[], usdToEur: number) {
@@ -1363,21 +1029,6 @@ export class App {
 
   private tokenTotal(tokens: TokenBreakdown): number {
     return tokens.input + tokens.cachedInput + tokens.cacheWrite + tokens.output;
-  }
-
-  private maxBy<T>(items: T[], valueFor: (item: T) => number): T | null {
-    return items.reduce<T | null>((best, item) => (!best || valueFor(item) > valueFor(best) ? item : best), null);
-  }
-
-  private standardDeviation(values: number[]): number {
-    if (values.length < 2) {
-      return 0;
-    }
-
-    const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
-    const variance = values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length;
-
-    return Math.sqrt(variance);
   }
 
   private sessionSize(tokens: number): SessionSize {

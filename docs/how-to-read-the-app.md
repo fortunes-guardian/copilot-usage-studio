@@ -27,6 +27,7 @@ Then open one session and read the Cost debugger.
 
 - **Run Triage**: quick labels for size and cost signals before reading the details.
 - **Cost drivers**: quick diagnosis of what pushed the cost up.
+- **Billing reality check**: whether missing cache-token fields are likely to change the billing interpretation.
 - **Input**: usually the biggest cost source in agent runs because repo context and tool results get sent into the model.
 - **Per-turn cost breakdown**: every token-bearing model call, either in timeline order or sorted by the biggest cost.
 - **Model table**: which models were used and which GitHub price row applied.
@@ -115,6 +116,14 @@ Real-life meaning: the token totals can still be exact local debug-log totals, b
 If the UI says cache billing is not visible locally, that does not mean cache billing was zero.
 
 It means the local VS Code debug logs we imported show input/output tokens, but do not show provider cache read/write token fields.
+
+Cached tokens are not subtracted from output tokens. They are normally a cheaper input/context billing bucket. Generated output remains generated output.
+
+The Cost view therefore shows a **Billing reality check**:
+
+- **Low cache impact likely** means output dominates the estimate, so missing cached input probably does not change the main cost story.
+- **Cache could materially change estimate** means input/context dominates, so provider-side cached input could make the final bill lower than the local full-input estimate.
+- **Directional billing estimate** means the local data is useful for debugging turns and model mix, but cache impact is not obvious from the token split.
 
 ## What To Trust Most
 

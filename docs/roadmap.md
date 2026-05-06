@@ -74,6 +74,7 @@ Done:
 - Explains likely outlier drivers such as input/context dominance, expensive model share, context growth, and high tool-call count.
 - Includes a reset for Analytics-only filters and a clear empty state when the current cohort has no sessions.
 - Separates a few obvious outlier cases, including plausible long agent runs and suspicious low-activity spikes.
+- Extracted Analytics into its own Angular component so the dashboard no longer lives inside the root shell template.
 
 Next:
 
@@ -144,6 +145,7 @@ Done:
 - Extracted the Prices page into a standalone component.
 - Extracted the generated-ledger loading/error panel into a standalone component.
 - Extracted the Compare page into a standalone component with its own template and styles.
+- Extracted the Analytics page into a standalone component with its own template, styles, and cohort logic.
 - Removed enough obsolete root CSS for production builds to pass without the component style budget warning.
 
 Build:
@@ -151,7 +153,7 @@ Build:
 - Better responsive tables.
 - Proper help popovers.
 - More debugger-like polish.
-- Continue component extraction for selected-run subviews and Analytics.
+- Continue component extraction for selected-run subviews.
 
 Why: the app has complex information. Better style should reduce cognitive load, not hide details.
 
@@ -182,7 +184,7 @@ Build:
   - unknown model pricing fallback display
   - Analytics empty states
   - Compare delta copy
-- Move selected-run explanation and analytics logic out of the root component into focused helpers/services.
+- Move selected-run explanation logic out of the root component into focused helpers/services.
 
 Why: the app is now past prototype shape. The risky parts are no longer just "can we show the data?" They are "can pricing, source confidence, and filters stay correct as the UI grows?"
 

@@ -36,11 +36,12 @@ Principles:
 - Uses one shared GitHub pricing JSON file for the scanner, verifier, and UI.
 - Shows a visible loading/error state if the generated ledger data cannot be loaded.
 - Ledger loading now lives in `LedgerDataService` instead of the root component.
-- The Prices page, Compare page, and ledger loading/error panel are standalone Angular components.
+- The Prices page, Compare page, Analytics page, and ledger loading/error panel are standalone Angular components.
 - Shared cost helpers now hold reusable model-cost, token-total, context-growth, percent-delta, and pricing-fallback utility logic.
 - Shows a selected-run Cost debugger with:
   - source/confidence explanation
   - estimate-scope note for missing cache billing fields
+  - Billing Reality Check for cache visibility and invoice-risk direction
   - a primary-driver answer for the current estimate
   - run size and cost-signal labels
   - cost driver cards
@@ -77,6 +78,7 @@ Principles:
 - Chat snapshots are weaker and should not be treated as equal to debug logs for cost.
 - `state.vscdb` is metadata enrichment only. It improves labels and restored-session details; it does not drive pricing.
 - Cache billing is not visible in the local debug logs observed so far. Do not present zero cache fields as proof of zero provider-side cache billing.
+- Cached input is a separate input/context billing bucket, not a discount against output. The UI should call this out because it is easy to misunderstand when reading large output/cached-token totals.
 - The UI should explain local estimates clearly instead of pretending they are GitHub invoice numbers.
 - The generated ledger should carry structured cost facts. The UI should not parse model/cost data out of display strings.
 - Run size and cost-signal labels are derived UI triage. They should help scanning, but they should not silently become billing facts.
@@ -95,7 +97,7 @@ Principles:
 - Aggregated analytics are useful but still early. Outlier detection is a simple statistical signal with driver hints; it now separates a few obvious cases such as long agent runs and suspicious low-activity spikes, but it should become more nuanced as more real sessions are imported.
 - Advanced evidence is imported but mostly hidden from the primary UI. Reasoning text presence and request-cap comparison were too technical to be useful as top-level cards.
 - No app-owned database yet. Scans overwrite `public/data/sessions.json`.
-- `app.ts`, `app.html`, and `app.css` are still large, though the component extraction is underway. More selected-run and analytics sections should move into focused components/services.
+- `app.ts`, `app.html`, and `app.css` are still large, though the component extraction is underway. More selected-run sections should move into focused components/services.
 
 ## Review Notes
 
@@ -112,12 +114,38 @@ Verified:
 
 Code improvements to schedule:
 
-- Move filtering, analytics, and selected-run explanation logic out of the root component into focused services or helper modules.
+- Move selected-run explanation logic out of the root component into focused services or helper modules.
 - Centralize model normalization and pricing fallback rules. Pricing rows now have one shared source, but matching/fallback behavior still exists in both the scanner/verifier and UI.
 - Add ingestion fixtures for debug logs, weak chat snapshots, unknown models, mixed models, and fragile transcript availability.
 - Add UI tests for the selected-run tabs, source/size filters, pricing fallback display, Analytics empty states, and Compare deltas.
 
 ## Latest Implemented Step
+
+Continued the monolith split by extracting Analytics.
+
+What changed:
+
+- Added `AnalyticsPageComponent` with its own template, styles, filters, cohort calculation, trend rows, distribution, model breakdown, and outlier hints.
+- Replaced the large Analytics block in the root template with a single component call.
+- Kept Analytics scoped to the sidebar-filtered session set, with an `openSession` event back to the root shell.
+- Reused shared cost helpers for token totals, context growth, and pricing fallback detection.
+- Verified the production build after extraction.
+
+Why: Analytics is a top-level page now, not a nested root-template section. Pulling it out reduces root-component risk and makes future dashboard polish safer.
+
+## Previous Implemented Step
+
+Added the Billing Reality Check to the Cost debugger.
+
+What changed:
+
+- Added a Cost-view panel that states local estimate, cache visibility, and invoice-risk direction.
+- Labels output-dominant runs as likely lower cache impact, input/context-dominant runs as potentially materially affected by missing cache accounting, and ambiguous runs as directional estimates.
+- Updated README and docs to explain that cached input is not subtracted from output tokens.
+
+Why: the app can be excellent at cost debugging without pretending to be invoice-grade. Cache uncertainty needs to be visible at the moment a developer reads the estimate.
+
+## Older Implemented Step
 
 Continued the monolith split by extracting Compare.
 
@@ -131,7 +159,7 @@ What changed:
 
 Why: Compare is a stable top-level view and no longer belongs inside the root shell. Pulling it out lowers root-template noise and gives the next UI polish pass a contained surface.
 
-## Previous Implemented Step
+## Earlier Implemented Step
 
 Started the monolith split.
 
@@ -145,7 +173,7 @@ What changed:
 
 Why: the app is past throwaway prototype shape. Pulling stable surfaces into focused components makes future UI work safer, and it keeps Angular's style budget useful instead of training us to ignore it.
 
-## Older Implemented Step
+## Earlier Reliability Step
 
 Hardened pricing and local deployment basics.
 
@@ -159,7 +187,7 @@ What changed:
 
 Why: cost debugging depends on trust. A single shared rate card prevents scanner/UI drift, and a local deployment note keeps the project aligned with the local-first product direction.
 
-## Earlier Implemented Step
+## Initial Implemented Step
 
 Built the first Trace Event Inspector pass.
 
@@ -190,7 +218,7 @@ Keep tightening reliability and the UI/code structure before attempting evidence
 
 Build:
 
-- Continue splitting the large root component into smaller services/components, starting with Analytics and selected-run subviews.
+- Continue splitting the large root component into smaller services/components, starting with selected-run subviews.
 - Add fixture-based scanner/verifier tests for mixed models, unknown model fallback, and missing/malformed generated data.
 - Centralize model normalization and pricing fallback rules so model matching cannot drift between scanner and UI.
 - Treat Chat Debug transcripts as optional enrichment only. If imported later, show transcript availability and source labels clearly, and never require transcripts for cost totals.

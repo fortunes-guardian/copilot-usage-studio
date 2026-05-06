@@ -548,6 +548,31 @@
   overflow-wrap: anywhere;
 }
 
+.billing-reality {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.7fr) minmax(0, 1.3fr);
+  gap: 12px;
+  border: 1px solid #dfe8ec;
+  border-left: 4px solid #9eb3bd;
+  border-radius: 8px;
+  padding: 14px;
+  background: #fff;
+}
+
+.billing-reality.high { border-left-color: #c75d3d; }
+
+.billing-reality-main h4 {
+  margin: 4px 0 6px;
+  color: #16202a;
+  font-size: 18px;
+}
+
+.billing-reality-main p:last-child {
+  margin: 0;
+}
+
+.billing-reality-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
 .compact-source-callout {
   align-items: center;
   border: 1px solid #dfe8ec;
@@ -1289,6 +1314,8 @@
   .analytics-controls,
   .analytics-split,
   .facts,
+  .billing-reality,
+  .billing-reality-facts,
   .cost-categories,
   .driver-grid,
   .cost-row,
@@ -1970,6 +1997,8 @@
 
   .diagnostic-hero,
   .diagnostic-facts,
+  .billing-reality,
+  .billing-reality-facts,
   .turn-insight-grid,
   .trace-workbench {
     grid-template-columns: 1fr;
