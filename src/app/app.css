@@ -726,35 +726,83 @@
 
 .run-tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  grid-template-columns: minmax(150px, 0.82fr) repeat(3, minmax(170px, 1fr));
   gap: 8px;
-  padding: 6px;
-  background: rgba(255, 255, 255, 0.03);
 }
 
 .run-tabs button {
-  min-height: 40px;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 900;
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-height: 78px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 11px 12px;
+  background: var(--surface-soft);
   color: var(--muted);
-  background: transparent;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
 }
 
+.run-tabs button::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -12px;
+  width: 14px;
+  height: 1px;
+  background: var(--line-strong);
+}
+
+.run-tabs button:last-child::after {
+  display: none;
+}
+
 .run-tabs button:hover {
-  border-color: var(--line);
+  border-color: var(--line-strong);
   color: var(--text);
 }
 
 .run-tabs button.active {
-  border-color: rgba(124, 92, 255, 0.45);
-  background: linear-gradient(135deg, rgba(124, 92, 255, 0.24), rgba(31, 209, 165, 0.1));
+  border-color: rgba(111, 92, 255, 0.5);
+  background:
+    linear-gradient(135deg, rgba(111, 92, 255, 0.18), rgba(39, 214, 176, 0.08)),
+    var(--surface-soft);
   color: var(--text-strong);
+  box-shadow: 0 0 0 1px rgba(111, 92, 255, 0.12), 0 14px 30px rgba(0, 0, 0, 0.16);
+}
+
+.run-tabs button span {
+  color: var(--muted-2);
+  font-size: 10px;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.run-tabs button strong {
+  color: var(--text-strong);
+  font-size: 16px;
+  font-weight: 760;
+  line-height: 1.1;
+}
+
+.run-tabs button em {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.run-tabs .flow-tab {
+  border-top: 3px solid var(--accent-2);
+}
+
+.run-tabs .overview-tab {
+  border-top: 3px solid var(--line-strong);
 }
 
 .session-title,
@@ -1204,16 +1252,11 @@
 }
 
 .run-tabs {
-  gap: 4px;
-  border-radius: 999px;
-  padding: 4px;
+  gap: 8px;
 }
 
 .run-tabs button {
-  min-height: 32px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 720;
+  min-height: 72px;
 }
 
 .source-callout {
@@ -1301,6 +1344,14 @@
   .detail-header {
     gap: 12px;
   }
+
+  .run-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .run-tabs button::after {
+    display: none;
+  }
 }
 
 @media (max-width: 600px) {
@@ -1345,5 +1396,9 @@
 
   .source-meta {
     gap: 5px;
+  }
+
+  .run-tabs {
+    grid-template-columns: 1fr;
   }
 }

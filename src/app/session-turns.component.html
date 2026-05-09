@@ -1,9 +1,9 @@
 <section class="model-call-ledger run-panel">
   <div class="model-call-header">
     <div>
-      <p class="eyebrow">Turn ledger</p>
-      <h3>Per-turn costs</h3>
-      <p>Token-bearing model calls from the debug log.</p>
+      <p class="eyebrow">Step 2 · Locate</p>
+      <h3>Which model call caused it</h3>
+      <p>Sort the token-bearing calls, then jump into Trace for evidence.</p>
     </div>
     <div class="segmented-control" aria-label="Model call sort">
       <button type="button" [class.active]="sort === 'timeline'" (click)="sortChange.emit('timeline')">

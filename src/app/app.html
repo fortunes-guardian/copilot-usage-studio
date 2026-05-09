@@ -256,19 +256,50 @@
           </div>
         }
 
-        <nav class="run-tabs" aria-label="Selected run sections">
-          <button type="button" [class.active]="selectedRunView() === 'overview'" (click)="selectedRunView.set('overview')">
-            Overview
+        <nav class="run-tabs debugger-map" aria-label="Selected run investigation flow">
+          <button
+            type="button"
+            class="overview-tab"
+            [class.active]="selectedRunView() === 'overview'"
+            (click)="selectedRunView.set('overview')"
+          >
+            <span>Run facts</span>
+            <strong>Overview</strong>
+            <em>Metadata and evidence counts</em>
           </button>
-          <button type="button" [class.active]="selectedRunView() === 'cost'" (click)="selectedRunView.set('cost')">
-            Cost
-          </button>
-          <button type="button" [class.active]="selectedRunView() === 'turns'" (click)="selectedRunView.set('turns')">
-            Turns
-          </button>
-          <button type="button" [class.active]="selectedRunView() === 'trace'" (click)="selectedRunView.set('trace')">
-            Trace
-          </button>
+
+          @if (costExplanation(); as cost) {
+            <button
+              type="button"
+              class="flow-tab"
+              [class.active]="selectedRunView() === 'cost'"
+              (click)="selectedRunView.set('cost')"
+            >
+              <span>1 · Diagnose</span>
+              <strong>Cost</strong>
+              <em>{{ cost.costAnswer.category }} · {{ cost.costAnswer.categoryShare | number: '1.0-0' }}%</em>
+            </button>
+            <button
+              type="button"
+              class="flow-tab"
+              [class.active]="selectedRunView() === 'turns'"
+              (click)="selectedRunView.set('turns')"
+            >
+              <span>2 · Locate</span>
+              <strong>Turns</strong>
+              <em>{{ cost.costAnswer.topCallLabel }} · {{ cost.costAnswer.topCallShare | number: '1.0-0' }}% of estimate</em>
+            </button>
+            <button
+              type="button"
+              class="flow-tab"
+              [class.active]="selectedRunView() === 'trace'"
+              (click)="selectedRunView.set('trace')"
+            >
+              <span>3 · Verify</span>
+              <strong>Trace</strong>
+              <em>{{ session.traceSummary.totalEvents | number }} raw events</em>
+            </button>
+          }
         </nav>
 
         @if (selectedRunView() === 'overview') {

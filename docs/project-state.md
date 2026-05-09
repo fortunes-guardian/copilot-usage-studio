@@ -70,6 +70,7 @@ Principles:
   - selected-run content stays primary on narrow screens, with the session rail moving below it
   - dark diagnostic design tokens for panels, tables, badges, and cost signals
   - selected-run hierarchy now uses Overview, Cost, Turns, and Trace instead of one stacked report
+  - Cost, Turns, and Trace now read as a guided investigation flow: diagnose the cost, locate the model call, then verify the raw trace event
   - first density/typography polish pass: calmer type scale, tighter cards, clamped session prompts, and smoother navigation states
   - native browser `title` tooltips have been replaced with the shared help popover in the app UI
   - redundant selected-run facts have been pruned so Overview no longer repeats model, token, source, run-size, or fallback facts already shown in the run hero
@@ -124,6 +125,22 @@ Code improvements to schedule:
 - Add UI tests for the selected-run tabs, source/size filters, pricing fallback display, Analytics empty states, and Compare deltas.
 
 ## Latest Implemented Step
+
+Made the selected-run debugger read as one investigation flow.
+
+What changed:
+
+- Replaced the plain selected-run tab strip with a compact investigation map.
+- Kept `Overview` as `Run facts`, separate from the cost-debugging path.
+- Labeled the main workflow as:
+  - `1 · Diagnose`: Cost, with the primary cost driver and share.
+  - `2 · Locate`: Turns, with the highest-cost call/share.
+  - `3 · Verify`: Trace, with raw event count.
+- Updated the Cost, Turns, and Trace panel headers so they reinforce the same workflow.
+
+Why: the app should guide a developer from estimate, to expensive model call, to source evidence without making them infer the intended order from generic tabs.
+
+## Previous Implemented Step
 
 Compacted the Sessions view and removed nearby duplicate facts.
 

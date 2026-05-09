@@ -136,6 +136,7 @@ Done:
 - Compacted Data provenance into the top Sessions workspace overview.
 - Added selected-run subviews for Overview, Cost, Turns, and Trace.
 - Made Cost and Turns lead with diagnostic answer panels before the detailed tables.
+- Reworked the selected-run navigation into an investigation map: Run facts, then Cost diagnose, Turns locate, and Trace verify.
 - Extracted the selected-run Overview subview into its own Angular component.
 - Extracted the selected-run Cost subview into its own Angular component.
 - Extracted the selected-run Turns and Trace subviews into standalone Angular components.
