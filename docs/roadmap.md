@@ -140,8 +140,12 @@ Done:
 - Extracted the selected-run Cost subview into its own Angular component.
 - Extracted the selected-run Turns and Trace subviews into standalone Angular components.
 - Added the first proper help popover component and started using it in the Cost debugger.
+- Replaced native browser `title` tooltips with the shared help popover across the app UI.
+- Reworked the help icon to a centered `i` mark and removed stale `.help-dot` styles.
 - Improved Cost and Turns responsive tables so narrow screens show labeled card rows instead of relying only on horizontal scroll.
 - Applied the first dark diagnostic design-token layer.
+- Added the first density/typography polish pass: modern system font stack, quieter weights, smaller headings, tighter cards, smoother states, and clamped long session prompts.
+- Pruned redundant Sessions/Overview facts so repeated model, token, source, run-size, provenance, and fallback-pricing details have clearer primary locations.
 - Changed narrow layout behavior so the session rail moves below the content instead of replacing it.
 - Made unknown-model pricing fallbacks visible across selected run, Cost, Turns, Compare, Analytics, and Prices.
 - Added a visible "open run is outside current filters" state when sidebar filters hide the selected session.
@@ -155,8 +159,9 @@ Done:
 
 Build:
 
+- Bring Compare, Analytics, and Prices up to the same visual polish level as the Sessions debugger.
 - Finish responsive polish for remaining dense tables in Compare, Analytics, and Prices.
-- Replace remaining native title tooltips with the shared help popover where the text is important.
+- Tune help popover placement for tight table edges if real sessions expose clipped panels.
 - More debugger-like polish.
 - Move selected-run Cost, Turns, and Trace explanation logic out of the root component into focused helpers/services.
 

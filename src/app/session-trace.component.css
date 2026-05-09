@@ -383,3 +383,106 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* UI polish: calmer trace reader */
+.trace-tools {
+  gap: 12px;
+}
+
+.eyebrow {
+  font-size: 10px;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+}
+
+.trace-header h3 {
+  font-size: 18px;
+  font-weight: 760;
+}
+
+.trace-header p {
+  font-size: 12px;
+}
+
+.trace-actions {
+  gap: 6px;
+}
+
+.trace-actions button,
+.segmented-control button {
+  min-height: 30px;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.segmented-control {
+  border-radius: 999px;
+}
+
+.trace-workbench {
+  gap: 12px;
+}
+
+.event-log,
+.trace-inspector,
+.inspector-cost,
+.flow-node {
+  border-radius: 12px;
+}
+
+.event-row {
+  grid-template-columns: 68px 150px minmax(0, 1fr) 128px;
+  gap: 10px;
+  padding: 9px 10px;
+}
+
+.event-row span,
+.event-row em,
+.event-row p,
+.inspector-title p,
+.inspector-cost span,
+.inspector-cost p,
+.inspector-fields dt,
+.inspector-detail h5,
+.flow-node em,
+.flow-node p {
+  font-size: 12px;
+}
+
+.event-row strong,
+.inspector-title h4 {
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.trace-inspector {
+  top: 78px;
+  gap: 12px;
+  padding: 12px;
+}
+
+.inspector-title {
+  grid-template-columns: 34px minmax(0, 1fr);
+}
+
+.inspector-title > span {
+  min-height: 28px;
+  border-radius: 9px;
+  font-size: 12px;
+}
+
+.inspector-cost strong {
+  font-size: 19px;
+  font-weight: 760;
+}
+
+.inspector-fields {
+  gap: 7px;
+}
+
+.flow-node {
+  grid-template-columns: 30px minmax(140px, 200px) minmax(0, 1fr);
+  padding: 10px;
+}

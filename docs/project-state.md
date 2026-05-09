@@ -70,6 +70,9 @@ Principles:
   - selected-run content stays primary on narrow screens, with the session rail moving below it
   - dark diagnostic design tokens for panels, tables, badges, and cost signals
   - selected-run hierarchy now uses Overview, Cost, Turns, and Trace instead of one stacked report
+  - first density/typography polish pass: calmer type scale, tighter cards, clamped session prompts, and smoother navigation states
+  - native browser `title` tooltips have been replaced with the shared help popover in the app UI
+  - redundant selected-run facts have been pruned so Overview no longer repeats model, token, source, run-size, or fallback facts already shown in the run hero
   - fallback pricing assumptions are now visible in the selected-run header, Cost table, Turns ledger, Compare, Analytics, and Prices page
   - sidebar filters now show a clear state when the open run is outside the visible filtered rail
 
@@ -90,8 +93,8 @@ Principles:
 
 ## Current Rough Edges
 
-- The UI is functional but visually busy.
-- Tooltips are better, but still use native browser title behavior.
+- The UI is much calmer after the first polish pass, but Compare, Analytics, and Prices still need the same level of visual tuning as Sessions.
+- Help popovers now use the shared UI component instead of native browser title behavior. Some lower-priority sidebar badge hints were intentionally removed rather than nesting interactive popovers inside session-card buttons.
 - The Trace inspector now shows normalized event fields, but it is still limited by the bounded payload summaries the scanner imports. It is good for event-level evidence, not full raw JSONL replacement.
 - VS Code transcript files under `GitHub.copilot-chat/transcripts/<session-id>.jsonl` can contain richer Chat Debug timeline events, but they are inconsistent. In the current workspace, some sessions have rich transcripts and weak debug logs, while another has useful debug logs and only a `session.start` transcript. The scanner does not import transcripts yet, and core cost features should not depend on them.
 - The app can count tool/MCP activity and place it near model calls, but it does not yet attribute model input tokens to specific request sections such as instructions, MCP tool results, or workspace context.
@@ -121,6 +124,51 @@ Code improvements to schedule:
 - Add UI tests for the selected-run tabs, source/size filters, pricing fallback display, Analytics empty states, and Compare deltas.
 
 ## Latest Implemented Step
+
+Compacted the Sessions view and removed nearby duplicate facts.
+
+What changed:
+
+- Changed Data provenance to a compact local-scan note plus source counters, instead of repeating the global session count.
+- Removed the duplicate fallback-pricing chip from the selected-run hero and kept the richer Pricing assumption callout with the model mapping and Prices action.
+- Renamed Overview `Summary` to `Evidence counts`.
+- Removed Overview cards for model turns and total tokens because the run hero already shows those.
+- Removed Overview detail rows for model, source, and run size because those are already in the selected-run hero chips/subtitle.
+- Removed the duplicated size badge from Overview triage, leaving warning labels there.
+
+Why: the UI should feel like a debugger, not a report where the same numbers echo in every panel. Each fact now has a clearer primary home.
+
+## Previous Implemented Step
+
+Replaced native browser tooltips with the shared help popover.
+
+What changed:
+
+- Converted remaining template `title` attributes and old `help-dot` markers to `HelpPopoverComponent`.
+- Updated Overview, Sessions ingestion/source chips, Analytics metrics/highlights, Compare metrics/fallback rows, and Prices token/fallback labels to use real popovers.
+- Added a non-interactive popover trigger mode for help icons rendered inside clickable cards/buttons, avoiding invalid nested buttons.
+- Changed the help icon from `?` to a centered `i` mark with explicit sizing, font, hover, and focus styling.
+- Removed stale `.help-dot` CSS so the native-tooltip pattern does not get reused by accident.
+
+Why: important explanations should feel like part of the product, not browser defaults. The new popover is consistent, keyboard accessible where it is interactive, and visually aligned with the debugger UI.
+
+## Older Implemented Step
+
+Polished the current UI for density, typography, and scanability.
+
+What changed:
+
+- Switched the global font stack toward Windows-native modern UI fonts (`Aptos`, `Segoe UI Variable`, then fallbacks).
+- Tightened the top bar, session rail, selected-run header, cards, tabs, tables, and buttons.
+- Reduced heavy font weights and oversized numbers/headings across the shell and selected-run subviews.
+- Shortened visible UI copy where the same meaning was clear from context.
+- Clamped long prompt text in session cards so the rail stays navigational.
+- Added smoother hover/focus states and more subtle scrollbar styling.
+- Updated the app spec for the leaner UI labels.
+
+Why: the app had the right information architecture, but the interface still felt loud and verbose. This pass makes the debugger easier to scan without removing evidence or hiding cost details.
+
+## Older Implemented Step
 
 Finished the selected-run subview extraction pass.
 

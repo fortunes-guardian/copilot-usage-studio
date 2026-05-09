@@ -212,21 +212,6 @@
   color: var(--text-strong);
 }
 
-.help-dot {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border: 1px solid var(--line-strong);
-  border-radius: 50%;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 900;
-  line-height: 1;
-  cursor: help;
-}
-
 .saving {
   color: #35d07f !important;
 }
@@ -257,4 +242,93 @@
   .cost-row {
     min-width: 0;
   }
+}
+
+/* UI polish */
+.compare {
+  gap: 14px;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.compare h2 {
+  font-size: 22px;
+  font-weight: 760;
+}
+
+.eyebrow {
+  font-size: 10px;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+}
+
+.selectors {
+  gap: 8px;
+}
+
+.selectors select {
+  min-height: 34px;
+  padding: 7px 10px;
+  font-size: 13px;
+}
+
+.source-callout,
+.comparison-grid > div,
+.driver-grid article,
+.cost-table {
+  border-radius: 12px;
+}
+
+.source-callout strong,
+.comparison-grid strong {
+  font-size: 18px;
+  font-weight: 760;
+}
+
+.comparison-grid {
+  gap: 10px;
+}
+
+.comparison-grid > div,
+.driver-grid article {
+  padding: 10px;
+}
+
+.comparison-grid span,
+.comparison-grid em,
+.cost-row span,
+.cost-row em,
+.driver-grid p {
+  font-size: 12px;
+}
+
+.comparison-drivers h3,
+.comparison-models h3 {
+  font-size: 15px;
+  font-weight: 760;
+}
+
+.driver-grid {
+  gap: 8px;
+}
+
+.driver-grid span {
+  font-size: 10px;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+}
+
+.driver-grid strong {
+  font-size: 17px;
+  font-weight: 760;
+}
+
+.cost-row {
+  gap: 10px;
+  padding: 9px 10px;
+}
+
+.cost-row-heading {
+  font-size: 11px;
+  font-weight: 720;
 }

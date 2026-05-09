@@ -1,6 +1,9 @@
 :host {
-  display: inline-flex;
+  display: inline-grid;
+  place-items: center;
   position: relative;
+  width: 16px;
+  height: 16px;
   vertical-align: middle;
 }
 
@@ -10,10 +13,10 @@
   align-items: center;
 }
 
-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+button,
+.help-trigger {
+  display: grid;
+  place-items: center;
   width: 16px;
   height: 16px;
   border: 1px solid rgba(198, 214, 224, 0.38);
@@ -21,11 +24,27 @@ button {
   padding: 0;
   background: transparent;
   color: var(--muted-2);
-  font: inherit;
-  font-size: 11px;
-  font-weight: 900;
+  font-family: Arial, "Segoe UI", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
   line-height: 1;
   cursor: help;
+}
+
+button span,
+.help-trigger span {
+  display: block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  transform: translateY(-0.25px);
+}
+
+button:hover,
+.help-popover:hover .help-trigger {
+  border-color: rgba(39, 214, 176, 0.64);
+  color: #bbfff0;
+  background: rgba(39, 214, 176, 0.1);
 }
 
 button:focus-visible {
@@ -40,19 +59,20 @@ button:focus-visible {
   top: calc(100% + 8px);
   width: min(280px, calc(100vw - 40px));
   border: 1px solid var(--line-strong);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 10px 11px;
-  background: #101824;
+  background: #0d1520;
   color: var(--text);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 520;
   line-height: 1.45;
   opacity: 0;
   pointer-events: none;
   transform: translateY(-3px);
   transition: opacity 120ms ease, transform 120ms ease;
   text-transform: none;
+  text-align: left;
 }
 
 .help-popover:hover .help-panel,

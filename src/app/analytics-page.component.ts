@@ -2,6 +2,7 @@ import { DecimalPipe } from '@angular/common';
 import { Component, EventEmitter, Input, Output, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { HelpPopoverComponent } from './help-popover.component';
 import { LedgerSession } from './ledger.model';
 import { contextStats, sessionTotalTokens, tokenTotal, usesPricingFallback } from './ledger-cost-utils';
 
@@ -24,7 +25,7 @@ interface AnalyticsHighlight {
 
 @Component({
   selector: 'app-analytics-page',
-  imports: [DecimalPipe, FormsModule],
+  imports: [DecimalPipe, FormsModule, HelpPopoverComponent],
   templateUrl: './analytics-page.component.html',
   styleUrl: './analytics-page.component.css',
 })

@@ -1,17 +1,9 @@
 <section class="session-summary">
-  <h3>Summary</h3>
+  <h3>Evidence counts</h3>
   <div class="facts trace-cards">
-    <div>
-      <span>Model Turns</span>
-      <strong>{{ session.traceSummary.modelTurns | number }}</strong>
-    </div>
     <div>
       <span>Tool Calls</span>
       <strong>{{ session.traceSummary.toolCalls | number }}</strong>
-    </div>
-    <div>
-      <span>Total Tokens</span>
-      <strong>{{ session.traceSummary.totalTokens | number }}</strong>
     </div>
     <div>
       <span>Errors</span>
@@ -26,7 +18,7 @@
 
 <section class="supporting-grid">
   <section class="session-details">
-    <h3>Session Details</h3>
+    <h3>Details</h3>
     <dl>
       <div>
         <dt>Session Type</dt>
@@ -48,26 +40,6 @@
         <dt>Last Activity</dt>
         <dd>{{ session.endedAt | date: 'M/d/yyyy, h:mm:ss a' }}</dd>
       </div>
-      <div>
-        <dt>Model</dt>
-        <dd>{{ session.model }}</dd>
-      </div>
-      <div>
-        <dt>Source</dt>
-        <dd>
-          {{ sourceLabel }}
-          <span class="help-dot" [title]="sourceHelp" [attr.aria-label]="sourceHelp" tabindex="0">?</span>
-        </dd>
-      </div>
-      @if (triage; as runTriage) {
-        <div>
-          <dt>Run size</dt>
-          <dd>
-            {{ runTriage.size }} · {{ runTriage.totalTokens | number }} tokens
-            <span class="help-dot" [title]="sizeHelp" [attr.aria-label]="sizeHelp" tabindex="0">?</span>
-          </dd>
-        </div>
-      }
       @if (session.vscodeState; as state) {
         <div>
           <dt>Permission</dt>
@@ -84,20 +56,17 @@
   @if (triage; as runTriage) {
     <section class="session-triage">
       <div>
-        <h3>Run Triage</h3>
+        <h3>Triage</h3>
         <p>
-          Quick labels for spotting why this session deserves attention.
-          <span class="help-dot" [title]="triageHelp" [attr.aria-label]="triageHelp" tabindex="0">?</span>
+          Quick attention labels.
+          <app-help-popover [text]="triageHelp" label="Explain triage labels"></app-help-popover>
         </p>
       </div>
       <div class="badge-row">
-        <span class="triage-badge size" [ngClass]="runTriage.sizeTone" [title]="sizeHelp">
-          {{ runTriage.size }}
-        </span>
         @for (warning of runTriage.warnings; track warning.label) {
-          <span class="triage-badge" [ngClass]="warning.tone" [title]="warning.help">
+          <span class="triage-badge" [ngClass]="warning.tone">
             {{ warning.label }}
-            <span class="help-dot" [title]="warning.help" [attr.aria-label]="warning.help" tabindex="0">?</span>
+            <app-help-popover [text]="warning.help" [label]="'Explain ' + warning.label"></app-help-popover>
           </span>
         }
       </div>

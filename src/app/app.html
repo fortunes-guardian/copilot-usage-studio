@@ -4,7 +4,7 @@
       <span class="brand-mark" aria-hidden="true">CL</span>
       <div>
         <p class="eyebrow">Local ledger</p>
-        <h1>Copilot Cost Ledger</h1>
+        <h1>Copilot Ledger</h1>
       </div>
     </div>
 
@@ -23,7 +23,10 @@
       </button>
     </nav>
 
-    <span class="status" [title]="help.appEstimate">Estimate</span>
+    <span class="status">
+      Estimate
+      <app-help-popover [text]="help.appEstimate" label="Explain estimate"></app-help-popover>
+    </span>
   </header>
 
   <div class="app-body" [class.with-rail]="activeView() === 'sessions'">
@@ -82,11 +85,11 @@
               </span>
               @if (sessionTriage(session); as triage) {
                 <span class="badge-row compact">
-                  <span class="triage-badge" [ngClass]="triage.sizeTone" [title]="sessionSizeHelp(triage)">
+                  <span class="triage-badge" [ngClass]="triage.sizeTone">
                     {{ triage.size }}
                   </span>
                   @for (warning of triage.warnings.slice(0, 2); track warning.label) {
-                    <span class="triage-badge" [ngClass]="warning.tone" [title]="warning.help">
+                    <span class="triage-badge" [ngClass]="warning.tone">
                       {{ warning.label }}
                     </span>
                   }
@@ -153,32 +156,32 @@
         <section class="ingestion compact-ingestion" aria-label="Data provenance">
           <div class="ingestion-lede">
             <p class="eyebrow">Data provenance</p>
-            <strong>{{ ingestion.importedSessions }} sessions imported</strong>
-            <span>{{ ingestion.scannedWorkspaces }} workspaces scanned · {{ ingestion.enrichedFromStateDbs }} state-enriched</span>
+            <strong>Local scan</strong>
+            <span>Import diagnostics, not billing totals</span>
           </div>
           <dl>
             <div>
-              <dt>Debug logs <span class="help-dot" [title]="help.debugLogs" [attr.aria-label]="help.debugLogs" tabindex="0">?</span></dt>
+              <dt>Debug logs <app-help-popover [text]="help.debugLogs" label="Explain debug logs"></app-help-popover></dt>
               <dd>{{ ingestion.importedDebugLogSessions | number }}</dd>
             </div>
             <div>
-              <dt>Chat snapshots <span class="help-dot" [title]="help.chatSnapshots" [attr.aria-label]="help.chatSnapshots" tabindex="0">?</span></dt>
+              <dt>Chat snapshots <app-help-popover [text]="help.chatSnapshots" label="Explain chat snapshots"></app-help-popover></dt>
               <dd>{{ ingestion.importedChatSnapshotSessions | number }}</dd>
             </div>
             <div>
-              <dt>State DBs <span class="help-dot" [title]="help.stateDbs" [attr.aria-label]="help.stateDbs" tabindex="0">?</span></dt>
+              <dt>State DBs <app-help-popover [text]="help.stateDbs" label="Explain state DBs"></app-help-popover></dt>
               <dd>{{ ingestion.scannedStateDbs | number }}</dd>
             </div>
             <div>
-              <dt>State enriched <span class="help-dot" [title]="help.stateEnriched" [attr.aria-label]="help.stateEnriched" tabindex="0">?</span></dt>
+              <dt>State enriched <app-help-popover [text]="help.stateEnriched" label="Explain state enrichment"></app-help-popover></dt>
               <dd>{{ ingestion.enrichedFromStateDbs | number }}</dd>
             </div>
             <div>
-              <dt>Empty logs skipped <span class="help-dot" [title]="help.emptyDebugLogs" [attr.aria-label]="help.emptyDebugLogs" tabindex="0">?</span></dt>
+              <dt>Empty logs skipped <app-help-popover [text]="help.emptyDebugLogs" label="Explain empty logs skipped"></app-help-popover></dt>
               <dd>{{ ingestion.skippedEmptyDebugLogs | number }}</dd>
             </div>
             <div>
-              <dt>No-request snapshots <span class="help-dot" [title]="help.snapshotsWithoutRequests" [attr.aria-label]="help.snapshotsWithoutRequests" tabindex="0">?</span></dt>
+              <dt>No-request chats <app-help-popover [text]="help.snapshotsWithoutRequests" label="Explain no-request chats"></app-help-popover></dt>
               <dd>{{ ingestion.skippedChatSnapshotsWithoutRequests | number }}</dd>
             </div>
           </dl>
@@ -193,25 +196,19 @@
             <div class="source-meta">
               <span>{{ session.workspace }}</span>
               @if (selectedTriage(); as triage) {
-                <span [title]="sessionSizeHelp(triage)">
+                <span>
                   {{ triage.size }}
-                  <span class="help-dot" [title]="sessionSizeHelp(triage)" [attr.aria-label]="sessionSizeHelp(triage)" tabindex="0">?</span>
+                  <app-help-popover [text]="sessionSizeHelp(triage)" label="Explain run size"></app-help-popover>
                 </span>
               }
-              <span [title]="confidenceHelp(session.confidence)">
+              <span>
                 {{ confidenceLabel(session.confidence) }}
-                <span class="help-dot" [title]="confidenceHelp(session.confidence)" [attr.aria-label]="confidenceHelp(session.confidence)" tabindex="0">?</span>
+                <app-help-popover [text]="confidenceHelp(session.confidence)" label="Explain source confidence"></app-help-popover>
               </span>
-              <span [title]="tokenSourceHelp(session.tokenSource)">
+              <span>
                 {{ tokenSourceLabel(session.tokenSource) }}
-                <span class="help-dot" [title]="tokenSourceHelp(session.tokenSource)" [attr.aria-label]="tokenSourceHelp(session.tokenSource)" tabindex="0">?</span>
+                <app-help-popover [text]="tokenSourceHelp(session.tokenSource)" label="Explain token source"></app-help-popover>
               </span>
-              @if (selectedPricingFallbacks().length) {
-                <span class="assumption-pill" [title]="help.pricingFallback">
-                  Fallback pricing
-                  <span class="help-dot" [title]="help.pricingFallback" [attr.aria-label]="help.pricingFallback" tabindex="0">?</span>
-                </span>
-              }
             </div>
             <h2>{{ session.title }}</h2>
             <p class="detail-subtitle">
@@ -220,7 +217,7 @@
             </p>
           </div>
           <div class="price">
-            <span>Estimated cost</span>
+            <span>Estimate</span>
             <strong>€{{ session.cost.eur | number: '1.2-2' }}</strong>
           </div>
         </div>
@@ -247,7 +244,10 @@
                 @for (fallback of selectedPricingFallbacks(); track fallback.model + fallback.pricingModel) {
                   <span class="inline-fallback">
                     {{ fallback.model }} priced as {{ fallback.pricingModel }}
-                    <span class="help-dot" [title]="pricingFallbackReason(fallback.model, fallback.pricingModel)" [attr.aria-label]="pricingFallbackReason(fallback.model, fallback.pricingModel)" tabindex="0">?</span>
+                    <app-help-popover
+                      [text]="pricingFallbackReason(fallback.model, fallback.pricingModel)"
+                      label="Explain fallback pricing"
+                    ></app-help-popover>
                   </span>
                 }
               </p>
@@ -276,9 +276,6 @@
             [session]="session"
             [triage]="selectedTriage()"
             [triageHelp]="sessionTriageHelp"
-            [sourceLabel]="sourceKindLabel(session.sourceKind)"
-            [sourceHelp]="sourceKindHelp(session.sourceKind)"
-            [sizeHelp]="selectedSizeHelp()"
           ></app-session-overview>
         }
 

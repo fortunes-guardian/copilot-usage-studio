@@ -438,3 +438,116 @@
     gap: 3px;
   }
 }
+
+/* UI polish: quieter, denser debugger surface */
+.cost-explainer {
+  gap: 13px;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.18);
+}
+
+.eyebrow,
+.primary-diagnosis span,
+.diagnostic-facts span,
+.driver-grid span {
+  font-size: 10px;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+}
+
+.cost-explainer h3 {
+  font-size: 19px;
+  font-weight: 760;
+  line-height: 1.2;
+}
+
+.source-pill {
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 720;
+}
+
+.diagnostic-hero,
+.diagnostic-facts,
+.cost-drivers,
+.driver-grid,
+.cost-categories {
+  gap: 8px;
+}
+
+.primary-diagnosis,
+.diagnostic-facts > div,
+.billing-reality,
+.compact-source-callout,
+.driver-grid article,
+.cost-categories article,
+.cost-table {
+  border-radius: 12px;
+}
+
+.primary-diagnosis {
+  padding: 14px;
+}
+
+.diagnostic-facts > div,
+.driver-grid article,
+.cost-categories article {
+  padding: 10px;
+}
+
+.primary-diagnosis strong {
+  font-size: 24px;
+  font-weight: 760;
+}
+
+.diagnostic-facts strong {
+  font-size: 16px;
+  font-weight: 760;
+}
+
+.diagnostic-facts em,
+.driver-grid p,
+.cost-categories span,
+.cost-categories em,
+.cost-row span,
+.cost-row em,
+.section-label p,
+.cost-drivers > div:first-child p {
+  font-size: 12px;
+}
+
+.billing-reality {
+  padding: 12px;
+}
+
+.billing-reality-main h4,
+.section-label h4,
+.cost-drivers h4 {
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.source-callout p {
+  line-height: 1.42;
+}
+
+.driver-grid strong {
+  font-size: 17px;
+  font-weight: 760;
+}
+
+.cost-categories strong {
+  font-size: 15px;
+  font-weight: 760;
+}
+
+.cost-row {
+  gap: 10px;
+  padding: 9px 10px;
+}
+
+.cost-row-heading {
+  font-size: 11px;
+  font-weight: 720;
+}

@@ -41,10 +41,10 @@
       <span>Provider</span>
       <span>Status</span>
       <span>Category</span>
-      <span>Input <span class="help-dot" [title]="help.inputTokens" [attr.aria-label]="help.inputTokens" tabindex="0">?</span></span>
-      <span>Cached input <span class="help-dot" [title]="help.cachedInput" [attr.aria-label]="help.cachedInput" tabindex="0">?</span></span>
-      <span>Cache write <span class="help-dot" [title]="help.cacheWrite" [attr.aria-label]="help.cacheWrite" tabindex="0">?</span></span>
-      <span>Output <span class="help-dot" [title]="help.outputTokens" [attr.aria-label]="help.outputTokens" tabindex="0">?</span></span>
+      <span>Input <app-help-popover [text]="help.inputTokens" label="Explain input tokens"></app-help-popover></span>
+      <span>Cached input <app-help-popover [text]="help.cachedInput" label="Explain cached input"></app-help-popover></span>
+      <span>Cache write <app-help-popover [text]="help.cacheWrite" label="Explain cache write"></app-help-popover></span>
+      <span>Output <app-help-popover [text]="help.outputTokens" label="Explain output tokens"></app-help-popover></span>
       <span>Used</span>
     </div>
     @for (price of pricingRows(); track price.model) {
@@ -71,9 +71,15 @@
         <span>
           @if (price.usedByImportedSessions) {
             @if (price.usedDirectly && price.usedAsFallback) {
-              <span class="used-pill fallback-used" [title]="help.pricingFallback">Direct + fallback</span>
+              <span class="used-pill fallback-used">
+                Direct + fallback
+                <app-help-popover [text]="help.pricingFallback" label="Explain fallback pricing"></app-help-popover>
+              </span>
             } @else if (price.usedAsFallback) {
-              <span class="used-pill fallback-used" [title]="help.pricingFallback">Fallback row</span>
+              <span class="used-pill fallback-used">
+                Fallback row
+                <app-help-popover [text]="help.pricingFallback" label="Explain fallback pricing"></app-help-popover>
+              </span>
             } @else {
               <span class="used-pill">Direct match</span>
             }

@@ -9,7 +9,7 @@
           @if (stats.analyticsExcludedCount > 0) {
             {{ stats.analyticsExcludedCount }} excluded by Analytics controls.
           }
-          <span class="help-dot" [title]="help.analyticsScope" [attr.aria-label]="help.analyticsScope" tabindex="0">?</span>
+          <app-help-popover [text]="help.analyticsScope" label="Explain analytics scope"></app-help-popover>
         </p>
       </div>
       @if (stats.analyticsFiltersActive) {
@@ -73,7 +73,7 @@
           <article class="metric">
             <span>
               {{ metric.label }}
-              <span class="help-dot" [title]="metric.help" [attr.aria-label]="metric.help" tabindex="0">?</span>
+              <app-help-popover [text]="metric.help" [label]="'Explain ' + metric.label"></app-help-popover>
             </span>
             <strong>{{ metric.value }}</strong>
           </article>
@@ -88,7 +88,11 @@
               <button type="button" (click)="emitOpenSession(highlight.session)" [disabled]="!highlight.session">
                 <span>
                   {{ highlight.label }}
-                  <span class="help-dot" [title]="highlight.help" [attr.aria-label]="highlight.help" tabindex="0">?</span>
+                  <app-help-popover
+                    [text]="highlight.help"
+                    [label]="'Explain ' + highlight.label"
+                    [interactive]="false"
+                  ></app-help-popover>
                 </span>
                 <strong>{{ highlight.value }}</strong>
                 @if (highlight.session) {

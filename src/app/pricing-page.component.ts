@@ -1,6 +1,7 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, Input, computed, signal } from '@angular/core';
 
+import { HelpPopoverComponent } from './help-popover.component';
 import { LedgerSession } from './ledger.model';
 import {
   MODEL_PRICES_USD_PER_MILLION,
@@ -13,7 +14,7 @@ import {
 
 @Component({
   selector: 'app-pricing-page',
-  imports: [DatePipe, DecimalPipe],
+  imports: [DatePipe, DecimalPipe, HelpPopoverComponent],
   templateUrl: './pricing-page.component.html',
   styleUrl: './pricing-page.component.css',
 })

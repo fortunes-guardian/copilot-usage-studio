@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 import { AnalyticsPageComponent } from './analytics-page.component';
 import { ComparePageComponent } from './compare-page.component';
+import { HelpPopoverComponent } from './help-popover.component';
 import { LedgerDataService } from './ledger-data.service';
 import { LedgerStatePanelComponent } from './ledger-state-panel.component';
 import { LedgerSession, ModelBreakdown, TokenBreakdown, TraceEvent } from './ledger.model';
@@ -46,6 +47,7 @@ interface SessionTriage {
     DatePipe,
     DecimalPipe,
     FormsModule,
+    HelpPopoverComponent,
     NgClass,
     ComparePageComponent,
     LedgerStatePanelComponent,

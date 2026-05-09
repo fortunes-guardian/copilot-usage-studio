@@ -3,14 +3,14 @@
     <div>
       <p class="eyebrow">Debug evidence</p>
       <h3>Trace inspector</h3>
-      <p>Click an event to inspect the normalized fields imported from the VS Code debug log.</p>
+      <p>Inspect normalized VS Code debug-log fields.</p>
     </div>
     <div class="trace-actions">
       <button type="button" [class.active]="traceView === 'logs'" (click)="traceViewChange.emit('logs')">
         View Logs
       </button>
       <button type="button" [class.active]="traceView === 'flow'" (click)="traceViewChange.emit('flow')">
-        Agent Flow Chart
+        Flow
       </button>
     </div>
   </div>

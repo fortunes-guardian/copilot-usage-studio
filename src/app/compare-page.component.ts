@@ -2,6 +2,7 @@ import { DecimalPipe, NgClass } from '@angular/common';
 import { Component, EventEmitter, Input, Output, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { HelpPopoverComponent } from './help-popover.component';
 import { LedgerSession } from './ledger.model';
 import {
   PricedModelBreakdown,
@@ -53,7 +54,7 @@ interface SessionComparisonAnalysis {
 
 @Component({
   selector: 'app-compare-page',
-  imports: [DecimalPipe, FormsModule, NgClass],
+  imports: [DecimalPipe, FormsModule, HelpPopoverComponent, NgClass],
   templateUrl: './compare-page.component.html',
   styleUrl: './compare-page.component.css',
 })

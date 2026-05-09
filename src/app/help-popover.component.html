@@ -1,4 +1,12 @@
 <span class="help-popover">
-  <button type="button" [attr.aria-label]="label">?</button>
+  @if (interactive) {
+    <button type="button" [attr.aria-label]="label">
+      <span aria-hidden="true">i</span>
+    </button>
+  } @else {
+    <span class="help-trigger" aria-hidden="true">
+      <span>i</span>
+    </span>
+  }
   <span class="help-panel" role="tooltip">{{ text }}</span>
 </span>

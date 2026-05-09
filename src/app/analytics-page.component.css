@@ -169,3 +169,57 @@
     min-width: 0;
   }
 }
+
+/* UI polish */
+.analytics-page {
+  gap: 14px;
+}
+
+.pricing-header h2 {
+  font-size: 22px;
+  font-weight: 760;
+}
+
+.pricing-header p,
+.analytics-empty p,
+.highlight-list span,
+.highlight-list em,
+.stat-list span,
+.stat-list em,
+.cost-row span,
+.cost-row em {
+  font-size: 12px;
+}
+
+.analytics-controls,
+.analytics-empty,
+.highlight-list button,
+.stat-list div {
+  border-radius: 12px;
+}
+
+.analytics-controls {
+  gap: 8px;
+  padding: 12px;
+}
+
+.analytics-controls label,
+.analytics-scope span {
+  font-size: 11px;
+  font-weight: 720;
+}
+
+.analytics-controls select {
+  min-height: 34px;
+  padding: 7px 10px;
+  font-size: 13px;
+}
+
+.analytics-split {
+  gap: 12px;
+}
+
+.analytics-split h3 {
+  font-size: 15px;
+  font-weight: 760;
+}

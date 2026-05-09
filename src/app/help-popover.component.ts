@@ -8,4 +8,5 @@ import { Component, Input } from '@angular/core';
 export class HelpPopoverComponent {
   @Input({ required: true }) text!: string;
   @Input() label = 'More information';
+  @Input() interactive = true;
 }

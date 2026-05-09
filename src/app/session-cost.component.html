@@ -2,9 +2,9 @@
   <div class="cost-explainer-header">
     <div>
       <p class="eyebrow">Cost debugger</p>
-      <h3>Why this run cost €{{ session.cost.eur | number: '1.2-4' }}</h3>
+      <h3>Cost: €{{ session.cost.eur | number: '1.2-4' }}</h3>
     </div>
-    <span class="source-pill" [title]="cost.sourceDescription">
+    <span class="source-pill">
       {{ cost.sourceStrength }}
       <app-help-popover [text]="cost.sourceDescription" label="Explain source strength"></app-help-popover>
     </span>
@@ -42,7 +42,7 @@
 
   <section class="billing-reality" [ngClass]="cost.billingReality.tone" aria-label="Billing reality check">
     <div class="billing-reality-main">
-      <p class="eyebrow">Billing reality check</p>
+      <p class="eyebrow">Billing caveat</p>
       <h4>{{ cost.billingReality.confidenceLabel }}</h4>
       <p>{{ cost.billingReality.headline }}</p>
     </div>
@@ -80,7 +80,7 @@
   <section class="cost-drivers">
     <div>
       <h4>Cost drivers</h4>
-      <p>Fast read on what made this run expensive.</p>
+      <p>Signals behind the estimate.</p>
     </div>
     <div class="driver-grid">
       @for (driver of cost.costDrivers; track driver.title) {
@@ -95,7 +95,7 @@
 
   <div class="section-label">
     <h4>Token categories</h4>
-    <p>Which priced token buckets make up the estimate.</p>
+    <p>Priced buckets.</p>
   </div>
   <div class="cost-categories">
     @for (category of cost.categoryRows; track category.label) {
@@ -120,7 +120,7 @@
 
   <div class="section-label">
     <h4>Model price rows</h4>
-    <p>The exact GitHub pricing rows used for this run estimate.</p>
+    <p>GitHub rows used.</p>
   </div>
   <div class="cost-table" role="table" aria-label="Model price rows">
     <div class="cost-row cost-row-heading" role="row">
