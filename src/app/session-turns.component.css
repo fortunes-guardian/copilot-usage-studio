@@ -1,0 +1,240 @@
+:host {
+  display: block;
+}
+
+.run-panel {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  background: var(--surface);
+}
+
+.model-call-ledger {
+  display: grid;
+  gap: 14px;
+}
+
+.model-call-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--muted-2);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.model-call-header h3 {
+  margin: 4px 0 0;
+  color: var(--text-strong);
+}
+
+.model-call-header p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.segmented-control {
+  display: inline-flex;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.segmented-control button {
+  min-height: 34px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  padding: 7px 10px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.segmented-control button:last-child {
+  border-right: 0;
+}
+
+.segmented-control button.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.turn-insight-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.turn-insight-grid article {
+  display: grid;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--surface-soft);
+}
+
+.turn-insight-grid span {
+  color: var(--muted-2);
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.turn-insight-grid strong {
+  color: var(--text-strong);
+  font-size: 19px;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.turn-insight-grid p {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.model-call-table {
+  display: grid;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: auto hidden;
+  background: var(--surface);
+}
+
+.model-call-row {
+  display: grid;
+  grid-template-columns:
+    minmax(58px, 0.35fr)
+    minmax(92px, 0.55fr)
+    minmax(150px, 0.95fr)
+    minmax(145px, 0.85fr)
+    minmax(145px, 0.85fr)
+    minmax(64px, 0.35fr)
+    minmax(260px, 1.45fr);
+  gap: 12px;
+  align-items: start;
+  min-width: 1000px;
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.model-call-row:last-child {
+  border-bottom: 0;
+}
+
+.model-call-heading {
+  background: var(--surface-soft);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.model-call-row strong,
+.model-call-row span {
+  display: grid;
+  gap: 3px;
+}
+
+.model-call-row strong {
+  color: var(--text-strong);
+}
+
+.model-call-row span,
+.model-call-row em {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: normal;
+}
+
+.model-call-row span:last-child em {
+  overflow-wrap: anywhere;
+}
+
+.trace-link {
+  width: fit-content;
+  border: 1px solid rgba(31, 209, 165, 0.35);
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: var(--teal-soft);
+  color: #bbfff0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.trace-link:hover {
+  border-color: var(--accent-2);
+  background: rgba(31, 209, 165, 0.18);
+}
+
+.warning-text {
+  color: #ffe0a0 !important;
+  font-weight: 800;
+}
+
+.empty {
+  margin: 0;
+  color: var(--muted);
+}
+
+@media (max-width: 1100px) {
+  .model-call-header {
+    display: grid;
+  }
+
+  .model-call-table {
+    overflow: visible;
+    border: 0;
+    gap: 10px;
+    background: transparent;
+  }
+
+  .model-call-heading {
+    display: none;
+  }
+
+  .model-call-row {
+    grid-template-columns: 1fr;
+    min-width: 0;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface-soft);
+  }
+
+  .model-call-row > * {
+    display: grid;
+    grid-template-columns: minmax(92px, 0.28fr) minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .model-call-row > *::before {
+    content: attr(data-label);
+    color: var(--muted-2);
+    font-size: 11px;
+    font-weight: 850;
+    text-transform: uppercase;
+  }
+}
+
+@media (max-width: 560px) {
+  .model-call-row > * {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+}

@@ -1,0 +1,172 @@
+<section class="cost-explainer">
+  <div class="cost-explainer-header">
+    <div>
+      <p class="eyebrow">Cost debugger</p>
+      <h3>Why this run cost €{{ session.cost.eur | number: '1.2-4' }}</h3>
+    </div>
+    <span class="source-pill" [title]="cost.sourceDescription">
+      {{ cost.sourceStrength }}
+      <app-help-popover [text]="cost.sourceDescription" label="Explain source strength"></app-help-popover>
+    </span>
+  </div>
+
+  <section class="diagnostic-hero" aria-label="Cost answer">
+    <article class="primary-diagnosis">
+      <span>Primary driver</span>
+      <strong>{{ cost.costAnswer.category }}</strong>
+      <p>{{ cost.costAnswer.categoryDetail }}</p>
+    </article>
+    <div class="diagnostic-facts">
+      <div>
+        <span>Driver share</span>
+        <strong>{{ cost.costAnswer.categoryShare | number: '1.0-0' }}%</strong>
+        <em>{{ cost.costAnswer.inputShare | number: '1.0-0' }}% input / {{ cost.costAnswer.outputShare | number: '1.0-0' }}% output</em>
+      </div>
+      <div>
+        <span>Top model</span>
+        <strong>{{ cost.costAnswer.topModelLabel }}</strong>
+        <em>{{ cost.costAnswer.topModelShare | number: '1.0-0' }}% of estimate</em>
+      </div>
+      <div>
+        <span>Top call</span>
+        <strong>{{ cost.costAnswer.topCallLabel }}</strong>
+        <em>{{ cost.costAnswer.topCallShare | number: '1.0-0' }}% · {{ cost.costAnswer.topCallDetail }}</em>
+      </div>
+      <div>
+        <span>Cost / 1k tokens</span>
+        <strong>€{{ cost.costAnswer.costPer1k | number: '1.4-4' }}</strong>
+        <em>Using imported token totals</em>
+      </div>
+    </div>
+  </section>
+
+  <section class="billing-reality" [ngClass]="cost.billingReality.tone" aria-label="Billing reality check">
+    <div class="billing-reality-main">
+      <p class="eyebrow">Billing reality check</p>
+      <h4>{{ cost.billingReality.confidenceLabel }}</h4>
+      <p>{{ cost.billingReality.headline }}</p>
+    </div>
+    <div class="billing-reality-facts diagnostic-facts">
+      <div>
+        <span>Local estimate</span>
+        <strong>€{{ session.cost.eur | number: '1.2-4' }}</strong>
+        <em>input/output from local logs</em>
+      </div>
+      <div>
+        <span>Cache visibility</span>
+        <strong>{{ cost.billingReality.cacheVisibility }}</strong>
+        <em>{{ cost.hasCacheData ? 'priced from imported cache fields' : 'not exposed by this VS Code source' }}</em>
+      </div>
+      <div>
+        <span>Invoice risk</span>
+        <strong>{{ cost.billingReality.confidenceLabel }}</strong>
+        <em>{{ cost.billingReality.detail }}</em>
+      </div>
+    </div>
+  </section>
+
+  <div class="source-callout compact-source-callout">
+    <div>
+      <span>Estimate scope</span>
+      <strong>
+        {{ cost.cacheStatus }}
+        <app-help-popover [text]="cost.cacheDescription" label="Explain cache visibility"></app-help-popover>
+      </strong>
+      <p>{{ cost.cacheDescription }}</p>
+    </div>
+    <a [href]="pricingSourceUrl" target="_blank" rel="noreferrer">GitHub price source</a>
+  </div>
+
+  <section class="cost-drivers">
+    <div>
+      <h4>Cost drivers</h4>
+      <p>Fast read on what made this run expensive.</p>
+    </div>
+    <div class="driver-grid">
+      @for (driver of cost.costDrivers; track driver.title) {
+        <article [ngClass]="driver.tone">
+          <span>{{ driver.title }}</span>
+          <strong>{{ driver.value }}</strong>
+          <p>{{ driver.detail }}</p>
+        </article>
+      }
+    </div>
+  </section>
+
+  <div class="section-label">
+    <h4>Token categories</h4>
+    <p>Which priced token buckets make up the estimate.</p>
+  </div>
+  <div class="cost-categories">
+    @for (category of cost.categoryRows; track category.label) {
+      <article
+        [class.unavailable]="category.tokens === 0 && isCacheCategory(category)"
+        [class.hidden-cache]="!cost.hasCacheData && isCacheCategory(category)"
+      >
+        <span>
+          {{ category.label }}
+          <app-help-popover [text]="category.description" [label]="'Explain ' + category.label"></app-help-popover>
+        </span>
+        @if (!cost.hasCacheData && isCacheCategory(category)) {
+          <strong>Not in local logs</strong>
+          <em>not priced for this run</em>
+        } @else {
+          <strong>{{ category.tokens | number }} tokens</strong>
+          <em>€{{ category.eur | number: '1.6-6' }}</em>
+        }
+      </article>
+    }
+  </div>
+
+  <div class="section-label">
+    <h4>Model price rows</h4>
+    <p>The exact GitHub pricing rows used for this run estimate.</p>
+  </div>
+  <div class="cost-table" role="table" aria-label="Model price rows">
+    <div class="cost-row cost-row-heading" role="row">
+      <span>Model</span>
+      <span>Price row <app-help-popover [text]="help.priceRow" label="Explain price row"></app-help-popover></span>
+      <span>Tokens <app-help-popover [text]="help.inputTokens + ' ' + help.outputTokens" label="Explain token columns"></app-help-popover></span>
+      <span>Rates / 1M <app-help-popover [text]="help.appEstimate" label="Explain rates"></app-help-popover></span>
+      <span>Cost</span>
+      <span>Share</span>
+    </div>
+    @for (model of cost.modelRows; track model.model) {
+      <div class="cost-row" role="row">
+        <strong role="cell" data-label="Model">
+          {{ model.model }}
+          <em>{{ model.turns | number }} model turns · {{ model.provider }}</em>
+        </strong>
+        <span role="cell" data-label="Price row">
+          {{ model.pricingModel }}
+          @if (model.usesFallbackPrice) {
+            <em class="warning-text">fallback</em>
+          }
+        </span>
+        <span role="cell" data-label="Tokens">
+          {{ model.tokens.input | number }} in /
+          {{ model.tokens.output | number }} out
+          @if (model.tokens.cachedInput || model.tokens.cacheWrite) {
+            <em>{{ model.tokens.cachedInput | number }} cached / {{ model.tokens.cacheWrite | number }} write</em>
+          }
+        </span>
+        <span role="cell" data-label="Rates / 1M">
+          ${{ model.inputRate | number: '1.0-3' }} in /
+          ${{ model.outputRate | number: '1.0-3' }} out
+          @if (cost.hasCacheData && model.cacheWriteRate) {
+            <em>${{ model.cachedInputRate | number: '1.0-3' }} cached / ${{ model.cacheWriteRate | number: '1.0-3' }} write</em>
+          } @else if (cost.hasCacheData) {
+            <em>${{ model.cachedInputRate | number: '1.0-3' }} cached</em>
+          } @else {
+            <em class="muted">cache rates hidden: no local cache tokens</em>
+          }
+        </span>
+        <span role="cell" data-label="Cost">
+          €{{ model.totalEur | number: '1.6-6' }}
+          <em>{{ model.inputEur | number: '1.6-6' }} in / {{ model.outputEur | number: '1.6-6' }} out</em>
+        </span>
+        <span role="cell" data-label="Share">{{ model.share | number: '1.0-0' }}%</span>
+      </div>
+    }
+  </div>
+</section>

@@ -8,7 +8,10 @@ import { LedgerDataService } from './ledger-data.service';
 import { LedgerStatePanelComponent } from './ledger-state-panel.component';
 import { LedgerSession, ModelBreakdown, TokenBreakdown, TraceEvent } from './ledger.model';
 import { PricingPageComponent } from './pricing-page.component';
+import { SessionCostComponent } from './session-cost.component';
 import { SessionOverviewComponent } from './session-overview.component';
+import { SessionTraceComponent } from './session-trace.component';
+import { SessionTurnsComponent } from './session-turns.component';
 import {
   FALLBACK_PRICING_MODEL,
   MODEL_PRICES_USD_PER_MILLION,
@@ -47,7 +50,10 @@ interface SessionTriage {
     ComparePageComponent,
     LedgerStatePanelComponent,
     PricingPageComponent,
+    SessionCostComponent,
     SessionOverviewComponent,
+    SessionTraceComponent,
+    SessionTurnsComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',

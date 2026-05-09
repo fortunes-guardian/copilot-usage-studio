@@ -37,7 +37,7 @@ Principles:
 - Shows a visible loading/error state if the generated ledger data cannot be loaded.
 - Ledger loading now lives in `LedgerDataService` instead of the root component.
 - The Prices page, Compare page, Analytics page, and ledger loading/error panel are standalone Angular components.
-- The selected-run Overview subview is now a standalone Angular component.
+- The selected-run Overview, Cost, Turns, and Trace subviews are now standalone Angular components.
 - Shared cost helpers now hold reusable model-cost, token-total, context-growth, percent-delta, and pricing-fallback utility logic.
 - Shows a selected-run Cost debugger with:
   - source/confidence explanation
@@ -98,7 +98,7 @@ Principles:
 - Aggregated analytics are useful but still early. Outlier detection is a simple statistical signal with driver hints; it now separates a few obvious cases such as long agent runs and suspicious low-activity spikes, but it should become more nuanced as more real sessions are imported.
 - Advanced evidence is imported but mostly hidden from the primary UI. Reasoning text presence and request-cap comparison were too technical to be useful as top-level cards.
 - No app-owned database yet. Scans overwrite `public/data/sessions.json`.
-- `app.ts`, `app.html`, and `app.css` are still large, though the component extraction is underway. More selected-run sections should move into focused components/services.
+- `app.ts`, `app.html`, and `app.css` are smaller after the selected-run component split, but explanation logic still needs to move into focused helpers/services.
 
 ## Review Notes
 
@@ -122,18 +122,34 @@ Code improvements to schedule:
 
 ## Latest Implemented Step
 
-Continued the selected-run split by extracting Overview.
+Finished the selected-run subview extraction pass.
 
 What changed:
 
-- Added `SessionOverviewComponent` for the selected-run `Overview` subview.
-- Moved Summary, Session Details, and Run Triage markup and scoped styles out of the root template/root stylesheet.
-- Kept the root shell responsible for session selection and source/triage helper strings.
-- Browser-checked the Sessions Overview page after reload.
+- Added `SessionTurnsComponent` for the selected-run `Turns` subview.
+- Added `SessionTraceComponent` for the selected-run `Trace` subview.
+- Added `SessionCostComponent` for the selected-run `Cost` subview.
+- Added `HelpPopoverComponent` and started using it in the Cost debugger instead of relying only on native `title` tooltips.
+- Moved Cost, Turns, and Trace markup and scoped styles out of the root template/root stylesheet.
+- Improved narrow layout for Cost and Turns tables so rows become labeled cards instead of unlabeled stacked values.
+- Kept cost and trace explanation calculations in the root component for now, so the refactor changes structure without changing estimate behavior.
 
-Why: the selected-run debugger is the core surface. Pulling out a low-risk subview reduces root-component noise before extracting the more complex Cost, Turns, and Trace panels.
+Why: the selected-run debugger is now a set of focused panels instead of one large root template. That makes the UI easier to polish and lowers the risk of changing pricing/debugging behavior while improving layout.
 
 ## Previous Implemented Step
+
+Continued the selected-run split by extracting Cost.
+
+What changed:
+
+- Added `SessionCostComponent` for the selected-run `Cost` subview.
+- Moved the Cost debugger markup and scoped styles out of the root template/root stylesheet.
+- Kept cost explanation calculations in the root component for now, so the refactor changes structure without changing estimate behavior.
+- Left shared table styles in the root for the `Turns` ledger until that subview is extracted.
+
+Why: Cost is the core "why did this run cost this?" surface. Extracting it as a focused presentational component reduces root-template noise while keeping the pricing math stable.
+
+## Older Implemented Step
 
 Continued the monolith split by extracting Analytics.
 
@@ -232,7 +248,8 @@ Keep tightening reliability and the UI/code structure before attempting evidence
 
 Build:
 
-- Continue splitting the large root component into smaller services/components, starting with the selected-run Cost, Turns, and Trace subviews.
+- Move selected-run explanation logic out of the root component into focused services/helpers, starting with Cost and Trace calculations.
+- Continue replacing native title tooltips with `HelpPopoverComponent` where the explanation is important enough to be discoverable.
 - Add fixture-based scanner/verifier tests for mixed models, unknown model fallback, and missing/malformed generated data.
 - Centralize model normalization and pricing fallback rules so model matching cannot drift between scanner and UI.
 - Treat Chat Debug transcripts as optional enrichment only. If imported later, show transcript availability and source labels clearly, and never require transcripts for cost totals.

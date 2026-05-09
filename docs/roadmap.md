@@ -137,6 +137,10 @@ Done:
 - Added selected-run subviews for Overview, Cost, Turns, and Trace.
 - Made Cost and Turns lead with diagnostic answer panels before the detailed tables.
 - Extracted the selected-run Overview subview into its own Angular component.
+- Extracted the selected-run Cost subview into its own Angular component.
+- Extracted the selected-run Turns and Trace subviews into standalone Angular components.
+- Added the first proper help popover component and started using it in the Cost debugger.
+- Improved Cost and Turns responsive tables so narrow screens show labeled card rows instead of relying only on horizontal scroll.
 - Applied the first dark diagnostic design-token layer.
 - Changed narrow layout behavior so the session rail moves below the content instead of replacing it.
 - Made unknown-model pricing fallbacks visible across selected run, Cost, Turns, Compare, Analytics, and Prices.
@@ -151,10 +155,10 @@ Done:
 
 Build:
 
-- Better responsive tables.
-- Proper help popovers.
+- Finish responsive polish for remaining dense tables in Compare, Analytics, and Prices.
+- Replace remaining native title tooltips with the shared help popover where the text is important.
 - More debugger-like polish.
-- Continue component extraction for selected-run Cost, Turns, and Trace subviews.
+- Move selected-run Cost, Turns, and Trace explanation logic out of the root component into focused helpers/services.
 
 Why: the app has complex information. Better style should reduce cognitive load, not hide details.
 

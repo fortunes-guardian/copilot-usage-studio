@@ -1,0 +1,126 @@
+<section class="trace-tools">
+  <div class="trace-header">
+    <div>
+      <p class="eyebrow">Debug evidence</p>
+      <h3>Trace inspector</h3>
+      <p>Click an event to inspect the normalized fields imported from the VS Code debug log.</p>
+    </div>
+    <div class="trace-actions">
+      <button type="button" [class.active]="traceView === 'logs'" (click)="traceViewChange.emit('logs')">
+        View Logs
+      </button>
+      <button type="button" [class.active]="traceView === 'flow'" (click)="traceViewChange.emit('flow')">
+        Agent Flow Chart
+      </button>
+    </div>
+  </div>
+
+  @if (traceView === 'logs') {
+    <div class="trace-filter-row segmented-control" aria-label="Trace event filter">
+      @for (filter of traceFilterOptions; track filter.value) {
+        <button type="button" [class.active]="traceFilter === filter.value" (click)="traceFilterChange.emit(filter.value)">
+          {{ filter.label }}
+        </button>
+      }
+    </div>
+    <div class="trace-workbench">
+      <div class="event-log">
+        @for (event of filteredTraceEvents; track event.index) {
+          <button
+            type="button"
+            class="event-row"
+            [class.active]="selectedTraceEvent?.index === event.index"
+            [class.error]="event.status !== 'ok' && event.status !== 'unknown'"
+            [class.user-message]="event.type === 'user_message'"
+            (click)="selectTraceEvent.emit(event)"
+          >
+            <span>{{ event.timestamp | date: 'HH:mm:ss' }} · #{{ event.index }}</span>
+            <strong>{{ event.name }}</strong>
+            <p>{{ event.detail }}</p>
+            @if (event.inputTokens || event.outputTokens) {
+              <em>{{ event.inputTokens | number }} in / {{ event.outputTokens | number }} out</em>
+            } @else {
+              <em>{{ event.type }}</em>
+            }
+          </button>
+        } @empty {
+          <p class="empty">No trace events match this filter.</p>
+        }
+      </div>
+
+      <aside class="trace-inspector">
+        @if (selectedTraceEvent; as event) {
+          <div class="inspector-title">
+            <span>#{{ event.index }}</span>
+            <div>
+              <h4>{{ event.name }}</h4>
+              <p>{{ event.type }}</p>
+            </div>
+          </div>
+
+          @if (selectedTraceEventDetails; as details) {
+            @if (details.hasCost) {
+              <div class="inspector-cost">
+                <span>Estimated event cost</span>
+                <strong>€{{ details.estimatedEur | number: '1.6-6' }}</strong>
+                <p>
+                  {{ details.totalTokens | number }} tokens ·
+                  {{ event.inputTokens | number }} in /
+                  {{ event.outputTokens | number }} out
+                </p>
+                @if (details.usesFallbackPrice) {
+                  <p class="warning-text">Fallback pricing row: {{ details.pricingModel }}</p>
+                }
+              </div>
+            }
+
+            <dl class="inspector-fields">
+              @for (field of details.normalizedFields; track field.label) {
+                <div>
+                  <dt>{{ field.label }}</dt>
+                  <dd>{{ field.value }}</dd>
+                </div>
+              }
+            </dl>
+
+            <section class="inspector-detail">
+              <h5>Imported detail</h5>
+              <p>{{ details.detail }}</p>
+            </section>
+
+            @if (details.attributeFields.length) {
+              <section class="inspector-detail">
+                <h5>Payload summary</h5>
+                <dl class="inspector-fields compact">
+                  @for (field of details.attributeFields; track field.label) {
+                    <div>
+                      <dt>{{ field.label }}</dt>
+                      <dd>{{ field.value }}</dd>
+                    </div>
+                  }
+                </dl>
+              </section>
+            }
+          }
+        } @else {
+          <p class="empty">Select a trace event to inspect it.</p>
+        }
+      </aside>
+    </div>
+  } @else {
+    <div class="flow-chart">
+      @for (event of flowEvents; track event.index) {
+        <article class="flow-node" [ngClass]="event.type">
+          <span>{{ event.flowIndex }}</span>
+          <div>
+            <strong>{{ event.type }}</strong>
+            @if (event.totalTokens) {
+              <em>{{ event.totalTokens | number }} tokens · about €{{ event.estimatedEur | number: '1.6-6' }}</em>
+            }
+          </div>
+          <p>{{ event.detail }}</p>
+        </article>
+      }
+    </div>
+  }
+</section>

@@ -1,0 +1,76 @@
+<section class="model-call-ledger run-panel">
+  <div class="model-call-header">
+    <div>
+      <p class="eyebrow">Turn ledger</p>
+      <h3>Per-turn cost breakdown</h3>
+      <p>Every token-bearing model call imported from the VS Code debug log.</p>
+    </div>
+    <div class="segmented-control" aria-label="Model call sort">
+      <button type="button" [class.active]="sort === 'timeline'" (click)="sortChange.emit('timeline')">
+        Timeline
+      </button>
+      <button type="button" [class.active]="sort === 'largest'" (click)="sortChange.emit('largest')">
+        Largest first
+      </button>
+    </div>
+  </div>
+
+  <div class="turn-insight-grid" aria-label="Turn ledger highlights">
+    @for (insight of cost.turnInsights; track insight.label) {
+      <article>
+        <span>{{ insight.label }}</span>
+        <strong>{{ insight.value }}</strong>
+        <p>{{ insight.detail }}</p>
+      </article>
+    }
+  </div>
+
+  @if (cost.modelCallRows.length) {
+    <div class="model-call-table" role="table" aria-label="Per-turn model calls">
+      <div class="model-call-row model-call-heading" role="row">
+        <span role="columnheader">Call</span>
+        <span role="columnheader">When</span>
+        <span role="columnheader">Model</span>
+        <span role="columnheader">Tokens</span>
+        <span role="columnheader">Cost</span>
+        <span role="columnheader">Share</span>
+        <span role="columnheader">Nearby context</span>
+      </div>
+      @for (event of cost.modelCallRows; track event.index) {
+        <div class="model-call-row" role="row">
+          <strong role="cell" data-label="Call">
+            <button type="button" class="trace-link" (click)="openTraceEvent.emit(event.index)">
+              #{{ event.callNumber }}
+            </button>
+          </strong>
+          <span role="cell" data-label="When">
+            {{ event.timestamp | date: 'HH:mm:ss' }}
+            <em>raw index #{{ event.index }}</em>
+          </span>
+          <span role="cell" data-label="Model">
+            {{ event.model || event.name }}
+            <em>{{ event.pricingModel }}</em>
+            @if (event.usesFallbackPrice) {
+              <em class="warning-text">fallback pricing</em>
+            }
+          </span>
+          <span role="cell" data-label="Tokens">
+            {{ event.totalTokens | number }}
+            <em>{{ event.inputTokens | number }} in / {{ event.outputTokens | number }} out</em>
+          </span>
+          <span role="cell" data-label="Cost">
+            €{{ event.estimatedEur | number: '1.6-6' }}
+            <em>{{ event.inputEur | number: '1.6-6' }} in / {{ event.outputEur | number: '1.6-6' }} out</em>
+          </span>
+          <span role="cell" data-label="Share">{{ event.share | number: '1.0-0' }}%</span>
+          <span role="cell" data-label="Nearby context">
+            {{ event.contextLabel }}
+            <em>{{ event.contextDetail }}</em>
+          </span>
+        </div>
+      }
+    </div>
+  } @else {
+    <p class="empty">This imported session has no token-bearing model call rows.</p>
+  }
+</section>
