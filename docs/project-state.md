@@ -33,6 +33,7 @@ Principles:
 - Filters sessions by size, source quality, and cost-debugging signal.
 - Shows a GitHub prices page with the pricing rows used by estimates.
 - Calculates cost from imported token counts and GitHub model prices.
+- Converts local USD estimates into GitHub AI credits and compares them with toggleable Copilot Business/Enterprise included allowances.
 - Uses one shared GitHub pricing JSON file for the scanner, verifier, and UI.
 - Shows a visible loading/error state if the generated ledger data cannot be loaded.
 - Ledger loading now lives in `LedgerDataService` instead of the root component.
@@ -86,6 +87,7 @@ Principles:
 - Cache billing is not visible in the local debug logs observed so far. Do not present zero cache fields as proof of zero provider-side cache billing.
 - Cached input is a separate input/context billing bucket, not a discount against output. The UI should call this out because it is easy to misunderstand when reading large output/cached-token totals.
 - The UI should explain local estimates clearly instead of pretending they are GitHub invoice numbers.
+- AI-credit allowance percentages are context, not reconciliation. Business and Enterprise credits are pooled across the billing entity, while the selected-run meter shows a per-seat allowance comparison unless the app later adds seat counts.
 - The generated ledger should carry structured cost facts. The UI should not parse model/cost data out of display strings.
 - Run size and cost-signal labels are derived UI triage. They should help scanning, but they should not silently become billing facts.
 - Multi-session analytics are deliberately separate from the selected-run debugger. The analytics view answers "what is normal across included sessions?" while the Sessions view answers "why did this one run cost what it cost?"
@@ -126,6 +128,19 @@ Code improvements to schedule:
 - Add UI tests for the selected-run tabs, source/size filters, pricing fallback display, Analytics empty states, and Compare deltas.
 
 ## Latest Implemented Step
+
+Added Copilot Business/Enterprise AI-credit allowance context.
+
+What changed:
+
+- Added shared allowance constants for Business, Enterprise, and GitHub's documented June 1-September 1, 2026 promotional amounts.
+- Added a compact selected-run credit meter that converts the local USD estimate into AI credits and shows percent of the selected allowance.
+- Added a Prices-page allowance panel with plan toggles, the fixed credit conversion, source link, and imported-session credit usage.
+- Added [pricing-reality.md](pricing-reality.md) to explain how real-world billing, cache visibility, AI credits, and local estimates fit together.
+
+Why: the app should help a developer understand whether a run is a small or large draw against the included Copilot allowance without pretending that local logs are GitHub's authoritative bill.
+
+## Previous Implemented Step
 
 Polished Trace into a stronger debugger workspace.
 

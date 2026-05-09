@@ -35,6 +35,67 @@
     </p>
   </div>
 
+  <section class="allowance-panel" aria-label="GitHub Copilot AI credit allowance">
+    <div class="allowance-copy">
+      <p class="eyebrow">License allowance</p>
+      <h3>AI credits context</h3>
+      <p>
+        GitHub converts model usage into AI credits at
+        <strong>1 credit = ${{ creditUsd | number: '1.2-2' }} USD</strong>. Business and Enterprise credits are included
+        per assigned license, then pooled at the billing entity level.
+      </p>
+      <a [href]="allowanceSourceUrl" target="_blank" rel="noreferrer">Open allowance source</a>
+    </div>
+
+    <div class="allowance-control">
+      <label>
+        <span>
+          Selected plan
+          <app-help-popover [text]="help.allowance" label="Explain AI credit allowance"></app-help-popover>
+        </span>
+        <select [ngModel]="selectedAllowance().id" (ngModelChange)="setSelectedAllowancePlan($event)">
+          @for (plan of allowancePlans; track plan.id) {
+            <option [value]="plan.id">{{ plan.label }}</option>
+          }
+        </select>
+      </label>
+
+      <div class="allowance-meter">
+        <div>
+          <span>Imported sessions</span>
+          <strong>{{ selectedAllowanceUsage().credits | number: '1.0-1' }} credits</strong>
+        </div>
+        <div>
+          <span>Monthly allowance</span>
+          <strong>{{ selectedAllowance().creditsPerUserMonthly | number }} credits/user</strong>
+        </div>
+        <div>
+          <span>Allowance used</span>
+          <strong>{{ selectedAllowanceUsage().share | number: '1.0-1' }}%</strong>
+        </div>
+      </div>
+      <div class="allowance-bar" aria-hidden="true">
+        <span [style.width.%]="selectedAllowanceUsage().share > 100 ? 100 : selectedAllowanceUsage().share"></span>
+      </div>
+      <p>{{ selectedAllowance().period }}. {{ selectedAllowance().note }}</p>
+    </div>
+  </section>
+
+  <section class="allowance-grid" aria-label="Available Copilot allowance plans">
+    @for (plan of allowancePlans; track plan.id) {
+      <button
+        type="button"
+        class="allowance-card"
+        [class.active]="selectedAllowance().id === plan.id"
+        (click)="setSelectedAllowancePlan(plan.id)"
+      >
+        <span>{{ plan.period }}</span>
+        <strong>{{ plan.creditsPerUserMonthly | number }}</strong>
+        <em>{{ plan.label }} credits/user/month</em>
+      </button>
+    }
+  </section>
+
   <div class="pricing-table">
     <div class="pricing-row pricing-row-heading">
       <span>Model</span>

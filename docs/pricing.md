@@ -48,6 +48,34 @@ cost_eur = cost_usd * usdToEur
 
 `usdToEur` is written into the generated ledger so the UI can show which conversion was used. The default is `0.93`, overridable during scan with `USD_TO_EUR`.
 
+GitHub AI credits are calculated from the USD estimate:
+
+```text
+ai_credits = cost_usd / 0.01
+```
+
+GitHub documents `1 AI credit = $0.01 USD`.
+
+## Included AI Credit Allowances
+
+The app also shows license allowance context for Copilot Business and Copilot Enterprise.
+
+Standard included amounts:
+
+| Plan | AI credits per user per month |
+| --- | ---: |
+| Copilot Business | 1,900 |
+| Copilot Enterprise | 3,900 |
+
+Temporary promotional amounts documented by GitHub for existing customers from June 1 to September 1, 2026:
+
+| Plan | AI credits per user per month |
+| --- | ---: |
+| Copilot Business | 3,000 |
+| Copilot Enterprise | 7,000 |
+
+The UI treats these as allowance context, not as billing reconciliation. GitHub pools Business and Enterprise included credits at the billing entity level, so a run's percent-of-allowance is a per-seat mental model unless the app later adds organization seat counts.
+
 ## Why The GitHub Prices Page Exists
 
 The user should be able to inspect the cost inputs directly. If a session looks expensive, the UI should make it clear whether that came from:
@@ -59,6 +87,8 @@ The user should be able to inspect the cost inputs directly. If a session looks 
 - a model fallback because the raw model id was not in the known GitHub table
 
 The `GitHub prices` view therefore shows every rate row the app knows about, where it came from, and whether any imported session currently uses it.
+
+The same view also shows the selected Business/Enterprise AI-credit allowance and how the current imported sessions compare with it.
 
 ## Current Limitations
 

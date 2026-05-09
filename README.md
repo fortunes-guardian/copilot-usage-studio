@@ -15,6 +15,7 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
 - [docs/roadmap.md](docs/roadmap.md): planned build order.
 - [docs/data-ingestion.md](docs/data-ingestion.md): where the data comes from and what it means.
 - [docs/pricing.md](docs/pricing.md): GitHub price source and calculation rules.
+- [docs/pricing-reality.md](docs/pricing-reality.md): what the estimate means in real billing and AI-credit terms.
 - [docs/local-deployment.md](docs/local-deployment.md): local run, build, and future packaging options.
 
 ## What Works Now
@@ -35,7 +36,7 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
   - `Turns` for per-turn model-call insights and the detailed ledger
   - `Trace` for filterable raw logs, clickable event inspection, and agent flow
 - Shows a Billing Reality Check in the Cost view so cache-token visibility and invoice risk are explicit instead of hidden in pricing footnotes.
-- Shows the GitHub pricing table used by the app.
+- Shows the GitHub pricing table used by the app and a toggleable Copilot Business/Enterprise AI-credit allowance view.
 - Shows trace logs, a clickable event inspector, and an agent flow chart.
 - Compares two runs with cost/token deltas, driver explanations, context-growth movement, and model/pricing-row changes.
 - Shows a multi-session Analytics view for filtered sessions:
@@ -125,6 +126,8 @@ github-copilot-usage-pricing-2026-06-01
 Rates are USD per 1 million tokens. The scanner converts USD estimates to EUR using `USD_TO_EUR`, defaulting to `0.93`.
 
 The versioned pricing data lives in `data/github-copilot-pricing.json`. The scanner, verifier, and UI all read from that same file.
+
+The UI also converts local USD estimates into GitHub AI credits using GitHub's fixed conversion of `1 AI credit = $0.01 USD`. The Prices page and selected-run header can compare estimates against Copilot Business and Enterprise included monthly AI-credit allowances.
 
 Important: this app shows a local estimate, not a GitHub invoice. Local VS Code logs currently expose input/output tokens, but not provider cache read/write billing fields. Output-heavy runs are still useful to debug from local logs; input/context-heavy runs may differ more from billing if provider-side cached input is significant.
 

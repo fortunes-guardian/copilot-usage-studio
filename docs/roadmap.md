@@ -12,6 +12,7 @@ Done:
 - Enrich session labels from `state.vscdb`.
 - Show GitHub price rows used by the estimator.
 - Store structured model, pricing row, token total, and estimated cost on token-bearing trace events.
+- Convert estimates into GitHub AI credits and show Business/Enterprise allowance context.
 - Show cost drivers: input burn, largest model call, context growth, model mix, and tool activity.
 - Add source-confidence help for ingest, source, confidence, cache, and cost terms.
 - Show logs and agent flow chart with token/cost detail.
@@ -150,6 +151,7 @@ Done:
 - Pruned redundant Sessions/Overview facts so repeated model, token, source, run-size, provenance, and fallback-pricing details have clearer primary locations.
 - Changed narrow layout behavior so the session rail moves below the content instead of replacing it.
 - Made unknown-model pricing fallbacks visible across selected run, Cost, Turns, Compare, Analytics, and Prices.
+- Added a selected-run AI-credit meter and Prices-page allowance selector for Copilot Business/Enterprise included credits.
 - Added a visible "open run is outside current filters" state when sidebar filters hide the selected session.
 - Restyled Overview Run Triage labels as compact chips.
 - Fixed the top navigation grid for the four top-level views.

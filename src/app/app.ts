@@ -14,6 +14,9 @@ import { SessionOverviewComponent } from './session-overview.component';
 import { SessionTraceComponent } from './session-trace.component';
 import { SessionTurnsComponent } from './session-turns.component';
 import {
+  COPILOT_AI_CREDIT_USD,
+  COPILOT_ALLOWANCE_PLANS,
+  CopilotAllowancePlan,
   FALLBACK_PRICING_MODEL,
   MODEL_PRICES_USD_PER_MILLION,
   PRICING_SOURCE_URL,
@@ -80,6 +83,8 @@ export class App {
   protected readonly modelCallSort = signal<ModelCallSort>('timeline');
   protected readonly activeView = signal<ActiveView>('sessions');
   protected readonly selectedRunView = signal<SelectedRunView>('overview');
+  protected readonly allowancePlan = signal<CopilotAllowancePlan>('business-standard');
+  protected readonly allowancePlans = COPILOT_ALLOWANCE_PLANS;
   protected readonly pricingSourceUrl = PRICING_SOURCE_URL;
   protected readonly help = {
     appEstimate:
@@ -273,6 +278,22 @@ export class App {
     const triage = this.selectedTriage();
     return triage ? this.sessionSizeHelp(triage) : '';
   });
+  protected readonly selectedAllowance = computed(() =>
+    COPILOT_ALLOWANCE_PLANS.find((plan) => plan.id === this.allowancePlan()) ?? COPILOT_ALLOWANCE_PLANS[0],
+  );
+  protected readonly selectedAllowanceUsage = computed(() => {
+    const session = this.selectedSession();
+    const allowance = this.selectedAllowance();
+    const credits = session ? session.cost.usd / COPILOT_AI_CREDIT_USD : 0;
+    const share = allowance.creditsPerUserMonthly > 0 ? (credits / allowance.creditsPerUserMonthly) * 100 : 0;
+
+    return {
+      credits,
+      share,
+      remaining: Math.max(allowance.creditsPerUserMonthly - credits, 0),
+      over: Math.max(credits - allowance.creditsPerUserMonthly, 0),
+    };
+  });
 
   protected readonly summary = computed(() => {
     const sessions = this.sessions();
@@ -342,6 +363,12 @@ export class App {
 
   protected setSourceFilter(value: SessionSourceFilter): void {
     this.sourceFilter.set(value);
+  }
+
+  protected setAllowancePlan(value: string): void {
+    if (COPILOT_ALLOWANCE_PLANS.some((plan) => plan.id === value)) {
+      this.allowancePlan.set(value as CopilotAllowancePlan);
+    }
   }
 
   protected setTraceFilter(value: TraceFilter): void {
