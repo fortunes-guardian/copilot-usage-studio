@@ -137,6 +137,7 @@ Done:
 - Added selected-run subviews for Overview, Cost, Turns, and Trace.
 - Made Cost and Turns lead with diagnostic answer panels before the detailed tables.
 - Reworked the selected-run navigation into an investigation map: Run facts, then Cost diagnose, Turns locate, and Trace verify.
+- Polished Trace rows and inspector grouping so Trace reads like the evidence step in the debugger flow.
 - Extracted the selected-run Overview subview into its own Angular component.
 - Extracted the selected-run Cost subview into its own Angular component.
 - Extracted the selected-run Turns and Trace subviews into standalone Angular components.
@@ -231,6 +232,7 @@ Still to improve:
 
 - Tune inspector layout as more real logs are imported.
 - Add more useful bounded summaries for common VS Code debug-log event shapes when the source payload exposes them.
+- Add UI tests around Turns-to-Trace linking and the selected-event inspector.
 - Consider optional enrichment from matching `GitHub.copilot-chat/transcripts/<session-id>.jsonl` only after the UI can show source availability and confidence. Transcripts can be rich, but they are not consistently complete across sessions or restarts.
 
 Why: the Trace view is currently good for scanning, but debugging needs selection. VS Code's own Agent Debug Logs let a user click an event and inspect details. This app should do the same, with cost fields added.

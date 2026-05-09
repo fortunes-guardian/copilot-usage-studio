@@ -76,6 +76,7 @@ export class App {
   protected readonly traceView = signal<'logs' | 'flow'>('logs');
   protected readonly traceFilter = signal<TraceFilter>('all');
   protected readonly selectedTraceEventIndex = signal<number | null>(null);
+  protected readonly traceOpenedFromTurns = signal(false);
   protected readonly modelCallSort = signal<ModelCallSort>('timeline');
   protected readonly activeView = signal<ActiveView>('sessions');
   protected readonly selectedRunView = signal<SelectedRunView>('overview');
@@ -312,6 +313,7 @@ export class App {
     this.selectedId.set(session.id);
     this.selectedRunView.set('overview');
     this.selectedTraceEventIndex.set(null);
+    this.traceOpenedFromTurns.set(false);
   }
 
   protected openFirstFilteredSession(): void {
@@ -345,10 +347,12 @@ export class App {
   protected setTraceFilter(value: TraceFilter): void {
     this.traceFilter.set(value);
     this.selectedTraceEventIndex.set(null);
+    this.traceOpenedFromTurns.set(false);
   }
 
   protected selectTraceEvent(event: TraceEvent): void {
     this.selectedTraceEventIndex.set(event.index);
+    this.traceOpenedFromTurns.set(false);
   }
 
   protected openTraceEvent(index: number): void {
@@ -356,6 +360,7 @@ export class App {
     this.traceView.set('logs');
     this.traceFilter.set('all');
     this.selectedTraceEventIndex.set(index);
+    this.traceOpenedFromTurns.set(true);
   }
 
   protected pricingFallbackReason(model: string, pricingModel: string): string {
@@ -375,6 +380,7 @@ export class App {
     this.activeView.set('sessions');
     this.selectedRunView.set('overview');
     this.selectedTraceEventIndex.set(null);
+    this.traceOpenedFromTurns.set(false);
   }
 
   protected sessionTriage(session: LedgerSession): SessionTriage {

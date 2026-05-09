@@ -53,6 +53,7 @@ Principles:
   - `Cost`: estimate scope, drivers, token categories, and per-model price rows
   - `Turns`: per-turn model-call insights plus timeline/largest-first ledger modes
   - `Trace`: filterable raw logs, clickable event inspector, and agent flow
+- Trace rows now visually distinguish model calls, tool calls, user messages, responses, discovery events, errors, and token-bearing events.
 - Shows an agent flow chart with token/cost detail.
 - Compares two runs with metric deltas, cost-driver explanation, context-growth change, and model/pricing-row movement.
 - Shows a separate Analytics view for multi-session questions across the current filter set:
@@ -125,6 +126,20 @@ Code improvements to schedule:
 - Add UI tests for the selected-run tabs, source/size filters, pricing fallback display, Analytics empty states, and Compare deltas.
 
 ## Latest Implemented Step
+
+Polished Trace into a stronger debugger workspace.
+
+What changed:
+
+- Trace rows now distinguish model calls, tool calls, user messages, responses, discovery events, errors, and token-bearing events.
+- Token-bearing events show a compact token badge directly in the event row.
+- The Trace inspector now starts with event cost, token total, and status.
+- Inspector fields are grouped into Timing, Model, Tokens, Pricing, and Payload instead of one long normalized-field list.
+- Clicking a model call from Turns now opens Trace with an `Opened from Turns` cue on the selected event.
+
+Why: the Cost -> Turns -> Trace flow only works if Trace feels like evidence, not just a list of logs. The user should be able to land on the raw event and immediately see whether it explains the expensive turn.
+
+## Previous Implemented Step
 
 Made the selected-run debugger read as one investigation flow.
 
