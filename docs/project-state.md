@@ -36,7 +36,7 @@ Principles:
 - Converts local USD estimates into GitHub AI credits and compares them with toggleable Copilot Business/Enterprise included allowances.
 - Uses one shared GitHub pricing JSON file for the scanner, verifier, and UI.
 - Shows a visible loading/error state if the generated session data cannot be loaded.
-- Session-data loading now lives in `LedgerDataService` instead of the root component.
+- Session-data loading now lives in `SessionDataService` instead of the root component.
 - The Prices page, Compare page, Analytics page, and session-data loading/error panel are standalone Angular components.
 - The selected-run Overview, Cost, Turns, and Trace subviews are now standalone Angular components.
 - Shared cost helpers now hold reusable model-cost, token-total, context-growth, percent-delta, and pricing-fallback utility logic.
@@ -56,6 +56,9 @@ Principles:
   - `Trace`: filterable raw logs, clickable event inspector, and agent flow
 - Trace rows now visually distinguish model calls, tool calls, user messages, responses, discovery events, errors, and token-bearing events.
 - Trace has a sticky selected-event strip and a normalized JSON drawer so the raw event remains inspectable while scrolling long logs.
+- Trace inspector now uses event-specific lenses: model calls foreground estimate/tokens/pricing, tool calls foreground tool payload and direct-cost caveats, and ordinary events stay compact.
+- Trace inspector has copy actions for the imported detail and normalized event JSON, with the raw drawer labelled as imported fields rather than the full VS Code payload.
+- Angular view-model cost fields now use USD naming internally where the UI uses USD estimates, reducing old EUR naming drift after the currency decision.
 - Shows an agent flow chart with token/cost detail.
 - Compares two runs with metric deltas, cost-driver explanation, context-growth change, and model/pricing-row movement.
 - Shows a separate Analytics view for multi-session questions across the current filter set:
@@ -81,6 +84,7 @@ Principles:
   - sidebar filters now show a clear state when the open run is outside the visible filtered rail
   - Analytics now uses a quieter cohort header and compact controls so the model breakdown stays near the top of the dashboard
   - Trace keeps the selected event inspector visible while scrolling long event logs, with a stacked debugger layout on narrower content widths
+  - Sessions has a denser selected-run workspace: slimmer import context, shorter run hero, and a more compact investigation map
 
 ## Important Design Decisions
 
@@ -134,6 +138,67 @@ Code improvements to schedule:
 
 ## Latest Implemented Step
 
+Compacted the Sessions selected-run workspace.
+
+What changed:
+
+- Reduced the Import context disclosure height and scan-pill weight.
+- Shortened the selected-run hero by tightening badges, title, subtitle, estimate, and AI-credit meter spacing.
+- Changed the hero to a steadier two-column grid on desktop so the estimate stays aligned without forcing extra height.
+- Reduced Sessions page and selected-run gaps.
+- Made the investigation map shorter and more toolbar-like while preserving the Overview, Cost, Turns, and Trace hierarchy.
+
+Why: Sessions should feel like a debugging workspace. The run context needs to be present, but it should not push the actual evidence and investigation panels too far down the page.
+
+Verification:
+
+- `npm run build`
+- `npm test -- --watch=false`
+- Browser sanity check on Sessions at `http://127.0.0.1:4301/`; Import context, run hero, investigation map, and selected-run evidence all render cleanly above the fold.
+
+## Previous Implemented Step
+
+Polished the Trace inspector action surface.
+
+What changed:
+
+- Added `Copy detail` and `Copy JSON` actions to the selected event inspector.
+- Added short copied-state feedback so the action confirms itself without a toast.
+- Clarified the raw JSON drawer as normalized imported fields, not the complete VS Code raw payload.
+- Kept the copy controls inside the sticky inspector so they remain reachable while reading long traces.
+
+Why: Trace is the evidence view. When a developer finds a suspicious event, they should be able to lift the exact imported detail or normalized JSON quickly without manually selecting text.
+
+Verification:
+
+- `npm run build`
+- `npm test -- --watch=false`
+- Browser sanity check on Trace at `http://127.0.0.1:4301/`; copy actions and the imported-fields label render in the sticky inspector.
+
+## Previous Implemented Step
+
+Tightened the Analytics dashboard hierarchy and cleaned up remaining Angular USD naming drift.
+
+What changed:
+
+- Moved cohort totals beside the model breakdown instead of making them a full-width block above the useful table.
+- Kept Model breakdown visible immediately after Analytics filters on desktop-width screens.
+- Added a compact model-row count and share bars so the model table reads more like a dashboard.
+- Reduced Analytics spacing, card padding, and metric scale so the page is less report-like.
+- Adjusted Analytics breakpoints so normal desktop widths keep the dashboard two-column layout, while narrow layouts still stack cleanly.
+- Renamed Angular view-model fields from old `estimatedEur`/`inputEur`/`outputEur` language to `estimatedUsd`/`inputUsd`/`outputUsd` where those values are now USD estimates.
+
+Why: Analytics should answer “which models and cohorts are driving cost?” quickly. Totals matter, but they should support the model breakdown instead of pushing it down the page. The internal USD rename also keeps the implementation aligned with the decision to avoid currency conversion.
+
+Verification:
+
+- `npm run build`
+- `npm test -- --watch=false`
+- `npm run verify:data`
+- Browser sanity check on Analytics at `http://127.0.0.1:4301/`; no visible EUR symbols and the model breakdown remains above cohort totals on desktop width.
+
+## Previous Implemented Step
+
 Switched visible estimates back to USD and tightened Analytics, Trace, and Cost UI defects from visual review.
 
 What changed:
@@ -178,7 +243,7 @@ Verification:
 - `npm test -- --watch=false`
 - `npm run verify:data`
 - `node --check scripts/scan-vscode-sessions.mjs`
-- `node --check scripts/verify-ledger-data.mjs`
+- `node --check scripts/verify-session-data.mjs`
 - `node --check scripts/pricing-utils.mjs`
 
 ## Previous Implemented Step
@@ -447,7 +512,7 @@ What changed:
 
 - Extracted `ComparePageComponent` from the root template and moved its comparison UI into standalone HTML/CSS.
 - Removed Compare analysis methods from `app.ts`.
-- Added `ledger-cost-utils.ts` for reusable pricing/token/context helpers used by the extracted Compare page.
+- Added `session-cost-utils.ts` for reusable pricing/token/context helpers used by the extracted Compare page.
 - Removed obsolete Compare selectors from the root stylesheet.
 - Verified Compare in the browser: heading, selectors, comparison summary, and clean console.
 
@@ -459,9 +524,9 @@ Started the monolith split.
 
 What changed:
 
-- Added `LedgerDataService` for `/data/sessions.json` loading, load state, and load errors.
+- Added `SessionDataService` for `/data/sessions.json` loading, load state, and load errors.
 - Extracted `PricingPageComponent` from the root template.
-- Extracted `LedgerStatePanelComponent` for loading/error display.
+- Extracted `SessionDataStatePanelComponent` for loading/error display.
 - Removed obsolete pricing-page styles and unused token-burner styles from the root stylesheet.
 - The production build passed without the previous `app.css` component style budget warning.
 

@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { costUsdForTokens, normalizeModel } from './pricing-utils.mjs';
 
 const file = resolve(process.argv[2] ?? 'public/data/sessions.json');
-const ledger = JSON.parse(readFileSync(file, 'utf8'));
+const sessionData = JSON.parse(readFileSync(file, 'utf8'));
 const errors = [];
 const warnings = [];
 const ids = new Set();
@@ -23,15 +23,15 @@ function expectedCostUsd(model, tokens) {
   return costUsdForTokens(model, tokens, pricing, fallbackPricingModel);
 }
 
-if (ledger.schemaVersion !== 1) {
-  fail(`Expected schemaVersion 1, found ${ledger.schemaVersion ?? 'missing'}`);
+if (sessionData.schemaVersion !== 1) {
+  fail(`Expected schemaVersion 1, found ${sessionData.schemaVersion ?? 'missing'}`);
 }
 
-if (!Array.isArray(ledger.sessions)) {
+if (!Array.isArray(sessionData.sessions)) {
   fail('Expected sessions to be an array');
 }
 
-for (const session of ledger.sessions ?? []) {
+for (const session of sessionData.sessions ?? []) {
   if (!session.id) {
     fail('Session missing id');
   } else if (ids.has(session.id)) {
@@ -91,7 +91,7 @@ for (const session of ledger.sessions ?? []) {
       if (Math.abs(expectedEventUsd - Number(event.estimatedCost?.usd)) > 0.000000001) {
         fail(`${session.id} traceEvents.${event.index ?? 'unknown'} estimatedCost.usd does not match token pricing`);
       }
-      if (Math.abs(expectedEventUsd * Number(ledger.usdToEur) - Number(event.estimatedCost?.eur)) > 0.000000001) {
+      if (Math.abs(expectedEventUsd * Number(sessionData.usdToEur) - Number(event.estimatedCost?.eur)) > 0.000000001) {
         fail(`${session.id} traceEvents.${event.index ?? 'unknown'} estimatedCost.eur does not match token pricing and usdToEur`);
       }
     }
@@ -171,7 +171,7 @@ for (const session of ledger.sessions ?? []) {
   const expectedUsd = session.modelBreakdown?.length
     ? modelBreakdownUsd
     : expectedCostUsd(session.model, tokens);
-  const expectedEur = expectedUsd * Number(ledger.usdToEur);
+  const expectedEur = expectedUsd * Number(sessionData.usdToEur);
   if (Math.abs(expectedUsd - Number(session.cost?.usd)) > 0.000000001) {
     fail(`${session.id} cost.usd does not match token pricing`);
   }
@@ -180,18 +180,18 @@ for (const session of ledger.sessions ?? []) {
   }
 }
 
-const importedSessions = ledger.ingestion?.importedSessions;
-if (Number.isFinite(importedSessions) && importedSessions !== (ledger.sessions?.length ?? 0)) {
-  fail(`ingestion.importedSessions=${importedSessions} does not match sessions.length=${ledger.sessions?.length ?? 0}`);
+const importedSessions = sessionData.ingestion?.importedSessions;
+if (Number.isFinite(importedSessions) && importedSessions !== (sessionData.sessions?.length ?? 0)) {
+  fail(`ingestion.importedSessions=${importedSessions} does not match sessions.length=${sessionData.sessions?.length ?? 0}`);
 }
 
 for (const field of ['scannedStateDbs', 'enrichedFromStateDbs']) {
-  if (!Number.isFinite(ledger.ingestion?.[field]) || ledger.ingestion[field] < 0) {
+  if (!Number.isFinite(sessionData.ingestion?.[field]) || sessionData.ingestion[field] < 0) {
     fail(`ingestion.${field} is missing or invalid`);
   }
 }
 
-for (const warning of ledger.ingestion?.warnings ?? []) {
+for (const warning of sessionData.ingestion?.warnings ?? []) {
   warn(warning);
 }
 
@@ -210,4 +210,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log(`Session data verification passed: ${ledger.sessions?.length ?? 0} sessions in ${file}`);
+console.log(`Session data verification passed: ${sessionData.sessions?.length ?? 0} sessions in ${file}`);

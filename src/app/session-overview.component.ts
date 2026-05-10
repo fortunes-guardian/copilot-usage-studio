@@ -2,7 +2,7 @@ import { DatePipe, DecimalPipe, NgClass } from '@angular/common';
 import { Component, Input } from '@angular/core';
 
 import { HelpPopoverComponent } from './help-popover.component';
-import { LedgerSession } from './ledger.model';
+import { CopilotSession } from './session-data.model';
 
 type SessionSize = 'Small' | 'Medium' | 'Large' | 'Very large';
 type WarningTone = 'low' | 'info' | 'medium' | 'high';
@@ -27,7 +27,9 @@ export interface SessionTriageViewModel {
   styleUrl: './session-overview.component.css',
 })
 export class SessionOverviewComponent {
-  @Input({ required: true }) session!: LedgerSession;
+  @Input({ required: true }) session!: CopilotSession;
   @Input() triage: SessionTriageViewModel | null = null;
   @Input() triageHelp = '';
 }
+
+

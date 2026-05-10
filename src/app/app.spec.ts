@@ -4,7 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { App } from './app';
 
 describe('App', () => {
-  const ledgerFixture = {
+  const sessionDataFixture = {
     schemaVersion: 1,
     generatedAt: '2026-05-01T13:44:12.977Z',
     pricingVersion: 'github-copilot-usage-pricing-2026-06-01',
@@ -32,7 +32,7 @@ describe('App', () => {
         status: 'Idle',
         title: 'test',
         firstPrompt: 'test',
-        workspace: 'copilot-cost-ledger',
+        workspace: 'copilot-cost-debugger',
         sourcePath: 'debug-logs/session-1',
         model: 'Claude Sonnet 4.6',
         modelBreakdown: [
@@ -104,14 +104,14 @@ describe('App', () => {
 
   it('should create the app', () => {
     const fixture = TestBed.createComponent(App);
-    TestBed.inject(HttpTestingController).expectOne('/data/sessions.json').flush(ledgerFixture);
+    TestBed.inject(HttpTestingController).expectOne('/data/sessions.json').flush(sessionDataFixture);
     const app = fixture.componentInstance;
     expect(app).toBeTruthy();
   });
 
   it('should render title', async () => {
     const fixture = TestBed.createComponent(App);
-    TestBed.inject(HttpTestingController).expectOne('/data/sessions.json').flush(ledgerFixture);
+    TestBed.inject(HttpTestingController).expectOne('/data/sessions.json').flush(sessionDataFixture);
     await fixture.whenStable();
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
@@ -121,3 +121,5 @@ describe('App', () => {
     expect(compiled.textContent).toContain('Cache unknown');
   });
 });
+
+

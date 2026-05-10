@@ -39,7 +39,7 @@
             </div>
             <div>
               <dt>Estimate</dt>
-              <dd>{{ details.hasCost ? ('$' + (details.estimatedEur | number: '1.6-6')) : 'No token cost' }}</dd>
+              <dd>{{ details.hasCost ? ('$' + (details.estimatedUsd | number: '1.6-6')) : 'No token cost' }}</dd>
             </div>
             <div>
               <dt>Status</dt>
@@ -94,6 +94,16 @@
                 }
               </p>
             </div>
+            @if (selectedTraceEventDetails; as details) {
+              <div class="inspector-actions" aria-label="Trace event actions">
+                <button type="button" (click)="copyEventDetail(event, details)">
+                  {{ copiedTarget() === 'detail' ? 'Copied' : 'Copy detail' }}
+                </button>
+                <button type="button" (click)="copyEventJson(event)">
+                  {{ copiedTarget() === 'json' ? 'Copied' : 'Copy JSON' }}
+                </button>
+              </div>
+            }
           </div>
 
           @if (selectedTraceEventDetails; as details) {
@@ -135,7 +145,10 @@
             </section>
 
             <details class="raw-event">
-              <summary>Normalized event JSON</summary>
+              <summary>
+                <span>Normalized event JSON</span>
+                <em>Imported fields only, not the full VS Code raw payload.</em>
+              </summary>
               <pre>{{ eventJson(event) }}</pre>
             </details>
           }
@@ -152,7 +165,7 @@
           <div>
             <strong>{{ event.type }}</strong>
             @if (event.totalTokens) {
-              <em>{{ event.totalTokens | number }} tokens · about ${{ event.estimatedEur | number: '1.6-6' }}</em>
+              <em>{{ event.totalTokens | number }} tokens · about ${{ event.estimatedUsd | number: '1.6-6' }}</em>
             }
           </div>
           <p>{{ event.detail }}</p>
@@ -161,3 +174,5 @@
     </div>
   }
 </section>
+
+

@@ -1,12 +1,11 @@
 .detail-header {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, auto);
   align-items: stretch;
-  justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
   border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 14px;
+  border-radius: 12px;
+  padding: 12px;
   background: linear-gradient(135deg, rgba(111, 92, 255, 0.13), rgba(39, 214, 176, 0.055)), var(--surface-soft);
 }
 
@@ -17,8 +16,8 @@
 .source-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
-  margin: 0 0 4px;
+  gap: 5px;
+  margin: 0 0 3px;
 }
 
 .source-meta > span {
@@ -27,36 +26,36 @@
   gap: 5px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 3px 7px;
+  padding: 2px 7px;
   background: var(--surface-soft);
   color: var(--text);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 720;
 }
 
 h2 {
-  margin: 4px 0 0;
+  margin: 3px 0 0;
   color: var(--text-strong);
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 760;
   line-height: 1.18;
   letter-spacing: 0;
 }
 
 .detail-subtitle {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   color: var(--text);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .price {
   display: grid;
   align-content: center;
   justify-items: end;
-  min-width: 150px;
+  min-width: 220px;
   border: 1px solid rgba(31, 209, 165, 0.22);
-  border-radius: 12px;
-  padding: 12px;
+  border-radius: 10px;
+  padding: 10px;
   background: rgba(31, 209, 165, 0.08);
 }
 
@@ -67,7 +66,7 @@ h2 {
 
 .price strong {
   color: var(--text-strong);
-  font-size: clamp(24px, 3vw, 34px);
+  font-size: clamp(22px, 2.5vw, 30px);
   font-weight: 760;
   line-height: 1;
   letter-spacing: 0;
@@ -75,9 +74,9 @@ h2 {
 
 .credit-meter {
   display: grid;
-  gap: 7px;
+  gap: 5px;
   width: 100%;
-  margin-top: 10px;
+  margin-top: 7px;
 }
 
 .credit-meter label {
@@ -91,11 +90,11 @@ h2 {
   max-width: 120px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 5px 8px;
+  padding: 4px 7px;
   background: rgba(5, 12, 22, 0.38);
   color: var(--text);
   font: inherit;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 720;
 }
 
@@ -115,7 +114,7 @@ h2 {
 
 .credit-meter em {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
   font-style: normal;
   font-weight: 650;
   text-align: right;
@@ -173,7 +172,7 @@ h2 {
 
 .filter-mismatch-callout,
 .pricing-fallback-callout {
-  margin-top: 14px;
+  margin-top: 10px;
 }
 
 .ghost-button {
@@ -202,11 +201,13 @@ h2 {
   .detail-header,
   .source-callout {
     display: grid;
+    grid-template-columns: 1fr;
     gap: 12px;
   }
 
   .price {
     justify-items: start;
+    min-width: 0;
   }
 }
 
@@ -215,3 +216,5 @@ h2 {
     gap: 5px;
   }
 }
+
+

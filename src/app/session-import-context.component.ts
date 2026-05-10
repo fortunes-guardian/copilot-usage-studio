@@ -2,11 +2,11 @@ import { DecimalPipe } from '@angular/common';
 import { Component, Input } from '@angular/core';
 
 import { HelpPopoverComponent } from './help-popover.component';
-import { LedgerData } from './ledger.model';
+import { SessionData } from './session-data.model';
 
-type LedgerIngestion = NonNullable<LedgerData['ingestion']>;
+type SessionDataIngestion = NonNullable<SessionData['ingestion']>;
 
-interface LedgerSummary {
+interface SessionDataSummary {
   count: number;
   usd: number;
 }
@@ -18,7 +18,9 @@ interface LedgerSummary {
   styleUrl: './session-import-context.component.css',
 })
 export class SessionImportContextComponent {
-  @Input({ required: true }) ingestion!: LedgerIngestion;
-  @Input({ required: true }) summary!: LedgerSummary;
+  @Input({ required: true }) ingestion!: SessionDataIngestion;
+  @Input({ required: true }) summary!: SessionDataSummary;
   @Input({ required: true }) help!: Record<string, string>;
 }
+
+

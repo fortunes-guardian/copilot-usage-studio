@@ -1,4 +1,4 @@
-import { LedgerSession, ModelBreakdown, TokenBreakdown } from './ledger.model';
+import { CopilotSession, ModelBreakdown, TokenBreakdown } from './session-data.model';
 import { modelUsesPricingFallback, priceForPricingModel, pricingFallbackReason } from './pricing';
 
 export interface PricedModelBreakdown extends ModelBreakdown {
@@ -9,26 +9,26 @@ export interface PricedModelBreakdown extends ModelBreakdown {
   cachedInputRate: number;
   cacheWriteRate: number;
   outputRate: number;
-  inputEur: number;
-  cachedInputEur: number;
-  cacheWriteEur: number;
-  outputEur: number;
-  totalEur: number;
+  inputUsd: number;
+  cachedInputUsd: number;
+  cacheWriteUsd: number;
+  outputUsd: number;
+  totalUsd: number;
   share: number;
   usesFallbackPrice: boolean;
 }
 
 export function explainModelCost(
   entry: ModelBreakdown,
-  sessionCostEur: number,
+  sessionCostUsd: number,
 ): PricedModelBreakdown {
   const pricingModel = entry.pricingModel || entry.model;
   const price = priceForPricingModel(pricingModel);
-  const inputEur = tokenCostEur(entry.tokens.input, price.input);
-  const cachedInputEur = tokenCostEur(entry.tokens.cachedInput, price.cachedInput);
-  const cacheWriteEur = tokenCostEur(entry.tokens.cacheWrite, price.cacheWrite ?? 0);
-  const outputEur = tokenCostEur(entry.tokens.output, price.output);
-  const totalEur = inputEur + cachedInputEur + cacheWriteEur + outputEur;
+  const inputUsd = tokenCostUsd(entry.tokens.input, price.input);
+  const cachedInputUsd = tokenCostUsd(entry.tokens.cachedInput, price.cachedInput);
+  const cacheWriteUsd = tokenCostUsd(entry.tokens.cacheWrite, price.cacheWrite ?? 0);
+  const outputUsd = tokenCostUsd(entry.tokens.output, price.output);
+  const totalUsd = inputUsd + cachedInputUsd + cacheWriteUsd + outputUsd;
 
   return {
     ...entry,
@@ -39,18 +39,18 @@ export function explainModelCost(
     cachedInputRate: price.cachedInput,
     cacheWriteRate: price.cacheWrite ?? 0,
     outputRate: price.output,
-    inputEur,
-    cachedInputEur,
-    cacheWriteEur,
-    outputEur,
-    totalEur,
-    share: sessionCostEur > 0 ? (totalEur / sessionCostEur) * 100 : 0,
+    inputUsd,
+    cachedInputUsd,
+    cacheWriteUsd,
+    outputUsd,
+    totalUsd,
+    share: sessionCostUsd > 0 ? (totalUsd / sessionCostUsd) * 100 : 0,
     usesFallbackPrice: modelUsesPricingFallback(entry.model, pricingModel),
   };
 }
 
 export function contextStats(
-  session: LedgerSession,
+  session: CopilotSession,
 ): { firstAvg: number; lastAvg: number; growth: number; count: number } | null {
   const llmEvents = session.traceEvents
     .filter((event) => event.type === 'llm_request' && (event.inputTokens || event.outputTokens))
@@ -71,7 +71,7 @@ export function contextStats(
   };
 }
 
-export function tokenCostEur(tokens: number, usdPerMillion: number): number {
+export function tokenCostUsd(tokens: number, usdPerMillion: number): number {
   return (tokens / 1_000_000) * usdPerMillion;
 }
 
@@ -79,7 +79,7 @@ export function tokenTotal(tokens: TokenBreakdown): number {
   return tokens.input + tokens.cachedInput + tokens.cacheWrite + tokens.output;
 }
 
-export function sessionTotalTokens(session: LedgerSession): number {
+export function sessionTotalTokens(session: CopilotSession): number {
   return tokenTotal(session.tokens);
 }
 
@@ -101,3 +101,5 @@ export function setsDiffer(a: Set<string>, b: Set<string>): boolean {
 function average(values: number[]): number {
   return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
 }
+
+

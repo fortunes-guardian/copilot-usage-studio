@@ -37,7 +37,7 @@ export interface VscodeStateEnrichment {
   lastActivityAt: string;
 }
 
-export interface LedgerTurn {
+export interface SessionTurn {
   role: 'user' | 'assistant' | 'tool' | 'system';
   text: string;
   tokens: number;
@@ -92,7 +92,7 @@ export interface AdvancedSignals {
   };
 }
 
-export interface LedgerSession {
+export interface CopilotSession {
   id: string;
   sourceKind: string;
   tokenSource: string;
@@ -116,10 +116,10 @@ export interface LedgerSession {
   advancedSignals?: AdvancedSignals;
   traceEvents: TraceEvent[];
   vscodeState?: VscodeStateEnrichment;
-  turns: LedgerTurn[];
+  turns: SessionTurn[];
 }
 
-export interface LedgerData {
+export interface SessionData {
   schemaVersion: number;
   generatedAt: string;
   pricingVersion: string;
@@ -138,5 +138,7 @@ export interface LedgerData {
     importedSessions: number;
     warnings: string[];
   };
-  sessions: LedgerSession[];
+  sessions: CopilotSession[];
 }
+
+

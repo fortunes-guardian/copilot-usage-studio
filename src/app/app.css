@@ -787,7 +787,7 @@
 
 .sessions-page {
   display: grid;
-  gap: 20px;
+  gap: 14px;
 }
 
 .sessions-page > .summary-grid {
@@ -800,7 +800,7 @@
 
 .detail {
   display: grid;
-  gap: 20px;
+  gap: 14px;
   overflow: visible;
 }
 
@@ -883,19 +883,19 @@
 
 .run-tabs {
   display: grid;
-  grid-template-columns: minmax(150px, 0.82fr) repeat(3, minmax(170px, 1fr));
-  gap: 8px;
+  grid-template-columns: minmax(120px, 0.72fr) repeat(3, minmax(145px, 1fr));
+  gap: 6px;
 }
 
 .run-tabs button {
   position: relative;
   display: grid;
-  align-content: start;
-  gap: 4px;
-  min-height: 78px;
+  align-content: center;
+  gap: 3px;
+  min-height: 58px;
   border: 1px solid var(--line);
-  border-radius: 13px;
-  padding: 11px 12px;
+  border-radius: 11px;
+  padding: 9px 10px;
   background: var(--surface-soft);
   color: var(--muted);
   font: inherit;
@@ -933,7 +933,7 @@
 
 .run-tabs button span {
   color: var(--muted-2);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 760;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -941,14 +941,14 @@
 
 .run-tabs button strong {
   color: var(--text-strong);
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 760;
   line-height: 1.1;
 }
 
 .run-tabs button em {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-style: normal;
   line-height: 1.25;
   overflow-wrap: anywhere;
@@ -1413,11 +1413,11 @@
 }
 
 .run-tabs {
-  gap: 8px;
+  gap: 6px;
 }
 
 .run-tabs button {
-  min-height: 72px;
+  min-height: 58px;
 }
 
 .source-callout {
@@ -1611,3 +1611,5 @@
     grid-template-columns: 1fr;
   }
 }
+
+

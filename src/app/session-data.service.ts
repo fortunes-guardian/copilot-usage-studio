@@ -1,22 +1,22 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 
-import { LedgerData } from './ledger.model';
+import { SessionData } from './session-data.model';
 
-export type LedgerLoadState = 'loading' | 'ready' | 'error';
+export type SessionDataLoadState = 'loading' | 'ready' | 'error';
 
 @Injectable({ providedIn: 'root' })
-export class LedgerDataService {
+export class SessionDataService {
   private readonly http = inject(HttpClient);
 
-  readonly ledger = signal<LedgerData | null>(null);
-  readonly loadState = signal<LedgerLoadState>('loading');
+  readonly sessionData = signal<SessionData | null>(null);
+  readonly loadState = signal<SessionDataLoadState>('loading');
   readonly loadError = signal<string | null>(null);
 
   constructor() {
-    this.http.get<LedgerData>('/data/sessions.json').subscribe({
-      next: (ledger) => {
-        this.ledger.set(ledger);
+    this.http.get<SessionData>('/data/sessions.json').subscribe({
+      next: (sessionData) => {
+        this.sessionData.set(sessionData);
         this.loadState.set('ready');
         this.loadError.set(null);
       },
@@ -35,3 +35,5 @@ export class LedgerDataService {
     return 'The generated session data could not be loaded. Run npm run scan and npm run verify:data.';
   }
 }
+
+

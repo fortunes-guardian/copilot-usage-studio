@@ -61,8 +61,8 @@ Why: a desktop app would make the project easier for non-frontend developers to 
 A lightweight local CLI could provide commands such as:
 
 ```bash
-copilot-cost-ledger scan
-copilot-cost-ledger serve
+copilot-cost-debugger scan
+copilot-cost-debugger serve
 ```
 
 Why: this keeps the project local and scriptable without committing to a desktop shell too early.

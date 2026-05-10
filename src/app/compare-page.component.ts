@@ -3,7 +3,7 @@ import { Component, EventEmitter, Input, Output, computed, signal } from '@angul
 import { FormsModule } from '@angular/forms';
 
 import { HelpPopoverComponent } from './help-popover.component';
-import { LedgerSession } from './ledger.model';
+import { CopilotSession } from './session-data.model';
 import {
   PricedModelBreakdown,
   contextStats,
@@ -14,7 +14,7 @@ import {
   setsDiffer,
   tokenTotal,
   usesPricingFallback,
-} from './ledger-cost-utils';
+} from './session-cost-utils';
 
 type WarningTone = 'low' | 'info' | 'medium' | 'high';
 
@@ -37,13 +37,13 @@ interface ComparisonDriver {
 }
 
 interface SessionComparisonAnalysis {
-  session: LedgerSession;
+  session: CopilotSession;
   modelRows: PricedModelBreakdown[];
   totalTokens: number;
-  inputEur: number;
-  outputEur: number;
-  cachedInputEur: number;
-  cacheWriteEur: number;
+  inputUsd: number;
+  outputUsd: number;
+  cachedInputUsd: number;
+  cacheWriteUsd: number;
   contextGrowth: number;
   firstInputAvg: number;
   lastInputAvg: number;
@@ -59,14 +59,14 @@ interface SessionComparisonAnalysis {
   styleUrl: './compare-page.component.css',
 })
 export class ComparePageComponent {
-  private readonly sessionsInput = signal<LedgerSession[]>([]);
+  private readonly sessionsInput = signal<CopilotSession[]>([]);
   private readonly compareAInput = signal<string | null>(null);
   private readonly compareBInput = signal<string | null>(null);
 
   @Output() readonly compareAChange = new EventEmitter<string | null>();
   @Output() readonly compareBChange = new EventEmitter<string | null>();
 
-  @Input() set sessions(value: LedgerSession[] | null | undefined) {
+  @Input() set sessions(value: CopilotSession[] | null | undefined) {
     this.sessionsInput.set(value ?? []);
   }
 
@@ -96,8 +96,8 @@ export class ComparePageComponent {
     const bAnalysis = this.sessionComparisonAnalysis(b);
     const totalTokenDelta = bAnalysis.totalTokens - aAnalysis.totalTokens;
     const costDelta = b.cost.usd - a.cost.usd;
-    const inputCostDelta = bAnalysis.inputEur - aAnalysis.inputEur;
-    const outputCostDelta = bAnalysis.outputEur - aAnalysis.outputEur;
+    const inputCostDelta = bAnalysis.inputUsd - aAnalysis.inputUsd;
+    const outputCostDelta = bAnalysis.outputUsd - aAnalysis.outputUsd;
     const toolDelta = b.traceSummary.toolCalls - a.traceSummary.toolCalls;
     const turnDelta = b.traceSummary.modelTurns - a.traceSummary.modelTurns;
     const contextGrowthDelta = bAnalysis.contextGrowth - aAnalysis.contextGrowth;
@@ -188,19 +188,19 @@ export class ComparePageComponent {
     this.compareBChange.emit(value);
   }
 
-  private sessionComparisonAnalysis(session: LedgerSession): SessionComparisonAnalysis {
+  private sessionComparisonAnalysis(session: CopilotSession): SessionComparisonAnalysis {
     const modelRows = session.modelBreakdown.map((entry) => explainModelCost(entry, session.cost.usd));
     const stats = contextStats(session);
-    const topModel = [...modelRows].sort((a, b) => b.totalEur - a.totalEur)[0] ?? null;
+    const topModel = [...modelRows].sort((a, b) => b.totalUsd - a.totalUsd)[0] ?? null;
 
     return {
       session,
       modelRows,
       totalTokens: sessionTotalTokens(session),
-      inputEur: modelRows.reduce((sum, row) => sum + row.inputEur, 0),
-      outputEur: modelRows.reduce((sum, row) => sum + row.outputEur, 0),
-      cachedInputEur: modelRows.reduce((sum, row) => sum + row.cachedInputEur, 0),
-      cacheWriteEur: modelRows.reduce((sum, row) => sum + row.cacheWriteEur, 0),
+      inputUsd: modelRows.reduce((sum, row) => sum + row.inputUsd, 0),
+      outputUsd: modelRows.reduce((sum, row) => sum + row.outputUsd, 0),
+      cachedInputUsd: modelRows.reduce((sum, row) => sum + row.cachedInputUsd, 0),
+      cacheWriteUsd: modelRows.reduce((sum, row) => sum + row.cacheWriteUsd, 0),
       contextGrowth: stats?.growth ?? 0,
       firstInputAvg: stats?.firstAvg ?? 0,
       lastInputAvg: stats?.lastAvg ?? 0,
@@ -304,9 +304,9 @@ export class ComparePageComponent {
           model,
           pricingModel,
           usesFallbackPrice: usesPricingFallback(model, pricingModel),
-          aCost: a?.totalEur ?? 0,
-          bCost: b?.totalEur ?? 0,
-          costDelta: (b?.totalEur ?? 0) - (a?.totalEur ?? 0),
+          aCost: a?.totalUsd ?? 0,
+          bCost: b?.totalUsd ?? 0,
+          costDelta: (b?.totalUsd ?? 0) - (a?.totalUsd ?? 0),
           aTokens,
           bTokens,
           tokenDelta: bTokens - aTokens,
@@ -317,3 +317,5 @@ export class ComparePageComponent {
       .sort((a, b) => Math.abs(b.costDelta) - Math.abs(a.costDelta));
   }
 }
+
+

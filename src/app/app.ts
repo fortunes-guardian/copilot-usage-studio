@@ -4,9 +4,9 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 import { AnalyticsPageComponent } from './analytics-page.component';
 import { ComparePageComponent } from './compare-page.component';
 import { HelpPopoverComponent } from './help-popover.component';
-import { LedgerDataService } from './ledger-data.service';
-import { LedgerStatePanelComponent } from './ledger-state-panel.component';
-import { LedgerSession, TraceEvent } from './ledger.model';
+import { SessionDataService } from './session-data.service';
+import { SessionDataStatePanelComponent } from './session-data-state-panel.component';
+import { CopilotSession, TraceEvent } from './session-data.model';
 import { PricingPageComponent } from './pricing-page.component';
 import { SessionCostComponent } from './session-cost.component';
 import { SessionImportContextComponent } from './session-import-context.component';
@@ -46,7 +46,7 @@ type SelectedRunView = 'overview' | 'cost' | 'turns' | 'trace';
     DecimalPipe,
     HelpPopoverComponent,
     ComparePageComponent,
-    LedgerStatePanelComponent,
+    SessionDataStatePanelComponent,
     PricingPageComponent,
     SessionCostComponent,
     SessionImportContextComponent,
@@ -60,11 +60,11 @@ type SelectedRunView = 'overview' | 'cost' | 'turns' | 'trace';
   styleUrl: './app.css',
 })
 export class App {
-  private readonly ledgerData = inject(LedgerDataService);
+  private readonly sessionDataService = inject(SessionDataService);
 
-  protected readonly ledger = this.ledgerData.ledger;
-  protected readonly ledgerLoadState = this.ledgerData.loadState;
-  protected readonly ledgerLoadError = this.ledgerData.loadError;
+  protected readonly sessionData = this.sessionDataService.sessionData;
+  protected readonly sessionDataLoadState = this.sessionDataService.loadState;
+  protected readonly sessionDataLoadError = this.sessionDataService.loadError;
   protected readonly selectedId = signal<string | null>(null);
   protected readonly compareA = signal<string | null>(null);
   protected readonly compareB = signal<string | null>(null);
@@ -129,7 +129,7 @@ export class App {
     { value: 'error', label: 'Errors' },
   ];
 
-  protected readonly sessions = computed(() => this.ledger()?.sessions ?? []);
+  protected readonly sessions = computed(() => this.sessionData()?.sessions ?? []);
   protected readonly warningOptions = computed(() => {
     const labels = new Set<string>();
 
@@ -143,9 +143,9 @@ export class App {
   });
   protected readonly costExplanation = computed(() => {
     const session = this.selectedSession();
-    const ledger = this.ledger();
+    const sessionData = this.sessionData();
 
-    if (!session || !ledger) {
+    if (!session || !sessionData) {
       return null;
     }
 
@@ -153,9 +153,9 @@ export class App {
   });
   protected readonly flowEvents = computed(() => {
     const session = this.selectedSession();
-    const ledger = this.ledger();
+    const sessionData = this.sessionData();
 
-    if (!session || !ledger) {
+    if (!session || !sessionData) {
       return [];
     }
 
@@ -179,9 +179,9 @@ export class App {
   protected readonly selectedTraceEventDetails = computed(() => {
     const event = this.selectedTraceEvent();
     const session = this.selectedSession();
-    const ledger = this.ledger();
+    const sessionData = this.sessionData();
 
-    if (!event || !session || !ledger) {
+    if (!event || !session || !sessionData) {
       return null;
     }
 
@@ -264,24 +264,24 @@ export class App {
     return { count: sessions.length, ...totals };
   });
 
-  private initializedFromLedger = false;
+  private initializedFromSessionData = false;
 
   constructor() {
     effect(() => {
-      const ledger = this.ledger();
+      const sessionData = this.sessionData();
 
-      if (!ledger || this.initializedFromLedger) {
+      if (!sessionData || this.initializedFromSessionData) {
         return;
       }
 
-      this.initializedFromLedger = true;
-      this.selectedId.set(ledger.sessions[0]?.id ?? null);
-      this.compareA.set(ledger.sessions[0]?.id ?? null);
-      this.compareB.set(ledger.sessions[1]?.id ?? null);
+      this.initializedFromSessionData = true;
+      this.selectedId.set(sessionData.sessions[0]?.id ?? null);
+      this.compareA.set(sessionData.sessions[0]?.id ?? null);
+      this.compareB.set(sessionData.sessions[1]?.id ?? null);
     });
   }
 
-  protected selectSession(session: LedgerSession): void {
+  protected selectSession(session: CopilotSession): void {
     this.selectedId.set(session.id);
     this.selectedRunView.set('overview');
     this.selectedTraceEventIndex.set(null);
@@ -339,7 +339,7 @@ export class App {
 
   protected readonly pricingFallbackReason = pricingFallbackReason;
 
-  protected openSession(session: LedgerSession | null): void {
+  protected openSession(session: CopilotSession | null): void {
     if (!session) {
       return;
     }
@@ -351,7 +351,7 @@ export class App {
     this.traceOpenedFromTurns.set(false);
   }
 
-  protected sessionTriage(session: LedgerSession): SessionTriage {
+  protected sessionTriage(session: CopilotSession): SessionTriage {
     return sessionTriage(session);
   }
 
@@ -359,7 +359,7 @@ export class App {
     return sessionSizeHelp(triage);
   }
 
-  private matchesQuery(session: LedgerSession, query: string): boolean {
+  private matchesQuery(session: CopilotSession, query: string): boolean {
     if (!query) {
       return true;
     }
@@ -370,15 +370,15 @@ export class App {
       .includes(query);
   }
 
-  private matchesSizeFilter(session: LedgerSession, value: 'all' | SessionSize): boolean {
+  private matchesSizeFilter(session: CopilotSession, value: 'all' | SessionSize): boolean {
     return value === 'all' || this.sessionTriage(session).size === value;
   }
 
-  private matchesWarningFilter(session: LedgerSession, value: string): boolean {
+  private matchesWarningFilter(session: CopilotSession, value: string): boolean {
     return value === 'all' || this.sessionTriage(session).warnings.some((warning) => warning.label === value);
   }
 
-  private matchesSourceFilter(session: LedgerSession, value: SessionSourceFilter): boolean {
+  private matchesSourceFilter(session: CopilotSession, value: SessionSourceFilter): boolean {
     if (value === 'all') {
       return true;
     }
@@ -451,3 +451,5 @@ export class App {
   }
 
 }
+
+

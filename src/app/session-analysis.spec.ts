@@ -1,8 +1,8 @@
-import { LedgerSession } from './ledger.model';
+import { CopilotSession } from './session-data.model';
 import { buildCostExplanation, matchesTraceFilter, sessionTriage, traceEventDetails } from './session-analysis';
 
 describe('session analysis', () => {
-  const session: LedgerSession = {
+  const session: CopilotSession = {
     id: 'session-1',
     sourceKind: 'vscode-copilot-debug-log',
     tokenSource: 'llm_request_token_totals',
@@ -11,7 +11,7 @@ describe('session analysis', () => {
     status: 'Idle',
     title: 'Review branch changes',
     firstPrompt: 'review branch changes',
-    workspace: 'copilot-cost-ledger',
+    workspace: 'copilot-cost-debugger',
     sourcePath: 'debug-logs/session-1',
     model: 'Claude Sonnet 4.6',
     modelBreakdown: [
@@ -113,3 +113,5 @@ describe('session analysis', () => {
     expect(eventDetails.pricingModel).toBe('Claude Sonnet 4.6');
   });
 });
+
+

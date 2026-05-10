@@ -3,8 +3,8 @@ import { Component, EventEmitter, Input, Output, computed, signal } from '@angul
 import { FormsModule } from '@angular/forms';
 
 import { HelpPopoverComponent } from './help-popover.component';
-import { LedgerSession } from './ledger.model';
-import { contextStats, sessionTotalTokens, tokenTotal, usesPricingFallback } from './ledger-cost-utils';
+import { CopilotSession } from './session-data.model';
+import { contextStats, sessionTotalTokens, tokenTotal, usesPricingFallback } from './session-cost-utils';
 
 type SessionSize = 'Small' | 'Medium' | 'Large' | 'Very large';
 type AnalyticsTimeRange = 'all' | '7d' | '30d' | '90d';
@@ -18,7 +18,7 @@ interface AnalyticsMetric {
 
 interface AnalyticsHighlight {
   label: string;
-  session: LedgerSession | null;
+  session: CopilotSession | null;
   value: string;
   help: string;
 }
@@ -30,12 +30,12 @@ interface AnalyticsHighlight {
   styleUrl: './analytics-page.component.css',
 })
 export class AnalyticsPageComponent {
-  private readonly sessionsInput = signal<LedgerSession[]>([]);
+  private readonly sessionsInput = signal<CopilotSession[]>([]);
   private readonly totalSessionCountInput = signal(0);
 
-  @Output() readonly openSession = new EventEmitter<LedgerSession>();
+  @Output() readonly openSession = new EventEmitter<CopilotSession>();
 
-  @Input() set sessions(value: LedgerSession[] | null | undefined) {
+  @Input() set sessions(value: CopilotSession[] | null | undefined) {
     this.sessionsInput.set(value ?? []);
   }
 
@@ -245,13 +245,13 @@ export class AnalyticsPageComponent {
     this.analyticsGrouping.set('day');
   }
 
-  protected emitOpenSession(session: LedgerSession | null): void {
+  protected emitOpenSession(session: CopilotSession | null): void {
     if (session) {
       this.openSession.emit(session);
     }
   }
 
-  private analyticsModelRows(sessions: LedgerSession[], totalCost: number) {
+  private analyticsModelRows(sessions: CopilotSession[], totalCost: number) {
     const rows = new Map<
       string,
       {
@@ -303,7 +303,7 @@ export class AnalyticsPageComponent {
       .sort((a, b) => b.cost - a.cost);
   }
 
-  private analyticsTrendRows(sessions: LedgerSession[], grouping: AnalyticsGrouping) {
+  private analyticsTrendRows(sessions: CopilotSession[], grouping: AnalyticsGrouping) {
     const rows = new Map<string, { key: string; label: string; count: number; tokens: number; cost: number }>();
 
     for (const session of sessions) {
@@ -319,7 +319,7 @@ export class AnalyticsPageComponent {
     return [...rows.values()].sort((a, b) => b.key.localeCompare(a.key)).slice(0, 8);
   }
 
-  private analyticsOutliers(sessions: LedgerSession[], avgCost: number, avgTokens: number) {
+  private analyticsOutliers(sessions: CopilotSession[], avgCost: number, avgTokens: number) {
     if (!sessions.length) {
       return [];
     }
@@ -342,7 +342,7 @@ export class AnalyticsPageComponent {
       .slice(0, 5);
   }
 
-  private analyticsCutoff(sessions: LedgerSession[], timeRange: AnalyticsTimeRange): number | null {
+  private analyticsCutoff(sessions: CopilotSession[], timeRange: AnalyticsTimeRange): number | null {
     if (timeRange === 'all' || !sessions.length) {
       return null;
     }
@@ -381,7 +381,7 @@ export class AnalyticsPageComponent {
     return { key: this.isoDate(weekStart), label: `Week of ${this.isoDate(weekStart)}` };
   }
 
-  private analyticsOutlierReason(session: LedgerSession, costScore: number, tokenScore: number): string {
+  private analyticsOutlierReason(session: CopilotSession, costScore: number, tokenScore: number): string {
     const totalTokens = sessionTotalTokens(session);
     const inputShare = totalTokens ? (session.tokens.input / totalTokens) * 100 : 0;
     const topModel = this.maxBy(session.modelBreakdown, (row) => row.cost.usd);
@@ -456,3 +456,5 @@ export class AnalyticsPageComponent {
     return date.toISOString().slice(0, 10);
   }
 }
+
+

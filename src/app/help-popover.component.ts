@@ -10,3 +10,5 @@ export class HelpPopoverComponent {
   @Input() label = 'More information';
   @Input() interactive = true;
 }
+
+

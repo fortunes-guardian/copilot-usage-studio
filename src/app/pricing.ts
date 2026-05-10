@@ -1,4 +1,4 @@
-import { TokenBreakdown } from './ledger.model';
+import { TokenBreakdown } from './session-data.model';
 import pricingData from '../../data/github-copilot-pricing.json';
 
 export interface ModelPrice {
@@ -136,3 +136,5 @@ export function estimateCostUsd(model: string, tokens: TokenBreakdown): number {
     (tokens.output / 1_000_000) * price.output
   );
 }
+
+

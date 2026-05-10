@@ -2,7 +2,7 @@ import { DecimalPipe, NgClass } from '@angular/common';
 import { Component, Input } from '@angular/core';
 
 import { HelpPopoverComponent } from './help-popover.component';
-import { LedgerSession, TokenBreakdown } from './ledger.model';
+import { CopilotSession, TokenBreakdown } from './session-data.model';
 
 interface CostAnswerViewModel {
   category: string;
@@ -37,7 +37,7 @@ interface CostCategoryViewModel {
   label: string;
   description: string;
   tokens: number;
-  eur: number;
+  usd: number;
 }
 
 interface ModelCostViewModel {
@@ -50,9 +50,9 @@ interface ModelCostViewModel {
   outputRate: number;
   cachedInputRate: number;
   cacheWriteRate?: number;
-  inputEur: number;
-  outputEur: number;
-  totalEur: number;
+  inputUsd: number;
+  outputUsd: number;
+  totalUsd: number;
   share: number;
   usesFallbackPrice: boolean;
 }
@@ -84,7 +84,7 @@ export interface CostHelpText {
   styleUrl: './session-cost.component.css',
 })
 export class SessionCostComponent {
-  @Input({ required: true }) session!: LedgerSession;
+  @Input({ required: true }) session!: CopilotSession;
   @Input({ required: true }) cost!: SessionCostViewModel;
   @Input({ required: true }) help!: CostHelpText;
   @Input({ required: true }) pricingSourceUrl!: string;
@@ -93,3 +93,5 @@ export class SessionCostComponent {
     return category.label === 'Cached input' || category.label === 'Cache write';
   }
 }
+
+

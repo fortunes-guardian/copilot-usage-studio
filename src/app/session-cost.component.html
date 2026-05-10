@@ -95,7 +95,7 @@
           <em>not priced for this run</em>
         } @else {
           <strong>{{ category.tokens | number }} tokens</strong>
-          <em>${{ category.eur | number: '1.6-6' }}</em>
+          <em>${{ category.usd | number: '1.6-6' }}</em>
         }
       </article>
     }
@@ -144,11 +144,13 @@
           }
         </span>
         <span role="cell" data-label="Cost">
-          ${{ model.totalEur | number: '1.6-6' }}
-          <em>{{ model.inputEur | number: '1.6-6' }} in / {{ model.outputEur | number: '1.6-6' }} out</em>
+          ${{ model.totalUsd | number: '1.6-6' }}
+          <em>{{ model.inputUsd | number: '1.6-6' }} in / {{ model.outputUsd | number: '1.6-6' }} out</em>
         </span>
         <span role="cell" data-label="Share">{{ model.share | number: '1.0-0' }}%</span>
       </div>
     }
   </div>
 </section>
+
+

@@ -323,7 +323,7 @@
 
 .inspector-title {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
+  grid-template-columns: 40px minmax(0, 1fr) auto;
   gap: 10px;
   align-items: start;
 }
@@ -380,6 +380,126 @@
   font-size: 10px;
   font-weight: 850;
   text-transform: uppercase;
+}
+
+.inspector-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.inspector-actions button {
+  min-height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.inspector-actions button:hover {
+  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.inspector-lens {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent-2);
+  border-radius: 12px;
+  padding: 12px;
+  background:
+    linear-gradient(135deg, rgba(31, 209, 165, 0.08), transparent 58%),
+    var(--surface);
+}
+
+.inspector-lens.model-call {
+  border-left-color: rgba(111, 92, 255, 0.95);
+  background:
+    linear-gradient(135deg, rgba(111, 92, 255, 0.13), transparent 58%),
+    var(--surface);
+}
+
+.inspector-lens.tool-call {
+  border-left-color: rgba(255, 186, 74, 0.86);
+  background:
+    linear-gradient(135deg, rgba(255, 186, 74, 0.1), transparent 58%),
+    var(--surface);
+}
+
+.inspector-lens.agent-response {
+  border-left-color: rgba(74, 157, 255, 0.86);
+}
+
+.inspector-lens.discovery {
+  border-left-color: rgba(148, 163, 184, 0.82);
+}
+
+.inspector-lens > span {
+  color: var(--text-strong);
+  font-size: 14px;
+  font-weight: 820;
+}
+
+.inspector-lens p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.inspector-primary-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.inspector-primary-facts div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.inspector-primary-facts div:first-child {
+  grid-column: 1 / -1;
+}
+
+.inspector-primary-facts .cost {
+  border-color: rgba(31, 209, 165, 0.28);
+  background: rgba(31, 209, 165, 0.07);
+}
+
+.inspector-primary-facts .tool {
+  border-color: rgba(255, 186, 74, 0.32);
+  background: rgba(255, 186, 74, 0.08);
+}
+
+.inspector-primary-facts dt,
+.inspector-primary-facts dd {
+  margin: 0;
+}
+
+.inspector-primary-facts dt {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.inspector-primary-facts dd {
+  color: var(--text-strong);
+  font-size: 13px;
+  font-weight: 820;
+  overflow-wrap: anywhere;
 }
 
 .inspector-topline {
@@ -486,10 +606,26 @@
 }
 
 .raw-event summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 780;
   cursor: pointer;
+}
+
+.raw-event summary span {
+  color: var(--text);
+}
+
+.raw-event summary em {
+  color: var(--muted-2);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 650;
+  text-align: right;
 }
 
 .raw-event pre {
@@ -597,12 +733,13 @@
     grid-template-columns: 1fr;
   }
 
-  .inspector-fields div,
-  .inspector-fields.compact div,
-  .inspector-topline,
-  .flow-node {
-    grid-template-columns: 1fr;
-  }
+.inspector-fields div,
+.inspector-fields.compact div,
+.inspector-topline,
+.inspector-primary-facts,
+.flow-node {
+  grid-template-columns: 1fr;
+}
 }
 
 /* UI polish: calmer trace reader */
@@ -688,7 +825,7 @@
 }
 
 .inspector-title {
-  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-columns: 34px minmax(0, 1fr) auto;
 }
 
 .inspector-title > span {
@@ -745,4 +882,23 @@
   .event-row {
     grid-template-columns: 1fr;
   }
+
+  .inspector-title {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .inspector-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  .raw-event summary {
+    display: grid;
+  }
+
+  .raw-event summary em {
+    text-align: left;
+  }
 }
+
+

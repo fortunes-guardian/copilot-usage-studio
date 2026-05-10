@@ -10,7 +10,7 @@ import {
 const usdToEur = Number(process.env.USD_TO_EUR ?? '1');
 const outFile = resolve(process.argv[2] ?? 'public/data/sessions.json');
 const explicitRoots = process.argv.length > 3 ? process.argv.slice(3) : [];
-const ledgerSchemaVersion = 1;
+const sessionDataSchemaVersion = 1;
 const pricingData = JSON.parse(readFileSync(new URL('../data/github-copilot-pricing.json', import.meta.url), 'utf8'));
 const pricingVersion = pricingData.version;
 const pricingSourceUrl = pricingData.sourceUrl;
@@ -883,7 +883,7 @@ writeFileSync(
   outFile,
   JSON.stringify(
     {
-      schemaVersion: ledgerSchemaVersion,
+      schemaVersion: sessionDataSchemaVersion,
       generatedAt: new Date().toISOString(),
       pricingVersion,
       pricingSourceUrl,

@@ -1,5 +1,5 @@
 {
-  "name": "copilot-cost-ledger",
+  "name": "copilot-cost-debugger",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
@@ -10,7 +10,7 @@
     "test": "ng test",
     "clean:ng-cache": "ng cache clean",
     "scan": "node scripts/scan-vscode-sessions.mjs",
-    "verify:data": "node scripts/verify-ledger-data.mjs"
+    "verify:data": "node scripts/verify-session-data.mjs"
   },
   "private": true,
   "packageManager": "npm@11.11.0",

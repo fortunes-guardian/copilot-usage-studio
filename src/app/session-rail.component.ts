@@ -2,7 +2,7 @@ import { DatePipe, DecimalPipe, NgClass } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { LedgerSession } from './ledger.model';
+import { CopilotSession } from './session-data.model';
 import { SessionSize, SessionTriage, sessionTriage } from './session-analysis';
 
 export type SessionSourceFilter = 'all' | 'debug-log' | 'chat-snapshot' | 'exact' | 'estimated';
@@ -14,8 +14,8 @@ export type SessionSourceFilter = 'all' | 'debug-log' | 'chat-snapshot' | 'exact
   styleUrl: './session-rail.component.css',
 })
 export class SessionRailComponent {
-  @Input({ required: true }) sessions: LedgerSession[] = [];
-  @Input({ required: true }) filteredSessions: LedgerSession[] = [];
+  @Input({ required: true }) sessions: CopilotSession[] = [];
+  @Input({ required: true }) filteredSessions: CopilotSession[] = [];
   @Input() selectedSessionId: string | null = null;
   @Input() query = '';
   @Input() sizeFilter: 'all' | SessionSize = 'all';
@@ -29,9 +29,9 @@ export class SessionRailComponent {
   @Output() readonly sizeFilterChange = new EventEmitter<'all' | SessionSize>();
   @Output() readonly warningFilterChange = new EventEmitter<string>();
   @Output() readonly sourceFilterChange = new EventEmitter<SessionSourceFilter>();
-  @Output() readonly selectSession = new EventEmitter<LedgerSession>();
+  @Output() readonly selectSession = new EventEmitter<CopilotSession>();
 
-  protected sessionTriage(session: LedgerSession): SessionTriage {
+  protected sessionTriage(session: CopilotSession): SessionTriage {
     return sessionTriage(session);
   }
 
@@ -47,7 +47,9 @@ export class SessionRailComponent {
     return sourceKind;
   }
 
-  protected trackBySessionId(_: number, session: LedgerSession): string {
+  protected trackBySessionId(_: number, session: CopilotSession): string {
     return session.id;
   }
 }
+
+

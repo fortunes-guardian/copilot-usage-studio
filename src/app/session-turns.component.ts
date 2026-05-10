@@ -20,9 +20,9 @@ interface ModelCallRowViewModel {
   totalTokens: number;
   inputTokens: number;
   outputTokens: number;
-  estimatedEur: number;
-  inputEur: number;
-  outputEur: number;
+  estimatedUsd: number;
+  inputUsd: number;
+  outputUsd: number;
   share: number;
   contextLabel: string;
   contextDetail: string;
@@ -46,3 +46,5 @@ export class SessionTurnsComponent {
   @Output() sortChange = new EventEmitter<ModelCallSort>();
   @Output() openTraceEvent = new EventEmitter<number>();
 }
+
+

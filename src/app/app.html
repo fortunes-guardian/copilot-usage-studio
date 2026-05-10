@@ -1,7 +1,7 @@
 <main class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="brand-mark" aria-hidden="true">CL</span>
+      <span class="brand-mark" aria-hidden="true">CD</span>
       <div>
         <p class="eyebrow">Local cost debugger</p>
         <h1>Copilot Cost Debugger</h1>
@@ -51,7 +51,7 @@
     }
 
   <section class="content">
-    <app-ledger-state-panel [state]="ledgerLoadState()" [error]="ledgerLoadError()"></app-ledger-state-panel>
+    <app-session-data-state-panel [state]="sessionDataLoadState()" [error]="sessionDataLoadError()"></app-session-data-state-panel>
 
     @if (activeView() === 'pricing') {
       <app-pricing-page
@@ -75,7 +75,7 @@
       ></app-compare-page>
     } @else if (activeView() === 'sessions') {
     <section class="sessions-page">
-      @if (ledger()?.ingestion; as ingestion) {
+      @if (sessionData()?.ingestion; as ingestion) {
         <app-session-import-context
           [ingestion]="ingestion"
           [summary]="summary()"
@@ -204,3 +204,5 @@
   </section>
   </div>
 </main>
+
+

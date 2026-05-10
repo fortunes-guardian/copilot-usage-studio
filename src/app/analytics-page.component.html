@@ -61,21 +61,15 @@
         }
       </section>
     } @else {
-      <section class="analytics-metrics" aria-label="Analytics summary">
-        @for (metric of stats.metrics; track metric.label) {
-          <article class="metric">
-            <span class="metric-label">
-              {{ metric.label }}
-              <app-help-popover [text]="metric.help" [label]="'Explain ' + metric.label"></app-help-popover>
-            </span>
-            <strong>{{ metric.value }}</strong>
-          </article>
-        }
-      </section>
-
       <section class="analytics-primary">
         <div class="analytics-panel model-panel">
-          <h3>Model breakdown</h3>
+          <div class="panel-heading">
+            <div>
+              <h3>Model breakdown</h3>
+              <p>Which pricing rows are driving this cohort.</p>
+            </div>
+            <span>{{ stats.modelRows.length | number }} rows</span>
+          </div>
           <div class="cost-table compact-table" role="table" aria-label="Model breakdown">
             <div class="cost-row analytics-model-row cost-row-heading">
               <span>Model</span>
@@ -98,7 +92,10 @@
                 <span>{{ model.tokens | number }}<em>{{ model.input | number }} in / {{ model.output | number }} out</em></span>
                 <span>${{ model.cost | number: '1.2-4' }}</span>
                 <span>${{ model.costPer1k | number: '1.4-4' }}</span>
-                <span>{{ model.share | number: '1.0-0' }}%</span>
+                <span class="share-cell">
+                  {{ model.share | number: '1.0-0' }}%
+                  <i [style.width.%]="model.share"></i>
+                </span>
               </div>
             } @empty {
               <p class="empty">No model rows for the current Analytics cohort.</p>
@@ -107,6 +104,21 @@
         </div>
 
         <aside class="analytics-side">
+          <div class="analytics-panel summary-panel">
+            <h3>Cohort totals</h3>
+            <section class="analytics-metrics" aria-label="Analytics summary">
+              @for (metric of stats.metrics; track metric.label) {
+                <article class="metric">
+                  <span class="metric-label">
+                    {{ metric.label }}
+                    <app-help-popover [text]="metric.help" [label]="'Explain ' + metric.label"></app-help-popover>
+                  </span>
+                  <strong>{{ metric.value }}</strong>
+                </article>
+              }
+            </section>
+          </div>
+
           <div class="analytics-panel">
             <h3>Distribution</h3>
             <div class="stat-list compact">
@@ -178,3 +190,5 @@
     }
   </section>
 }
+
+

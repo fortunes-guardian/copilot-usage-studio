@@ -3,7 +3,7 @@ import { Component, EventEmitter, Input, Output, computed, signal } from '@angul
 import { FormsModule } from '@angular/forms';
 
 import { HelpPopoverComponent } from './help-popover.component';
-import { LedgerSession } from './ledger.model';
+import { CopilotSession } from './session-data.model';
 import {
   COPILOT_AI_CREDIT_USD,
   COPILOT_ALLOWANCE_PLANS,
@@ -25,10 +25,10 @@ import {
   styleUrl: './pricing-page.component.css',
 })
 export class PricingPageComponent {
-  private readonly sessionsInput = signal<LedgerSession[]>([]);
+  private readonly sessionsInput = signal<CopilotSession[]>([]);
   private readonly selectedAllowancePlanInput = signal<CopilotAllowancePlan>('business-standard');
 
-  @Input() set sessions(value: LedgerSession[] | null | undefined) {
+  @Input() set sessions(value: CopilotSession[] | null | undefined) {
     this.sessionsInput.set(value ?? []);
   }
 
@@ -47,7 +47,8 @@ export class PricingPageComponent {
   protected readonly creditUsd = COPILOT_AI_CREDIT_USD;
   protected readonly allowancePlans = COPILOT_ALLOWANCE_PLANS;
   protected readonly help = {
-    inputTokens: 'Everything sent into the model: prompt, repo context, prior conversation, and tool results.',
+    inputTokens:
+      'Everything sent into the model: prompt, repo context, prior conversation, and tool results.',
     outputTokens: 'Generated model response tokens.',
     cachedInput:
       'Tokens served from a provider cache when that data is available. Current local VS Code debug logs do not show this field.',
@@ -61,20 +62,25 @@ export class PricingPageComponent {
       'GitHub states that 1 AI credit equals $0.01 USD. The app converts the local USD estimate into credits with that fixed rate.',
   };
 
-  protected readonly selectedAllowance = computed(() =>
-    COPILOT_ALLOWANCE_PLANS.find((plan) => plan.id === this.selectedAllowancePlanInput()) ?? COPILOT_ALLOWANCE_PLANS[0],
+  protected readonly selectedAllowance = computed(
+    () =>
+      COPILOT_ALLOWANCE_PLANS.find((plan) => plan.id === this.selectedAllowancePlanInput()) ??
+      COPILOT_ALLOWANCE_PLANS[0],
   );
 
   protected readonly totalEstimateUsd = computed(() =>
     this.sessionsInput().reduce((sum, session) => sum + session.cost.usd, 0),
   );
 
-  protected readonly totalEstimateCredits = computed(() => this.totalEstimateUsd() / COPILOT_AI_CREDIT_USD);
+  protected readonly totalEstimateCredits = computed(
+    () => this.totalEstimateUsd() / COPILOT_AI_CREDIT_USD,
+  );
 
   protected readonly selectedAllowanceUsage = computed(() => {
     const allowance = this.selectedAllowance();
     const credits = this.totalEstimateCredits();
-    const share = allowance.creditsPerUserMonthly > 0 ? (credits / allowance.creditsPerUserMonthly) * 100 : 0;
+    const share =
+      allowance.creditsPerUserMonthly > 0 ? (credits / allowance.creditsPerUserMonthly) * 100 : 0;
 
     return {
       credits,
@@ -93,12 +99,16 @@ export class PricingPageComponent {
       ),
       usedDirectly: this.sessionsInput().some((session) =>
         session.modelBreakdown.some(
-          (entry) => entry.pricingModel === model && !this.usesPricingFallback(entry.model, entry.pricingModel),
+          (entry) =>
+            entry.pricingModel === model &&
+            !this.usesPricingFallback(entry.model, entry.pricingModel),
         ),
       ),
       usedAsFallback: this.sessionsInput().some((session) =>
         session.modelBreakdown.some(
-          (entry) => entry.pricingModel === model && this.usesPricingFallback(entry.model, entry.pricingModel),
+          (entry) =>
+            entry.pricingModel === model &&
+            this.usesPricingFallback(entry.model, entry.pricingModel),
         ),
       ),
     })),
@@ -116,3 +126,5 @@ export class PricingPageComponent {
 
   private readonly usesPricingFallback = modelUsesPricingFallback;
 }
+
+

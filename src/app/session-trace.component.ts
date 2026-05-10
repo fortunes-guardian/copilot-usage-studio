@@ -9,9 +9,10 @@ import {
   Output,
   SimpleChanges,
   inject,
+  signal,
 } from '@angular/core';
 
-import { TraceEvent } from './ledger.model';
+import { TraceEvent } from './session-data.model';
 
 type TraceView = 'logs' | 'flow';
 type TraceFilter = 'all' | 'model' | 'tool' | 'discovery' | 'message' | 'response' | 'error';
@@ -42,7 +43,7 @@ export interface TraceEventDetailsViewModel {
   attributeFields: TraceDetailField[];
   detail: string;
   hasCost: boolean;
-  estimatedEur: number;
+  estimatedUsd: number;
   totalTokens: number;
   pricingModel: string;
   usesFallbackPrice: boolean;
@@ -51,7 +52,7 @@ export interface TraceEventDetailsViewModel {
 export interface FlowTraceEventViewModel extends TraceEvent {
   flowIndex: number;
   totalTokens: number;
-  estimatedEur: number;
+  estimatedUsd: number;
 }
 
 @Component({
@@ -63,6 +64,7 @@ export interface FlowTraceEventViewModel extends TraceEvent {
 export class SessionTraceComponent implements OnChanges, AfterViewChecked {
   private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
   private pendingScrollIndex: number | null = null;
+  protected readonly copiedTarget = signal<'detail' | 'json' | null>(null);
 
   @Input({ required: true }) traceView!: TraceView;
   @Input({ required: true }) traceFilter!: TraceFilter;
@@ -107,7 +109,16 @@ export class SessionTraceComponent implements OnChanges, AfterViewChecked {
   }
 
   protected eventKind(event: TraceEvent): string {
-    if (event.inputTokens || event.outputTokens || event.type === 'llm_request') {
+    if (
+      event.inputTokens ||
+      event.outputTokens ||
+      event.type === 'llm_request' ||
+      event.type.toLowerCase().includes('model') ||
+      event.model ||
+      event.rawModel ||
+      this.modelLikeText(event.name) ||
+      this.modelLikeText(event.detail)
+    ) {
       return 'model-call';
     }
 
@@ -180,6 +191,14 @@ export class SessionTraceComponent implements OnChanges, AfterViewChecked {
     return JSON.stringify(event, null, 2);
   }
 
+  protected copyEventDetail(event: TraceEvent, details: TraceEventDetailsViewModel): void {
+    void this.copyText(details.detail || event.detail || '', 'detail');
+  }
+
+  protected copyEventJson(event: TraceEvent): void {
+    void this.copyText(this.eventJson(event), 'json');
+  }
+
   protected inspectorMode(event: TraceEvent): string {
     return this.eventKind(event);
   }
@@ -245,7 +264,7 @@ export class SessionTraceComponent implements OnChanges, AfterViewChecked {
       return [
         {
           label: 'Estimate',
-          value: details.hasCost ? `$${this.formatCost(details.estimatedEur)}` : 'No token cost',
+          value: details.hasCost ? `$${this.formatCost(details.estimatedUsd)}` : 'No token cost',
           tone: details.hasCost ? 'cost' : 'plain',
         },
         { label: 'Total tokens', value: details.hasCost ? details.totalTokens.toLocaleString() : 'n/a' },
@@ -260,7 +279,7 @@ export class SessionTraceComponent implements OnChanges, AfterViewChecked {
         { label: 'Tool/event', value: event.name, tone: 'tool' },
         { label: 'Status', value: event.status },
         { label: 'Payload fields', value: `${details.attributeFields.length}` },
-        { label: 'Direct cost', value: details.hasCost ? `$${this.formatCost(details.estimatedEur)}` : 'None' },
+        { label: 'Direct cost', value: details.hasCost ? `$${this.formatCost(details.estimatedUsd)}` : 'None' },
       ];
     }
 
@@ -321,10 +340,33 @@ export class SessionTraceComponent implements OnChanges, AfterViewChecked {
       .some((toolName) => name.toLowerCase().includes(toolName));
   }
 
+  private modelLikeText(value: string): boolean {
+    const normalized = value.toLowerCase();
+
+    return ['gpt-', 'claude', 'gemini', 'o3', 'o4', 'llm_request', 'language model', 'copilotlanguagemodel']
+      .some((marker) => normalized.includes(marker));
+  }
+
   private formatCost(value: number): string {
     return value.toLocaleString(undefined, {
       minimumFractionDigits: 6,
       maximumFractionDigits: 6,
     });
   }
+
+  private async copyText(text: string, target: 'detail' | 'json'): Promise<void> {
+    if (!text.trim()) {
+      return;
+    }
+
+    await navigator.clipboard.writeText(text);
+    this.copiedTarget.set(target);
+    window.setTimeout(() => {
+      if (this.copiedTarget() === target) {
+        this.copiedTarget.set(null);
+      }
+    }, 1600);
+  }
 }
+
+

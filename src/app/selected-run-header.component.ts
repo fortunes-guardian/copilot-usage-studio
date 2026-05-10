@@ -3,7 +3,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { HelpPopoverComponent } from './help-popover.component';
-import { LedgerSession } from './ledger.model';
+import { CopilotSession } from './session-data.model';
 import { CopilotAllowance, CopilotAllowancePlan } from './pricing';
 import { SessionTriage } from './session-analysis';
 
@@ -24,7 +24,7 @@ interface PricingFallback {
   styleUrl: './selected-run-header.component.css',
 })
 export class SelectedRunHeaderComponent {
-  @Input({ required: true }) session!: LedgerSession;
+  @Input({ required: true }) session!: CopilotSession;
   @Input() triage: SessionTriage | null = null;
   @Input({ required: true }) allowancePlan!: CopilotAllowancePlan;
   @Input({ required: true }) allowancePlans: CopilotAllowance[] = [];
@@ -44,3 +44,5 @@ export class SelectedRunHeaderComponent {
   @Output() readonly openFirstFilteredSession = new EventEmitter<void>();
   @Output() readonly viewPrices = new EventEmitter<void>();
 }
+
+

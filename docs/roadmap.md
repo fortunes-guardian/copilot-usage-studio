@@ -179,7 +179,7 @@ Done:
 
 - Moved GitHub Copilot pricing into one shared JSON file used by the scanner, verifier, and UI.
 - Added a visible app data loading/error state for `/data/sessions.json`.
-- Moved generated session-data loading into `LedgerDataService`.
+- Moved generated session-data loading into `SessionDataService`.
 - Added shared UI cost helpers for model-cost rows, token totals, context growth, percent deltas, and pricing fallback explanations.
 
 Build:
