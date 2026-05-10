@@ -122,18 +122,18 @@ export class AnalyticsPageComponent {
     const count = sessions.length;
     const sidebarCount = this.sessionsInput().length;
     const totalTokens = sessions.reduce((sum, session) => sum + sessionTotalTokens(session), 0);
-    const totalCost = sessions.reduce((sum, session) => sum + session.cost.eur, 0);
+    const totalCost = sessions.reduce((sum, session) => sum + session.cost.usd, 0);
     const avgTokens = count ? totalTokens / count : 0;
     const avgCost = count ? totalCost / count : 0;
     const costPer1k = totalTokens ? (totalCost / totalTokens) * 1000 : 0;
     const highestTokens = this.maxBy(sessions, (session) => sessionTotalTokens(session));
-    const highestCost = this.maxBy(sessions, (session) => session.cost.eur);
+    const highestCost = this.maxBy(sessions, (session) => session.cost.usd);
     const modelRows = this.analyticsModelRows(sessions, totalCost);
     const trendRows = this.analyticsTrendRows(sessions, this.analyticsGrouping());
     const distribution = this.sizeOptions.map((size) => {
       const bucket = sessions.filter((session) => this.sessionSize(sessionTotalTokens(session)) === size);
       const tokens = bucket.reduce((sum, session) => sum + sessionTotalTokens(session), 0);
-      const cost = bucket.reduce((sum, session) => sum + session.cost.eur, 0);
+      const cost = bucket.reduce((sum, session) => sum + session.cost.usd, 0);
 
       return {
         size,
@@ -177,7 +177,7 @@ export class AnalyticsPageComponent {
       metrics: [
         {
           label: 'Total estimate',
-          value: `€${totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          value: `$${totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
           help: 'Sum of local cost estimates for the sessions currently included by the sidebar filters.',
         },
         {
@@ -187,7 +187,7 @@ export class AnalyticsPageComponent {
         },
         {
           label: 'Avg cost / run',
-          value: `€${avgCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`,
+          value: `$${avgCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`,
           help: 'Mean estimated cost per included session.',
         },
         {
@@ -197,8 +197,8 @@ export class AnalyticsPageComponent {
         },
         {
           label: 'Cost / 1k tokens',
-          value: `€${costPer1k.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`,
-          help: 'Estimated EUR per 1,000 imported tokens. This moves when model mix or input/output mix changes.',
+          value: `$${costPer1k.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`,
+          help: 'Estimated USD per 1,000 imported tokens. This moves when model mix or input/output mix changes.',
         },
       ] satisfies AnalyticsMetric[],
       highlights: [
@@ -211,7 +211,7 @@ export class AnalyticsPageComponent {
         {
           label: 'Most expensive run',
           session: highestCost,
-          value: highestCost ? `€${highestCost.cost.eur.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}` : 'n/a',
+          value: highestCost ? `$${highestCost.cost.usd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}` : 'n/a',
           help: 'The included session with the highest local cost estimate.',
         },
       ] satisfies AnalyticsHighlight[],
@@ -287,7 +287,7 @@ export class AnalyticsPageComponent {
         current.tokens += tokenTotal(entry.tokens);
         current.input += entry.tokens.input;
         current.output += entry.tokens.output;
-        current.cost += entry.cost.eur;
+        current.cost += entry.cost.usd;
         rows.set(key, current);
       }
     }
@@ -312,7 +312,7 @@ export class AnalyticsPageComponent {
 
       current.count += 1;
       current.tokens += sessionTotalTokens(session);
-      current.cost += session.cost.eur;
+      current.cost += session.cost.usd;
       rows.set(group.key, current);
     }
 
@@ -324,13 +324,13 @@ export class AnalyticsPageComponent {
       return [];
     }
 
-    const costStd = this.standardDeviation(sessions.map((session) => session.cost.eur));
+    const costStd = this.standardDeviation(sessions.map((session) => session.cost.usd));
     const tokenStd = this.standardDeviation(sessions.map((session) => sessionTotalTokens(session)));
 
     return sessions
       .map((session) => {
         const tokens = sessionTotalTokens(session);
-        const costScore = costStd > 0 ? (session.cost.eur - avgCost) / costStd : 0;
+        const costScore = costStd > 0 ? (session.cost.usd - avgCost) / costStd : 0;
         const tokenScore = tokenStd > 0 ? (tokens - avgTokens) / tokenStd : 0;
         const score = Math.max(costScore, tokenScore);
         const reason = this.analyticsOutlierReason(session, costScore, tokenScore);
@@ -338,7 +338,7 @@ export class AnalyticsPageComponent {
         return { session, tokens, score, reason };
       })
       .filter((row) => row.score >= 1 || sessions.length <= 5)
-      .sort((a, b) => b.score - a.score || b.session.cost.eur - a.session.cost.eur)
+      .sort((a, b) => b.score - a.score || b.session.cost.usd - a.session.cost.usd)
       .slice(0, 5);
   }
 
@@ -384,8 +384,8 @@ export class AnalyticsPageComponent {
   private analyticsOutlierReason(session: LedgerSession, costScore: number, tokenScore: number): string {
     const totalTokens = sessionTotalTokens(session);
     const inputShare = totalTokens ? (session.tokens.input / totalTokens) * 100 : 0;
-    const topModel = this.maxBy(session.modelBreakdown, (row) => row.cost.eur);
-    const topModelShare = topModel && session.cost.eur > 0 ? (topModel.cost.eur / session.cost.eur) * 100 : 0;
+    const topModel = this.maxBy(session.modelBreakdown, (row) => row.cost.usd);
+    const topModelShare = topModel && session.cost.usd > 0 ? (topModel.cost.usd / session.cost.usd) * 100 : 0;
     const stats = contextStats(session);
     const modelTurns = session.traceSummary.modelTurns;
     const toolCalls = session.traceSummary.toolCalls;

@@ -73,7 +73,7 @@
               <div>
                 <span>Event cost</span>
                 @if (details.hasCost) {
-                  <strong>€{{ details.estimatedEur | number: '1.6-6' }}</strong>
+                  <strong>${{ details.estimatedEur | number: '1.6-6' }}</strong>
                 } @else {
                   <strong>No token cost</strong>
                 }
@@ -137,7 +137,7 @@
           <div>
             <strong>{{ event.type }}</strong>
             @if (event.totalTokens) {
-              <em>{{ event.totalTokens | number }} tokens · about €{{ event.estimatedEur | number: '1.6-6' }}</em>
+              <em>{{ event.totalTokens | number }} tokens · about ${{ event.estimatedEur | number: '1.6-6' }}</em>
             }
           </div>
           <p>{{ event.detail }}</p>

@@ -59,7 +59,7 @@
             <em>{{ event.inputTokens | number }} in / {{ event.outputTokens | number }} out</em>
           </span>
           <span role="cell" data-label="Cost">
-            €{{ event.estimatedEur | number: '1.6-6' }}
+            ${{ event.estimatedEur | number: '1.6-6' }}
             <em>{{ event.inputEur | number: '1.6-6' }} in / {{ event.outputEur | number: '1.6-6' }} out</em>
           </span>
           <span role="cell" data-label="Share">{{ event.share | number: '1.0-0' }}%</span>

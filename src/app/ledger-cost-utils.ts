@@ -20,15 +20,14 @@ export interface PricedModelBreakdown extends ModelBreakdown {
 
 export function explainModelCost(
   entry: ModelBreakdown,
-  usdToEur: number,
   sessionCostEur: number,
 ): PricedModelBreakdown {
   const pricingModel = entry.pricingModel || entry.model;
   const price = priceForPricingModel(pricingModel);
-  const inputEur = tokenCostEur(entry.tokens.input, price.input, usdToEur);
-  const cachedInputEur = tokenCostEur(entry.tokens.cachedInput, price.cachedInput, usdToEur);
-  const cacheWriteEur = tokenCostEur(entry.tokens.cacheWrite, price.cacheWrite ?? 0, usdToEur);
-  const outputEur = tokenCostEur(entry.tokens.output, price.output, usdToEur);
+  const inputEur = tokenCostEur(entry.tokens.input, price.input);
+  const cachedInputEur = tokenCostEur(entry.tokens.cachedInput, price.cachedInput);
+  const cacheWriteEur = tokenCostEur(entry.tokens.cacheWrite, price.cacheWrite ?? 0);
+  const outputEur = tokenCostEur(entry.tokens.output, price.output);
   const totalEur = inputEur + cachedInputEur + cacheWriteEur + outputEur;
 
   return {
@@ -72,8 +71,8 @@ export function contextStats(
   };
 }
 
-export function tokenCostEur(tokens: number, usdPerMillion: number, usdToEur: number): number {
-  return (tokens / 1_000_000) * usdPerMillion * usdToEur;
+export function tokenCostEur(tokens: number, usdPerMillion: number): number {
+  return (tokens / 1_000_000) * usdPerMillion;
 }
 
 export function tokenTotal(tokens: TokenBreakdown): number {

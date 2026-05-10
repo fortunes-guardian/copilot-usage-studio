@@ -8,7 +8,7 @@ type LedgerIngestion = NonNullable<LedgerData['ingestion']>;
 
 interface LedgerSummary {
   count: number;
-  eur: number;
+  usd: number;
 }
 
 @Component({

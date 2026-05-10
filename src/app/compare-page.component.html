@@ -30,18 +30,18 @@
       <div>
         <span>Comparison read</span>
         <strong [class.saving]="diff.costDelta < 0">
-          {{ diff.costDelta < 0 ? '-' : '+' }}€{{ abs(diff.costDelta) | number: '1.2-4' }}
+          {{ diff.costDelta < 0 ? '-' : '+' }}${{ abs(diff.costDelta) | number: '1.2-4' }}
         </strong>
         <p>{{ diff.summary }}</p>
       </div>
       <dl>
         <div>
           <dt>A</dt>
-          <dd>{{ diff.a.cost.eur | number: '1.2-2' }} EUR</dd>
+          <dd>{{ diff.a.cost.usd | number: '1.2-2' }} USD</dd>
         </div>
         <div>
           <dt>B</dt>
-          <dd>{{ diff.b.cost.eur | number: '1.2-2' }} EUR</dd>
+          <dd>{{ diff.b.cost.usd | number: '1.2-2' }} USD</dd>
         </div>
         <div>
           <dt>Tokens</dt>
@@ -59,9 +59,9 @@
           </span>
           @if (metric.format === 'currency') {
             <strong [class.saving]="metric.lowerIsBetter && metric.delta < 0">
-              {{ metric.delta < 0 ? '-' : '+' }}€{{ abs(metric.delta) | number: '1.2-4' }}
+              {{ metric.delta < 0 ? '-' : '+' }}${{ abs(metric.delta) | number: '1.2-4' }}
             </strong>
-            <em>A €{{ metric.a | number: '1.2-4' }} / B €{{ metric.b | number: '1.2-4' }}</em>
+            <em>A ${{ metric.a | number: '1.2-4' }} / B ${{ metric.b | number: '1.2-4' }}</em>
           } @else if (metric.format === 'percent') {
             <strong [class.saving]="metric.lowerIsBetter && metric.delta < 0">
               {{ metric.delta >= 0 ? '+' : '' }}{{ metric.delta | number: '1.0-0' }} pts
@@ -127,11 +127,11 @@
                 </em>
               }
             </span>
-            <span>€{{ model.aCost | number: '1.4-6' }} / €{{ model.bCost | number: '1.4-6' }}</span>
+            <span>${{ model.aCost | number: '1.4-6' }} / ${{ model.bCost | number: '1.4-6' }}</span>
             <span>{{ model.tokenDelta >= 0 ? '+' : '' }}{{ model.tokenDelta | number }}</span>
             <span>{{ model.aTurns | number }} / {{ model.bTurns | number }}</span>
             <span [class.saving]="model.costDelta < 0">
-              {{ model.costDelta < 0 ? '-' : '+' }}€{{ abs(model.costDelta) | number: '1.4-6' }}
+              {{ model.costDelta < 0 ? '-' : '+' }}${{ abs(model.costDelta) | number: '1.4-6' }}
             </span>
           </div>
         }

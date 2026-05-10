@@ -102,11 +102,11 @@ Costs are estimates calculated from token totals and the local pricing table. Th
 - `cost.usd`
 - `cost.eur`
 
-The current pricing version is `github-copilot-usage-pricing-2026-06-01`. `USD_TO_EUR` defaults to `0.93` unless overridden for a scan.
+The current pricing version is `github-copilot-usage-pricing-2026-06-01`. The app displays `cost.usd` and treats USD as the canonical estimate because GitHub prices and AI credits are USD-native. The `cost.eur` and `usdToEur` fields remain only as legacy schema compatibility fields; new scans default `usdToEur` to `1`.
 
 The GitHub rate card lives in `data/github-copilot-pricing.json`. The scanner, verifier, and UI all read this same file. Why: pricing is part of the data contract. If the app calculates cost with one table and explains it with another, the debugger becomes untrustworthy.
 
-When a debug-log session uses more than one model, cost is calculated per `modelBreakdown` entry and then summed into `cost.usd` and `cost.eur`. Why: applying one session-level model price to all tokens is wrong for mixed runs and hides model-switching behavior.
+When a debug-log session uses more than one model, cost is calculated per `modelBreakdown` entry and then summed into `cost.usd`. Why: applying one session-level model price to all tokens is wrong for mixed runs and hides model-switching behavior.
 
 The price table is copied from GitHub's public Copilot model pricing documentation, then exposed in the UI as a first-class `GitHub prices` view. Why: cost estimates should be inspectable from their inputs. A user should not have to trust a hidden rate card.
 

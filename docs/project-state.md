@@ -133,7 +133,7 @@ Code improvements to schedule:
 
 ## Latest Implemented Step
 
-Tightened Analytics and Trace UI defects from visual review.
+Switched visible estimates back to USD and tightened Analytics, Trace, and Cost UI defects from visual review.
 
 What changed:
 
@@ -143,14 +143,20 @@ What changed:
 - Removed the selected-run detail overflow trap that could break sticky Trace behavior.
 - Changed Trace to stack the selected-event inspector above the log on narrower content widths, keep it sticky while scrolling, and scroll internally when details are long.
 - Fixed squeezed Trace event rows that could collapse detail text into one-character columns.
+- Folded the Cost tab's separate billing caveat and estimate-scope callouts into one compact estimate strip.
+- Removed duplicate helper captions from Cost drivers, Token categories, and Model price rows so the useful debugging rows dominate the page.
+- Kept the GitHub price source visible as a compact link instead of another full-width callout.
+- Changed selected-run, sidebar, Cost, Turns, Trace, Compare, Analytics, and imported-session totals to display USD instead of converted EUR.
+- Stopped Angular cost analysis from using `usdToEur`; local estimates now use USD-native GitHub rates directly.
+- Changed new scans to default the legacy `usdToEur` field to `1` so future generated compatibility fields do not apply a hidden conversion.
 
-Why: Analytics should prioritize "what is happening across sessions?" and Trace should keep selected-event evidence visible while a developer scrolls through raw events. The UI was letting support/caveat elements crowd the main task.
+Why: GitHub's pricing table, AI-credit conversion, and additional-usage budgets are all USD-native. Showing EUR added a conversion assumption without helping the cost-debugging job.
 
 Verification:
 
 - `npm run build`
 - `npm test -- --watch=false`
-- Browser sanity check on Analytics and Trace at `http://127.0.0.1:4301/`
+- Browser sanity check on Analytics, Trace, and Cost at `http://127.0.0.1:4301/`
 
 ## Previous Implemented Step
 

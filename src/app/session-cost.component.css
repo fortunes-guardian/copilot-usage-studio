@@ -12,8 +12,7 @@
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
 }
 
-.cost-explainer-header,
-.source-callout {
+.cost-explainer-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -40,17 +39,20 @@
   font-size: 13px;
 }
 
-.source-pill {
+.price-link {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  border: 1px solid rgba(31, 209, 165, 0.35);
+  justify-self: start;
+  width: fit-content;
+  min-height: 28px;
+  border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 6px 10px;
-  background: var(--teal-soft);
-  color: #bbfff0;
+  padding: 0 10px;
+  background: var(--surface-soft);
+  color: var(--text);
   font-size: 12px;
   font-weight: 800;
+  text-decoration: none;
   white-space: nowrap;
 }
 
@@ -132,75 +134,52 @@
   overflow-wrap: anywhere;
 }
 
-.billing-reality {
+.estimate-strip {
   display: grid;
-  grid-template-columns: minmax(220px, 0.7fr) minmax(0, 1.3fr);
-  gap: 12px;
-  border: 1px solid var(--line);
-  border-left: 4px solid #9eb3bd;
-  border-radius: 8px;
-  padding: 14px;
-  background: var(--surface);
-}
-
-.billing-reality.high {
-  border-left-color: var(--danger);
-}
-
-.billing-reality-main h4 {
-  margin: 4px 0 6px;
-  color: var(--text-strong);
-  font-size: 18px;
-}
-
-.billing-reality-main p:last-child {
-  margin: 0;
-  color: var(--text);
-}
-
-.billing-reality-facts {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.018);
 }
 
-.source-callout {
-  border-left: 4px solid var(--accent-2);
-  padding-left: 14px;
+.estimate-strip.high {
+  border-color: rgba(255, 107, 87, 0.38);
 }
 
-.source-callout span {
-  display: block;
-  margin-bottom: 3px;
+.estimate-strip article {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: var(--surface-soft);
+}
+
+.estimate-strip span {
   color: var(--muted);
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
 }
 
-.source-callout strong,
-.source-callout a {
-  color: var(--text-strong);
-}
-
-.source-callout p {
-  max-width: 920px;
-  margin: 5px 0 0;
-  color: var(--muted);
-  line-height: 1.5;
-}
-
-.source-callout a {
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.compact-source-callout {
+.estimate-strip strong {
+  display: inline-flex;
   align-items: center;
-  border: 1px solid var(--line);
-  border-left-width: 4px;
-  border-left-color: var(--accent-2);
-  border-radius: 8px;
-  padding: 12px 14px;
-  background: var(--surface-soft);
+  gap: 5px;
+  color: var(--text-strong);
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.estimate-strip em {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .section-label {
@@ -219,8 +198,7 @@
   font-size: 15px;
 }
 
-.section-label p,
-.cost-drivers > div:first-child p {
+.section-label p {
   margin: 0;
   color: var(--muted);
 }
@@ -228,11 +206,6 @@
 .cost-drivers {
   display: grid;
   gap: 10px;
-}
-
-.cost-drivers > div:first-child p {
-  margin-top: 4px;
-  font-size: 13px;
 }
 
 .driver-grid {
@@ -380,8 +353,6 @@
 }
 
 @media (max-width: 1100px) {
-  .billing-reality,
-  .billing-reality-facts,
   .cost-categories,
   .driver-grid {
     grid-template-columns: 1fr;
@@ -428,8 +399,7 @@
 @media (max-width: 900px) {
   .diagnostic-hero,
   .diagnostic-facts,
-  .billing-reality,
-  .billing-reality-facts {
+  .estimate-strip {
     grid-template-columns: 1fr;
   }
 }
@@ -472,7 +442,7 @@
   font-size: 12px;
 }
 
-.source-pill {
+.price-link {
   padding: 4px 8px;
   font-size: 11px;
   font-weight: 720;
@@ -488,8 +458,7 @@
 
 .primary-diagnosis,
 .diagnostic-facts > div,
-.billing-reality,
-.compact-source-callout,
+.estimate-strip,
 .driver-grid article,
 .cost-categories article,
 .cost-table {
@@ -522,24 +491,14 @@
 .cost-categories em,
 .cost-row span,
 .cost-row em,
-.section-label p,
-.cost-drivers > div:first-child p {
+.section-label p {
   font-size: 12px;
 }
 
-.billing-reality {
-  padding: 12px;
-}
-
-.billing-reality-main h4,
 .section-label h4,
 .cost-drivers h4 {
   font-size: 14px;
   font-weight: 760;
-}
-
-.source-callout p {
-  line-height: 1.42;
 }
 
 .driver-grid strong {

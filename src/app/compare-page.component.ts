@@ -60,7 +60,6 @@ interface SessionComparisonAnalysis {
 })
 export class ComparePageComponent {
   private readonly sessionsInput = signal<LedgerSession[]>([]);
-  private readonly usdToEurInput = signal(1);
   private readonly compareAInput = signal<string | null>(null);
   private readonly compareBInput = signal<string | null>(null);
 
@@ -69,10 +68,6 @@ export class ComparePageComponent {
 
   @Input() set sessions(value: LedgerSession[] | null | undefined) {
     this.sessionsInput.set(value ?? []);
-  }
-
-  @Input() set usdToEur(value: number | null | undefined) {
-    this.usdToEurInput.set(value ?? 1);
   }
 
   @Input() set compareA(value: string | null | undefined) {
@@ -97,11 +92,10 @@ export class ComparePageComponent {
       return null;
     }
 
-    const usdToEur = this.usdToEurInput();
-    const aAnalysis = this.sessionComparisonAnalysis(a, usdToEur);
-    const bAnalysis = this.sessionComparisonAnalysis(b, usdToEur);
+    const aAnalysis = this.sessionComparisonAnalysis(a);
+    const bAnalysis = this.sessionComparisonAnalysis(b);
     const totalTokenDelta = bAnalysis.totalTokens - aAnalysis.totalTokens;
-    const costDelta = b.cost.eur - a.cost.eur;
+    const costDelta = b.cost.usd - a.cost.usd;
     const inputCostDelta = bAnalysis.inputEur - aAnalysis.inputEur;
     const outputCostDelta = bAnalysis.outputEur - aAnalysis.outputEur;
     const toolDelta = b.traceSummary.toolCalls - a.traceSummary.toolCalls;
@@ -115,15 +109,15 @@ export class ComparePageComponent {
       bAnalysis,
       costDelta,
       totalTokenDelta,
-      percent: percentDelta(a.cost.eur, b.cost.eur),
+      percent: percentDelta(a.cost.usd, b.cost.usd),
       summary: this.comparisonSummary(costDelta, totalTokenDelta, inputCostDelta, outputCostDelta, toolDelta, turnDelta),
       metrics: [
         {
           label: 'Estimated cost',
-          a: a.cost.eur,
-          b: b.cost.eur,
+          a: a.cost.usd,
+          b: b.cost.usd,
           delta: costDelta,
-          percent: percentDelta(a.cost.eur, b.cost.eur),
+          percent: percentDelta(a.cost.usd, b.cost.usd),
           format: 'currency',
           lowerIsBetter: true,
           help: 'Local estimate from imported VS Code token totals and GitHub price rows.',
@@ -194,8 +188,8 @@ export class ComparePageComponent {
     this.compareBChange.emit(value);
   }
 
-  private sessionComparisonAnalysis(session: LedgerSession, usdToEur: number): SessionComparisonAnalysis {
-    const modelRows = session.modelBreakdown.map((entry) => explainModelCost(entry, usdToEur, session.cost.eur));
+  private sessionComparisonAnalysis(session: LedgerSession): SessionComparisonAnalysis {
+    const modelRows = session.modelBreakdown.map((entry) => explainModelCost(entry, session.cost.usd));
     const stats = contextStats(session);
     const topModel = [...modelRows].sort((a, b) => b.totalEur - a.totalEur)[0] ?? null;
 
@@ -261,7 +255,7 @@ export class ComparePageComponent {
         detail:
           costDelta === 0
             ? 'The imported estimate did not materially change between these two runs.'
-            : `Run B moved by ${costDelta > 0 ? '+' : '-'}€${Math.abs(costDelta).toFixed(4)}. Cheaper is only better if the run still did the job.`,
+            : `Run B moved by ${costDelta > 0 ? '+' : '-'}$${Math.abs(costDelta).toFixed(4)}. Cheaper is only better if the run still did the job.`,
       },
       {
         title: 'Priced token driver',
@@ -269,8 +263,8 @@ export class ComparePageComponent {
         tone: Math.abs(inputCostDelta) >= Math.abs(outputCostDelta) ? 'high' : 'medium',
         detail:
           Math.abs(inputCostDelta) >= Math.abs(outputCostDelta)
-            ? `Input/context cost moved by ${inputCostDelta >= 0 ? '+' : '-'}€${Math.abs(inputCostDelta).toFixed(4)}. This is usually repo context, prior chat, or tool results.`
-            : `Output cost moved by ${outputCostDelta >= 0 ? '+' : '-'}€${Math.abs(outputCostDelta).toFixed(4)}. The later run generated more or less text.`,
+            ? `Input/context cost moved by ${inputCostDelta >= 0 ? '+' : '-'}$${Math.abs(inputCostDelta).toFixed(4)}. This is usually repo context, prior chat, or tool results.`
+            : `Output cost moved by ${outputCostDelta >= 0 ? '+' : '-'}$${Math.abs(outputCostDelta).toFixed(4)}. The later run generated more or less text.`,
       },
       {
         title: 'Model pricing',

@@ -7,7 +7,7 @@ import {
   pricingModelForModel,
 } from './pricing-utils.mjs';
 
-const usdToEur = Number(process.env.USD_TO_EUR ?? '0.93');
+const usdToEur = Number(process.env.USD_TO_EUR ?? '1');
 const outFile = resolve(process.argv[2] ?? 'public/data/sessions.json');
 const explicitRoots = process.argv.length > 3 ? process.argv.slice(3) : [];
 const ledgerSchemaVersion = 1;

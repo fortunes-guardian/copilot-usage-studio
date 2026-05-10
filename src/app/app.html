@@ -68,7 +68,6 @@
     } @else if (activeView() === 'compare') {
       <app-compare-page
         [sessions]="sessions()"
-        [usdToEur]="ledger()?.usdToEur"
         [compareA]="compareA()"
         [compareB]="compareB()"
         (compareAChange)="compareA.set($event)"

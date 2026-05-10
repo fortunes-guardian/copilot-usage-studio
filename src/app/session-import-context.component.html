@@ -3,7 +3,7 @@
     <span class="import-context-title">Import context</span>
     <span class="import-context-note">Totals across imported sessions, not the selected run</span>
     <span class="import-pill">{{ summary.count | number }} sessions</span>
-    <span class="import-pill">€{{ summary.eur | number: '1.2-2' }} imported estimate</span>
+    <span class="import-pill">${{ summary.usd | number: '1.2-2' }} imported estimate</span>
     <span class="import-pill">{{ ingestion.importedDebugLogSessions | number }} debug logs</span>
     <span class="import-pill">{{ ingestion.enrichedFromStateDbs | number }} state enriched</span>
   </summary>

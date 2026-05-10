@@ -128,7 +128,7 @@ Current pricing version:
 github-copilot-usage-pricing-2026-06-01
 ```
 
-Rates are USD per 1 million tokens. The scanner converts USD estimates to EUR using `USD_TO_EUR`, defaulting to `0.93`.
+Rates are USD per 1 million tokens. The app keeps estimates in USD because GitHub's rate card and AI credit budgets are USD-native.
 
 The versioned pricing data lives in `data/github-copilot-pricing.json`. The scanner, verifier, and UI all read from that same file.
 

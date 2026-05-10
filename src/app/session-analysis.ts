@@ -29,17 +29,16 @@ export type ModelCallRow = ReturnType<typeof modelCallRows>[number];
 export type TopTokenEvent = ReturnType<typeof topTokenEvents>[number];
 export type CostAnswer = ReturnType<typeof costAnswer>;
 
-export function buildCostExplanation(session: LedgerSession, usdToEur: number, sort: ModelCallSort) {
-  const modelRows = session.modelBreakdown.map((entry) => explainModelCost(entry, usdToEur, session.cost.eur));
+export function buildCostExplanation(session: LedgerSession, sort: ModelCallSort) {
+  const modelRows = session.modelBreakdown.map((entry) => explainModelCost(entry, session.cost.usd));
   const categoryRows = explainCategoryCosts(modelRows);
   const modelCallRowList = modelCallRows(
     session.traceEvents,
     session.modelBreakdown,
-    usdToEur,
-    session.cost.eur,
+    session.cost.usd,
     sort,
   );
-  const topTokenEventList = topTokenEvents(session.traceEvents, session.modelBreakdown, usdToEur);
+  const topTokenEventList = topTokenEvents(session.traceEvents, session.modelBreakdown);
   const costDrivers = explainCostDrivers(session, modelRows, topTokenEventList);
   const hasCacheData = session.tokens.cachedInput > 0 || session.tokens.cacheWrite > 0;
   const answer = costAnswer(session, modelRows, modelCallRowList);
@@ -136,16 +135,15 @@ export function sessionSizeHelp(triage: SessionTriage): string {
   return `${triage.size} session based on ${triage.totalTokens.toLocaleString()} imported tokens. Current thresholds: Small under 50k, Medium under 200k, Large under 600k, Very large at 600k or more.`;
 }
 
-export function flowTraceEvents(events: TraceEvent[], modelBreakdown: ModelBreakdown[], usdToEur: number) {
+export function flowTraceEvents(events: TraceEvent[], modelBreakdown: ModelBreakdown[]) {
   return events
     .filter((event) => isFlowEvent(event))
     .map((event, index) => {
       const pricingModel = pricingModelForEvent(event, modelBreakdown);
       const price = priceForPricingModel(pricingModel);
       const estimatedEur =
-        event.estimatedCost?.eur ??
-        tokenCostEur(event.inputTokens, price.input, usdToEur) +
-          tokenCostEur(event.outputTokens, price.output, usdToEur);
+        event.estimatedCost?.usd ??
+        tokenCostEur(event.inputTokens, price.input) + tokenCostEur(event.outputTokens, price.output);
 
       return {
         ...event,
@@ -185,12 +183,12 @@ export function matchesTraceFilter(event: TraceEvent, filter: TraceFilter): bool
   return event.status !== 'ok' && event.status !== 'unknown';
 }
 
-export function traceEventDetails(event: TraceEvent, modelBreakdown: ModelBreakdown[], usdToEur: number) {
+export function traceEventDetails(event: TraceEvent, modelBreakdown: ModelBreakdown[]) {
   const pricingModel = pricingModelForEvent(event, modelBreakdown);
   const price = priceForPricingModel(pricingModel);
-  const inputEur = tokenCostEur(event.inputTokens, price.input, usdToEur);
-  const outputEur = tokenCostEur(event.outputTokens, price.output, usdToEur);
-  const estimatedEur = event.estimatedCost?.eur ?? inputEur + outputEur;
+  const inputEur = tokenCostEur(event.inputTokens, price.input);
+  const outputEur = tokenCostEur(event.outputTokens, price.output);
+  const estimatedEur = event.estimatedCost?.usd ?? inputEur + outputEur;
   const totalTokens = event.totalTokens ?? event.inputTokens + event.outputTokens;
   const rawModel = event.rawModel || event.model || modelFromEventDetail(event.detail);
   const normalizedFields = [
@@ -209,7 +207,7 @@ export function traceEventDetails(event: TraceEvent, modelBreakdown: ModelBreakd
           { label: 'Pricing row', value: pricingModel },
           {
             label: 'Estimated cost',
-            value: `€${estimatedEur.toLocaleString(undefined, {
+            value: `$${estimatedEur.toLocaleString(undefined, {
               minimumFractionDigits: 6,
               maximumFractionDigits: 6,
             })}`,
@@ -241,13 +239,13 @@ export function sessionTotalTokens(session: LedgerSession): number {
   return tokenTotal(session.tokens);
 }
 
-function explainModelCost(entry: ModelBreakdown, usdToEur: number, sessionCostEur: number) {
+function explainModelCost(entry: ModelBreakdown, sessionCostEur: number) {
   const pricingModel = entry.pricingModel || entry.model;
   const price = priceForPricingModel(pricingModel);
-  const inputEur = tokenCostEur(entry.tokens.input, price.input, usdToEur);
-  const cachedInputEur = tokenCostEur(entry.tokens.cachedInput, price.cachedInput, usdToEur);
-  const cacheWriteEur = tokenCostEur(entry.tokens.cacheWrite, price.cacheWrite ?? 0, usdToEur);
-  const outputEur = tokenCostEur(entry.tokens.output, price.output, usdToEur);
+  const inputEur = tokenCostEur(entry.tokens.input, price.input);
+  const cachedInputEur = tokenCostEur(entry.tokens.cachedInput, price.cachedInput);
+  const cacheWriteEur = tokenCostEur(entry.tokens.cacheWrite, price.cacheWrite ?? 0);
+  const outputEur = tokenCostEur(entry.tokens.output, price.output);
   const totalEur = inputEur + cachedInputEur + cacheWriteEur + outputEur;
 
   return {
@@ -299,7 +297,7 @@ function explainCategoryCosts(modelRows: ModelCostRow[]) {
 }
 
 function costAnswer(session: LedgerSession, modelRows: ModelCostRow[], modelCallRowList: ModelCallRow[]) {
-  const sessionCost = Math.max(session.cost.eur, 0);
+  const sessionCost = Math.max(session.cost.usd, 0);
   const totalTokens = sessionTotalTokens(session);
   const inputEur = modelRows.reduce((sum, row) => sum + row.inputEur, 0);
   const outputEur = modelRows.reduce((sum, row) => sum + row.outputEur, 0);
@@ -348,7 +346,7 @@ function turnInsights(modelCallRowList: ModelCallRow[]) {
     },
     {
       label: 'Most expensive call',
-      value: mostExpensive ? `#${mostExpensive.callNumber} · €${mostExpensive.estimatedEur.toFixed(4)}` : 'None',
+      value: mostExpensive ? `#${mostExpensive.callNumber} · $${mostExpensive.estimatedEur.toFixed(4)}` : 'None',
       detail: mostExpensive
         ? `${mostExpensive.totalTokens.toLocaleString()} tokens, raw event #${mostExpensive.index}.`
         : 'No priced model call rows are available.',
@@ -369,7 +367,7 @@ function turnInsights(modelCallRowList: ModelCallRow[]) {
     },
     {
       label: 'Avg cost / call',
-      value: `€${averageCost.toFixed(4)}`,
+      value: `$${averageCost.toFixed(4)}`,
       detail: 'Useful for spotting whether cost came from one spike or many steady calls.',
     },
   ];
@@ -422,7 +420,7 @@ function billingRealityCheck(session: LedgerSession, answer: CostAnswer, hasCach
 function explainCostDrivers(session: LedgerSession, modelRows: ModelCostRow[], topTokenEventList: TopTokenEvent[]) {
   const inputEur = modelRows.reduce((sum, row) => sum + row.inputEur, 0);
   const outputEur = modelRows.reduce((sum, row) => sum + row.outputEur, 0);
-  const sessionCost = Math.max(session.cost.eur, 0);
+  const sessionCost = Math.max(session.cost.usd, 0);
   const inputShare = sessionCost > 0 ? (inputEur / sessionCost) * 100 : 0;
   const outputShare = sessionCost > 0 ? (outputEur / sessionCost) * 100 : 0;
   const topCall = topTokenEventList[0];
@@ -450,7 +448,7 @@ function explainCostDrivers(session: LedgerSession, modelRows: ModelCostRow[], t
     },
     {
       title: 'Largest model call',
-      value: topCall ? `€${topCall.estimatedEur.toFixed(4)}` : 'None',
+      value: topCall ? `$${topCall.estimatedEur.toFixed(4)}` : 'None',
       detail: topCall
         ? `Raw event index #${topCall.index} used ${topCall.totalTokens.toLocaleString()} tokens and accounts for about ${topCallShare.toFixed(0)}% of this run.`
         : 'No token-bearing model calls were imported for this session.',
@@ -485,8 +483,8 @@ function explainCostDrivers(session: LedgerSession, modelRows: ModelCostRow[], t
   ];
 }
 
-function topTokenEvents(events: TraceEvent[], modelBreakdown: ModelBreakdown[], usdToEur: number) {
-  return pricedModelCallEvents(events, modelBreakdown, usdToEur)
+function topTokenEvents(events: TraceEvent[], modelBreakdown: ModelBreakdown[]) {
+  return pricedModelCallEvents(events, modelBreakdown)
     .sort((a, b) => b.totalTokens - a.totalTokens)
     .slice(0, 5);
 }
@@ -494,11 +492,10 @@ function topTokenEvents(events: TraceEvent[], modelBreakdown: ModelBreakdown[], 
 function modelCallRows(
   events: TraceEvent[],
   modelBreakdown: ModelBreakdown[],
-  usdToEur: number,
   sessionCostEur: number,
   sort: ModelCallSort,
 ) {
-  const rows = pricedModelCallEvents(events, modelBreakdown, usdToEur).map((event, index) => {
+  const rows = pricedModelCallEvents(events, modelBreakdown).map((event, index) => {
     const context = nearbyContextForEvent(event, events);
 
     return {
@@ -515,15 +512,15 @@ function modelCallRows(
     : rows;
 }
 
-function pricedModelCallEvents(events: TraceEvent[], modelBreakdown: ModelBreakdown[], usdToEur: number) {
+function pricedModelCallEvents(events: TraceEvent[], modelBreakdown: ModelBreakdown[]) {
   return events
     .filter((event) => event.inputTokens || event.outputTokens)
     .map((event) => {
       const pricingModel = pricingModelForEvent(event, modelBreakdown);
       const price = priceForPricingModel(pricingModel);
-      const inputEur = tokenCostEur(event.inputTokens, price.input, usdToEur);
-      const outputEur = tokenCostEur(event.outputTokens, price.output, usdToEur);
-      const estimatedEur = event.estimatedCost?.eur ?? inputEur + outputEur;
+      const inputEur = tokenCostEur(event.inputTokens, price.input);
+      const outputEur = tokenCostEur(event.outputTokens, price.output);
+      const estimatedEur = event.estimatedCost?.usd ?? inputEur + outputEur;
 
       return {
         ...event,
@@ -560,8 +557,8 @@ function pricingModelForEvent(event: TraceEvent, modelBreakdown: ModelBreakdown[
   return matchPricingModel(parsedModel) ?? sessionPricingModel ?? pricingModelForModel(parsedModel);
 }
 
-function tokenCostEur(tokens: number, usdPerMillion: number, usdToEur: number): number {
-  return (tokens / 1_000_000) * usdPerMillion * usdToEur;
+function tokenCostEur(tokens: number, usdPerMillion: number): number {
+  return (tokens / 1_000_000) * usdPerMillion;
 }
 
 function nearbyContextForEvent(event: TraceEvent, events: TraceEvent[]): { label: string; detail: string } {

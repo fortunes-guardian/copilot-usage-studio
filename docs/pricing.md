@@ -56,13 +56,7 @@ cost_usd =
   output_tokens / 1,000,000 * output_price
 ```
 
-Then:
-
-```text
-cost_eur = cost_usd * usdToEur
-```
-
-`usdToEur` is written into the generated ledger so the UI can show which conversion was used. The default is `0.93`, overridable during scan with `USD_TO_EUR`.
+The app displays this estimate in USD. It does not convert to EUR because GitHub's published rate card, AI-credit conversion, and additional-usage budgets are USD-native.
 
 GitHub AI credits are calculated from the USD estimate:
 
@@ -98,7 +92,7 @@ For example, a 100-seat Copilot Business organization has a shared standard pool
 
 The selected run header shows:
 
-- estimated EUR cost
+- estimated USD cost
 - estimated AI credits
 - selected allowance plan
 - percent of that plan's per-user monthly allowance

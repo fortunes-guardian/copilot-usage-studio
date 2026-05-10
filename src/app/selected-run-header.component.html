@@ -25,7 +25,7 @@
   </div>
   <div class="price">
     <span>Estimate</span>
-    <strong>€{{ session.cost.eur | number: '1.2-2' }}</strong>
+    <strong>${{ session.cost.usd | number: '1.2-2' }}</strong>
     @if (allowanceUsage; as usage) {
       <div class="credit-meter">
         <label>

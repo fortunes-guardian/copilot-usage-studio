@@ -90,7 +90,7 @@ describe('session analysis', () => {
   };
 
   it('builds selected-run cost and turn analysis without Angular state', () => {
-    const explanation = buildCostExplanation(session, 0.93, 'largest');
+    const explanation = buildCostExplanation(session, 'largest');
 
     expect(explanation.sourceStrength).toBe('Exact local token counts');
     expect(explanation.hasCacheData).toBe(false);
@@ -103,7 +103,7 @@ describe('session analysis', () => {
 
   it('keeps triage and trace details evidence-based', () => {
     const triage = sessionTriage(session);
-    const eventDetails = traceEventDetails(session.traceEvents[3], session.modelBreakdown, 0.93);
+    const eventDetails = traceEventDetails(session.traceEvents[3], session.modelBreakdown);
 
     expect(triage.size).toBe('Large');
     expect(triage.warnings.map((warning) => warning.label)).toContain('High input context');

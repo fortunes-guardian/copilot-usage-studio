@@ -1,14 +1,11 @@
 <section class="cost-explainer">
   <div class="cost-explainer-header">
     <div>
-      <p class="eyebrow">Step 1 · Diagnose</p>
+      <p class="eyebrow">Cost diagnosis</p>
       <h3>Where the estimate comes from</h3>
-      <p class="panel-lede">Start with the priced token buckets, model rows, and cache visibility caveat.</p>
+      <p class="panel-lede">Priced local token totals, model rows, and cache visibility for this run.</p>
     </div>
-    <span class="source-pill">
-      {{ cost.sourceStrength }}
-      <app-help-popover [text]="cost.sourceDescription" label="Explain source strength"></app-help-popover>
-    </span>
+    <a class="price-link" [href]="pricingSourceUrl" target="_blank" rel="noreferrer">GitHub price source</a>
   </div>
 
   <section class="diagnostic-hero" aria-label="Cost answer">
@@ -35,53 +32,39 @@
       </div>
       <div>
         <span>Cost / 1k tokens</span>
-        <strong>€{{ cost.costAnswer.costPer1k | number: '1.4-4' }}</strong>
+        <strong>${{ cost.costAnswer.costPer1k | number: '1.4-4' }}</strong>
         <em>Using imported token totals</em>
       </div>
     </div>
   </section>
 
-  <section class="billing-reality" [ngClass]="cost.billingReality.tone" aria-label="Billing reality check">
-    <div class="billing-reality-main">
-      <p class="eyebrow">Billing caveat</p>
-      <h4>{{ cost.billingReality.confidenceLabel }}</h4>
-      <p>{{ cost.billingReality.headline }}</p>
-    </div>
-    <div class="billing-reality-facts diagnostic-facts">
-      <div>
-        <span>Local estimate</span>
-        <strong>€{{ session.cost.eur | number: '1.2-4' }}</strong>
-        <em>input/output from local logs</em>
-      </div>
-      <div>
-        <span>Cache visibility</span>
-        <strong>{{ cost.billingReality.cacheVisibility }}</strong>
-        <em>{{ cost.hasCacheData ? 'priced from imported cache fields' : 'not exposed by this VS Code source' }}</em>
-      </div>
-      <div>
-        <span>Invoice risk</span>
-        <strong>{{ cost.billingReality.confidenceLabel }}</strong>
-        <em>{{ cost.billingReality.detail }}</em>
-      </div>
-    </div>
-  </section>
-
-  <div class="source-callout compact-source-callout">
-    <div>
-      <span>Estimate scope</span>
+  <div class="estimate-strip" [ngClass]="cost.billingReality.tone" aria-label="Estimate confidence">
+    <article>
+      <span>Local estimate</span>
+      <strong>${{ session.cost.usd | number: '1.2-4' }}</strong>
+      <em>input/output from local logs</em>
+    </article>
+    <article>
+      <span>Source</span>
+      <strong>
+        {{ cost.sourceStrength }}
+        <app-help-popover [text]="cost.sourceDescription" label="Explain source strength"></app-help-popover>
+      </strong>
+      <em>{{ cost.sourceDescription }}</em>
+    </article>
+    <article>
+      <span>Cache</span>
       <strong>
         {{ cost.cacheStatus }}
         <app-help-popover [text]="cost.cacheDescription" label="Explain cache visibility"></app-help-popover>
       </strong>
-      <p>{{ cost.cacheDescription }}</p>
-    </div>
-    <a [href]="pricingSourceUrl" target="_blank" rel="noreferrer">GitHub price source</a>
+      <em>{{ cost.billingReality.detail }}</em>
+    </article>
   </div>
 
   <section class="cost-drivers">
     <div>
       <h4>Cost drivers</h4>
-      <p>Signals behind the estimate.</p>
     </div>
     <div class="driver-grid">
       @for (driver of cost.costDrivers; track driver.title) {
@@ -96,7 +79,6 @@
 
   <div class="section-label">
     <h4>Token categories</h4>
-    <p>Priced buckets.</p>
   </div>
   <div class="cost-categories">
     @for (category of cost.categoryRows; track category.label) {
@@ -113,7 +95,7 @@
           <em>not priced for this run</em>
         } @else {
           <strong>{{ category.tokens | number }} tokens</strong>
-          <em>€{{ category.eur | number: '1.6-6' }}</em>
+          <em>${{ category.eur | number: '1.6-6' }}</em>
         }
       </article>
     }
@@ -121,7 +103,6 @@
 
   <div class="section-label">
     <h4>Model price rows</h4>
-    <p>GitHub rows used.</p>
   </div>
   <div class="cost-table" role="table" aria-label="Model price rows">
     <div class="cost-row cost-row-heading" role="row">
@@ -163,7 +144,7 @@
           }
         </span>
         <span role="cell" data-label="Cost">
-          €{{ model.totalEur | number: '1.6-6' }}
+          ${{ model.totalEur | number: '1.6-6' }}
           <em>{{ model.inputEur | number: '1.6-6' }} in / {{ model.outputEur | number: '1.6-6' }} out</em>
         </span>
         <span role="cell" data-label="Share">{{ model.share | number: '1.0-0' }}%</span>

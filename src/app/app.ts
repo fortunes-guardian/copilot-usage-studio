@@ -149,7 +149,7 @@ export class App {
       return null;
     }
 
-    return buildCostExplanation(session, ledger.usdToEur, this.modelCallSort());
+    return buildCostExplanation(session, this.modelCallSort());
   });
   protected readonly flowEvents = computed(() => {
     const session = this.selectedSession();
@@ -159,7 +159,7 @@ export class App {
       return [];
     }
 
-    return flowTraceEvents(session.traceEvents, session.modelBreakdown, ledger.usdToEur);
+    return flowTraceEvents(session.traceEvents, session.modelBreakdown);
   });
   protected readonly filteredTraceEvents = computed(() => {
     const session = this.selectedSession();
@@ -185,7 +185,7 @@ export class App {
       return null;
     }
 
-    return traceEventDetails(event, session.modelBreakdown, ledger.usdToEur);
+    return traceEventDetails(event, session.modelBreakdown);
   });
   protected readonly filteredSessions = computed(() => {
     const query = this.query().trim().toLowerCase();
@@ -252,14 +252,13 @@ export class App {
     const totals = sessions.reduce(
       (acc, session) => {
         acc.usd += session.cost.usd;
-        acc.eur += session.cost.eur;
         acc.input += session.tokens.input;
         acc.output += session.tokens.output;
         acc.cachedInput += session.tokens.cachedInput;
         acc.cacheWrite += session.tokens.cacheWrite;
         return acc;
       },
-      { usd: 0, eur: 0, input: 0, output: 0, cachedInput: 0, cacheWrite: 0 },
+      { usd: 0, input: 0, output: 0, cachedInput: 0, cacheWrite: 0 },
     );
 
     return { count: sessions.length, ...totals };
