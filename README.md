@@ -65,6 +65,12 @@ Then open the Angular dev server URL.
 
 This is the recommended mode while the project is still changing quickly.
 
+If the dev server ever shows new markup with old component styles, stop it and restart with a cache reset:
+
+```bash
+npm run start:clean
+```
+
 For a local production build:
 
 ```bash

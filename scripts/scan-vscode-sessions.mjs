@@ -1,6 +1,11 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { homedir, platform } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
+import {
+  costUsdForTokens,
+  normalizeModel,
+  pricingModelForModel,
+} from './pricing-utils.mjs';
 
 const usdToEur = Number(process.env.USD_TO_EUR ?? '0.93');
 const outFile = resolve(process.argv[2] ?? 'public/data/sessions.json');
@@ -243,41 +248,13 @@ function listFiles(dir, suffix) {
     .filter((path) => statSync(path).isFile() && path.endsWith(suffix));
 }
 
-function modelKey(model) {
-  return String(model ?? '')
-    .replace(/^copilot\//i, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim()
-    .replace(/\s+/g, ' ');
-}
-
-function normalizeModel(model) {
-  const raw = String(model ?? '')
-    .replace(/^copilot\//i, '')
-    .trim();
-  const key = modelKey(raw);
-  const known = Object.keys(pricing);
-  return (
-    known.find((name) => modelKey(name) === key) ??
-    known.find((name) => key.includes(modelKey(name))) ??
-    (raw || 'Unknown model')
-  );
-}
-
 function costUsd(model, tokens) {
-  const price = pricing[model] ?? pricing[fallbackPricingModel];
-  return (
-    (tokens.input / 1_000_000) * price.input +
-    (tokens.cachedInput / 1_000_000) * price.cachedInput +
-    (tokens.cacheWrite / 1_000_000) * (price.cacheWrite ?? 0) +
-    (tokens.output / 1_000_000) * price.output
-  );
+  return costUsdForTokens(model, tokens, pricing, fallbackPricingModel);
 }
 
 function eventModelCostFields(rawModel, inputTokens, outputTokens) {
-  const normalizedModel = normalizeModel(rawModel);
-  const pricingModel = pricing[normalizedModel] ? normalizedModel : fallbackPricingModel;
+  const normalizedModel = normalizeModel(rawModel, pricing);
+  const pricingModel = pricingModelForModel(normalizedModel, pricing, fallbackPricingModel);
   const tokens = {
     input: Number(inputTokens ?? 0),
     cachedInput: 0,
@@ -336,14 +313,14 @@ function modelBreakdownFromLlmRequests(llmRequests) {
     const rawModel = String(event.attrs?.model ?? 'unknown')
       .replace(/^copilot\//i, '')
       .trim();
-    const displayModel = normalizeModel(rawModel);
+    const displayModel = normalizeModel(rawModel, pricing);
     const current = byModel.get(displayModel) ?? {
       model: displayModel,
       rawModels: new Set(),
       turns: 0,
       tokens: { input: 0, cachedInput: 0, cacheWrite: 0, output: 0 },
       cost: { usd: 0, eur: 0 },
-      pricingModel: pricing[displayModel] ? displayModel : fallbackPricingModel,
+      pricingModel: pricingModelForModel(displayModel, pricing, fallbackPricingModel),
     };
 
     current.rawModels.add(rawModel || 'unknown');
@@ -372,7 +349,7 @@ function sessionModelLabel(modelBreakdown, fallbackModel) {
     return `Mixed (${modelBreakdown.map((entry) => entry.model).join(', ')})`;
   }
 
-  return normalizeModel(fallbackModel);
+  return normalizeModel(fallbackModel, pricing);
 }
 
 function estimateTokens(text) {
@@ -679,6 +656,7 @@ function sessionFromChatSnapshot(file, workspaceDir) {
     firstRequest?.message?.text ?? snapshot?.customTitle ?? 'Untitled Copilot session';
   const model = normalizeModel(
     firstRequest?.modelId ?? firstRequest?.inputState?.selectedModel?.identifier,
+    pricing,
   );
   const output = requests.reduce((sum, request) => sum + Number(request.completionTokens ?? 0), 0);
   const input = requests.reduce(
@@ -687,7 +665,7 @@ function sessionFromChatSnapshot(file, workspaceDir) {
   );
   const tokens = { input, cachedInput: 0, cacheWrite: 0, output };
   const usd = costUsd(model, tokens);
-  const pricingModel = pricing[model] ? model : fallbackPricingModel;
+  const pricingModel = pricingModelForModel(model, pricing, fallbackPricingModel);
   const startedAt = new Date(Number(snapshot.creationDate ?? statSync(file).mtimeMs)).toISOString();
   const endedAt = statSync(file).mtime.toISOString();
 

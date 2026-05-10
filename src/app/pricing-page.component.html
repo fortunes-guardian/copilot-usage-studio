@@ -3,6 +3,7 @@
     <div>
       <p class="eyebrow">Cost inputs</p>
       <h2>GitHub Copilot prices used by this app</h2>
+      <p>Evidence page for the rate card, AI-credit conversion, and model rows used by local estimates.</p>
     </div>
     <a [href]="pricingSourceUrl" target="_blank" rel="noreferrer">Open GitHub source</a>
   </div>
@@ -26,23 +27,13 @@
     </div>
   </section>
 
-  <div class="pricing-note">
-    <strong>How to read this</strong>
-    <p>
-      These are the per-1M-token rates copied from GitHub's published Copilot usage-based pricing table. Session
-      estimates multiply imported VS Code token totals by the matching model row. USD is converted to EUR using the
-      scan's <code>usdToEur</code> value.
-    </p>
-  </div>
-
   <section class="allowance-panel" aria-label="GitHub Copilot AI credit allowance">
     <div class="allowance-copy">
       <p class="eyebrow">License allowance</p>
       <h3>AI credits context</h3>
       <p>
-        GitHub converts model usage into AI credits at
-        <strong>1 credit = ${{ creditUsd | number: '1.2-2' }} USD</strong>. Business and Enterprise credits are included
-        per assigned license, then pooled at the billing entity level.
+        GitHub converts model usage into AI credits at <strong>1 credit = ${{ creditUsd | number: '1.2-2' }} USD</strong>.
+        The meter below compares imported local estimates with the selected per-license allowance.
       </p>
       <a [href]="allowanceSourceUrl" target="_blank" rel="noreferrer">Open allowance source</a>
     </div>
@@ -95,6 +86,14 @@
       </button>
     }
   </section>
+
+  <div class="pricing-note">
+    <strong>Calculation rule</strong>
+    <p>
+      Per-1M-token GitHub rates are multiplied by imported VS Code token totals. USD is converted to EUR using the scan's
+      <code>usdToEur</code> value. Local logs do not currently expose provider cache billing fields.
+    </p>
+  </div>
 
   <div class="pricing-table">
     <div class="pricing-row pricing-row-heading">

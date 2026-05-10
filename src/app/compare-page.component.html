@@ -3,23 +3,30 @@
     <div>
       <p class="eyebrow">Evaluation</p>
       <h2>Compare runs</h2>
+      <p>Pick a baseline and a candidate run. The page explains what changed in cost, tokens, activity, and model mix.</p>
     </div>
     <div class="selectors">
-      <select [ngModel]="selectedAId()" (ngModelChange)="setCompareA($event)">
-        @for (session of sessionOptions(); track session.id) {
-          <option [value]="session.id">{{ session.title }}</option>
-        }
-      </select>
-      <select [ngModel]="selectedBId()" (ngModelChange)="setCompareB($event)">
-        @for (session of sessionOptions(); track session.id) {
-          <option [value]="session.id">{{ session.title }}</option>
-        }
-      </select>
+      <label>
+        <span>Baseline A</span>
+        <select [ngModel]="selectedAId()" (ngModelChange)="setCompareA($event)">
+          @for (session of sessionOptions(); track session.id) {
+            <option [value]="session.id">{{ session.title }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        <span>Candidate B</span>
+        <select [ngModel]="selectedBId()" (ngModelChange)="setCompareB($event)">
+          @for (session of sessionOptions(); track session.id) {
+            <option [value]="session.id">{{ session.title }}</option>
+          }
+        </select>
+      </label>
     </div>
   </div>
 
   @if (comparison(); as diff) {
-    <div class="source-callout">
+    <div class="compare-readout">
       <div>
         <span>Comparison read</span>
         <strong [class.saving]="diff.costDelta < 0">
@@ -27,6 +34,20 @@
         </strong>
         <p>{{ diff.summary }}</p>
       </div>
+      <dl>
+        <div>
+          <dt>A</dt>
+          <dd>{{ diff.a.cost.eur | number: '1.2-2' }} EUR</dd>
+        </div>
+        <div>
+          <dt>B</dt>
+          <dd>{{ diff.b.cost.eur | number: '1.2-2' }} EUR</dd>
+        </div>
+        <div>
+          <dt>Tokens</dt>
+          <dd>{{ diff.totalTokenDelta >= 0 ? '+' : '' }}{{ diff.totalTokenDelta | number }}</dd>
+        </div>
+      </dl>
     </div>
 
     <div class="comparison-grid advanced">
@@ -61,8 +82,11 @@
       }
     </div>
 
-    <section class="comparison-drivers">
-      <h3>What changed</h3>
+    <section class="comparison-section comparison-drivers">
+      <div class="section-heading">
+        <h3>What changed</h3>
+        <p>Start here before reading the detailed model table.</p>
+      </div>
       <div class="driver-grid">
         @for (driver of diff.drivers; track driver.title) {
           <article [ngClass]="driver.tone">
@@ -74,8 +98,11 @@
       </div>
     </section>
 
-    <section class="comparison-models">
-      <h3>Model and price-row movement</h3>
+    <section class="comparison-section comparison-models">
+      <div class="section-heading">
+        <h3>Model and price-row movement</h3>
+        <p>Shows whether the estimate changed because of model mix, pricing fallback, turns, or token volume.</p>
+      </div>
       <div class="cost-table compact-table">
         <div class="cost-row cost-row-heading">
           <span>Model</span>

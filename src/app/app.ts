@@ -1,6 +1,5 @@
-import { DatePipe, DecimalPipe, NgClass } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 
 import { AnalyticsPageComponent } from './analytics-page.component';
 import { ComparePageComponent } from './compare-page.component';
@@ -10,16 +9,18 @@ import { LedgerStatePanelComponent } from './ledger-state-panel.component';
 import { LedgerSession, TraceEvent } from './ledger.model';
 import { PricingPageComponent } from './pricing-page.component';
 import { SessionCostComponent } from './session-cost.component';
+import { SessionImportContextComponent } from './session-import-context.component';
 import { SessionOverviewComponent } from './session-overview.component';
+import { SessionRailComponent, SessionSourceFilter } from './session-rail.component';
 import { SessionTraceComponent } from './session-trace.component';
 import { SessionTurnsComponent } from './session-turns.component';
+import { SelectedRunHeaderComponent } from './selected-run-header.component';
 import {
   COPILOT_AI_CREDIT_USD,
   COPILOT_ALLOWANCE_PLANS,
   CopilotAllowancePlan,
-  FALLBACK_PRICING_MODEL,
-  MODEL_PRICES_USD_PER_MILLION,
   PRICING_SOURCE_URL,
+  pricingFallbackReason,
 } from './pricing';
 import {
   buildCostExplanation,
@@ -35,7 +36,6 @@ import {
   usesPricingFallback,
 } from './session-analysis';
 
-type SessionSourceFilter = 'all' | 'debug-log' | 'chat-snapshot' | 'exact' | 'estimated';
 type ActiveView = 'sessions' | 'compare' | 'analytics' | 'pricing';
 type SelectedRunView = 'overview' | 'cost' | 'turns' | 'trace';
 
@@ -43,18 +43,18 @@ type SelectedRunView = 'overview' | 'cost' | 'turns' | 'trace';
   selector: 'app-root',
   imports: [
     AnalyticsPageComponent,
-    DatePipe,
     DecimalPipe,
-    FormsModule,
     HelpPopoverComponent,
-    NgClass,
     ComparePageComponent,
     LedgerStatePanelComponent,
     PricingPageComponent,
     SessionCostComponent,
+    SessionImportContextComponent,
     SessionOverviewComponent,
+    SessionRailComponent,
     SessionTraceComponent,
     SessionTurnsComponent,
+    SelectedRunHeaderComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',
@@ -230,10 +230,6 @@ export class App {
     const session = this.selectedSession();
     return session ? this.sessionTriage(session) : null;
   });
-  protected readonly selectedSizeHelp = computed(() => {
-    const triage = this.selectedTriage();
-    return triage ? this.sessionSizeHelp(triage) : '';
-  });
   protected readonly selectedAllowance = computed(() =>
     COPILOT_ALLOWANCE_PLANS.find((plan) => plan.id === this.allowancePlan()) ?? COPILOT_ALLOWANCE_PLANS[0],
   );
@@ -301,10 +297,6 @@ export class App {
     }
   }
 
-  protected trackBySessionId(_: number, session: LedgerSession): string {
-    return session.id;
-  }
-
   protected setQuery(value: string): void {
     this.query.set(value);
   }
@@ -346,13 +338,7 @@ export class App {
     this.traceOpenedFromTurns.set(true);
   }
 
-  protected pricingFallbackReason(model: string, pricingModel: string): string {
-    if (model === pricingModel && MODEL_PRICES_USD_PER_MILLION[model]) {
-      return 'This model matched a GitHub price row directly.';
-    }
-
-    return `${model || 'Unknown model'} is priced with the ${pricingModel} row because that raw model id is not in the local GitHub pricing table.`;
-  }
+  protected readonly pricingFallbackReason = pricingFallbackReason;
 
   protected openSession(session: LedgerSession | null): void {
     if (!session) {
@@ -407,30 +393,6 @@ export class App {
     }
 
     return session.confidence === value;
-  }
-
-  protected sourceKindHelp(sourceKind: string): string {
-    if (sourceKind === 'vscode-copilot-debug-log') {
-      return this.help.debugLogs;
-    }
-
-    if (sourceKind === 'vscode-chat-session-snapshot') {
-      return this.help.chatSnapshots;
-    }
-
-    return 'Imported local session source. Check the generated ledger sourceKind for the exact importer path.';
-  }
-
-  protected sourceKindLabel(sourceKind: string): string {
-    if (sourceKind === 'vscode-copilot-debug-log') {
-      return 'Debug log';
-    }
-
-    if (sourceKind === 'vscode-chat-session-snapshot') {
-      return 'Chat snapshot';
-    }
-
-    return sourceKind;
   }
 
   protected tokenSourceHelp(tokenSource: string): string {

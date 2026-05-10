@@ -15,6 +15,7 @@ import {
   PRICING_SOURCE_LABEL,
   PRICING_SOURCE_URL,
   PRICING_VERSION,
+  modelUsesPricingFallback,
 } from './pricing';
 
 @Component({
@@ -113,10 +114,5 @@ export class PricingPageComponent {
     this.selectedAllowancePlanChange.emit(plan);
   }
 
-  private usesPricingFallback(model: string | null | undefined, pricingModel: string | null | undefined): boolean {
-    const rawModel = model || '';
-    const priceRow = pricingModel || rawModel;
-
-    return priceRow !== rawModel || !MODEL_PRICES_USD_PER_MILLION[rawModel];
-  }
+  private readonly usesPricingFallback = modelUsesPricingFallback;
 }

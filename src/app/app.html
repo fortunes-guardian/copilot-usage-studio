@@ -31,83 +31,23 @@
 
   <div class="app-body" [class.with-rail]="activeView() === 'sessions'">
     @if (activeView() === 'sessions') {
-      <aside class="sidebar">
-        <label class="search">
-          <span>Search</span>
-          <input
-            type="search"
-            [ngModel]="query()"
-            (ngModelChange)="setQuery($event)"
-            placeholder="Prompt, repo, model, tag"
-          />
-        </label>
-
-        <div class="filters" aria-label="Session filters">
-          <label>
-            <span>Size</span>
-            <select [ngModel]="sizeFilter()" (ngModelChange)="setSizeFilter($event)">
-              @for (size of sizeOptions; track size) {
-                <option [value]="size">{{ size === 'all' ? 'All sizes' : size }}</option>
-              }
-            </select>
-          </label>
-          <label>
-            <span>Signal</span>
-            <select [ngModel]="warningFilter()" (ngModelChange)="setWarningFilter($event)">
-              @for (warning of warningOptions(); track warning) {
-                <option [value]="warning">{{ warning === 'all' ? 'All signals' : warning }}</option>
-              }
-            </select>
-          </label>
-          <label>
-            <span>Source</span>
-            <select [ngModel]="sourceFilter()" (ngModelChange)="setSourceFilter($event)">
-              @for (source of sourceOptions; track source.value) {
-                <option [value]="source.value">{{ source.label }}</option>
-              }
-            </select>
-          </label>
-        </div>
-
-        <p class="filter-count">{{ filteredSessions().length }} of {{ sessions().length }} sessions shown</p>
-
-        <div class="session-list">
-          @for (session of filteredSessions(); track trackBySessionId($index, session)) {
-            <button
-              type="button"
-              class="session-card"
-              [class.active]="selectedSession()?.id === session.id"
-              (click)="selectSession(session)"
-            >
-              <span class="session-title">{{ session.firstPrompt }}</span>
-              <span class="session-meta">
-                {{ session.workspace }} · {{ session.model }}
-              </span>
-              @if (sessionTriage(session); as triage) {
-                <span class="badge-row compact">
-                  <span class="triage-badge" [ngClass]="triage.sizeTone">
-                    {{ triage.size }}
-                  </span>
-                  @for (warning of triage.warnings.slice(0, 2); track warning.label) {
-                    <span class="triage-badge" [ngClass]="warning.tone">
-                      {{ warning.label }}
-                    </span>
-                  }
-                </span>
-              }
-              <span class="session-footer">
-                <span>{{ session.startedAt | date: 'MMM d, HH:mm' }}</span>
-                <strong>€{{ session.cost.eur | number: '1.2-2' }}</strong>
-              </span>
-              <span class="session-scan">
-                {{ session.traceSummary.totalTokens | number }} tokens · {{ sourceKindLabel(session.sourceKind) }}
-              </span>
-            </button>
-          } @empty {
-            <p class="empty dark">No sessions match these filters.</p>
-          }
-        </div>
-      </aside>
+      <app-session-rail
+        [sessions]="sessions()"
+        [filteredSessions]="filteredSessions()"
+        [selectedSessionId]="selectedSession()?.id ?? null"
+        [query]="query()"
+        [sizeFilter]="sizeFilter()"
+        [warningFilter]="warningFilter()"
+        [sourceFilter]="sourceFilter()"
+        [warningOptions]="warningOptions()"
+        [sizeOptions]="sizeOptions"
+        [sourceOptions]="sourceOptions"
+        (queryChange)="setQuery($event)"
+        (sizeFilterChange)="setSizeFilter($event)"
+        (warningFilterChange)="setWarningFilter($event)"
+        (sourceFilterChange)="setSourceFilter($event)"
+        (selectSession)="selectSession($event)"
+      ></app-session-rail>
     }
 
   <section class="content">
@@ -137,136 +77,35 @@
     } @else if (activeView() === 'sessions') {
     <section class="sessions-page">
       @if (ledger()?.ingestion; as ingestion) {
-        <details class="import-context" aria-label="Imported data context">
-          <summary>
-            <span class="import-context-title">Import context</span>
-            <span class="import-context-note">Totals across imported sessions, not the selected run</span>
-            <span class="import-pill">{{ summary().count | number }} sessions</span>
-            <span class="import-pill">€{{ summary().eur | number: '1.2-2' }} imported estimate</span>
-            <span class="import-pill">{{ ingestion.importedDebugLogSessions | number }} debug logs</span>
-            <span class="import-pill">{{ ingestion.enrichedFromStateDbs | number }} state enriched</span>
-          </summary>
-
-          <div class="import-context-body">
-            <p>
-              These scan diagnostics explain where the local ledger came from. The selected run estimate starts below in
-              the run header.
-            </p>
-            <dl>
-              <div>
-                <dt>Debug logs <app-help-popover [text]="help.debugLogs" label="Explain debug logs"></app-help-popover></dt>
-                <dd>{{ ingestion.importedDebugLogSessions | number }}</dd>
-              </div>
-              <div>
-                <dt>Chat snapshots <app-help-popover [text]="help.chatSnapshots" label="Explain chat snapshots"></app-help-popover></dt>
-                <dd>{{ ingestion.importedChatSnapshotSessions | number }}</dd>
-              </div>
-              <div>
-                <dt>State DBs <app-help-popover [text]="help.stateDbs" label="Explain state DBs"></app-help-popover></dt>
-                <dd>{{ ingestion.scannedStateDbs | number }}</dd>
-              </div>
-              <div>
-                <dt>State enriched <app-help-popover [text]="help.stateEnriched" label="Explain state enrichment"></app-help-popover></dt>
-                <dd>{{ ingestion.enrichedFromStateDbs | number }}</dd>
-              </div>
-              <div>
-                <dt>Empty logs skipped <app-help-popover [text]="help.emptyDebugLogs" label="Explain empty logs skipped"></app-help-popover></dt>
-                <dd>{{ ingestion.skippedEmptyDebugLogs | number }}</dd>
-              </div>
-              <div>
-                <dt>No-request chats <app-help-popover [text]="help.snapshotsWithoutRequests" label="Explain no-request chats"></app-help-popover></dt>
-                <dd>{{ ingestion.skippedChatSnapshotsWithoutRequests | number }}</dd>
-              </div>
-            </dl>
-          </div>
-        </details>
+        <app-session-import-context
+          [ingestion]="ingestion"
+          [summary]="summary()"
+          [help]="help"
+        ></app-session-import-context>
       }
 
     @if (selectedSession(); as session) {
       <section class="detail">
-        <div class="detail-header">
-          <div>
-            <div class="source-meta">
-              <span>{{ session.workspace }}</span>
-              @if (selectedTriage(); as triage) {
-                <span>
-                  {{ triage.size }}
-                  <app-help-popover [text]="sessionSizeHelp(triage)" label="Explain run size"></app-help-popover>
-                </span>
-              }
-              <span>
-                {{ confidenceLabel(session.confidence) }}
-                <app-help-popover [text]="confidenceHelp(session.confidence)" label="Explain source confidence"></app-help-popover>
-              </span>
-              <span>
-                {{ tokenSourceLabel(session.tokenSource) }}
-                <app-help-popover [text]="tokenSourceHelp(session.tokenSource)" label="Explain token source"></app-help-popover>
-              </span>
-            </div>
-            <h2>{{ session.title }}</h2>
-            <p class="detail-subtitle">
-              {{ session.model }} · {{ session.traceSummary.modelTurns | number }} model turns ·
-              {{ session.traceSummary.totalTokens | number }} tokens
-            </p>
-          </div>
-          <div class="price">
-            <span>Estimate</span>
-            <strong>€{{ session.cost.eur | number: '1.2-2' }}</strong>
-            @if (selectedAllowanceUsage(); as usage) {
-              <div class="credit-meter">
-                <label>
-                  <span>AI credits</span>
-                  <select [ngModel]="allowancePlan()" (ngModelChange)="setAllowancePlan($event)">
-                    @for (plan of allowancePlans; track plan.id) {
-                      <option [value]="plan.id">{{ plan.shortLabel }}</option>
-                    }
-                  </select>
-                </label>
-                <div class="credit-bar" aria-hidden="true">
-                  <span [style.width.%]="usage.share > 100 ? 100 : usage.share"></span>
-                </div>
-                <em>
-                  {{ usage.credits | number: '1.0-1' }} credits ·
-                  {{ usage.share | number: '1.0-1' }}% of {{ selectedAllowance().creditsPerUserMonthly | number }}/user
-                </em>
-              </div>
-            }
-          </div>
-        </div>
-
-        @if (selectedSessionOutsideFilters()) {
-          <div class="source-callout filter-mismatch-callout">
-            <div>
-              <span>Open run is outside the current filters</span>
-              <strong>{{ filteredSessions().length }} sessions visible in the rail</strong>
-              <p>The selected run stays open so you do not lose your place, but the sidebar filters currently hide it.</p>
-            </div>
-            @if (filteredSessions().length) {
-              <button type="button" class="ghost-button" (click)="openFirstFilteredSession()">Open first visible run</button>
-            }
-          </div>
-        }
-
-        @if (selectedPricingFallbacks().length) {
-          <div class="source-callout pricing-fallback-callout">
-            <div>
-              <span>Pricing assumption</span>
-              <strong>{{ selectedPricingFallbacks().length }} raw model id{{ selectedPricingFallbacks().length === 1 ? '' : 's' }} used fallback pricing</strong>
-              <p>
-                @for (fallback of selectedPricingFallbacks(); track fallback.model + fallback.pricingModel) {
-                  <span class="inline-fallback">
-                    {{ fallback.model }} priced as {{ fallback.pricingModel }}
-                    <app-help-popover
-                      [text]="pricingFallbackReason(fallback.model, fallback.pricingModel)"
-                      label="Explain fallback pricing"
-                    ></app-help-popover>
-                  </span>
-                }
-              </p>
-            </div>
-            <button type="button" class="ghost-button" (click)="activeView.set('pricing')">View prices</button>
-          </div>
-        }
+        <app-selected-run-header
+          [session]="session"
+          [triage]="selectedTriage()"
+          [allowancePlan]="allowancePlan()"
+          [allowancePlans]="allowancePlans"
+          [selectedAllowance]="selectedAllowance()"
+          [allowanceUsage]="selectedAllowanceUsage()"
+          [outsideFilters]="selectedSessionOutsideFilters()"
+          [filteredCount]="filteredSessions().length"
+          [pricingFallbacks]="selectedPricingFallbacks()"
+          [sessionSizeHelp]="sessionSizeHelp"
+          [confidenceLabel]="confidenceLabel"
+          [confidenceHelp]="confidenceHelp"
+          [tokenSourceLabel]="tokenSourceLabel"
+          [tokenSourceHelp]="tokenSourceHelp"
+          [pricingFallbackReason]="pricingFallbackReason"
+          (allowancePlanChange)="setAllowancePlan($event)"
+          (openFirstFilteredSession)="openFirstFilteredSession()"
+          (viewPrices)="activeView.set('pricing')"
+        ></app-selected-run-header>
 
         <nav class="run-tabs debugger-map" aria-label="Selected run investigation flow">
           <button

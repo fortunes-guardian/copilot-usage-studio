@@ -1,5 +1,5 @@
 import { LedgerSession, ModelBreakdown, TokenBreakdown } from './ledger.model';
-import { FALLBACK_PRICING_MODEL, MODEL_PRICES_USD_PER_MILLION } from './pricing';
+import { modelUsesPricingFallback, priceForPricingModel, pricingFallbackReason } from './pricing';
 
 export interface PricedModelBreakdown extends ModelBreakdown {
   provider: string;
@@ -24,7 +24,7 @@ export function explainModelCost(
   sessionCostEur: number,
 ): PricedModelBreakdown {
   const pricingModel = entry.pricingModel || entry.model;
-  const price = MODEL_PRICES_USD_PER_MILLION[pricingModel] ?? MODEL_PRICES_USD_PER_MILLION[FALLBACK_PRICING_MODEL];
+  const price = priceForPricingModel(pricingModel);
   const inputEur = tokenCostEur(entry.tokens.input, price.input, usdToEur);
   const cachedInputEur = tokenCostEur(entry.tokens.cachedInput, price.cachedInput, usdToEur);
   const cacheWriteEur = tokenCostEur(entry.tokens.cacheWrite, price.cacheWrite ?? 0, usdToEur);
@@ -46,7 +46,7 @@ export function explainModelCost(
     outputEur,
     totalEur,
     share: sessionCostEur > 0 ? (totalEur / sessionCostEur) * 100 : 0,
-    usesFallbackPrice: usesPricingFallback(entry.model, pricingModel),
+    usesFallbackPrice: modelUsesPricingFallback(entry.model, pricingModel),
   };
 }
 
@@ -88,23 +88,8 @@ export function percentDelta(a: number, b: number): number | null {
   return a === 0 ? null : ((b - a) / a) * 100;
 }
 
-export function usesPricingFallback(
-  model: string | null | undefined,
-  pricingModel: string | null | undefined,
-): boolean {
-  const rawModel = model || '';
-  const priceRow = pricingModel || rawModel;
-
-  return priceRow !== rawModel || !MODEL_PRICES_USD_PER_MILLION[rawModel];
-}
-
-export function pricingFallbackReason(model: string, pricingModel: string): string {
-  if (model === pricingModel && MODEL_PRICES_USD_PER_MILLION[model]) {
-    return 'This model matched a GitHub price row directly.';
-  }
-
-  return `${model || 'Unknown model'} is priced with the ${pricingModel} row because that raw model id is not in the local GitHub pricing table.`;
-}
+export const usesPricingFallback = modelUsesPricingFallback;
+export { pricingFallbackReason };
 
 export function setsDiffer(a: Set<string>, b: Set<string>): boolean {
   if (a.size !== b.size) {

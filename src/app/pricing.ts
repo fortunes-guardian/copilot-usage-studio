@@ -74,8 +74,60 @@ export const COPILOT_ALLOWANCE_PLANS: CopilotAllowance[] = [
   },
 ];
 
+export function modelKey(model: string | null | undefined): string {
+  return String(model ?? '')
+    .replace(/^copilot\//i, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+export function normalizeModel(model: string | null | undefined): string {
+  const raw = String(model ?? '').replace(/^copilot\//i, '').trim();
+  const key = modelKey(raw);
+  const knownModels = Object.keys(MODEL_PRICES_USD_PER_MILLION);
+
+  return (
+    knownModels.find((name) => modelKey(name) === key) ??
+    knownModels.find((name) => key.includes(modelKey(name))) ??
+    (raw || 'Unknown model')
+  );
+}
+
+export function pricingModelForModel(model: string | null | undefined): string {
+  const normalized = normalizeModel(model);
+
+  return MODEL_PRICES_USD_PER_MILLION[normalized] ? normalized : FALLBACK_PRICING_MODEL;
+}
+
+export function priceForPricingModel(pricingModel: string | null | undefined): ModelPrice {
+  return MODEL_PRICES_USD_PER_MILLION[pricingModel || ''] ?? MODEL_PRICES_USD_PER_MILLION[FALLBACK_PRICING_MODEL];
+}
+
+export function modelUsesPricingFallback(
+  model: string | null | undefined,
+  pricingModel: string | null | undefined,
+): boolean {
+  const normalized = normalizeModel(model);
+  const priceRow = pricingModel || pricingModelForModel(normalized);
+
+  return priceRow !== normalized || !MODEL_PRICES_USD_PER_MILLION[normalized];
+}
+
+export function pricingFallbackReason(model: string | null | undefined, pricingModel: string | null | undefined): string {
+  const normalized = normalizeModel(model);
+  const priceRow = pricingModel || pricingModelForModel(normalized);
+
+  if (!modelUsesPricingFallback(normalized, priceRow)) {
+    return 'This model matched a GitHub price row directly.';
+  }
+
+  return `${normalized || 'Unknown model'} is priced with the ${priceRow} row because that raw model id is not in the local GitHub pricing table.`;
+}
+
 export function estimateCostUsd(model: string, tokens: TokenBreakdown): number {
-  const price = MODEL_PRICES_USD_PER_MILLION[model] ?? MODEL_PRICES_USD_PER_MILLION[FALLBACK_PRICING_MODEL];
+  const price = priceForPricingModel(model);
 
   return (
     (tokens.input / 1_000_000) * price.input +

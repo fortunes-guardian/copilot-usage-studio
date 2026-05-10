@@ -1,0 +1,77 @@
+<aside class="sidebar">
+  <label class="search">
+    <span>Search</span>
+    <input
+      type="search"
+      [ngModel]="query"
+      (ngModelChange)="queryChange.emit($event)"
+      placeholder="Prompt, repo, model, tag"
+    />
+  </label>
+
+  <div class="filters" aria-label="Session filters">
+    <label>
+      <span>Size</span>
+      <select [ngModel]="sizeFilter" (ngModelChange)="sizeFilterChange.emit($event)">
+        @for (size of sizeOptions; track size) {
+          <option [value]="size">{{ size === 'all' ? 'All sizes' : size }}</option>
+        }
+      </select>
+    </label>
+    <label>
+      <span>Signal</span>
+      <select [ngModel]="warningFilter" (ngModelChange)="warningFilterChange.emit($event)">
+        @for (warning of warningOptions; track warning) {
+          <option [value]="warning">{{ warning === 'all' ? 'All signals' : warning }}</option>
+        }
+      </select>
+    </label>
+    <label>
+      <span>Source</span>
+      <select [ngModel]="sourceFilter" (ngModelChange)="sourceFilterChange.emit($event)">
+        @for (source of sourceOptions; track source.value) {
+          <option [value]="source.value">{{ source.label }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  <p class="filter-count">{{ filteredSessions.length }} of {{ sessions.length }} sessions shown</p>
+
+  <div class="session-list">
+    @for (session of filteredSessions; track trackBySessionId($index, session)) {
+      <button
+        type="button"
+        class="session-card"
+        [class.active]="selectedSessionId === session.id"
+        (click)="selectSession.emit(session)"
+      >
+        <span class="session-title">{{ session.firstPrompt }}</span>
+        <span class="session-meta">
+          {{ session.workspace }} · {{ session.model }}
+        </span>
+        @if (sessionTriage(session); as triage) {
+          <span class="badge-row compact">
+            <span class="triage-badge" [ngClass]="triage.sizeTone">
+              {{ triage.size }}
+            </span>
+            @for (warning of triage.warnings.slice(0, 2); track warning.label) {
+              <span class="triage-badge" [ngClass]="warning.tone">
+                {{ warning.label }}
+              </span>
+            }
+          </span>
+        }
+        <span class="session-footer">
+          <span>{{ session.startedAt | date: 'MMM d, HH:mm' }}</span>
+          <strong>€{{ session.cost.eur | number: '1.2-2' }}</strong>
+        </span>
+        <span class="session-scan">
+          {{ session.traceSummary.totalTokens | number }} tokens · {{ sourceKindLabel(session.sourceKind) }}
+        </span>
+      </button>
+    } @empty {
+      <p class="empty dark">No sessions match these filters.</p>
+    }
+  </div>
+</aside>

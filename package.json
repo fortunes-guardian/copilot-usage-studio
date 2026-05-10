@@ -4,9 +4,11 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "start:clean": "npm run clean:ng-cache && ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "clean:ng-cache": "ng cache clean",
     "scan": "node scripts/scan-vscode-sessions.mjs",
     "verify:data": "node scripts/verify-ledger-data.mjs"
   },

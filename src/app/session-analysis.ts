@@ -1,5 +1,10 @@
 import { LedgerSession, ModelBreakdown, TokenBreakdown, TraceEvent } from './ledger.model';
-import { FALLBACK_PRICING_MODEL, MODEL_PRICES_USD_PER_MILLION } from './pricing';
+import {
+  modelKey,
+  modelUsesPricingFallback,
+  priceForPricingModel,
+  pricingModelForModel,
+} from './pricing';
 
 export type SessionSize = 'Small' | 'Medium' | 'Large' | 'Very large';
 export type WarningTone = 'low' | 'info' | 'medium' | 'high';
@@ -136,7 +141,7 @@ export function flowTraceEvents(events: TraceEvent[], modelBreakdown: ModelBreak
     .filter((event) => isFlowEvent(event))
     .map((event, index) => {
       const pricingModel = pricingModelForEvent(event, modelBreakdown);
-      const price = MODEL_PRICES_USD_PER_MILLION[pricingModel] ?? MODEL_PRICES_USD_PER_MILLION[FALLBACK_PRICING_MODEL];
+      const price = priceForPricingModel(pricingModel);
       const estimatedEur =
         event.estimatedCost?.eur ??
         tokenCostEur(event.inputTokens, price.input, usdToEur) +
@@ -182,7 +187,7 @@ export function matchesTraceFilter(event: TraceEvent, filter: TraceFilter): bool
 
 export function traceEventDetails(event: TraceEvent, modelBreakdown: ModelBreakdown[], usdToEur: number) {
   const pricingModel = pricingModelForEvent(event, modelBreakdown);
-  const price = MODEL_PRICES_USD_PER_MILLION[pricingModel] ?? MODEL_PRICES_USD_PER_MILLION[FALLBACK_PRICING_MODEL];
+  const price = priceForPricingModel(pricingModel);
   const inputEur = tokenCostEur(event.inputTokens, price.input, usdToEur);
   const outputEur = tokenCostEur(event.outputTokens, price.output, usdToEur);
   const estimatedEur = event.estimatedCost?.eur ?? inputEur + outputEur;
@@ -226,16 +231,11 @@ export function traceEventDetails(event: TraceEvent, modelBreakdown: ModelBreakd
     estimatedEur,
     totalTokens,
     pricingModel,
-    usesFallbackPrice: usesPricingFallback(rawModel, pricingModel),
+    usesFallbackPrice: modelUsesPricingFallback(rawModel, pricingModel),
   };
 }
 
-export function usesPricingFallback(model: string | null | undefined, pricingModel: string | null | undefined): boolean {
-  const rawModel = model || '';
-  const priceRow = pricingModel || rawModel;
-
-  return priceRow !== rawModel || !MODEL_PRICES_USD_PER_MILLION[rawModel];
-}
+export const usesPricingFallback = modelUsesPricingFallback;
 
 export function sessionTotalTokens(session: LedgerSession): number {
   return tokenTotal(session.tokens);
@@ -243,7 +243,7 @@ export function sessionTotalTokens(session: LedgerSession): number {
 
 function explainModelCost(entry: ModelBreakdown, usdToEur: number, sessionCostEur: number) {
   const pricingModel = entry.pricingModel || entry.model;
-  const price = MODEL_PRICES_USD_PER_MILLION[pricingModel] ?? MODEL_PRICES_USD_PER_MILLION[FALLBACK_PRICING_MODEL];
+  const price = priceForPricingModel(pricingModel);
   const inputEur = tokenCostEur(entry.tokens.input, price.input, usdToEur);
   const cachedInputEur = tokenCostEur(entry.tokens.cachedInput, price.cachedInput, usdToEur);
   const cacheWriteEur = tokenCostEur(entry.tokens.cacheWrite, price.cacheWrite ?? 0, usdToEur);
@@ -265,7 +265,7 @@ function explainModelCost(entry: ModelBreakdown, usdToEur: number, sessionCostEu
     outputEur,
     totalEur,
     share: sessionCostEur > 0 ? (totalEur / sessionCostEur) * 100 : 0,
-    usesFallbackPrice: usesPricingFallback(entry.model, pricingModel),
+    usesFallbackPrice: modelUsesPricingFallback(entry.model, pricingModel),
   };
 }
 
@@ -520,7 +520,7 @@ function pricedModelCallEvents(events: TraceEvent[], modelBreakdown: ModelBreakd
     .filter((event) => event.inputTokens || event.outputTokens)
     .map((event) => {
       const pricingModel = pricingModelForEvent(event, modelBreakdown);
-      const price = MODEL_PRICES_USD_PER_MILLION[pricingModel] ?? MODEL_PRICES_USD_PER_MILLION[FALLBACK_PRICING_MODEL];
+      const price = priceForPricingModel(pricingModel);
       const inputEur = tokenCostEur(event.inputTokens, price.input, usdToEur);
       const outputEur = tokenCostEur(event.outputTokens, price.output, usdToEur);
       const estimatedEur = event.estimatedCost?.eur ?? inputEur + outputEur;
@@ -529,7 +529,7 @@ function pricedModelCallEvents(events: TraceEvent[], modelBreakdown: ModelBreakd
         ...event,
         totalTokens: event.totalTokens ?? event.inputTokens + event.outputTokens,
         pricingModel,
-        usesFallbackPrice: usesPricingFallback(event.model || modelFromEventDetail(event.detail), pricingModel),
+        usesFallbackPrice: modelUsesPricingFallback(event.model || modelFromEventDetail(event.detail), pricingModel),
         inputEur,
         outputEur,
         estimatedEur,
@@ -557,7 +557,7 @@ function pricingModelForEvent(event: TraceEvent, modelBreakdown: ModelBreakdown[
 
   const sessionPricingModel = modelBreakdown.length === 1 ? modelBreakdown[0].pricingModel : null;
   const parsedModel = event.model ?? modelFromEventDetail(event.detail);
-  return matchPricingModel(parsedModel) ?? sessionPricingModel ?? FALLBACK_PRICING_MODEL;
+  return matchPricingModel(parsedModel) ?? sessionPricingModel ?? pricingModelForModel(parsedModel);
 }
 
 function tokenCostEur(tokens: number, usdPerMillion: number, usdToEur: number): number {
@@ -668,18 +668,6 @@ function matchPricingModel(rawModel: string): string | null {
     return null;
   }
 
-  return (
-    Object.keys(MODEL_PRICES_USD_PER_MILLION).find((model) => modelKey(model) === rawKey) ??
-    Object.keys(MODEL_PRICES_USD_PER_MILLION).find((model) => rawKey.includes(modelKey(model))) ??
-    null
-  );
-}
-
-function modelKey(model: string): string {
-  return String(model ?? '')
-    .replace(/^copilot\//i, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim()
-    .replace(/\s+/g, ' ');
+  const pricingModel = pricingModelForModel(rawModel);
+  return modelKey(pricingModel) === rawKey || rawKey.includes(modelKey(pricingModel)) ? pricingModel : null;
 }

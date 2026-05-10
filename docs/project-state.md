@@ -78,6 +78,8 @@ Principles:
   - redundant selected-run facts have been pruned so Overview no longer repeats model, token, source, run-size, or fallback facts already shown in the run hero
   - fallback pricing assumptions are now visible in the selected-run header, Cost table, Turns ledger, Compare, Analytics, and Prices page
   - sidebar filters now show a clear state when the open run is outside the visible filtered rail
+  - Analytics now uses a quieter cohort header and compact controls so the model breakdown stays near the top of the dashboard
+  - Trace keeps the selected event inspector visible while scrolling long event logs, with a stacked debugger layout on narrower content widths
 
 ## Important Design Decisions
 
@@ -99,7 +101,7 @@ Principles:
 
 ## Current Rough Edges
 
-- The UI is much calmer after the first polish pass, but Compare, Analytics, and Prices still need the same level of visual tuning as Sessions.
+- The UI is much calmer after the first polish pass. Compare and Prices have had a first audit pass, but the large root stylesheet still needs cleanup.
 - Help popovers now use the shared UI component instead of native browser title behavior. Some lower-priority sidebar badge hints were intentionally removed rather than nesting interactive popovers inside session-card buttons.
 - The Trace inspector now shows normalized event fields, but it is still limited by the bounded payload summaries the scanner imports. It is good for event-level evidence, not full raw JSONL replacement.
 - VS Code transcript files under `GitHub.copilot-chat/transcripts/<session-id>.jsonl` can contain richer Chat Debug timeline events, but they are inconsistent. In the current workspace, some sessions have rich transcripts and weak debug logs, while another has useful debug logs and only a `session.start` transcript. The scanner does not import transcripts yet, and core cost features should not depend on them.
@@ -107,8 +109,8 @@ Principles:
 - Aggregated analytics are useful but still early. Outlier detection is a simple statistical signal with driver hints; it now separates a few obvious cases such as long agent runs and suspicious low-activity spikes, but it should become more nuanced as more real sessions are imported.
 - Advanced evidence is imported but mostly hidden from the primary UI. Reasoning text presence and request-cap comparison were too technical to be useful as top-level cards.
 - No app-owned database yet. Scans overwrite `public/data/sessions.json`.
-- `app.html` and `app.css` are still large and should keep shrinking as debugger panels become focused components.
-- Pricing/model normalization still has parallel concerns across scanner, verifier, and UI. The UI now has a focused selected-run analysis helper, but the cross-runtime matching rules should eventually be centralized more deliberately.
+- `app.css` is still large and contains some older shell-era selectors. Keep shrinking it as page chrome and shared layout pieces move into focused components.
+- Pricing/model normalization is now centralized in runtime-specific shared helpers: Angular uses `src/app/pricing.ts`, while scanner/verifier scripts use `scripts/pricing-utils.mjs`. Keep new model matching, fallback, and token-cost logic in those helpers.
 
 ## Review Notes
 
@@ -126,11 +128,112 @@ Verified:
 Code improvements to schedule:
 
 - Move selected-run explanation logic out of the root component into focused services or helper modules.
-- Centralize model normalization and pricing fallback rules. Pricing rows now have one shared source, but matching/fallback behavior still exists in both the scanner/verifier and UI.
 - Add ingestion fixtures for debug logs, weak chat snapshots, unknown models, mixed models, and fragile transcript availability.
 - Add UI tests for the selected-run tabs, source/size filters, pricing fallback display, Analytics empty states, and Compare deltas.
 
 ## Latest Implemented Step
+
+Tightened Analytics and Trace UI defects from visual review.
+
+What changed:
+
+- Kept the top nav compact at desktop/tablet widths instead of stacking early and creating a large empty band.
+- Removed the repeated Analytics scope-pill row; the cohort explanation now lives once in the header.
+- Made Analytics filters shorter and less card-like so they do not compete with the dashboard content.
+- Removed the selected-run detail overflow trap that could break sticky Trace behavior.
+- Changed Trace to stack the selected-event inspector above the log on narrower content widths, keep it sticky while scrolling, and scroll internally when details are long.
+- Fixed squeezed Trace event rows that could collapse detail text into one-character columns.
+
+Why: Analytics should prioritize "what is happening across sessions?" and Trace should keep selected-event evidence visible while a developer scrolls through raw events. The UI was letting support/caveat elements crowd the main task.
+
+Verification:
+
+- `npm run build`
+- `npm test -- --watch=false`
+- Browser sanity check on Analytics and Trace at `http://127.0.0.1:4301/`
+
+## Previous Implemented Step
+
+Centralized pricing and model normalization.
+
+What changed:
+
+- Added shared Angular pricing helpers in `src/app/pricing.ts` for model keying, model normalization, pricing-row selection, fallback detection, fallback explanation, and rate lookup.
+- Added `scripts/pricing-utils.mjs` so the scanner and verifier use the same model normalization and token-cost rules instead of private copies.
+- Updated selected-run analysis, Compare, Analytics, Prices, scanner, and verifier to call the shared helpers.
+- Removed duplicated fallback-pricing checks from the Prices page and selected-run analysis.
+
+Why: cost debugging depends on consistent model matching. A raw model id should be normalized, priced, explained, and verified the same way across ingestion, generated ledger verification, and UI display.
+
+Verification:
+
+- `npm run build`
+- `npm test -- --watch=false`
+- `npm run verify:data`
+- `node --check scripts/scan-vscode-sessions.mjs`
+- `node --check scripts/verify-ledger-data.mjs`
+- `node --check scripts/pricing-utils.mjs`
+
+## Previous Implemented Step
+
+Audited and polished the Compare and Prices pages.
+
+What changed:
+
+- Compare now presents a clearer `Baseline A` versus `Candidate B` selector layout.
+- Compare has a stronger top readout with the cost delta, A/B costs, token delta, and summary before the metric grid.
+- Compare sections now explain their role: quick driver read first, model/price-row movement second.
+- Prices now reads more like an evidence page: source facts, AI-credit context, calculation rule, then the rate-card table.
+- Prices copy is tighter and less essay-like while preserving the GitHub source and cache-visibility caveats.
+- Consolidated old "UI polish" overrides into the real component selectors for both pages.
+
+Why: Compare should feel like a run-diff debugger, not a generic report. Prices should make the exact assumptions behind estimates visible without competing with the selected-run workflow.
+
+Verification:
+
+- `npm run build`
+- `npm test -- --watch=false`
+- Browser sanity check on Compare and Prices at `http://127.0.0.1:4301/`
+
+## Previous Implemented Step
+
+Continued decomposing the Sessions UI.
+
+What changed:
+
+- Added `SessionRailComponent` for search, filters, and the session-card rail.
+- Added `SessionImportContextComponent` for the compact imported-data disclosure.
+- Added `SelectedRunHeaderComponent` for the selected-run hero, AI-credit meter, filter-mismatch callout, and pricing-fallback callout.
+- Reduced the root template to page orchestration plus the selected-run investigation tabs/subviews.
+- Removed now-unused source-label and track-by helpers from the root component.
+
+Why: the root app shell should coordinate state and routing between debugger surfaces, not own every piece of Sessions markup. These extracted components are stable UI blocks, so moving them lowers the risk of future polish and makes the remaining root template easier to read.
+
+Verification:
+
+- `npm run build`
+- `npm test -- --watch=false`
+- Browser sanity check on `http://127.0.0.1:4301/`
+
+## Previous Implemented Step
+
+Fixed the dev-server stale-style workflow.
+
+What changed:
+
+- Added `npm run clean:ng-cache`.
+- Added `npm run start:clean`, which clears Angular's build cache before starting `ng serve`.
+- Removed the temporary global Analytics CSS fallback from `src/styles.css`; Analytics layout now belongs only to the Analytics component stylesheet.
+- Documented when to use the clean dev-server start in README and local deployment docs.
+
+Why: the previous browser issue showed new Analytics markup with stale component styles on an older dev-server instance. The project should have a clear recovery command instead of duplicate global CSS that can mask component-style problems.
+
+Verification:
+
+- `npm run build`
+- `npm test -- --watch=false`
+
+## Previous Implemented Step
 
 Reworked the Analytics page layout.
 
@@ -140,7 +243,7 @@ What changed:
 - Rebuilt the Analytics metrics as proper cards instead of a collapsed text stack.
 - Tightened tooltip placement so help icons sit with labels rather than interrupting numeric values.
 - Grouped Distribution and Recent trend beside/near the model breakdown, with Runs to inspect and Outlier signals below.
-- Added robust global Analytics layout rules because the existing dev server showed stale component styles during verification.
+- Verified the Analytics layout on a fresh dev server after the existing dev-server instance showed stale component styles during verification.
 
 Why: Analytics should answer cohort/model questions quickly. The old page pushed the model breakdown too far down and made several metric/tooltip areas look broken.
 

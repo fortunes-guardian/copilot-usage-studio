@@ -238,6 +238,8 @@
   top: 92px;
   display: grid;
   gap: 14px;
+  max-height: calc(100vh - 112px);
+  overflow: auto;
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 14px;
@@ -481,7 +483,7 @@
   }
 
   .trace-inspector {
-    position: static;
+    position: sticky;
   }
 }
 
@@ -580,6 +582,7 @@
 .trace-inspector {
   top: 78px;
   gap: 12px;
+  max-height: calc(100vh - 92px);
   padding: 12px;
 }
 
@@ -610,4 +613,26 @@
 .flow-node {
   grid-template-columns: 30px minmax(140px, 200px) minmax(0, 1fr);
   padding: 10px;
+}
+
+@media (max-width: 1250px) {
+  .trace-workbench {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .trace-inspector {
+    order: -1;
+    z-index: 4;
+    max-height: min(420px, 42vh);
+  }
+
+  .event-row {
+    grid-template-columns: 76px minmax(135px, 0.55fr) minmax(0, 1fr) minmax(120px, auto);
+  }
+}
+
+@media (max-width: 600px) {
+  .event-row {
+    grid-template-columns: 1fr;
+  }
 }

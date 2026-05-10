@@ -21,6 +21,14 @@ http://127.0.0.1:4200/
 
 Why: this is the fastest loop while the UI and scanner are changing. It keeps scans explicit, uses local files only, and makes errors easy to see in the terminal.
 
+If the browser shows updated markup with stale component styles, stop the dev server and restart it with a cache reset:
+
+```bash
+npm run start:clean
+```
+
+This clears Angular's local build cache before starting `ng serve`. Use it after larger component-style moves if the dev server appears to mix old CSS with new templates.
+
 ## Recommended For Local Use Without Dev Mode
 
 Build static files and serve them locally:

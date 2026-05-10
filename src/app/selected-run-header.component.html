@@ -1,0 +1,83 @@
+<div class="detail-header">
+  <div>
+    <div class="source-meta">
+      <span>{{ session.workspace }}</span>
+      @if (triage; as runTriage) {
+        <span>
+          {{ runTriage.size }}
+          <app-help-popover [text]="sessionSizeHelp(runTriage)" label="Explain run size"></app-help-popover>
+        </span>
+      }
+      <span>
+        {{ confidenceLabel(session.confidence) }}
+        <app-help-popover [text]="confidenceHelp(session.confidence)" label="Explain source confidence"></app-help-popover>
+      </span>
+      <span>
+        {{ tokenSourceLabel(session.tokenSource) }}
+        <app-help-popover [text]="tokenSourceHelp(session.tokenSource)" label="Explain token source"></app-help-popover>
+      </span>
+    </div>
+    <h2>{{ session.title }}</h2>
+    <p class="detail-subtitle">
+      {{ session.model }} · {{ session.traceSummary.modelTurns | number }} model turns ·
+      {{ session.traceSummary.totalTokens | number }} tokens
+    </p>
+  </div>
+  <div class="price">
+    <span>Estimate</span>
+    <strong>€{{ session.cost.eur | number: '1.2-2' }}</strong>
+    @if (allowanceUsage; as usage) {
+      <div class="credit-meter">
+        <label>
+          <span>AI credits</span>
+          <select [ngModel]="allowancePlan" (ngModelChange)="allowancePlanChange.emit($event)">
+            @for (plan of allowancePlans; track plan.id) {
+              <option [value]="plan.id">{{ plan.shortLabel }}</option>
+            }
+          </select>
+        </label>
+        <div class="credit-bar" aria-hidden="true">
+          <span [style.width.%]="usage.share > 100 ? 100 : usage.share"></span>
+        </div>
+        <em>
+          {{ usage.credits | number: '1.0-1' }} credits ·
+          {{ usage.share | number: '1.0-1' }}% of {{ selectedAllowance.creditsPerUserMonthly | number }}/user
+        </em>
+      </div>
+    }
+  </div>
+</div>
+
+@if (outsideFilters) {
+  <div class="source-callout filter-mismatch-callout">
+    <div>
+      <span>Open run is outside the current filters</span>
+      <strong>{{ filteredCount }} sessions visible in the rail</strong>
+      <p>The selected run stays open so you do not lose your place, but the sidebar filters currently hide it.</p>
+    </div>
+    @if (filteredCount) {
+      <button type="button" class="ghost-button" (click)="openFirstFilteredSession.emit()">Open first visible run</button>
+    }
+  </div>
+}
+
+@if (pricingFallbacks.length) {
+  <div class="source-callout pricing-fallback-callout">
+    <div>
+      <span>Pricing assumption</span>
+      <strong>{{ pricingFallbacks.length }} raw model id{{ pricingFallbacks.length === 1 ? '' : 's' }} used fallback pricing</strong>
+      <p>
+        @for (fallback of pricingFallbacks; track fallback.model + fallback.pricingModel) {
+          <span class="inline-fallback">
+            {{ fallback.model }} priced as {{ fallback.pricingModel }}
+            <app-help-popover
+              [text]="pricingFallbackReason(fallback.model, fallback.pricingModel)"
+              label="Explain fallback pricing"
+            ></app-help-popover>
+          </span>
+        }
+      </p>
+    </div>
+    <button type="button" class="ghost-button" (click)="viewPrices.emit()">View prices</button>
+  </div>
+}

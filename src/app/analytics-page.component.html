@@ -4,7 +4,7 @@
       <div>
         <p class="eyebrow">Multi-session analytics</p>
         <h2>{{ stats.scopeLabel }}</h2>
-        <p>
+        <p class="analytics-cohort">
           {{ stats.count }} of {{ stats.sidebarCount }} sidebar-filtered sessions included in this analytics cohort.
           @if (stats.analyticsExcludedCount > 0) {
             {{ stats.analyticsExcludedCount }} excluded by Analytics controls.
@@ -51,13 +51,6 @@
         </select>
       </label>
     </section>
-
-    <div class="analytics-scope">
-      <span>{{ stats.timeRangeLabel }}</span>
-      <span>{{ stats.workspaceLabel }}</span>
-      <span>{{ stats.modelLabel }}</span>
-      <span>{{ stats.groupingLabel }}</span>
-    </div>
 
     @if (stats.count === 0) {
       <section class="analytics-empty">

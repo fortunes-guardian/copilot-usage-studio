@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { costUsdForTokens, normalizeModel } from './pricing-utils.mjs';
 
 const file = resolve(process.argv[2] ?? 'public/data/sessions.json');
 const ledger = JSON.parse(readFileSync(file, 'utf8'));
@@ -18,34 +19,8 @@ function warn(message) {
   warnings.push(message);
 }
 
-function modelKey(model) {
-  return String(model ?? '')
-    .replace(/^copilot\//i, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim()
-    .replace(/\s+/g, ' ');
-}
-
-function normalizeModel(model) {
-  const raw = String(model ?? '').replace(/^copilot\//i, '').trim();
-  const key = modelKey(raw);
-  const known = Object.keys(pricing);
-  return (
-    known.find((name) => modelKey(name) === key) ??
-    known.find((name) => key.includes(modelKey(name))) ??
-    (raw || 'Unknown model')
-  );
-}
-
 function expectedCostUsd(model, tokens) {
-  const price = pricing[model] ?? pricing[fallbackPricingModel];
-  return (
-    (tokens.input / 1_000_000) * price.input +
-    (tokens.cachedInput / 1_000_000) * price.cachedInput +
-    (tokens.cacheWrite / 1_000_000) * (price.cacheWrite ?? 0) +
-    (tokens.output / 1_000_000) * price.output
-  );
+  return costUsdForTokens(model, tokens, pricing, fallbackPricingModel);
 }
 
 if (ledger.schemaVersion !== 1) {
@@ -181,7 +156,7 @@ for (const session of ledger.sessions ?? []) {
         fail(`${session.id} modelBreakdown.${entry.model ?? 'unknown'} has invalid token field ${field}`);
       }
     }
-    const normalizedRawModels = new Set(entry.rawModels.map(normalizeModel));
+    const normalizedRawModels = new Set(entry.rawModels.map((model) => normalizeModel(model, pricing)));
     if (!normalizedRawModels.has(entry.model) && entry.model !== 'Unknown model') {
       fail(`${session.id} modelBreakdown.${entry.model} does not match raw model ids`);
     }
