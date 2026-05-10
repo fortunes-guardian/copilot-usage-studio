@@ -123,7 +123,7 @@ Status: started.
 
 Direction:
 
-- Midnight Ledger theme.
+- Midnight debugger theme.
 - Custom Angular/CSS first, no component library yet.
 - Top-level navigation for Sessions, Compare, Analytics, and Prices.
 - Selected-run content stays primary on narrow screens.

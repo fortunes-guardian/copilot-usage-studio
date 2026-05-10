@@ -1,13 +1,13 @@
 @if (state === 'loading') {
   <section class="state-panel">
     <p class="eyebrow">Loading</p>
-    <h2>Reading local ledger data</h2>
+    <h2>Reading local session data</h2>
     <p>The app is loading <code>/data/sessions.json</code>.</p>
   </section>
 } @else if (state === 'error') {
   <section class="state-panel danger">
     <p class="eyebrow">Data issue</p>
-    <h2>Could not load generated ledger data</h2>
+    <h2>Could not load generated session data</h2>
     <p>{{ error }}</p>
     <p>Run <code>npm run scan</code>, then <code>npm run verify:data</code>.</p>
   </section>

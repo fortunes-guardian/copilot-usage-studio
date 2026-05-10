@@ -1,4 +1,4 @@
-# Copilot Cost Ledger
+# Copilot Cost Debugger
 
 Local-first cost debugger for VS Code GitHub Copilot chat and agent sessions.
 
@@ -45,7 +45,7 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
   - highest-token and most expensive runs
   - model breakdowns
   - trend rows, size distribution, and clearer outlier signals
-- Started the Midnight Ledger UI overhaul:
+- Started the Midnight debugger UI overhaul:
   - top-level navigation for Sessions, Compare, Analytics, and Prices
   - Compare separated from the selected-run stack and no longer rendered inside Sessions
   - selected-run pages now use Overview, Cost, Turns, and Trace subviews instead of one stacked report

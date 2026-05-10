@@ -66,7 +66,7 @@ Principles:
   - size distribution
   - clearer empty states when cohort controls exclude all sessions
   - outlier signals with first-pass "why high cost?" explanations
-- Started the Midnight Ledger UI overhaul:
+- Started the Midnight debugger UI overhaul:
   - top-level app bar with Sessions, Compare, Analytics, and Prices
   - Compare promoted out of the selected-session stack
   - selected-run content stays primary on narrow screens, with the session rail moving below it

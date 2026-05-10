@@ -47,9 +47,7 @@
         (click)="selectSession.emit(session)"
       >
         <span class="session-title">{{ session.firstPrompt }}</span>
-        <span class="session-meta">
-          {{ session.workspace }} · {{ session.model }}
-        </span>
+        <span class="session-meta">{{ session.model }}</span>
         @if (sessionTriage(session); as triage) {
           <span class="badge-row compact">
             <span class="triage-badge" [ngClass]="triage.sizeTone">

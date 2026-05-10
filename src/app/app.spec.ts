@@ -115,7 +115,7 @@ describe('App', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Copilot Ledger');
+    expect(compiled.querySelector('h1')?.textContent).toContain('Copilot Cost Debugger');
     expect(compiled.textContent).toContain('1 sessions');
     expect(compiled.textContent).toContain('Triage');
     expect(compiled.textContent).toContain('Cache unknown');
