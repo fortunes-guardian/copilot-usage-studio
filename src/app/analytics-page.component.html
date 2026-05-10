@@ -68,10 +68,10 @@
         }
       </section>
     } @else {
-      <section class="summary-grid">
+      <section class="analytics-metrics" aria-label="Analytics summary">
         @for (metric of stats.metrics; track metric.label) {
           <article class="metric">
-            <span>
+            <span class="metric-label">
               {{ metric.label }}
               <app-help-popover [text]="metric.help" [label]="'Explain ' + metric.label"></app-help-popover>
             </span>
@@ -80,49 +80,10 @@
         }
       </section>
 
-      <section class="analytics-split">
-        <div>
-          <h3>Runs to inspect</h3>
-          <div class="highlight-list">
-            @for (highlight of stats.highlights; track highlight.label) {
-              <button type="button" (click)="emitOpenSession(highlight.session)" [disabled]="!highlight.session">
-                <span>
-                  {{ highlight.label }}
-                  <app-help-popover
-                    [text]="highlight.help"
-                    [label]="'Explain ' + highlight.label"
-                    [interactive]="false"
-                  ></app-help-popover>
-                </span>
-                <strong>{{ highlight.value }}</strong>
-                @if (highlight.session) {
-                  <em>{{ highlight.session.title }}</em>
-                }
-              </button>
-            }
-          </div>
-        </div>
-
-        <div>
-          <h3>Outlier signals</h3>
-          <div class="highlight-list">
-            @for (outlier of stats.outliers; track outlier.session.id) {
-              <button type="button" (click)="emitOpenSession(outlier.session)">
-                <span>{{ outlier.tokens | number }} tokens · €{{ outlier.session.cost.eur | number: '1.2-4' }}</span>
-                <strong>{{ outlier.session.title }}</strong>
-                <em>{{ outlier.reason }}</em>
-              </button>
-            } @empty {
-              <p class="empty">No outliers in the current Analytics cohort.</p>
-            }
-          </div>
-        </div>
-      </section>
-
-      <section class="analytics-split">
-        <div>
+      <section class="analytics-primary">
+        <div class="analytics-panel model-panel">
           <h3>Model breakdown</h3>
-          <div class="cost-table compact-table">
+          <div class="cost-table compact-table" role="table" aria-label="Model breakdown">
             <div class="cost-row analytics-model-row cost-row-heading">
               <span>Model</span>
               <span>Sessions</span>
@@ -152,28 +113,71 @@
           </div>
         </div>
 
-        <div>
-          <h3>Distribution</h3>
-          <div class="stat-list">
-            @for (bucket of stats.distribution; track bucket.size) {
-              <div>
-                <span>{{ bucket.size }}</span>
-                <strong>{{ bucket.count | number }} runs</strong>
-                <em>{{ bucket.tokens | number }} tokens · €{{ bucket.cost | number: '1.2-4' }} · {{ bucket.share | number: '1.0-0' }}%</em>
-              </div>
-            }
+        <aside class="analytics-side">
+          <div class="analytics-panel">
+            <h3>Distribution</h3>
+            <div class="stat-list compact">
+              @for (bucket of stats.distribution; track bucket.size) {
+                <div>
+                  <span>{{ bucket.size }}</span>
+                  <strong>{{ bucket.count | number }} runs</strong>
+                  <em>{{ bucket.tokens | number }} tokens · €{{ bucket.cost | number: '1.2-4' }} · {{ bucket.share | number: '1.0-0' }}%</em>
+                </div>
+              }
+            </div>
           </div>
 
-          <h3>Recent trend</h3>
-          <div class="stat-list">
-            @for (row of stats.trendRows; track row.key) {
-              <div>
-                <span>{{ row.label }}</span>
-                <strong>{{ row.count | number }} runs</strong>
-                <em>{{ row.tokens | number }} tokens · €{{ row.cost | number: '1.2-4' }}</em>
-              </div>
+          <div class="analytics-panel">
+            <h3>Recent trend</h3>
+            <div class="stat-list compact">
+              @for (row of stats.trendRows; track row.key) {
+                <div>
+                  <span>{{ row.label }}</span>
+                  <strong>{{ row.count | number }} runs</strong>
+                  <em>{{ row.tokens | number }} tokens · €{{ row.cost | number: '1.2-4' }}</em>
+                </div>
+              } @empty {
+                <p class="empty">No trend rows for the current Analytics cohort.</p>
+              }
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="analytics-split">
+        <div class="analytics-panel">
+          <h3>Runs to inspect</h3>
+          <div class="highlight-list">
+            @for (highlight of stats.highlights; track highlight.label) {
+              <button type="button" (click)="emitOpenSession(highlight.session)" [disabled]="!highlight.session">
+                <span class="row-kicker">
+                  {{ highlight.label }}
+                  <app-help-popover
+                    [text]="highlight.help"
+                    [label]="'Explain ' + highlight.label"
+                    [interactive]="false"
+                  ></app-help-popover>
+                </span>
+                <strong>{{ highlight.value }}</strong>
+                @if (highlight.session) {
+                  <em>{{ highlight.session.title }}</em>
+                }
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="analytics-panel">
+          <h3>Outlier signals</h3>
+          <div class="highlight-list">
+            @for (outlier of stats.outliers; track outlier.session.id) {
+              <button type="button" (click)="emitOpenSession(outlier.session)">
+                <span>{{ outlier.tokens | number }} tokens · €{{ outlier.session.cost.eur | number: '1.2-4' }}</span>
+                <strong>{{ outlier.session.title }}</strong>
+                <em>{{ outlier.reason }}</em>
+              </button>
             } @empty {
-              <p class="empty">No trend rows for the current Analytics cohort.</p>
+              <p class="empty">No outliers in the current Analytics cohort.</p>
             }
           </div>
         </div>

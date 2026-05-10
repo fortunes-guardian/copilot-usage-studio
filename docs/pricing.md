@@ -1,11 +1,17 @@
-# Pricing Design
+# Pricing
 
-The app uses GitHub's published Copilot usage-based model pricing as the rate card for local session estimates.
+This app is a local cost debugger. It uses GitHub's published Copilot usage-based model pricing to explain why a local Copilot run looks expensive, but it is not a GitHub invoice.
 
-Source:
+Primary source:
 
 ```text
 https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing
+```
+
+AI credit and allowance source:
+
+```text
+https://docs.github.com/en/copilot/concepts/billing/usage-based-billing-for-organizations-and-enterprises
 ```
 
 Current version:
@@ -27,6 +33,16 @@ The source table says prices are per 1 million tokens and take effect on June 1,
 The rate card is a versioned JSON file so the scanner, verifier, and UI use the same pricing rows and fallback model. This avoids a quiet class of bugs where the UI explains one price table while the scanner calculated with another.
 
 `src/app/pricing.ts` is intentionally just an Angular-facing adapter around the shared JSON. It adds TypeScript types and the `estimateCostUsd` helper, but it is not the source of truth.
+
+## What The App Calculates
+
+For each imported model call, the scanner reads local VS Code debug-log token totals when they are available:
+
+- input tokens
+- output tokens
+- cached input tokens, only if the source exposes them
+- cache-write tokens, only if the source exposes them
+- model id and pricing row
 
 ## Calculation
 
@@ -76,6 +92,27 @@ Temporary promotional amounts documented by GitHub for existing customers from J
 
 The UI treats these as allowance context, not as billing reconciliation. GitHub pools Business and Enterprise included credits at the billing entity level, so a run's percent-of-allowance is a per-seat mental model unless the app later adds organization seat counts.
 
+For example, a 100-seat Copilot Business organization has a shared standard pool of 190,000 credits, not 100 isolated 1,900-credit buckets.
+
+## What The UI Shows
+
+The selected run header shows:
+
+- estimated EUR cost
+- estimated AI credits
+- selected allowance plan
+- percent of that plan's per-user monthly allowance
+
+The Prices page shows:
+
+- the GitHub model price source used by the app
+- the imported pricing version
+- the Business and Enterprise allowance options
+- the fixed AI credit conversion
+- how the currently imported sessions compare with the selected allowance
+
+This is useful for a quick mental model: "this single run would consume about X% of one Business user's monthly included credits."
+
 ## Why The GitHub Prices Page Exists
 
 The user should be able to inspect the cost inputs directly. If a session looks expensive, the UI should make it clear whether that came from:
@@ -90,12 +127,37 @@ The `GitHub prices` view therefore shows every rate row the app knows about, whe
 
 The same view also shows the selected Business/Enterprise AI-credit allowance and how the current imported sessions compare with it.
 
-## Current Limitations
+## How Realistic Is The Forecast?
 
-- Local VS Code debug logs currently provide input and output token totals, but not complete billing-grade cache accounting.
+Good for:
+
+- finding which model calls drove a run's local cost estimate
+- comparing two runs under the same local assumptions
+- spotting whether cost came mostly from input/context or output
+- estimating AI credit consumption from visible local token totals
+- understanding whether a run is tiny, normal, or a large share of a monthly allowance
+
+Not invoice-grade for:
+
+- exact GitHub invoice reconciliation
+- provider-side cached input when VS Code logs do not expose cached token fields
+- billing adjustments, promotions, policy effects, or later GitHub pricing changes
+- exact attribution of input tokens to instructions, MCP servers, workspace context, or tool results unless the source logs expose those sections directly
+
+## Cache Reality
+
+Local VS Code debug logs observed so far usually expose input and output token totals, but not complete provider cache billing fields.
+
+That means:
+
 - When `cachedInput` and `cacheWrite` are zero in a debug-log import, that currently means those cache fields were not present in the local log source. It should not be presented as proof that provider-side cache billing was zero.
 - Cached input is not a discount against output. It is a separate input/context bucket when a billing source exposes it. Output tokens remain priced as output tokens.
+- Input-heavy sessions may be overestimated if GitHub billed a large portion of input as cheaper cached input.
+- Output-heavy sessions are usually easier to reason about because output remains priced as output.
 - The Cost view includes a Billing Reality Check that labels cache uncertainty as likely low impact, material, or directional based on the imported input/output cost split.
+
+## Current Limitations
+
 - GitHub billing can still differ because GitHub may apply provider-side cache accounting or billing adjustments not present in local logs.
 - Unknown model ids are preserved for display and priced with a visible fallback until the pricing table is updated.
 - The pricing table should be rechecked against GitHub Docs whenever GitHub changes model availability or usage-based rates.

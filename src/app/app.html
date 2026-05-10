@@ -136,62 +136,51 @@
       ></app-compare-page>
     } @else if (activeView() === 'sessions') {
     <section class="sessions-page">
-    <section class="workspace-overview" aria-label="Session workspace overview">
-      <section class="summary-grid">
-        <article class="metric">
-          <span>Sessions</span>
-          <strong>{{ summary().count }}</strong>
-        </article>
-        <article class="metric">
-          <span>Total estimate</span>
-          <strong>€{{ summary().eur | number: '1.2-2' }}</strong>
-        </article>
-        <article class="metric">
-          <span>Input tokens</span>
-          <strong>{{ summary().input | number }}</strong>
-        </article>
-        <article class="metric">
-          <span>Output tokens</span>
-          <strong>{{ summary().output | number }}</strong>
-        </article>
-      </section>
-
       @if (ledger()?.ingestion; as ingestion) {
-        <section class="ingestion compact-ingestion" aria-label="Data provenance">
-          <div class="ingestion-lede">
-            <p class="eyebrow">Data provenance</p>
-            <strong>Local scan</strong>
-            <span>Import diagnostics, not billing totals</span>
+        <details class="import-context" aria-label="Imported data context">
+          <summary>
+            <span class="import-context-title">Import context</span>
+            <span class="import-context-note">Totals across imported sessions, not the selected run</span>
+            <span class="import-pill">{{ summary().count | number }} sessions</span>
+            <span class="import-pill">€{{ summary().eur | number: '1.2-2' }} imported estimate</span>
+            <span class="import-pill">{{ ingestion.importedDebugLogSessions | number }} debug logs</span>
+            <span class="import-pill">{{ ingestion.enrichedFromStateDbs | number }} state enriched</span>
+          </summary>
+
+          <div class="import-context-body">
+            <p>
+              These scan diagnostics explain where the local ledger came from. The selected run estimate starts below in
+              the run header.
+            </p>
+            <dl>
+              <div>
+                <dt>Debug logs <app-help-popover [text]="help.debugLogs" label="Explain debug logs"></app-help-popover></dt>
+                <dd>{{ ingestion.importedDebugLogSessions | number }}</dd>
+              </div>
+              <div>
+                <dt>Chat snapshots <app-help-popover [text]="help.chatSnapshots" label="Explain chat snapshots"></app-help-popover></dt>
+                <dd>{{ ingestion.importedChatSnapshotSessions | number }}</dd>
+              </div>
+              <div>
+                <dt>State DBs <app-help-popover [text]="help.stateDbs" label="Explain state DBs"></app-help-popover></dt>
+                <dd>{{ ingestion.scannedStateDbs | number }}</dd>
+              </div>
+              <div>
+                <dt>State enriched <app-help-popover [text]="help.stateEnriched" label="Explain state enrichment"></app-help-popover></dt>
+                <dd>{{ ingestion.enrichedFromStateDbs | number }}</dd>
+              </div>
+              <div>
+                <dt>Empty logs skipped <app-help-popover [text]="help.emptyDebugLogs" label="Explain empty logs skipped"></app-help-popover></dt>
+                <dd>{{ ingestion.skippedEmptyDebugLogs | number }}</dd>
+              </div>
+              <div>
+                <dt>No-request chats <app-help-popover [text]="help.snapshotsWithoutRequests" label="Explain no-request chats"></app-help-popover></dt>
+                <dd>{{ ingestion.skippedChatSnapshotsWithoutRequests | number }}</dd>
+              </div>
+            </dl>
           </div>
-          <dl>
-            <div>
-              <dt>Debug logs <app-help-popover [text]="help.debugLogs" label="Explain debug logs"></app-help-popover></dt>
-              <dd>{{ ingestion.importedDebugLogSessions | number }}</dd>
-            </div>
-            <div>
-              <dt>Chat snapshots <app-help-popover [text]="help.chatSnapshots" label="Explain chat snapshots"></app-help-popover></dt>
-              <dd>{{ ingestion.importedChatSnapshotSessions | number }}</dd>
-            </div>
-            <div>
-              <dt>State DBs <app-help-popover [text]="help.stateDbs" label="Explain state DBs"></app-help-popover></dt>
-              <dd>{{ ingestion.scannedStateDbs | number }}</dd>
-            </div>
-            <div>
-              <dt>State enriched <app-help-popover [text]="help.stateEnriched" label="Explain state enrichment"></app-help-popover></dt>
-              <dd>{{ ingestion.enrichedFromStateDbs | number }}</dd>
-            </div>
-            <div>
-              <dt>Empty logs skipped <app-help-popover [text]="help.emptyDebugLogs" label="Explain empty logs skipped"></app-help-popover></dt>
-              <dd>{{ ingestion.skippedEmptyDebugLogs | number }}</dd>
-            </div>
-            <div>
-              <dt>No-request chats <app-help-popover [text]="help.snapshotsWithoutRequests" label="Explain no-request chats"></app-help-popover></dt>
-              <dd>{{ ingestion.skippedChatSnapshotsWithoutRequests | number }}</dd>
-            </div>
-          </dl>
-        </section>
+        </details>
       }
-    </section>
 
     @if (selectedSession(); as session) {
       <section class="detail">

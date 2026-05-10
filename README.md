@@ -14,8 +14,7 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
 - [docs/how-to-read-the-app.md](docs/how-to-read-the-app.md): plain-English guide to the UI.
 - [docs/roadmap.md](docs/roadmap.md): planned build order.
 - [docs/data-ingestion.md](docs/data-ingestion.md): where the data comes from and what it means.
-- [docs/pricing.md](docs/pricing.md): GitHub price source and calculation rules.
-- [docs/pricing-reality.md](docs/pricing-reality.md): what the estimate means in real billing and AI-credit terms.
+- [docs/pricing.md](docs/pricing.md): GitHub price source, calculation rules, AI-credit allowances, and real-world estimate caveats.
 - [docs/local-deployment.md](docs/local-deployment.md): local run, build, and future packaging options.
 
 ## What Works Now

@@ -94,6 +94,8 @@ Principles:
 - Analytics start from the current sidebar filters, then apply Analytics-specific cohort controls. This keeps global search/source/quality filtering consistent while making time range, workspace, model, and trend grouping visible on the dashboard itself.
 - The UI overhaul is starting with custom Angular/CSS rather than a component library. The app needs tight control over dense diagnostic layout, tables, and cost explanations before it needs generic widgets.
 - The selected run remains the primary object on narrow screens. The session rail is useful navigation, but it should not hide the current debugging surface.
+- Selected-run analysis should live outside the Angular shell. The root component should coordinate state and navigation; pure cost, trace, and triage interpretation belongs in focused helper modules that are easier to test.
+- Sessions-page import totals are context only. They should be visually secondary and explicitly labelled as imported-session totals so users do not confuse them with the selected run.
 
 ## Current Rough Edges
 
@@ -105,7 +107,8 @@ Principles:
 - Aggregated analytics are useful but still early. Outlier detection is a simple statistical signal with driver hints; it now separates a few obvious cases such as long agent runs and suspicious low-activity spikes, but it should become more nuanced as more real sessions are imported.
 - Advanced evidence is imported but mostly hidden from the primary UI. Reasoning text presence and request-cap comparison were too technical to be useful as top-level cards.
 - No app-owned database yet. Scans overwrite `public/data/sessions.json`.
-- `app.ts`, `app.html`, and `app.css` are smaller after the selected-run component split, but explanation logic still needs to move into focused helpers/services.
+- `app.html` and `app.css` are still large and should keep shrinking as debugger panels become focused components.
+- Pricing/model normalization still has parallel concerns across scanner, verifier, and UI. The UI now has a focused selected-run analysis helper, but the cross-runtime matching rules should eventually be centralized more deliberately.
 
 ## Review Notes
 
@@ -129,6 +132,62 @@ Code improvements to schedule:
 
 ## Latest Implemented Step
 
+Reworked the Analytics page layout.
+
+What changed:
+
+- Moved Model breakdown up directly below the analytics summary metrics.
+- Rebuilt the Analytics metrics as proper cards instead of a collapsed text stack.
+- Tightened tooltip placement so help icons sit with labels rather than interrupting numeric values.
+- Grouped Distribution and Recent trend beside/near the model breakdown, with Runs to inspect and Outlier signals below.
+- Added robust global Analytics layout rules because the existing dev server showed stale component styles during verification.
+
+Why: Analytics should answer cohort/model questions quickly. The old page pushed the model breakdown too far down and made several metric/tooltip areas look broken.
+
+Verification:
+
+- `npm run build`
+- `npm test -- --watch=false`
+- Browser sanity check on fresh dev server at `http://127.0.0.1:4301/`
+
+## Previous Implemented Step
+
+Reduced the Sessions page global import summary.
+
+What changed:
+
+- Removed the four prominent global cards for session count, total estimate, input tokens, and output tokens from the Sessions page.
+- Replaced them with a compact `Import context` disclosure that states totals are across imported sessions, not the selected run.
+- Kept data provenance available inside the disclosure for debugging imports without making it compete with the selected-run header.
+
+Why: the Sessions view should focus on the currently selected run. Global totals are useful context, but they looked too much like the primary estimate and could mislead users.
+
+Verification:
+
+- `npm run build`
+- `npm test -- --watch=false`
+- Browser sanity check at `http://127.0.0.1:4300/`
+
+## Previous Implemented Step
+
+Extracted selected-run analysis out of the root Angular component.
+
+What changed:
+
+- Added `src/app/session-analysis.ts` for selected-run cost explanation, triage labels, trace filtering, flow events, per-turn model-call rows, and trace event detail enrichment.
+- Reduced `src/app/app.ts` from the large mixed UI/analysis component into a smaller state and navigation shell.
+- Kept behavior unchanged: the same Cost, Turns, Trace, filtering, fallback-pricing, and triage facts now come from pure helper functions.
+
+Why: the app is becoming a debugger, not a demo page. Keeping the interpretation logic outside the component makes the next tests and UI changes less brittle.
+
+Verification:
+
+- `npm run build`
+- `npm test -- --watch=false`
+- `npm run verify:data`
+
+## Previous Implemented Step
+
 Added Copilot Business/Enterprise AI-credit allowance context.
 
 What changed:
@@ -136,7 +195,7 @@ What changed:
 - Added shared allowance constants for Business, Enterprise, and GitHub's documented June 1-September 1, 2026 promotional amounts.
 - Added a compact selected-run credit meter that converts the local USD estimate into AI credits and shows percent of the selected allowance.
 - Added a Prices-page allowance panel with plan toggles, the fixed credit conversion, source link, and imported-session credit usage.
-- Added [pricing-reality.md](pricing-reality.md) to explain how real-world billing, cache visibility, AI credits, and local estimates fit together.
+- Expanded [pricing.md](pricing.md) to explain how real-world billing, cache visibility, AI credits, and local estimates fit together.
 
 Why: the app should help a developer understand whether a run is a small or large draw against the included Copilot allowance without pretending that local logs are GitHub's authoritative bill.
 
