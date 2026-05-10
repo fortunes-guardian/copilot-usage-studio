@@ -55,7 +55,7 @@ export function buildCostExplanation(session: LedgerSession, sort: ModelCallSort
         : 'Estimated from visible chat/session data. Useful context, but weaker than debug-log llm_request totals.',
     cacheStatus: hasCacheData ? 'Cache tokens included' : 'Cache billing not visible locally',
     cacheDescription: hasCacheData
-      ? 'This session includes cached input or cache-write token totals in the generated ledger.'
+      ? 'This session includes cached input or cache-write token totals in the generated session data.'
       : 'The VS Code debug-log events imported for this session expose inputTokens and outputTokens, but not billing cache read/write fields. The estimate therefore prices visible local input/output totals and keeps cache accounting explicit as unavailable.',
     modelRows,
     categoryRows,
@@ -379,7 +379,7 @@ function billingRealityCheck(session: LedgerSession, answer: CostAnswer, hasCach
       tone: 'low',
       cacheVisibility: 'Cache fields present',
       confidenceLabel: 'Cache-aware local estimate',
-      headline: 'This run includes cache token fields in the ledger.',
+      headline: 'This run includes cache token fields in the generated session data.',
       detail:
         'The app can price normal input, cached input, cache write, and output separately for this run. It is still a local estimate, not an invoice.',
     };

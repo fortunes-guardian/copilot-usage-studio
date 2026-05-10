@@ -35,9 +35,9 @@ Principles:
 - Calculates cost from imported token counts and GitHub model prices.
 - Converts local USD estimates into GitHub AI credits and compares them with toggleable Copilot Business/Enterprise included allowances.
 - Uses one shared GitHub pricing JSON file for the scanner, verifier, and UI.
-- Shows a visible loading/error state if the generated ledger data cannot be loaded.
-- Ledger loading now lives in `LedgerDataService` instead of the root component.
-- The Prices page, Compare page, Analytics page, and ledger loading/error panel are standalone Angular components.
+- Shows a visible loading/error state if the generated session data cannot be loaded.
+- Session-data loading now lives in `LedgerDataService` instead of the root component.
+- The Prices page, Compare page, Analytics page, and session-data loading/error panel are standalone Angular components.
 - The selected-run Overview, Cost, Turns, and Trace subviews are now standalone Angular components.
 - Shared cost helpers now hold reusable model-cost, token-total, context-growth, percent-delta, and pricing-fallback utility logic.
 - Shows a selected-run Cost debugger with:
@@ -52,9 +52,10 @@ Principles:
 - Splits the selected run into subviews:
   - `Overview`: summary, details, and triage
   - `Cost`: estimate scope, drivers, token categories, and per-model price rows
-  - `Turns`: per-turn model-call insights plus timeline/largest-first ledger modes
+  - `Turns`: per-turn model-call insights plus timeline/largest-first table modes
   - `Trace`: filterable raw logs, clickable event inspector, and agent flow
 - Trace rows now visually distinguish model calls, tool calls, user messages, responses, discovery events, errors, and token-bearing events.
+- Trace has a sticky selected-event strip and a normalized JSON drawer so the raw event remains inspectable while scrolling long logs.
 - Shows an agent flow chart with token/cost detail.
 - Compares two runs with metric deltas, cost-driver explanation, context-growth change, and model/pricing-row movement.
 - Shows a separate Analytics view for multi-session questions across the current filter set:
@@ -76,7 +77,7 @@ Principles:
   - first density/typography polish pass: calmer type scale, tighter cards, clamped session prompts, and smoother navigation states
   - native browser `title` tooltips have been replaced with the shared help popover in the app UI
   - redundant selected-run facts have been pruned so Overview no longer repeats model, token, source, run-size, or fallback facts already shown in the run hero
-  - fallback pricing assumptions are now visible in the selected-run header, Cost table, Turns ledger, Compare, Analytics, and Prices page
+  - fallback pricing assumptions are now visible in the selected-run header, Cost table, Turns table, Compare, Analytics, and Prices page
   - sidebar filters now show a clear state when the open run is outside the visible filtered rail
   - Analytics now uses a quieter cohort header and compact controls so the model breakdown stays near the top of the dashboard
   - Trace keeps the selected event inspector visible while scrolling long event logs, with a stacked debugger layout on narrower content widths
@@ -90,7 +91,7 @@ Principles:
 - Cached input is a separate input/context billing bucket, not a discount against output. The UI should call this out because it is easy to misunderstand when reading large output/cached-token totals.
 - The UI should explain local estimates clearly instead of pretending they are GitHub invoice numbers.
 - AI-credit allowance percentages are context, not reconciliation. Business and Enterprise credits are pooled across the billing entity, while the selected-run meter shows a per-seat allowance comparison unless the app later adds seat counts.
-- The generated ledger should carry structured cost facts. The UI should not parse model/cost data out of display strings.
+- The generated session-data contract should carry structured cost facts. The UI should not parse model/cost data out of display strings.
 - Run size and cost-signal labels are derived UI triage. They should help scanning, but they should not silently become billing facts.
 - Multi-session analytics are deliberately separate from the selected-run debugger. The analytics view answers "what is normal across included sessions?" while the Sessions view answers "why did this one run cost what it cost?"
 - Analytics start from the current sidebar filters, then apply Analytics-specific cohort controls. This keeps global search/source/quality filtering consistent while making time range, workspace, model, and trend grouping visible on the dashboard itself.
@@ -118,7 +119,7 @@ Latest review: May 3, 2026.
 
 Verified:
 
-- `npm run verify:data` passes for the current generated ledger.
+- `npm run verify:data` passes for the current generated session data.
 - `npm test -- --watch=false` passes.
 - `npm run build` passes without the previous component CSS budget warning.
 - The live app has no browser console warnings/errors from the Angular page during the review, including the extracted Compare page.
@@ -169,7 +170,7 @@ What changed:
 - Updated selected-run analysis, Compare, Analytics, Prices, scanner, and verifier to call the shared helpers.
 - Removed duplicated fallback-pricing checks from the Prices page and selected-run analysis.
 
-Why: cost debugging depends on consistent model matching. A raw model id should be normalized, priced, explained, and verified the same way across ingestion, generated ledger verification, and UI display.
+Why: cost debugging depends on consistent model matching. A raw model id should be normalized, priced, explained, and verified the same way across ingestion, generated-data verification, and UI display.
 
 Verification:
 
@@ -408,7 +409,7 @@ What changed:
 - Added `SessionCostComponent` for the selected-run `Cost` subview.
 - Moved the Cost debugger markup and scoped styles out of the root template/root stylesheet.
 - Kept cost explanation calculations in the root component for now, so the refactor changes structure without changing estimate behavior.
-- Left shared table styles in the root for the `Turns` ledger until that subview is extracted.
+- Left shared table styles in the root for the `Turns` table until that subview is extracted.
 
 Why: Cost is the core "why did this run cost this?" surface. Extracting it as a focused presentational component reduces root-template noise while keeping the pricing math stable.
 
@@ -489,7 +490,7 @@ What changed:
 - Trace log rows are clickable.
 - Trace has filters for all events, model calls, tools, discovery, user messages, agent responses, and errors.
 - The selected event opens in a right-side inspector with raw index, timestamp, type, name, status, model, token totals, pricing row, estimated event cost, latency/cap fields, imported detail, and bounded payload summary when available.
-- Rows in the Turns ledger now link directly to the matching raw Trace event.
+- Rows in the Turns table now link directly to the matching raw Trace event.
 - The scanner now preserves a small bounded `attributes` summary for future imports, instead of forcing the UI to parse raw VS Code JSONL or storing full payloads in `sessions.json`.
 
 Why: the app is most useful when a developer can move from "this turn was expensive" to "this exact debug-log event is the evidence" without leaving the UI.

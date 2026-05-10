@@ -108,11 +108,11 @@ Status: built.
 
 Done:
 
-- Replaced the current `Largest model calls` section with an ordered model-call ledger.
+- Replaced the current `Largest model calls` section with an ordered model-call table.
 - Shows each token-bearing model call with index, timestamp, model, pricing row, input tokens, output tokens, estimated cost, input/output cost split, and share of session cost.
 - Kept a sorted `Largest first` mode so high-cost calls remain easy to find.
 - Adds nearby prior-event context so a developer can tell what kind of activity preceded the expensive call.
-- Moved the model-call ledger into the selected-run `Turns` subview so Cost explains the estimate and Turns explains where it happened.
+- Moved the model-call table into the selected-run `Turns` subview so Cost explains the estimate and Turns explains where it happened.
 - Added a Turn insights strip: model-call count, most expensive call, largest input, largest output, and average cost per call.
 
 Why: session totals explain that a run was expensive. Per-turn cost explains where it became expensive.
@@ -156,7 +156,7 @@ Done:
 - Restyled Overview Run Triage labels as compact chips.
 - Fixed the top navigation grid for the four top-level views.
 - Extracted the Prices page into a standalone component.
-- Extracted the generated-ledger loading/error panel into a standalone component.
+- Extracted the generated-data loading/error panel into a standalone component.
 - Extracted the Compare page into a standalone component with its own template and styles.
 - Extracted the Analytics page into a standalone component with its own template, styles, and cohort logic.
 - Removed enough obsolete root CSS for production builds to pass without the component style budget warning.
@@ -179,7 +179,7 @@ Done:
 
 - Moved GitHub Copilot pricing into one shared JSON file used by the scanner, verifier, and UI.
 - Added a visible app data loading/error state for `/data/sessions.json`.
-- Moved generated ledger loading into `LedgerDataService`.
+- Moved generated session-data loading into `LedgerDataService`.
 - Added shared UI cost helpers for model-cost rows, token totals, context growth, percent deltas, and pricing fallback explanations.
 
 Build:

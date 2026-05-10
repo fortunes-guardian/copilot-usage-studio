@@ -32,6 +32,6 @@ export class LedgerDataService {
       return error.message;
     }
 
-    return 'The generated ledger could not be loaded. Run npm run scan and npm run verify:data.';
+    return 'The generated session data could not be loaded. Run npm run scan and npm run verify:data.';
   }
 }

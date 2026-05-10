@@ -28,7 +28,7 @@ The source table says prices are per 1 million tokens and take effect on June 1,
 - UI adapter: `src/app/pricing.ts`
 - Scanner consumer: `scripts/scan-vscode-sessions.mjs`
 - Verifier consumer: `scripts/verify-ledger-data.mjs`
-- Generated ledger metadata: `public/data/sessions.json`
+- Generated session-data metadata: `public/data/sessions.json`
 
 The rate card is a versioned JSON file so the scanner, verifier, and UI use the same pricing rows and fallback model. This avoids a quiet class of bugs where the UI explains one price table while the scanner calculated with another.
 

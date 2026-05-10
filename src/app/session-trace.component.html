@@ -23,12 +23,40 @@
         </button>
       }
     </div>
+
+    @if (selectedTraceEvent; as event) {
+      <section class="selected-event-strip" [ngClass]="eventKind(event)" aria-label="Selected trace event">
+        <div>
+          <span>Selected event</span>
+          <strong>#{{ event.index }} · {{ event.name }}</strong>
+          <em>{{ event.timestamp | date: 'HH:mm:ss' }} · {{ eventKindLabel(event) }} · {{ event.type }}</em>
+        </div>
+        @if (selectedTraceEventDetails; as details) {
+          <dl>
+            <div>
+              <dt>Tokens</dt>
+              <dd>{{ details.hasCost ? (details.totalTokens | number) : 'n/a' }}</dd>
+            </div>
+            <div>
+              <dt>Estimate</dt>
+              <dd>{{ details.hasCost ? ('$' + (details.estimatedEur | number: '1.6-6')) : 'No token cost' }}</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd>{{ event.status }}</dd>
+            </div>
+          </dl>
+        }
+      </section>
+    }
+
     <div class="trace-workbench">
       <div class="event-log">
         @for (event of filteredTraceEvents; track event.index) {
           <button
             type="button"
             class="event-row"
+            [attr.data-trace-event-index]="event.index"
             [class.active]="selectedTraceEvent?.index === event.index"
             [ngClass]="eventRowClass(event)"
             (click)="selectTraceEvent.emit(event)"
@@ -69,39 +97,21 @@
           </div>
 
           @if (selectedTraceEventDetails; as details) {
-            <div class="inspector-topline" [class.has-cost]="details.hasCost">
-              <div>
-                <span>Event cost</span>
-                @if (details.hasCost) {
-                  <strong>${{ details.estimatedEur | number: '1.6-6' }}</strong>
-                } @else {
-                  <strong>No token cost</strong>
+            <section class="inspector-lens" [ngClass]="inspectorMode(event)">
+              <span>{{ inspectorHeadline(event, details) }}</span>
+              <p>{{ inspectorHint(event, details) }}</p>
+              <dl class="inspector-primary-facts">
+                @for (fact of primaryFacts(event, details); track fact.label) {
+                  <div [ngClass]="fact.tone ?? 'plain'">
+                    <dt>{{ fact.label }}</dt>
+                    <dd>{{ fact.value }}</dd>
+                  </div>
                 }
-              </div>
-              <div>
-                <span>Tokens</span>
-                @if (details.hasCost) {
-                  <strong>{{ details.totalTokens | number }}</strong>
-                } @else {
-                  <strong>n/a</strong>
-                }
-              </div>
-              <div>
-                <span>Status</span>
-                <strong>{{ event.status }}</strong>
-              </div>
-            </div>
-
-            @if (details.hasCost) {
-              <div class="inspector-cost">
-                <span>Token split</span>
-                <strong>{{ event.inputTokens | number }} in / {{ event.outputTokens | number }} out</strong>
-                <p>Pricing row: {{ details.pricingModel }}</p>
-                @if (details.usesFallbackPrice) {
-                  <p class="warning-text">Fallback pricing row: {{ details.pricingModel }}</p>
-                }
-              </div>
-            }
+              </dl>
+              @if (details.usesFallbackPrice) {
+                <p class="warning-text">Fallback pricing row: {{ details.pricingModel }}</p>
+              }
+            </section>
 
             <div class="inspector-groups">
               @for (group of groupedFields(details); track group.title) {
@@ -120,9 +130,14 @@
             </div>
 
             <section class="inspector-detail">
-              <h5>Imported detail</h5>
+              <h5>{{ detailHeading(event) }}</h5>
               <p>{{ details.detail }}</p>
             </section>
+
+            <details class="raw-event">
+              <summary>Normalized event JSON</summary>
+              <pre>{{ eventJson(event) }}</pre>
+            </details>
           }
         } @else {
           <p class="empty">Select a trace event to inspect it.</p>

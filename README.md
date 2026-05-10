@@ -32,7 +32,7 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
 - Splits each selected run into debugger subviews:
   - `Overview` for summary, metadata, and triage
   - `Cost` for estimate explanation, drivers, and price rows
-  - `Turns` for per-turn model-call insights and the detailed ledger
+  - `Turns` for per-turn model-call insights and the detailed model-call table
   - `Trace` for filterable raw logs, clickable event inspection, and agent flow
 - Shows a Billing Reality Check in the Cost view so cache-token visibility and invoice risk are explicit instead of hidden in pricing footnotes.
 - Shows the GitHub pricing table used by the app and a toggleable Copilot Business/Enterprise AI-credit allowance view.

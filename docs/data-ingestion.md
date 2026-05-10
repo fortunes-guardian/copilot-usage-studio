@@ -1,6 +1,6 @@
 # Data ingestion design decisions
 
-This ledger is intentionally local-first. The scanner reads VS Code user-storage files, normalizes them into one JSON contract, and the Angular app only renders that generated contract.
+This generated session-data contract is intentionally local-first. The scanner reads VS Code user-storage files, normalizes them into one JSON contract, and the Angular app only renders that generated contract.
 
 ## Contract location
 
@@ -110,7 +110,7 @@ When a debug-log session uses more than one model, cost is calculated per `model
 
 The price table is copied from GitHub's public Copilot model pricing documentation, then exposed in the UI as a first-class `GitHub prices` view. Why: cost estimates should be inspectable from their inputs. A user should not have to trust a hidden rate card.
 
-Token-bearing trace rows repeat the pricing decision at the event level. Why: the UI should not parse cost-critical facts back out of human display text such as `detail`. The generated ledger is the contract, so the ledger carries the exact model and price row used for each model call.
+Token-bearing trace rows repeat the pricing decision at the event level. Why: the UI should not parse cost-critical facts back out of human display text such as `detail`. The generated session data is the contract, so it carries the exact model and price row used for each model call.
 
 ## Display semantics
 
@@ -130,15 +130,15 @@ The flow chart and Trace inspector use structured trace event pricing fields for
 
 The trace event preview cap is intentionally high enough for normal debug sessions (`1000` events). Why: compacted or long-running sessions can append important activity late in the same debug log. Keeping only the first slice hides exactly the recent events a developer is trying to inspect. The session summary still records the raw `traceSummary.totalEvents`, so any future truncation should be visible rather than silently changing totals.
 
-Cost drivers are UI-level diagnosis, not new billing facts. They summarize the generated ledger into practical signals: input cost share, the largest model call, context growth across model calls, model mix, and tool-call density. Why: developers need a quick answer to "what made this run expensive?" before they dig into raw logs.
+Cost drivers are UI-level diagnosis, not new billing facts. They summarize the generated session data into practical signals: input cost share, the largest model call, context growth across model calls, model mix, and tool-call density. Why: developers need a quick answer to "what made this run expensive?" before they dig into raw logs.
 
-Comparison is also UI-level diagnosis. It compares two generated sessions without mutating the ledger: cost, token categories, model turns, tool calls, context growth, and model/pricing rows. Why: the practical developer workflow is often "I changed the prompt/workflow/model; did that make the run cheaper, and what moved?"
+Comparison is also UI-level diagnosis. It compares two generated sessions without mutating the session data: cost, token categories, model turns, tool calls, context growth, and model/pricing rows. Why: the practical developer workflow is often "I changed the prompt/workflow/model; did that make the run cheaper, and what moved?"
 
-Analytics is UI-level aggregation over generated sessions. It does not create new ingestion facts. It starts from the sidebar-filtered sessions, then applies UI cohort controls for time range, workspace, model, and day/week/month trend grouping. It sums cost/tokens, groups model breakdown rows, computes cost per 1k tokens, buckets sessions by size, and flags simple statistical outliers with driver hints. Empty states and reset controls are also UI-only; they do not change the generated ledger. Why: this answers "what is normal for the sessions I am looking at?" without mixing cohort-level signals into the selected-run debugger.
+Analytics is UI-level aggregation over generated sessions. It does not create new ingestion facts. It starts from the sidebar-filtered sessions, then applies UI cohort controls for time range, workspace, model, and day/week/month trend grouping. It sums cost/tokens, groups model breakdown rows, computes cost per 1k tokens, buckets sessions by size, and flags simple statistical outliers with driver hints. Empty states and reset controls are also UI-only; they do not change the generated session data. Why: this answers "what is normal for the sessions I am looking at?" without mixing cohort-level signals into the selected-run debugger.
 
 Source-confidence terms in the UI should carry inline help. Labels such as debug logs, chat snapshots, state DBs, state enriched, exact local totals, estimated totals, cached input, and cache write all need short explanations at the point of use. Why: this app is only credible if it says why a source is strong, what it does not know, and which fields are local estimates rather than GitHub billing facts.
 
-Run triage labels are derived in the UI from the generated ledger. They are intentionally not stored as scanner output yet because the thresholds are product decisions that may change as more sessions are reviewed.
+Run triage labels are derived in the UI from the generated session data. They are intentionally not stored as scanner output yet because the thresholds are product decisions that may change as more sessions are reviewed.
 
 Current size thresholds:
 
@@ -169,7 +169,7 @@ Why: reasoning and context pressure are potentially valuable cost-debugging sign
 
 ## Per-turn cost breakdown
 
-The selected-run debugger now expands the older largest-model-calls view into an ordered ledger of token-bearing model calls. Each row shows the call index, raw event number, timestamp, model, pricing row, input tokens, output tokens, estimated cost, input/output cost split, share of session cost, and nearby prior context.
+The selected-run debugger now expands the older largest-model-calls view into an ordered table of token-bearing model calls. Each row shows the call index, raw event number, timestamp, model, pricing row, input tokens, output tokens, estimated cost, input/output cost split, share of session cost, and nearby prior context.
 
 The UI supports two reads:
 
@@ -214,7 +214,7 @@ When a match exists, the generated session gets:
 
 It does not replace debug logs for pricing. The debug log remains the pricing source because it carries `llm_request` token totals. SQLite is metadata only unless a future VS Code version starts storing billing-grade token rows there.
 
-Why this is the right boundary: `state.vscdb` gives better human labels and restored-session state, but it is workspace UI state. It is not the billing ledger, and it can be compacted or changed by VS Code. Keeping it as an optional enrichment means the scanner remains correct when SQLite is missing, locked, or has a changed key layout.
+Why this is the right boundary: `state.vscdb` gives better human labels and restored-session state, but it is workspace UI state. It is not the pricing source, and it can be compacted or changed by VS Code. Keeping it as an optional enrichment means the scanner remains correct when SQLite is missing, locked, or has a changed key layout.
 
 ## Verification
 
@@ -225,4 +225,4 @@ npm run scan
 npm run verify:data
 ```
 
-The verifier checks the generated ledger shape, duplicate ids, required source metadata, valid timestamps, non-negative token fields, model breakdown pricing, token-bearing trace event pricing, optional VS Code state metadata, and guards against importing sessions with neither token totals nor turns.
+The verifier checks the generated session-data shape, duplicate ids, required source metadata, valid timestamps, non-negative token fields, model breakdown pricing, token-bearing trace event pricing, optional VS Code state metadata, and guards against importing sessions with neither token totals nor turns.

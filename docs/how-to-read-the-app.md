@@ -185,6 +185,6 @@ The log can be filtered to:
 
 Clicking an event opens the inspector. For model calls, the inspector shows the raw event index, timestamp, model, pricing row, input/output tokens, estimated event cost, and latency/cap fields when VS Code logged them.
 
-The **Turns** ledger links each model call back to Trace. Use that path when the question is: "this turn looks expensive; what exact log event produced that number?"
+The **Turns** table links each model call back to Trace. Use that path when the question is: "this turn looks expensive; what exact log event produced that number?"
 
 The inspector shows bounded summaries, not the full raw JSONL payload. That is intentional: the app should expose useful local evidence without turning `public/data/sessions.json` into a raw log dump.

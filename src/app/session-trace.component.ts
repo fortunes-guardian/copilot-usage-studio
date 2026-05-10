@@ -1,5 +1,15 @@
 import { DatePipe, DecimalPipe, NgClass } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import {
+  AfterViewChecked,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnChanges,
+  Output,
+  SimpleChanges,
+  inject,
+} from '@angular/core';
 
 import { TraceEvent } from './ledger.model';
 
@@ -19,6 +29,12 @@ interface TraceDetailField {
 interface TraceDetailGroup {
   title: string;
   fields: TraceDetailField[];
+}
+
+interface TracePrimaryFact {
+  label: string;
+  value: string;
+  tone?: 'cost' | 'tool' | 'plain';
 }
 
 export interface TraceEventDetailsViewModel {
@@ -44,7 +60,10 @@ export interface FlowTraceEventViewModel extends TraceEvent {
   templateUrl: './session-trace.component.html',
   styleUrl: './session-trace.component.css',
 })
-export class SessionTraceComponent {
+export class SessionTraceComponent implements OnChanges, AfterViewChecked {
+  private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+  private pendingScrollIndex: number | null = null;
+
   @Input({ required: true }) traceView!: TraceView;
   @Input({ required: true }) traceFilter!: TraceFilter;
   @Input({ required: true }) traceFilterOptions!: TraceFilterOption[];
@@ -57,6 +76,26 @@ export class SessionTraceComponent {
   @Output() traceViewChange = new EventEmitter<TraceView>();
   @Output() traceFilterChange = new EventEmitter<TraceFilter>();
   @Output() selectTraceEvent = new EventEmitter<TraceEvent>();
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if ((changes['selectedTraceEvent'] || changes['openedFromTurns']) && this.openedFromTurns && this.selectedTraceEvent) {
+      this.pendingScrollIndex = this.selectedTraceEvent.index;
+    }
+  }
+
+  ngAfterViewChecked(): void {
+    if (this.pendingScrollIndex === null) {
+      return;
+    }
+
+    const eventIndex = this.pendingScrollIndex;
+    this.pendingScrollIndex = null;
+    const row = this.elementRef.nativeElement.querySelector<HTMLElement>(
+      `[data-trace-event-index="${eventIndex}"]`,
+    );
+
+    row?.scrollIntoView({ block: 'center' });
+  }
 
   protected eventRowClass(event: TraceEvent): string[] {
     return [
@@ -137,6 +176,124 @@ export class SessionTraceComponent {
     return groups.filter((group) => group.fields.length);
   }
 
+  protected eventJson(event: TraceEvent): string {
+    return JSON.stringify(event, null, 2);
+  }
+
+  protected inspectorMode(event: TraceEvent): string {
+    return this.eventKind(event);
+  }
+
+  protected inspectorHeadline(event: TraceEvent, details: TraceEventDetailsViewModel): string {
+    const kind = this.eventKind(event);
+
+    if (kind === 'model-call') {
+      return details.hasCost ? 'Cost-bearing model call' : 'Model event without token totals';
+    }
+
+    if (kind === 'tool-call') {
+      return 'Tool activity';
+    }
+
+    if (kind === 'user-message') {
+      return 'User prompt event';
+    }
+
+    if (kind === 'agent-response') {
+      return 'Agent response event';
+    }
+
+    if (kind === 'discovery') {
+      return 'Discovery or setup event';
+    }
+
+    return 'Raw trace event';
+  }
+
+  protected inspectorHint(event: TraceEvent, details: TraceEventDetailsViewModel): string {
+    const kind = this.eventKind(event);
+
+    if (kind === 'model-call') {
+      return details.hasCost
+        ? 'This is the event priced by Cost and located from Turns.'
+        : 'This event is model-related, but the imported row does not include token totals.';
+    }
+
+    if (kind === 'tool-call') {
+      return 'Tool calls are not priced directly here. Their results may affect later model input if sent back as context.';
+    }
+
+    if (kind === 'user-message') {
+      return 'This records the user message boundary. Cost appears on later model-call events.';
+    }
+
+    if (kind === 'agent-response') {
+      return 'This records the assistant response payload. Token cost is tied to the corresponding model-call event.';
+    }
+
+    if (kind === 'discovery') {
+      return 'Setup/discovery events explain environment work, but usually do not carry direct token cost.';
+    }
+
+    return 'Inspect the normalized fields and raw JSON when you need source-level evidence.';
+  }
+
+  protected primaryFacts(event: TraceEvent, details: TraceEventDetailsViewModel): TracePrimaryFact[] {
+    const kind = this.eventKind(event);
+
+    if (kind === 'model-call') {
+      return [
+        {
+          label: 'Estimate',
+          value: details.hasCost ? `$${this.formatCost(details.estimatedEur)}` : 'No token cost',
+          tone: details.hasCost ? 'cost' : 'plain',
+        },
+        { label: 'Total tokens', value: details.hasCost ? details.totalTokens.toLocaleString() : 'n/a' },
+        { label: 'Input', value: event.inputTokens ? event.inputTokens.toLocaleString() : '0' },
+        { label: 'Output', value: event.outputTokens ? event.outputTokens.toLocaleString() : '0' },
+        { label: 'Pricing row', value: details.pricingModel || 'n/a' },
+      ];
+    }
+
+    if (kind === 'tool-call') {
+      return [
+        { label: 'Tool/event', value: event.name, tone: 'tool' },
+        { label: 'Status', value: event.status },
+        { label: 'Payload fields', value: `${details.attributeFields.length}` },
+        { label: 'Direct cost', value: details.hasCost ? `$${this.formatCost(details.estimatedEur)}` : 'None' },
+      ];
+    }
+
+    return [
+      { label: 'Type', value: event.type },
+      { label: 'Status', value: event.status },
+      { label: 'Payload fields', value: `${details.attributeFields.length}` },
+      { label: 'Tokens', value: details.hasCost ? details.totalTokens.toLocaleString() : 'n/a' },
+    ];
+  }
+
+  protected detailHeading(event: TraceEvent): string {
+    const kind = this.eventKind(event);
+
+    if (kind === 'model-call') {
+      return 'Model-call detail';
+    }
+
+    if (kind === 'tool-call') {
+      return 'Tool detail';
+    }
+
+    if (kind === 'user-message') {
+      return 'User message';
+    }
+
+    if (kind === 'agent-response') {
+      return 'Response detail';
+    }
+
+    return 'Imported detail';
+  }
+
   private groupForField(label: string, groups: TraceDetailGroup[]): TraceDetailGroup {
     const normalized = label.toLowerCase();
 
@@ -162,5 +319,12 @@ export class SessionTraceComponent {
   private toolLikeName(name: string): boolean {
     return ['read_file', 'list_dir', 'grep_search', 'semantic_search', 'fetch_webpage', 'apply_patch', 'run_in_terminal']
       .some((toolName) => name.toLowerCase().includes(toolName));
+  }
+
+  private formatCost(value: number): string {
+    return value.toLocaleString(undefined, {
+      minimumFractionDigits: 6,
+      maximumFractionDigits: 6,
+    });
   }
 }

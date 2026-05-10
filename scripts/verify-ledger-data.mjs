@@ -196,18 +196,18 @@ for (const warning of ledger.ingestion?.warnings ?? []) {
 }
 
 if (warnings.length) {
-  console.warn(`Ledger verification warnings (${warnings.length}):`);
+  console.warn(`Session data verification warnings (${warnings.length}):`);
   for (const warning of warnings) {
     console.warn(`- ${warning}`);
   }
 }
 
 if (errors.length) {
-  console.error(`Ledger verification failed (${errors.length}):`);
+  console.error(`Session data verification failed (${errors.length}):`);
   for (const error of errors) {
     console.error(`- ${error}`);
   }
   process.exit(1);
 }
 
-console.log(`Ledger verification passed: ${ledger.sessions?.length ?? 0} sessions in ${file}`);
+console.log(`Session data verification passed: ${ledger.sessions?.length ?? 0} sessions in ${file}`);
