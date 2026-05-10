@@ -78,6 +78,56 @@
   gap: 10px;
 }
 
+.turn-insights-disclosure {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.turn-insights-disclosure summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+  padding: 0 12px;
+  color: var(--text);
+  cursor: pointer;
+  list-style: none;
+}
+
+.turn-insights-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.turn-insights-disclosure summary::before {
+  content: ">";
+  color: var(--accent);
+  font-weight: 800;
+  transition: transform 0.18s ease;
+}
+
+.turn-insights-disclosure[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.turn-insights-disclosure summary span {
+  margin-right: auto;
+  color: var(--muted-2);
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.turn-insights-disclosure summary strong {
+  color: var(--text-strong);
+  font-size: 12px;
+}
+
+.turn-insights-disclosure[open] .turn-insight-grid {
+  padding: 0 10px 10px;
+}
+
 .turn-insight-grid article {
   display: grid;
   gap: 5px;
@@ -108,6 +158,64 @@
   overflow-wrap: anywhere;
 }
 
+.turn-focus-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 0.6fr) auto;
+  gap: 14px;
+  align-items: center;
+  border: 1px solid rgba(124, 92, 255, 0.34);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background:
+    linear-gradient(135deg, rgba(124, 92, 255, 0.15), rgba(31, 209, 165, 0.07)),
+    var(--surface-soft);
+}
+
+.turn-focus-strip span,
+.token-split span {
+  color: var(--muted-2);
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.turn-focus-strip strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-strong);
+  font-size: 17px;
+  line-height: 1.15;
+}
+
+.turn-focus-strip p {
+  margin: 5px 0 0;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.token-split-bar {
+  display: flex;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  margin-top: 8px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.token-split-bar i {
+  display: block;
+  min-width: 2px;
+}
+
+.input-bar {
+  background: var(--accent);
+}
+
+.output-bar {
+  background: var(--warning);
+}
+
 .model-call-table {
   display: grid;
   border: 1px solid var(--line);
@@ -131,6 +239,9 @@
   min-width: 1000px;
   padding: 11px 12px;
   border-bottom: 1px solid var(--line);
+  background:
+    linear-gradient(90deg, rgba(31, 209, 165, 0.08) 0 var(--share, 0%), transparent var(--share, 0%) 100%),
+    transparent;
 }
 
 .model-call-row:last-child {
@@ -142,6 +253,14 @@
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
+}
+
+.model-call-row.high-impact {
+  box-shadow: inset 3px 0 0 var(--danger);
+}
+
+.model-call-row.medium-impact {
+  box-shadow: inset 3px 0 0 var(--warning);
 }
 
 .model-call-row strong,
@@ -178,9 +297,49 @@
   cursor: pointer;
 }
 
-.trace-link:hover {
+.trace-link:hover,
+.trace-jump:hover {
   border-color: var(--accent-2);
   background: rgba(31, 209, 165, 0.18);
+}
+
+.trace-jump {
+  min-height: 32px;
+  border: 1px solid rgba(31, 209, 165, 0.35);
+  border-radius: 999px;
+  padding: 0 12px;
+  background: var(--teal-soft);
+  color: #bbfff0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.share-meter {
+  display: block !important;
+  width: 54px;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.share-meter i {
+  display: block;
+  width: var(--share, 0%);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+.high-impact .share-meter i {
+  background: var(--danger);
+}
+
+.medium-impact .share-meter i {
+  background: var(--warning);
 }
 
 .warning-text {
@@ -196,6 +355,10 @@
 @media (max-width: 1100px) {
   .model-call-header {
     display: grid;
+  }
+
+  .turn-focus-strip {
+    grid-template-columns: 1fr;
   }
 
   .model-call-table {
@@ -309,6 +472,18 @@
 .trace-link {
   padding: 3px 7px;
   font-size: 11px;
+  font-weight: 760;
+}
+
+.turn-focus-strip span,
+.token-split span {
+  font-size: 10px;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+}
+
+.turn-focus-strip strong {
+  font-size: 16px;
   font-weight: 760;
 }
 

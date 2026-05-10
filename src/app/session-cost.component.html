@@ -5,7 +5,10 @@
       <h3>Where the estimate comes from</h3>
       <p class="panel-lede">Priced local token totals, model rows, and cache visibility for this run.</p>
     </div>
-    <a class="price-link" [href]="pricingSourceUrl" target="_blank" rel="noreferrer">GitHub price source</a>
+    <div class="cost-header-actions">
+      <span class="estimate-pill">${{ session.cost.usd | number: '1.2-4' }}</span>
+      <a class="price-link" [href]="pricingSourceUrl" target="_blank" rel="noreferrer">GitHub price source</a>
+    </div>
   </div>
 
   <section class="diagnostic-hero" aria-label="Cost answer">
@@ -38,32 +41,26 @@
     </div>
   </section>
 
-  <div class="estimate-strip" [ngClass]="cost.billingReality.tone" aria-label="Estimate confidence">
-    <article>
-      <span>Local estimate</span>
-      <strong>${{ session.cost.usd | number: '1.2-4' }}</strong>
-      <em>input/output from local logs</em>
-    </article>
-    <article>
-      <span>Source</span>
-      <strong>
+  <aside class="estimate-note" [ngClass]="cost.billingReality.tone" aria-label="Estimate confidence">
+    <div>
+      <span>Estimate scope</span>
+      <strong>{{ cost.billingReality.confidenceLabel }}</strong>
+      <p>{{ cost.billingReality.detail }}</p>
+    </div>
+    <div class="estimate-note-meta">
+      <span>
         {{ cost.sourceStrength }}
         <app-help-popover [text]="cost.sourceDescription" label="Explain source strength"></app-help-popover>
-      </strong>
-      <em>{{ cost.sourceDescription }}</em>
-    </article>
-    <article>
-      <span>Cache</span>
-      <strong>
+      </span>
+      <span>
         {{ cost.cacheStatus }}
         <app-help-popover [text]="cost.cacheDescription" label="Explain cache visibility"></app-help-popover>
-      </strong>
-      <em>{{ cost.billingReality.detail }}</em>
-    </article>
-  </div>
+      </span>
+    </div>
+  </aside>
 
   <section class="cost-drivers">
-    <div>
+    <div class="section-label">
       <h4>Cost drivers</h4>
     </div>
     <div class="driver-grid">

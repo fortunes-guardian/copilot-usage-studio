@@ -15,17 +15,44 @@
     </div>
   </div>
 
-  <div class="turn-insight-grid" aria-label="Turn highlights">
-    @for (insight of cost.turnInsights; track insight.label) {
-      <article>
-        <span>{{ insight.label }}</span>
-        <strong>{{ insight.value }}</strong>
-        <p>{{ insight.detail }}</p>
-      </article>
-    }
-  </div>
-
   @if (cost.modelCallRows.length) {
+    @if (topModelCall(); as topCall) {
+      <section class="turn-focus-strip" aria-label="Highest cost model call">
+        <div>
+          <span>Highest cost call</span>
+          <strong>#{{ topCall.callNumber }} · ${{ topCall.estimatedUsd | number: '1.4-4' }}</strong>
+          <p>{{ topCall.model || topCall.name }} · {{ topCall.totalTokens | number }} tokens · {{ topCall.share | number: '1.0-0' }}% of estimate</p>
+        </div>
+        <div class="token-split" aria-label="Token split">
+          <span>Input / output split</span>
+          <div class="token-split-bar">
+            <i class="input-bar" [style.width.%]="inputShare(topCall)"></i>
+            <i class="output-bar" [style.width.%]="outputShare(topCall)"></i>
+          </div>
+          <p>{{ topCall.inputTokens | number }} in / {{ topCall.outputTokens | number }} out</p>
+        </div>
+        <button type="button" class="trace-jump" (click)="openTraceEvent.emit(topCall.index)">
+          Open trace #{{ topCall.index }}
+        </button>
+      </section>
+    }
+
+    <details class="turn-insights-disclosure">
+      <summary>
+        <span>Call stats</span>
+        <strong>{{ cost.modelCallRows.length | number }} model calls</strong>
+      </summary>
+      <div class="turn-insight-grid" aria-label="Turn highlights">
+        @for (insight of cost.turnInsights; track insight.label) {
+          <article>
+            <span>{{ insight.label }}</span>
+            <strong>{{ insight.value }}</strong>
+            <p>{{ insight.detail }}</p>
+          </article>
+        }
+      </div>
+    </details>
+
     <div class="model-call-table" role="table" aria-label="Per-turn model calls">
       <div class="model-call-row model-call-heading" role="row">
         <span role="columnheader">Call</span>
@@ -37,7 +64,12 @@
         <span role="columnheader">Nearby context</span>
       </div>
       @for (event of cost.modelCallRows; track event.index) {
-        <div class="model-call-row" role="row">
+        <div
+          class="model-call-row"
+          [ngClass]="impactClass(event)"
+          [style.--share.%]="event.share"
+          role="row"
+        >
           <strong role="cell" data-label="Call">
             <button type="button" class="trace-link" (click)="openTraceEvent.emit(event.index)">
               #{{ event.callNumber }}
@@ -62,7 +94,10 @@
             ${{ event.estimatedUsd | number: '1.6-6' }}
             <em>{{ event.inputUsd | number: '1.6-6' }} in / {{ event.outputUsd | number: '1.6-6' }} out</em>
           </span>
-          <span role="cell" data-label="Share">{{ event.share | number: '1.0-0' }}%</span>
+          <span role="cell" data-label="Share">
+            <span class="share-meter" aria-hidden="true"><i></i></span>
+            {{ event.share | number: '1.0-0' }}%
+          </span>
           <span role="cell" data-label="Nearby context">
             {{ event.contextLabel }}
             <em>{{ event.contextDetail }}</em>

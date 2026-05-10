@@ -2,6 +2,59 @@
 
 Start here when resuming the project.
 
+## Latest Step
+
+Tightened the selected-run responsive debugger layout.
+
+What changed:
+
+- Changed the Sessions rail from a fixed desktop width to a clamped width so it yields space to the selected-run workspace as the viewport narrows.
+- Added an explicit narrower desktop rail width before the full mobile stack kicks in.
+- Offset the stacked Trace inspector below the sticky selected-event strip so both pieces of selected-event context remain readable while scrolling.
+- Reduced the stacked Trace inspector height so selected details stay available without pushing the event log completely out of view.
+- Kept the change to layout behavior only; no new cost, token, pricing, or trace interpretation was added.
+
+Why: the app should keep the selected run as the primary object. The session rail is navigation, and the Trace inspector is evidence; neither should crowd or overlap the thing the developer is currently debugging.
+
+## Previous Step
+
+Polished the selected-run Trace subview.
+
+What changed:
+
+- Made the selected-event strip explicitly show when an event was opened from Turns.
+- Added an input/output split bar inside the model-call inspector lens so expensive model events explain their token shape visually.
+- Kept event rows compact and avoided adding new inferred signals; Trace still presents imported/normalized evidence only.
+- Kept the production bundle under the current warning budget after the polish pass.
+
+Why: Trace should feel like the source-evidence step after Cost and Turns. When a developer jumps from the expensive call to raw evidence, the selected event should stay obvious and the model-call token split should be visible without digging through JSON.
+
+## Previous Step
+
+Polished the selected-run Turns subview.
+
+What changed:
+
+- Added a compact `Highest cost call` strip that foregrounds the most expensive model call, token split, estimate share, and direct Trace jump.
+- Demoted secondary turn stats into a collapsed `Call stats` disclosure so the actual model-call rows appear sooner.
+- Added impact styling and share meters to model-call rows so high-cost calls are visually easier to spot.
+- Kept Timeline/Largest-first behavior and the existing Trace linking intact.
+
+Why: Turns should be the "locate the expensive model call" step. It should not feel like another analytics dashboard before the developer reaches the evidence rows.
+
+## Previous Step
+
+Polished the selected-run Cost subview.
+
+What changed:
+
+- Moved the selected-run USD estimate into the Cost header as a small pill instead of a large repeated block.
+- Collapsed the local estimate/source/cache explanation into one compact `Estimate scope` strip.
+- Kept the cache caveat visible, but reduced the report-like callout weight so the primary driver and model rows stay dominant.
+- Tuned the responsive Cost layout so driver and token-category cards stay in useful two-column grids before collapsing on narrow screens.
+
+Why: Cost is the core debugging surface. It should answer "what drove this estimate?" quickly, while still making the cache/pricing limitations easy to find without letting caveats crowd out the actual evidence.
+
 ## What We Are Building
 
 A local-first cost debugger for VS Code GitHub Copilot chat and agent sessions.
@@ -85,6 +138,7 @@ Principles:
   - Analytics now uses a quieter cohort header and compact controls so the model breakdown stays near the top of the dashboard
   - Trace keeps the selected event inspector visible while scrolling long event logs, with a stacked debugger layout on narrower content widths
   - Sessions has a denser selected-run workspace: slimmer import context, shorter run hero, and a more compact investigation map
+  - Overview now reads as a compact run-at-a-glance panel with evidence, triage, and metadata instead of a stacked report
 
 ## Important Design Decisions
 
@@ -137,6 +191,26 @@ Code improvements to schedule:
 - Add UI tests for the selected-run tabs, source/size filters, pricing fallback display, Analytics empty states, and Compare deltas.
 
 ## Latest Implemented Step
+
+Polished the selected-run Overview panel.
+
+What changed:
+
+- Reworked Overview into compact evidence, triage, and metadata panels.
+- Renamed the first panel to `At a glance / Evidence` so the page communicates its purpose faster.
+- Changed metadata from a two-column definition-list form into compact cards.
+- Kept triage labels visible but tightened their panel and spacing.
+- Removed the leftover report-like stacking from the old Overview layout.
+
+Why: Overview should help a developer orient quickly before moving into Cost, Turns, or Trace. It should not compete with the deeper debugger panels or feel like a generic summary report.
+
+Verification:
+
+- `npm run build`
+- `npm test -- --watch=false`
+- Browser sanity check on Sessions Overview at `http://127.0.0.1:4301/`; evidence, triage, and metadata render cleanly above the fold.
+
+## Previous Implemented Step
 
 Compacted the Sessions selected-run workspace.
 

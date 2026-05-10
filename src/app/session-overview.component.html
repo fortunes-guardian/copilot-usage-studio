@@ -1,66 +1,33 @@
-<section class="session-summary">
-  <h3>Evidence counts</h3>
-  <div class="facts trace-cards">
-    <div>
-      <span>Tool Calls</span>
-      <strong>{{ session.traceSummary.toolCalls | number }}</strong>
+<section class="overview-grid">
+  <section class="overview-panel evidence-panel">
+    <div class="panel-title">
+      <span>At a glance</span>
+      <h3>Evidence</h3>
     </div>
-    <div>
-      <span>Errors</span>
-      <strong>{{ session.traceSummary.errors | number }}</strong>
+    <div class="facts trace-cards">
+      <div>
+        <span>Tool calls</span>
+        <strong>{{ session.traceSummary.toolCalls | number }}</strong>
+      </div>
+      <div>
+        <span>Errors</span>
+        <strong>{{ session.traceSummary.errors | number }}</strong>
+      </div>
+      <div>
+        <span>Raw events</span>
+        <strong>{{ session.traceSummary.totalEvents | number }}</strong>
+      </div>
     </div>
-    <div>
-      <span>Total Events</span>
-      <strong>{{ session.traceSummary.totalEvents | number }}</strong>
-    </div>
-  </div>
-</section>
-
-<section class="supporting-grid">
-  <section class="session-details">
-    <h3>Details</h3>
-    <dl>
-      <div>
-        <dt>Session Type</dt>
-        <dd>{{ session.sessionType }}</dd>
-      </div>
-      <div>
-        <dt>Location</dt>
-        <dd>{{ session.location }}</dd>
-      </div>
-      <div>
-        <dt>Status</dt>
-        <dd>{{ session.status }}</dd>
-      </div>
-      <div>
-        <dt>Created</dt>
-        <dd>{{ session.startedAt | date: 'M/d/yyyy, h:mm:ss a' }}</dd>
-      </div>
-      <div>
-        <dt>Last Activity</dt>
-        <dd>{{ session.endedAt | date: 'M/d/yyyy, h:mm:ss a' }}</dd>
-      </div>
-      @if (session.vscodeState; as state) {
-        <div>
-          <dt>Permission</dt>
-          <dd>{{ state.permissionLevel || 'unknown' }}</dd>
-        </div>
-        <div>
-          <dt>Pending Edits</dt>
-          <dd>{{ state.hasPendingEdits ? 'Yes' : 'No' }}</dd>
-        </div>
-      }
-    </dl>
   </section>
 
   @if (triage; as runTriage) {
-    <section class="session-triage">
-      <div>
-        <h3>Triage</h3>
-        <p>
-          Quick attention labels.
+    <section class="overview-panel session-triage">
+      <div class="panel-title">
+        <span>Attention</span>
+        <h3>
+          Triage
           <app-help-popover [text]="triageHelp" label="Explain triage labels"></app-help-popover>
-        </p>
+        </h3>
       </div>
       <div class="badge-row">
         @for (warning of runTriage.warnings; track warning.label) {
@@ -74,4 +41,41 @@
   }
 </section>
 
-
+<section class="overview-panel session-details">
+  <div class="panel-title">
+    <span>Metadata</span>
+    <h3>Session details</h3>
+  </div>
+  <dl>
+    <div>
+      <dt>Type</dt>
+      <dd>{{ session.sessionType }}</dd>
+    </div>
+    <div>
+      <dt>Location</dt>
+      <dd>{{ session.location }}</dd>
+    </div>
+    <div>
+      <dt>Status</dt>
+      <dd>{{ session.status }}</dd>
+    </div>
+    <div>
+      <dt>Created</dt>
+      <dd>{{ session.startedAt | date: 'M/d/yyyy, h:mm:ss a' }}</dd>
+    </div>
+    <div>
+      <dt>Last activity</dt>
+      <dd>{{ session.endedAt | date: 'M/d/yyyy, h:mm:ss a' }}</dd>
+    </div>
+    @if (session.vscodeState; as state) {
+      <div>
+        <dt>Permission</dt>
+        <dd>{{ state.permissionLevel || 'unknown' }}</dd>
+      </div>
+      <div>
+        <dt>Pending edits</dt>
+        <dd>{{ state.hasPendingEdits ? 'Yes' : 'No' }}</dd>
+      </div>
+    }
+  </dl>
+</section>

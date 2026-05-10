@@ -1225,7 +1225,7 @@
 }
 
 .app-body.with-rail {
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-columns: clamp(236px, 24vw, 300px) minmax(0, 1fr);
 }
 
 .sidebar {
@@ -1465,6 +1465,10 @@
 }
 
 @media (max-width: 1100px) {
+  .app-body.with-rail {
+    grid-template-columns: 248px minmax(0, 1fr);
+  }
+
   .topbar {
     grid-template-columns: minmax(170px, 1fr) auto auto;
   }

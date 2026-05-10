@@ -27,7 +27,12 @@
     @if (selectedTraceEvent; as event) {
       <section class="selected-event-strip" [ngClass]="eventKind(event)" aria-label="Selected trace event">
         <div>
-          <span>Selected event</span>
+          <span>
+            Selected event
+            @if (openedFromTurns) {
+              · opened from Turns
+            }
+          </span>
           <strong>#{{ event.index }} · {{ event.name }}</strong>
           <em>{{ event.timestamp | date: 'HH:mm:ss' }} · {{ eventKindLabel(event) }} · {{ event.type }}</em>
         </div>
@@ -118,6 +123,16 @@
                   </div>
                 }
               </dl>
+              @if (details.hasCost && eventKind(event) === 'model-call') {
+                <div class="inspector-token-split" aria-label="Model call token split">
+                  <span>Input / output split</span>
+                  <div>
+                    <i class="input-bar" [style.width.%]="inputShare(event)"></i>
+                    <i class="output-bar"></i>
+                  </div>
+                  <p>{{ event.inputTokens | number }} input / {{ event.outputTokens | number }} output</p>
+                </div>
+              }
               @if (details.usesFallbackPrice) {
                 <p class="warning-text">Fallback pricing row: {{ details.pricingModel }}</p>
               }

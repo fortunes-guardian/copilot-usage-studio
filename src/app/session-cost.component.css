@@ -19,6 +19,28 @@
   gap: 16px;
 }
 
+.cost-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.estimate-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border: 1px solid rgba(31, 209, 165, 0.34);
+  border-radius: 999px;
+  padding: 0 10px;
+  background: rgba(31, 209, 165, 0.1);
+  color: var(--text-strong);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .eyebrow {
   margin: 0;
   color: var(--muted-2);
@@ -134,52 +156,71 @@
   overflow-wrap: anywhere;
 }
 
-.estimate-strip {
+.estimate-note {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
   border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
   border-radius: 8px;
-  padding: 8px;
+  padding: 10px 12px;
   background: rgba(255, 255, 255, 0.018);
 }
 
-.estimate-strip.high {
-  border-color: rgba(255, 107, 87, 0.38);
+.estimate-note.high {
+  border-left-color: var(--danger);
 }
 
-.estimate-strip article {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 9px 10px;
-  background: var(--surface-soft);
+.estimate-note.medium {
+  border-left-color: var(--warning);
 }
 
-.estimate-strip span {
+.estimate-note span,
+.estimate-note strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.estimate-note span {
   color: var(--muted);
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
 }
 
-.estimate-strip strong {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
+.estimate-note strong {
+  margin-top: 3px;
   color: var(--text-strong);
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.2;
 }
 
-.estimate-strip em {
+.estimate-note p {
+  margin: 4px 0 0;
   color: var(--muted);
   font-size: 12px;
-  font-style: normal;
   line-height: 1.35;
   overflow-wrap: anywhere;
+}
+
+.estimate-note-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.estimate-note-meta span {
+  min-height: 24px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 11px;
+  text-transform: none;
 }
 
 .section-label {
@@ -355,7 +396,7 @@
 @media (max-width: 1100px) {
   .cost-categories,
   .driver-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .cost-explainer-header {
@@ -399,12 +440,32 @@
 @media (max-width: 900px) {
   .diagnostic-hero,
   .diagnostic-facts,
-  .estimate-strip {
+  .estimate-note {
     grid-template-columns: 1fr;
+  }
+
+  .estimate-note-meta {
+    justify-content: flex-start;
   }
 }
 
 @media (max-width: 600px) {
+  .cost-categories,
+  .driver-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cost-header-actions {
+    display: grid;
+    justify-content: stretch;
+  }
+
+  .estimate-pill,
+  .price-link {
+    justify-content: center;
+    width: 100%;
+  }
+
   .section-label {
     display: grid;
   }
@@ -458,7 +519,7 @@
 
 .primary-diagnosis,
 .diagnostic-facts > div,
-.estimate-strip,
+.estimate-note,
 .driver-grid article,
 .cost-categories article,
 .cost-table {

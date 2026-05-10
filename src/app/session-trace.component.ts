@@ -313,6 +313,12 @@ export class SessionTraceComponent implements OnChanges, AfterViewChecked {
     return 'Imported detail';
   }
 
+  protected inputShare(event: TraceEvent): number {
+    const totalTokens = event.totalTokens ?? event.inputTokens + event.outputTokens;
+
+    return totalTokens > 0 ? (event.inputTokens / totalTokens) * 100 : 0;
+  }
+
   private groupForField(label: string, groups: TraceDetailGroup[]): TraceDetailGroup {
     const normalized = label.toLowerCase();
 
