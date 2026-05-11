@@ -10,7 +10,7 @@
         <span>Baseline A</span>
         <select [ngModel]="selectedAId()" (ngModelChange)="setCompareA($event)">
           @for (session of sessionOptions(); track session.id) {
-            <option [value]="session.id">{{ session.title }}</option>
+            <option [value]="session.id">{{ sessionOptionLabel(session) }}</option>
           }
         </select>
       </label>
@@ -18,21 +18,66 @@
         <span>Candidate B</span>
         <select [ngModel]="selectedBId()" (ngModelChange)="setCompareB($event)">
           @for (session of sessionOptions(); track session.id) {
-            <option [value]="session.id">{{ session.title }}</option>
+            <option [value]="session.id">{{ sessionOptionLabel(session) }}</option>
           }
         </select>
       </label>
     </div>
   </div>
 
+  <section class="prompt-lab" aria-label="Same prompt comparison">
+    <div>
+      <span>Prompt testing</span>
+      <strong>
+        @if (selectedPromptMatch(); as match) {
+          Same prompt selected
+        } @else {
+          Manual comparison
+        }
+      </strong>
+      <p>
+        @if (selectedPromptMatch(); as match) {
+          Comparing two of {{ match.sessions.length | number }} runs that share the same normalized first prompt.
+        } @else if (promptGroups().length) {
+          {{ promptGroups().length | number }} repeated prompt group{{ promptGroups().length === 1 ? '' : 's' }} found. Use one to compare like-for-like runs.
+        } @else {
+          No repeated first prompts found in imported sessions yet.
+        }
+      </p>
+    </div>
+
+    @if (promptGroups().length) {
+      <div class="prompt-group-list">
+        @for (group of promptGroups().slice(0, 3); track group.key) {
+          <article [class.active]="selectedPromptMatch()?.key === group.key">
+            <div>
+              <strong>{{ compactPrompt(group.prompt) }}</strong>
+              <em>
+                {{ group.sessions.length | number }} runs · ${{ group.costRangeUsd | number: '1.2-4' }} cost range ·
+                {{ group.tokenRange | number }} token range
+              </em>
+            </div>
+            <div class="prompt-actions">
+              <button type="button" (click)="applyPromptGroup(group)">Oldest → newest</button>
+              <button type="button" (click)="compareCheapestToMostExpensive(group)">Cheapest → highest</button>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+
   @if (comparison(); as diff) {
     <div class="compare-readout">
       <div>
-        <span>Comparison read</span>
+        <span>{{ diff.promptMatch ? 'Same-prompt read' : 'Manual comparison read' }}</span>
         <strong [class.saving]="diff.costDelta < 0">
           {{ diff.costDelta < 0 ? '-' : '+' }}${{ abs(diff.costDelta) | number: '1.2-4' }}
         </strong>
         <p>{{ diff.summary }}</p>
+        @if (!diff.promptMatch) {
+          <p class="compare-caveat">These first prompts differ, so read this as run comparison rather than prompt A/B testing.</p>
+        }
       </div>
       <dl>
         <div>

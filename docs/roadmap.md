@@ -47,7 +47,7 @@ Why: a developer should spot suspicious runs before opening each one.
 
 ## Phase 3: Better Comparison
 
-Status: built.
+Status: built, prompt-testing ergonomics started.
 
 Done:
 
@@ -56,12 +56,14 @@ Done:
 - Highlight model switches and price-row changes.
 - Show “winner/loser” language carefully: cheaper is not always better if the run failed.
 - Extracted Compare into its own top-level Angular component so it is no longer embedded in the root shell template.
+- Detect repeated normalized first prompts and label whether the current comparison is same-prompt or manual.
+- Add a `Prompt testing` panel with same-prompt empty state and quick pair actions when repeated prompts exist.
+- Improve A/B selector labels with timestamp and estimated USD cost.
 
 Next:
 
-- Add prompt-match detection so runs with the same normalized user prompt can be grouped automatically.
-- Add a "same prompt" comparison mode that defaults to runs with identical prompts and makes A/B selection easier.
-- Improve Compare search and selection: larger searchable selectors, better prompt previews, and clearer empty states.
+- Improve Compare search and selection beyond native selects: larger searchable selectors, richer prompt previews, and keyboard-friendly filtering.
+- Add an explicit same-prompt group drawer once there are enough repeated-prompt sessions to validate the flow.
 - Add side-by-side output/detail comparison only after the app has a reliable readable output source for both runs. Do not imply quality comparison when only cost/debug facts are available.
 
 Why: comparison is useful when testing prompts, models, MCP setup, or workflow changes.
@@ -268,6 +270,7 @@ Build:
   - `tool_call` argument/result payload sizes
   - nested `runSubagent-*.jsonl` presence
 - Keep `cachedTokens` import covered in debug-log ingestion and add any future explicit numeric cache fields as they appear. Treat `cache_control` hints or prompt-cache metadata as evidence about cache behavior, but not as billable cached-token counts unless the event exposes numeric cached-token totals.
+- Keep the observed Agent Debug Log schema documented in [debug-log-schema.md](debug-log-schema.md) and add fixture coverage before building new cost claims from newly discovered fields.
 - Add a compact request-payload evidence section in Cost first, then promote it into a deeper `Input attribution` panel only after the scanner preserves enough structured request sections.
 - Break the request payload into visible buckets when the debug log exposes them: user prompt, environment/workspace context, custom instructions, tool references, tool results, MCP tool calls/results, prior conversation, and system/developer material.
 - For instructions, tools, MCP schemas, and skills, start with source-backed counts: presence, character count, approximate token estimate, and the model calls where the payload appeared.

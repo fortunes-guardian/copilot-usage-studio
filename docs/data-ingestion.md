@@ -77,7 +77,7 @@ For debug logs with `llm_request` events:
 - each `agent_response` trace row records whether a reasoning text field was present.
 - future scans preserve a small bounded `attributes` summary for common fields such as model, token counts, tool name, details, user content preview, or response preview. This is for the Trace inspector only; it is not a raw JSONL dump.
 
-The word `exact` means exact for the local VS Code debug-log token fields that were imported. It does not mean exact final billing. GitHub billing reconciliation can still differ because cache accounting and provider-side billing adjustments are not present in the local log.
+The word `exact` means exact for the local VS Code debug-log token fields that were imported. It does not mean exact final billing. GitHub billing reconciliation can still differ because GitHub may apply account policy, billing adjustments, or cache-write details that are not present in the local log. When `attrs.cachedTokens` is present, that cached-input field is imported and priced.
 
 `cachedInput` is imported from Agent Debug Log `cachedTokens` when present. This is treated as cached input, not as output and not as a discount against output. `inputTokens` remains useful as the raw prompt/context size, but pricing separates the normal input portion from the cached portion to avoid double-counting.
 
@@ -102,6 +102,8 @@ Agent Debug Logs can include more than token totals. The scanner now preserves b
 Why: this explains what kind of setup payload was available to the model request. Large instruction payloads, large tool schemas, many MCP tools, and large tool results can all be practical optimization targets.
 
 Important boundary: these are source-backed size and presence signals. They are not exact per-section billing rows. Exact local cost is still calculated at the `llm_request` model-call level from logged token totals. Only show exact instruction/MCP cost if a future source exposes token counts for those specific sections.
+
+See [debug-log-schema.md](debug-log-schema.md) for the observed VS Code Agent Debug Log fields and the generated app schema. That document exists so new features start from the real data model rather than from assumptions about what the logs probably contain.
 
 For chat snapshots:
 

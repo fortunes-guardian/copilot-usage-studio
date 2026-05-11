@@ -14,6 +14,7 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
 - [docs/how-to-read-the-app.md](docs/how-to-read-the-app.md): plain-English guide to the UI.
 - [docs/roadmap.md](docs/roadmap.md): planned build order.
 - [docs/data-ingestion.md](docs/data-ingestion.md): where the data comes from and what it means.
+- [docs/debug-log-schema.md](docs/debug-log-schema.md): observed VS Code Agent Debug Log schema and generated app data contract.
 - [docs/pricing.md](docs/pricing.md): GitHub price source, calculation rules, AI-credit allowances, and real-world estimate caveats.
 - [docs/local-deployment.md](docs/local-deployment.md): local run, build, and future packaging options.
 
@@ -98,7 +99,7 @@ Best source:
 %APPDATA%\Code\User\workspaceStorage\<workspace-id>\GitHub.copilot-chat\debug-logs\<session-id>\main.jsonl
 ```
 
-Why: these debug logs include model ids plus input and output token counts for each model call. That is the strongest local signal for estimating a run.
+Why: these debug logs include model ids plus input, output, and sometimes cached-input token counts for each model call. That is the strongest local signal for estimating a run.
 
 Secondary source:
 
@@ -134,7 +135,7 @@ The versioned pricing data lives in `data/github-copilot-pricing.json`. The scan
 
 The UI also converts local USD estimates into GitHub AI credits using GitHub's fixed conversion of `1 AI credit = $0.01 USD`. The Prices page and selected-run header can compare estimates against Copilot Business and Enterprise included monthly AI-credit allowances.
 
-Important: this app shows a local estimate, not a GitHub invoice. Local VS Code logs currently expose input/output tokens, but not provider cache read/write billing fields. Output-heavy runs are still useful to debug from local logs; input/context-heavy runs may differ more from billing if provider-side cached input is significant.
+Important: this app shows a local estimate, not a GitHub invoice. VS Code Agent Debug Logs can expose `cachedTokens`; the scanner treats that as cached input and prices it separately from normal input. Cache-write is only priced when a clear numeric cache-write field is present. Output-heavy runs remain useful to debug because output is still billed as output.
 
 ## Useful Commands
 

@@ -33,6 +33,12 @@
   font-weight: 720;
 }
 
+.source-meta > span.reasoning-chip {
+  border-color: rgba(139, 125, 255, 0.42);
+  background: rgba(139, 125, 255, 0.13);
+  color: var(--text-strong);
+}
+
 h2 {
   margin: 3px 0 0;
   color: var(--text-strong);

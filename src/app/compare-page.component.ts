@@ -52,6 +52,18 @@ interface SessionComparisonAnalysis {
   pricingRows: Set<string>;
 }
 
+interface PromptMatchGroup {
+  key: string;
+  prompt: string;
+  sessions: CopilotSession[];
+  cheapest: CopilotSession;
+  mostExpensive: CopilotSession;
+  newest: CopilotSession;
+  oldest: CopilotSession;
+  costRangeUsd: number;
+  tokenRange: number;
+}
+
 @Component({
   selector: 'app-compare-page',
   imports: [DecimalPipe, FormsModule, HelpPopoverComponent, NgClass],
@@ -83,6 +95,19 @@ export class ComparePageComponent {
   protected readonly selectedBId = computed(() => this.compareBInput() ?? this.sessionOptions()[1]?.id ?? null);
   protected readonly abs = Math.abs;
   protected readonly pricingFallbackReason = pricingFallbackReason;
+  protected readonly promptGroups = computed(() => this.samePromptGroups(this.sessionOptions()));
+  protected readonly selectedPromptMatch = computed(() => {
+    const a = this.sessionOptions().find((session) => session.id === this.selectedAId());
+    const b = this.sessionOptions().find((session) => session.id === this.selectedBId());
+
+    if (!a || !b) {
+      return null;
+    }
+
+    return normalizePrompt(a.firstPrompt) && normalizePrompt(a.firstPrompt) === normalizePrompt(b.firstPrompt)
+      ? this.promptGroups().find((group) => group.key === normalizePrompt(a.firstPrompt)) ?? null
+      : null;
+  });
 
   protected readonly comparison = computed(() => {
     const a = this.sessionOptions().find((session) => session.id === this.selectedAId());
@@ -107,6 +132,9 @@ export class ComparePageComponent {
       b,
       aAnalysis,
       bAnalysis,
+      promptMatch: normalizePrompt(a.firstPrompt) === normalizePrompt(b.firstPrompt),
+      promptMatchCount:
+        this.promptGroups().find((group) => group.key === normalizePrompt(a.firstPrompt))?.sessions.length ?? 0,
       costDelta,
       totalTokenDelta,
       percent: percentDelta(a.cost.usd, b.cost.usd),
@@ -188,6 +216,32 @@ export class ComparePageComponent {
     this.compareBChange.emit(value);
   }
 
+  protected applyPromptGroup(group: PromptMatchGroup): void {
+    this.setCompareA(group.oldest.id);
+    this.setCompareB(group.newest.id);
+  }
+
+  protected compareCheapestToMostExpensive(group: PromptMatchGroup): void {
+    this.setCompareA(group.cheapest.id);
+    this.setCompareB(group.mostExpensive.id);
+  }
+
+  protected sessionOptionLabel(session: CopilotSession): string {
+    const date = new Intl.DateTimeFormat(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(session.startedAt));
+
+    return `${session.title} · ${date} · $${session.cost.usd.toFixed(2)}`;
+  }
+
+  protected compactPrompt(prompt: string): string {
+    const compact = prompt.replace(/\s+/g, ' ').trim();
+    return compact.length > 140 ? `${compact.slice(0, 139)}…` : compact;
+  }
+
   private sessionComparisonAnalysis(session: CopilotSession): SessionComparisonAnalysis {
     const modelRows = session.modelBreakdown.map((entry) => explainModelCost(entry, session.cost.usd));
     const stats = contextStats(session);
@@ -208,6 +262,41 @@ export class ComparePageComponent {
       modelNames: new Set(modelRows.map((row) => row.model)),
       pricingRows: new Set(modelRows.map((row) => row.pricingModel)),
     };
+  }
+
+  private samePromptGroups(sessions: CopilotSession[]): PromptMatchGroup[] {
+    const byPrompt = new Map<string, CopilotSession[]>();
+
+    for (const session of sessions) {
+      const key = normalizePrompt(session.firstPrompt);
+
+      if (!key) {
+        continue;
+      }
+
+      byPrompt.set(key, [...(byPrompt.get(key) ?? []), session]);
+    }
+
+    return [...byPrompt.entries()]
+      .filter(([, groupSessions]) => groupSessions.length > 1)
+      .map(([key, groupSessions]) => {
+        const sortedByDate = [...groupSessions].sort((a, b) => a.startedAt.localeCompare(b.startedAt));
+        const sortedByCost = [...groupSessions].sort((a, b) => a.cost.usd - b.cost.usd);
+        const tokenTotals = groupSessions.map(sessionTotalTokens);
+
+        return {
+          key,
+          prompt: groupSessions[0].firstPrompt,
+          sessions: sortedByDate,
+          cheapest: sortedByCost[0],
+          mostExpensive: sortedByCost[sortedByCost.length - 1],
+          oldest: sortedByDate[0],
+          newest: sortedByDate[sortedByDate.length - 1],
+          costRangeUsd: sortedByCost[sortedByCost.length - 1].cost.usd - sortedByCost[0].cost.usd,
+          tokenRange: Math.max(...tokenTotals) - Math.min(...tokenTotals),
+        };
+      })
+      .sort((a, b) => b.sessions.length - a.sessions.length || b.costRangeUsd - a.costRangeUsd);
   }
 
   private comparisonSummary(
@@ -316,6 +405,14 @@ export class ComparePageComponent {
       })
       .sort((a, b) => Math.abs(b.costDelta) - Math.abs(a.costDelta));
   }
+}
+
+function normalizePrompt(prompt: string): string {
+  return String(prompt ?? '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}#/@._-]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 

@@ -70,6 +70,116 @@
   color: var(--text);
 }
 
+.prompt-lab {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.42fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+  border: 1px solid rgba(124, 92, 255, 0.22);
+  border-radius: 14px;
+  padding: 12px;
+  background:
+    linear-gradient(135deg, rgba(124, 92, 255, 0.1), rgba(31, 209, 165, 0.045)),
+    var(--surface-soft);
+}
+
+.prompt-lab > div:first-child {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+}
+
+.prompt-lab span,
+.prompt-group-list article em {
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.prompt-lab span {
+  color: var(--muted-2);
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.prompt-lab strong {
+  color: var(--text-strong);
+}
+
+.prompt-lab > div:first-child > strong {
+  font-size: 16px;
+  font-weight: 760;
+}
+
+.prompt-lab p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.prompt-group-list {
+  display: grid;
+  gap: 8px;
+}
+
+.prompt-group-list article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.prompt-group-list article.active {
+  border-color: rgba(31, 209, 165, 0.45);
+  background: rgba(31, 209, 165, 0.07);
+}
+
+.prompt-group-list article > div:first-child {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.prompt-group-list article strong {
+  overflow: hidden;
+  color: var(--text-strong);
+  font-size: 13px;
+  font-weight: 720;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prompt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.prompt-actions button {
+  min-height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.prompt-actions button:hover {
+  border-color: rgba(31, 209, 165, 0.55);
+  color: var(--text-strong);
+}
+
 .compare-readout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -143,6 +253,10 @@
   color: var(--muted);
   font-size: 12px;
   line-height: 1.45;
+}
+
+.compare-caveat {
+  color: #ffcf75 !important;
 }
 
 .comparison-grid {
@@ -311,6 +425,7 @@
 @media (max-width: 900px) {
   .compare-header,
   .compare-readout,
+  .prompt-lab,
   .section-heading {
     display: grid;
   }
@@ -325,6 +440,14 @@
 
   .cost-row {
     min-width: 0;
+  }
+
+  .prompt-group-list article {
+    grid-template-columns: 1fr;
+  }
+
+  .prompt-actions {
+    justify-content: flex-start;
   }
 }
 

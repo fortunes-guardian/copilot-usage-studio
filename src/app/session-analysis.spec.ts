@@ -112,6 +112,56 @@ describe('session analysis', () => {
     expect(eventDetails.hasCost).toBe(true);
     expect(eventDetails.pricingModel).toBe('Claude Sonnet 4.6');
   });
+
+  it('prices cached input separately from normal input', () => {
+    const cachedSession: CopilotSession = {
+      ...session,
+      model: 'GPT-5.4',
+      tokens: { input: 2_279, cachedInput: 21_632, cacheWrite: 0, output: 285 },
+      cost: { usd: 0.0153805, eur: 0.0153805 },
+      modelBreakdown: [
+        {
+          model: 'GPT-5.4',
+          rawModels: ['gpt-5.4'],
+          turns: 1,
+          tokens: { input: 2_279, cachedInput: 21_632, cacheWrite: 0, output: 285 },
+          cost: { usd: 0.0153805, eur: 0.0153805 },
+          pricingModel: 'GPT-5.4',
+        },
+      ],
+      traceSummary: {
+        ...session.traceSummary,
+        totalTokens: 24_196,
+      },
+      traceEvents: [
+        {
+          index: 1,
+          timestamp: '2026-05-01T13:28:20.000Z',
+          type: 'llm_request',
+          name: 'panel/editAgent',
+          status: 'ok',
+          detail: 'gpt-5.4: 23911 in / 285 out',
+          model: 'GPT-5.4',
+          rawModel: 'gpt-5.4',
+          pricingModel: 'GPT-5.4',
+          inputTokens: 23_911,
+          cachedInputTokens: 21_632,
+          outputTokens: 285,
+          totalTokens: 24_196,
+          estimatedCost: { usd: 0.0153805, eur: 0.0153805 },
+        },
+      ],
+    };
+
+    const explanation = buildCostExplanation(cachedSession, 'timeline');
+    const eventDetails = traceEventDetails(cachedSession.traceEvents[0], cachedSession.modelBreakdown);
+
+    expect(explanation.hasCacheData).toBe(true);
+    expect(explanation.modelRows[0].inputUsd).toBeCloseTo(0.0056975);
+    expect(explanation.modelRows[0].cachedInputUsd).toBeCloseTo(0.005408);
+    expect(eventDetails.inputUsd).toBeCloseTo(0.0056975);
+    expect(eventDetails.normalizedFields).toContainEqual({ label: 'Normal input tokens', value: '2,279' });
+  });
 });
 
 

@@ -233,6 +233,7 @@ export function traceEventDetails(event: TraceEvent, modelBreakdown: ModelBreakd
       : []),
     ...(event.ttftMs ? [{ label: 'TTFT', value: `${event.ttftMs.toLocaleString()} ms` }] : []),
     ...(event.maxTokens ? [{ label: 'Max tokens', value: event.maxTokens.toLocaleString() }] : []),
+    ...(event.reasoningEffort ? [{ label: 'Reasoning effort', value: event.reasoningEffort }] : []),
     ...(event.hasReasoning ? [{ label: 'Reasoning text', value: 'Present in debug log payload' }] : []),
   ];
 

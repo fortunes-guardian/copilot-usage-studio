@@ -273,6 +273,9 @@ export class SessionTraceComponent implements OnChanges, AfterViewChecked {
           ? [{ label: 'Cached', value: event.cachedInputTokens.toLocaleString(), tone: 'cost' as const }]
           : []),
         { label: 'Output', value: event.outputTokens ? event.outputTokens.toLocaleString() : '0' },
+        ...(event.reasoningEffort
+          ? [{ label: 'Reasoning', value: event.reasoningEffort, tone: 'plain' as const }]
+          : []),
         { label: 'Pricing row', value: details.pricingModel || 'n/a' },
       ];
     }

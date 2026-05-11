@@ -36,6 +36,12 @@ Then open one session and read the Cost debugger.
 
 Use **Compare runs** when you made a change and want to know whether it helped.
 
+The **Prompt testing** panel is the guardrail for clean A/B comparisons:
+
+- **Same prompt selected** means both runs share the same normalized first prompt. This is the best mode for testing workflow, model, instruction, or MCP changes around the same task.
+- **Manual comparison** means the first prompts differ. The cost and token deltas are still useful, but the app should not imply this is a clean prompt A/B test.
+- When repeated prompt groups exist, Compare can quickly choose oldest-to-newest or cheapest-to-highest pairs for the same prompt.
+
 Read it in this order:
 
 - **Headline delta**: how run B changed versus run A.
@@ -44,6 +50,8 @@ Read it in this order:
 - **Model and price-row movement**: whether cost changed because the model/pricing mix changed.
 
 Cheaper is not automatically better. A cheaper run that failed, skipped work, or produced a worse answer is not a win.
+
+Compare currently explains cost/debug facts. It does not judge output quality unless a future source provides reliable comparable output detail.
 
 ## Reading Analytics
 

@@ -4,6 +4,83 @@ Start here when resuming the project.
 
 ## Latest Step
 
+Surfaced source-backed reasoning effort in the UI.
+
+What changed:
+
+- Added a compact selected-run header chip such as `Reasoning high (11)` when `traceSummary.reasoningEfforts` exists.
+- Added reasoning effort to model-call Trace details so selected `llm_request` events show the imported request setting.
+- Kept this limited to source-backed `llm_request.attrs.requestOptions.reasoning.effort`; the older weak reasoning-text-only signal remains out of the primary UI.
+
+Why: reasoning effort is now a real imported field for some Agent Debug Log sessions, so it should be visible without hunting through generated JSON.
+
+Verification:
+
+- `npm run build`
+- `npm test -- --watch=false`
+- `npm run verify:data`
+- Browser sanity check on `http://127.0.0.1:4301/` confirmed the header chip and Trace detail field on the session with `high` reasoning effort.
+
+Known note:
+
+- `npm run build` still passes with the existing initial bundle budget warning, currently about 14 kB over the 500 kB budget.
+
+## Previous Step
+
+Verified cache-aware pricing and documented the observed Agent Debug Log schema.
+
+What changed:
+
+- Rechecked the referenced VS Code Agent Debug Log folder and confirmed `llm_request.attrs.cachedTokens` is present on model calls.
+- Confirmed the scanner, verifier, and UI pricing helpers use GitHub's separate token buckets: normal input, cached input, cache write, and output.
+- Updated stale UI/docs copy that still implied local logs could not expose cache fields.
+- Added [debug-log-schema.md](debug-log-schema.md) to record the observed source files, event envelope, `llm_request` fields, request options, tool/MCP evidence, system prompt evidence, generated app schema, and feature boundaries.
+- Cost model rows now always show the known cached-input/cache-write rates from the GitHub price table, even when the selected run has no imported cache tokens.
+
+Why: cache handling is cost-critical. The app previously had a blind spot around `cachedTokens`; this step makes that field explicit in the code, docs, UI copy, and future roadmap.
+
+Verification:
+
+- `npm run scan`
+- `npm run verify:data`
+- `npm test -- --watch=false`
+- `npm run build`
+- Browser sanity check on `http://127.0.0.1:4301/` for Prices cache wording and selected-run Cost cache visibility.
+
+Known note:
+
+- `npm run build` still passes with the existing initial bundle budget warning, currently about 13 kB over the 500 kB budget.
+
+## Previous Step
+
+Added same-prompt comparison ergonomics to Compare.
+
+What changed:
+
+- Compare now normalizes imported `firstPrompt` text and detects repeated prompt groups.
+- Added a compact `Prompt testing` panel above the A/B selectors.
+- When repeated prompt groups exist, the UI can apply:
+  - `Oldest -> newest`
+  - `Cheapest -> highest`
+- The comparison readout now labels whether the current pair is a same-prompt read or a manual run comparison.
+- Manual comparisons show a caveat so users do not accidentally treat different prompts as prompt A/B tests.
+- Session selector labels now include title, timestamp, and estimated USD cost.
+
+Why: prompt testing is a real workflow for this app, but it only makes sense when the same first prompt is being compared. This adds the first guardrail: make same-prompt pairs easier to choose, and make non-matching comparisons explicit.
+
+Verification:
+
+- `npm run build`
+- `npm test -- --watch=false`
+- `npm run verify:data`
+- Browser sanity check on Compare at `http://127.0.0.1:4301/`
+
+Known note:
+
+- The current imported dataset has no repeated normalized first prompts, so the panel correctly shows the empty state. The group action buttons will appear once two imported sessions share the same first prompt.
+
+## Previous Step
+
 Started request-payload evidence import from VS Code Agent Debug Logs.
 
 What changed:
@@ -27,7 +104,7 @@ Verification:
 - `npm test -- --watch=false`
 - Browser sanity check at `http://127.0.0.1:4301/` on the selected-run Cost tab
 
-## Previous Step
+## Older Step
 
 Imported VS Code `cachedTokens` from Agent Debug Logs and priced cached input separately.
 
@@ -712,7 +789,7 @@ Build:
 - Improve Compare for prompt testing: detect same-prompt runs, make same-prompt A/B selection easy, and improve search/preview ergonomics.
 - Add app-owned run tags after there is durable local state, so users can mark changes such as `new instructions applied` or `MCP compression enabled`.
 - Add time-window controls to the Prices/AI-credit usage context so credit totals can be read by recent periods instead of all imported sessions only.
-- Investigate numeric cache-token fields in Agent Debug Logs using real fixture events, then import them if the source exposes clear cached-input/cache-write counts.
+- Add fixture coverage for Agent Debug Log `cachedTokens` so cache-aware pricing cannot regress.
 - Move selected-run explanation logic out of the root component into focused services/helpers, starting with Cost and Trace calculations.
 - Continue replacing native title tooltips with `HelpPopoverComponent` where the explanation is important enough to be discoverable.
 - Add fixture-based scanner/verifier tests for mixed models, unknown model fallback, and missing/malformed generated data.

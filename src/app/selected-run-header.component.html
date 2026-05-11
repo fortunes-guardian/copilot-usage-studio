@@ -15,6 +15,12 @@
         {{ tokenSourceLabel(session.tokenSource) }}
         <app-help-popover [text]="tokenSourceHelp(session.tokenSource)" label="Explain token source"></app-help-popover>
       </span>
+      @if (reasoningEffortLabel(session); as effort) {
+        <span class="reasoning-chip">
+          Reasoning {{ effort }}
+          <app-help-popover [text]="reasoningEffortHelp(session)" label="Explain reasoning effort"></app-help-popover>
+        </span>
+      }
     </div>
     <h2>{{ session.title }}</h2>
     <p class="detail-subtitle">

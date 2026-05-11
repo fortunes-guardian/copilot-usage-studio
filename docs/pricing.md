@@ -128,24 +128,25 @@ Good for:
 - finding which model calls drove a run's local cost estimate
 - comparing two runs under the same local assumptions
 - spotting whether cost came mostly from input/context or output
-- estimating AI credit consumption from visible local token totals
+- estimating AI credit consumption from visible local token totals, including `cachedTokens` when Agent Debug Logs expose them
 - understanding whether a run is tiny, normal, or a large share of a monthly allowance
 - spotting source-backed request payload clues such as large system prompts, large tool schemas, MCP tool presence, tool-result payload size, cached input totals, and request reasoning effort
 
 Not invoice-grade for:
 
 - exact GitHub invoice reconciliation
-- provider-side cached input when the generated session data does not include numeric cached-token fields
+- provider-side cached input or cache-write when the generated session data does not include numeric cache-token fields
 - billing adjustments, promotions, policy effects, or later GitHub pricing changes
 - exact attribution of input tokens to instructions, MCP servers, workspace context, or tool results unless the source logs expose those sections directly
 
 ## Cache Reality
 
-The scanner imports input, output, and cached-input token totals from VS Code Agent Debug Log `llm_request` events when those fields are present.
+The scanner imports input, output, and cached-input token totals from VS Code Agent Debug Log `llm_request` events when those fields are present. In the observed VS Code Agent Debug Log shape, `attrs.cachedTokens` is present on many model calls and is the key field for cached input.
 
 That means:
 
-- `attrs.cachedTokens` is treated as cached input and priced separately from normal input. The normal input bucket is `inputTokens - cachedTokens`.
+- `attrs.cachedTokens` is treated as cached input and priced with GitHub's cached-input rate for the model. The normal input bucket is `inputTokens - cachedTokens`.
+- The app keeps raw `inputTokens` on trace events so the original VS Code number remains visible, but session/model pricing uses `inputTokens - cachedTokens` for normal input to avoid double-counting.
 - When `cachedInput` and `cacheWrite` are zero in a debug-log import, that means no numeric cache-token totals were imported for that run. It should not be presented as proof that provider-side cache billing was zero.
 - If Agent Debug Logs expose additional numeric cached-token fields for a model call, ingestion should preserve those exact fields and the Cost view should price them separately.
 - `cache_control` hints or prompt-cache metadata can explain that caching was requested or used, but they are not enough on their own to calculate billable cached-token totals.

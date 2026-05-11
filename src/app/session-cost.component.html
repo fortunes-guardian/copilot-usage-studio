@@ -200,12 +200,10 @@
         <span role="cell" data-label="Rates / 1M">
           ${{ model.inputRate | number: '1.0-3' }} in /
           ${{ model.outputRate | number: '1.0-3' }} out
-          @if (cost.hasCacheData && model.cacheWriteRate) {
+          @if (model.cacheWriteRate) {
             <em>${{ model.cachedInputRate | number: '1.0-3' }} cached / ${{ model.cacheWriteRate | number: '1.0-3' }} write</em>
-          } @else if (cost.hasCacheData) {
-            <em>${{ model.cachedInputRate | number: '1.0-3' }} cached</em>
           } @else {
-            <em class="muted">cache rates hidden: no local cache tokens</em>
+            <em>${{ model.cachedInputRate | number: '1.0-3' }} cached</em>
           }
         </span>
         <span role="cell" data-label="Cost">
