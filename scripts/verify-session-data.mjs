@@ -73,8 +73,17 @@ for (const session of sessionData.sessions ?? []) {
         fail(`${session.id} traceEvents.${event.index ?? 'unknown'} has invalid ${field}`);
       }
     }
+    for (const field of ['cachedInputTokens', 'cacheWriteTokens']) {
+      if (event[field] !== undefined && (!Number.isFinite(event[field]) || event[field] < 0)) {
+        fail(`${session.id} traceEvents.${event.index ?? 'unknown'} has invalid ${field}`);
+      }
+    }
+    if (Number(event.cachedInputTokens ?? 0) > Number(event.inputTokens ?? 0)) {
+      fail(`${session.id} traceEvents.${event.index ?? 'unknown'} has cachedInputTokens greater than inputTokens`);
+    }
 
-    const tokenTotal = Number(event.inputTokens ?? 0) + Number(event.outputTokens ?? 0);
+    const tokenTotal =
+      Number(event.inputTokens ?? 0) + Number(event.outputTokens ?? 0) + Number(event.cacheWriteTokens ?? 0);
     if (tokenTotal > 0) {
       if (!event.model || !event.pricingModel) {
         fail(`${session.id} traceEvents.${event.index ?? 'unknown'} missing model/pricingModel`);
@@ -83,9 +92,9 @@ for (const session of sessionData.sessions ?? []) {
         fail(`${session.id} traceEvents.${event.index ?? 'unknown'} has invalid totalTokens`);
       }
       const expectedEventUsd = expectedCostUsd(event.pricingModel, {
-        input: event.inputTokens,
-        cachedInput: 0,
-        cacheWrite: 0,
+        input: Math.max(0, Number(event.inputTokens ?? 0) - Number(event.cachedInputTokens ?? 0)),
+        cachedInput: Number(event.cachedInputTokens ?? 0),
+        cacheWrite: Number(event.cacheWriteTokens ?? 0),
         output: event.outputTokens,
       });
       if (Math.abs(expectedEventUsd - Number(event.estimatedCost?.usd)) > 0.000000001) {

@@ -4,6 +4,63 @@ Start here when resuming the project.
 
 ## Latest Step
 
+Started request-payload evidence import from VS Code Agent Debug Logs.
+
+What changed:
+
+- Preserved source-backed request setup evidence from Agent Debug Log side files:
+  - `system_prompt_*.json` character totals
+  - `tools_*.json` character totals
+  - tool count, MCP tool count, MCP tool names, and largest tool schemas
+- Preserved request reasoning effort from `llm_request.attrs.requestOptions.reasoning.effort` when present.
+- Preserved grouped tool payload sizes from `tool_call` argument/result fields.
+- Counted nested `runSubagent-*.jsonl` files beside `main.jsonl`.
+- Added a compact Request payload section to the selected-run Cost debugger.
+
+Why: the logs can show a lot of the setup payload that makes requests large: system/developer material, tool schemas, MCP tools, tool results, and reasoning effort. These are excellent optimization clues. They are not exact per-section billing rows, so the UI labels them as source-backed payload sizes rather than exact MCP/instruction cost attribution.
+
+Verification:
+
+- `npm run scan`
+- `npm run verify:data`
+- `npm run build`
+- `npm test -- --watch=false`
+- Browser sanity check at `http://127.0.0.1:4301/` on the selected-run Cost tab
+
+## Previous Step
+
+Imported VS Code `cachedTokens` from Agent Debug Logs and priced cached input separately.
+
+What changed:
+
+- Updated debug-log ingestion to read numeric `attrs.cachedTokens` on `llm_request` model events.
+- Kept trace-event `inputTokens` as the raw VS Code prompt/context total, but prices only `inputTokens - cachedTokens` as normal input.
+- Added `cachedInputTokens` and `cacheWriteTokens` to trace events so the Trace inspector can show the evidence behind cache-aware pricing.
+- Updated verification and pricing docs so cache is no longer described as unavailable when `cachedTokens` is present.
+
+Why: `cachedTokens` is source-backed evidence from VS Code Agent Debug Logs. Treating it as cached input makes the local estimate much closer to real billing than pricing the entire `inputTokens` total as normal input.
+
+Verification:
+
+- `npm run build`
+- `npm test -- --watch=false`
+- `npm run verify:data`
+
+## Older Step
+
+Captured the next roadmap intake and removed the app-bar estimate pill.
+
+What changed:
+
+- Added roadmap items for same-prompt comparison, better Compare search/selection, prompt-test groups, user tags, and time-windowed AI-credit usage context.
+- Tightened the Input Attribution/MCP roadmap boundary: preserve request payload sections first, show source-backed size/presence signals first, and only allocate tokens/cost to sections when the source data supports it.
+- Updated cache docs to distinguish current scanner behavior from the underlying VS Code log possibility.
+- Removed the top-right app-bar `Estimate` pill so the selected-run estimate remains the primary visible estimate.
+
+Why: the new ideas are useful, but the app should not imply precision it does not have. Prompt comparison and run tags are robust product features; instruction/MCP impact needs source-backed ingestion before it becomes a prominent UI claim.
+
+## Older Step
+
 Tightened the selected-run responsive debugger layout.
 
 What changed:
@@ -142,10 +199,10 @@ Principles:
 
 ## Important Design Decisions
 
-- Debug logs are the preferred cost source because they include model ids plus input/output token counts.
+- Debug logs are the preferred cost source because they include model ids plus input/output token counts, and can include `cachedTokens` on model calls.
 - Chat snapshots are weaker and should not be treated as equal to debug logs for cost.
 - `state.vscdb` is metadata enrichment only. It improves labels and restored-session details; it does not drive pricing.
-- Cache billing is not visible in the local debug logs observed so far. Do not present zero cache fields as proof of zero provider-side cache billing.
+- The scanner imports `cachedTokens` from Agent Debug Logs as cached input when present. `cacheWrite` remains zero unless a clear numeric cache-write field is present. Do not present zero cache fields as proof of zero provider-side cache billing.
 - Cached input is a separate input/context billing bucket, not a discount against output. The UI should call this out because it is easy to misunderstand when reading large output/cached-token totals.
 - The UI should explain local estimates clearly instead of pretending they are GitHub invoice numbers.
 - AI-credit allowance percentages are context, not reconciliation. Business and Enterprise credits are pooled across the billing entity, while the selected-run meter shows a per-seat allowance comparison unless the app later adds seat counts.
@@ -164,7 +221,8 @@ Principles:
 - Help popovers now use the shared UI component instead of native browser title behavior. Some lower-priority sidebar badge hints were intentionally removed rather than nesting interactive popovers inside session-card buttons.
 - The Trace inspector now shows normalized event fields, but it is still limited by the bounded payload summaries the scanner imports. It is good for event-level evidence, not full raw JSONL replacement.
 - VS Code transcript files under `GitHub.copilot-chat/transcripts/<session-id>.jsonl` can contain richer Chat Debug timeline events, but they are inconsistent. In the current workspace, some sessions have rich transcripts and weak debug logs, while another has useful debug logs and only a `session.start` transcript. The scanner does not import transcripts yet, and core cost features should not depend on them.
-- The app can count tool/MCP activity and place it near model calls, but it does not yet attribute model input tokens to specific request sections such as instructions, MCP tool results, or workspace context.
+- The app can count tool/MCP activity and place it near model calls, but it does not yet preserve enough request payload structure to attribute model input to specific sections such as instructions, MCP tool schemas/results, or workspace context.
+- Real VS Code logs can expose richer payload fields than the generated app contract currently keeps. The next ingestion step should capture bounded structured summaries before any UI promises instruction/MCP impact.
 - Aggregated analytics are useful but still early. Outlier detection is a simple statistical signal with driver hints; it now separates a few obvious cases such as long agent runs and suspicious low-activity spikes, but it should become more nuanced as more real sessions are imported.
 - Advanced evidence is imported but mostly hidden from the primary UI. Reasoning text presence and request-cap comparison were too technical to be useful as top-level cards.
 - No app-owned database yet. Scans overwrite `public/data/sessions.json`.
@@ -651,6 +709,10 @@ Keep tightening reliability and the UI/code structure before attempting evidence
 
 Build:
 
+- Improve Compare for prompt testing: detect same-prompt runs, make same-prompt A/B selection easy, and improve search/preview ergonomics.
+- Add app-owned run tags after there is durable local state, so users can mark changes such as `new instructions applied` or `MCP compression enabled`.
+- Add time-window controls to the Prices/AI-credit usage context so credit totals can be read by recent periods instead of all imported sessions only.
+- Investigate numeric cache-token fields in Agent Debug Logs using real fixture events, then import them if the source exposes clear cached-input/cache-write counts.
 - Move selected-run explanation logic out of the root component into focused services/helpers, starting with Cost and Trace calculations.
 - Continue replacing native title tooltips with `HelpPopoverComponent` where the explanation is important enough to be discoverable.
 - Add fixture-based scanner/verifier tests for mixed models, unknown model fallback, and missing/malformed generated data.
@@ -659,6 +721,6 @@ Build:
 - Consider a mobile/narrow layout where filters and session list become a top drawer or compact selector instead of sitting below content.
 - Replace native title tooltips with a small custom help popover for important cost terms.
 - Continue visual polish of Sessions: tune table density, tighten the run tabs, and keep making each subview feel intentionally composed.
-- Park Input/MCP attribution until the imported source fields prove exactly what can be shown. Nearby activity counts may still be useful later, but they should not become a cost-allocation feature by implication.
+- Park cost allocation for Input/MCP attribution until the imported source fields prove exactly what can be shown. Source-backed presence, character counts, approximate section size, and nearby affected model-call cost are acceptable first steps if the UI labels them honestly.
 
 Why this next: the core debugger is now useful enough that correctness and maintainability matter more than speculative signals. The app should be boringly trustworthy before it gets clever.

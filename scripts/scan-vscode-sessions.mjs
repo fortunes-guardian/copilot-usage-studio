@@ -252,14 +252,44 @@ function costUsd(model, tokens) {
   return costUsdForTokens(model, tokens, pricing, fallbackPricingModel);
 }
 
-function eventModelCostFields(rawModel, inputTokens, outputTokens) {
+function numericAttr(attrs, names) {
+  for (const name of names) {
+    const value = Number(attrs?.[name] ?? 0);
+    if (Number.isFinite(value) && value > 0) {
+      return value;
+    }
+  }
+
+  return 0;
+}
+
+function llmTokenFields(event) {
+  const inputTokens = Number(event.attrs?.inputTokens ?? 0);
+  const outputTokens = Number(event.attrs?.outputTokens ?? 0);
+  const cachedInputTokens = Math.min(
+    inputTokens,
+    numericAttr(event.attrs, ['cachedTokens', 'cachedInputTokens', 'cacheReadTokens']),
+  );
+  const cacheWriteTokens = numericAttr(event.attrs, ['cacheWriteTokens', 'cachedWriteTokens']);
+  const billableInputTokens = Math.max(0, inputTokens - cachedInputTokens);
+
+  return {
+    inputTokens,
+    billableInputTokens,
+    cachedInputTokens,
+    cacheWriteTokens,
+    outputTokens,
+  };
+}
+
+function eventModelCostFields(rawModel, tokenFields) {
   const normalizedModel = normalizeModel(rawModel, pricing);
   const pricingModel = pricingModelForModel(normalizedModel, pricing, fallbackPricingModel);
   const tokens = {
-    input: Number(inputTokens ?? 0),
-    cachedInput: 0,
-    cacheWrite: 0,
-    output: Number(outputTokens ?? 0),
+    input: tokenFields.billableInputTokens,
+    cachedInput: tokenFields.cachedInputTokens,
+    cacheWrite: tokenFields.cacheWriteTokens,
+    output: tokenFields.outputTokens,
   };
   const usd = costUsd(pricingModel, tokens);
 
@@ -267,8 +297,150 @@ function eventModelCostFields(rawModel, inputTokens, outputTokens) {
     model: normalizedModel,
     rawModel: String(rawModel ?? '').replace(/^copilot\//i, '').trim() || 'unknown',
     pricingModel,
-    totalTokens: tokens.input + tokens.output,
+    totalTokens: tokenFields.inputTokens + tokenFields.outputTokens + tokenFields.cacheWriteTokens,
     estimatedCost: { usd, eur: usd * usdToEur },
+  };
+}
+
+function parseMaybeJson(value) {
+  if (typeof value !== 'string') {
+    return value ?? null;
+  }
+
+  return safeJson(value) ?? value;
+}
+
+function charLength(value) {
+  if (value === undefined || value === null) {
+    return 0;
+  }
+
+  return typeof value === 'string' ? value.length : JSON.stringify(value).length;
+}
+
+function parseContentFile(file) {
+  const envelope = safeJson(readFileSync(file, 'utf8'));
+  const content = parseMaybeJson(envelope?.content ?? envelope);
+
+  return {
+    file,
+    content,
+    chars: charLength(content),
+  };
+}
+
+function toolName(tool) {
+  return String(
+    tool?.function?.name ??
+      tool?.name ??
+      tool?.toolName ??
+      tool?.id ??
+      'unknown_tool',
+  );
+}
+
+function toolSchemaSize(tool) {
+  const descriptionChars = charLength(tool?.function?.description ?? tool?.description);
+  const parameterChars = charLength(tool?.function?.parameters ?? tool?.parameters ?? tool?.input_schema);
+
+  return {
+    name: toolName(tool),
+    descriptionChars,
+    parameterChars,
+    totalChars: charLength(tool),
+  };
+}
+
+function requestOptions(event) {
+  const parsed = parseMaybeJson(event.attrs?.requestOptions);
+  return parsed && typeof parsed === 'object' ? parsed : {};
+}
+
+function reasoningEffort(event) {
+  return String(requestOptions(event)?.reasoning?.effort ?? '').trim();
+}
+
+function countedValues(values) {
+  const counts = new Map();
+
+  for (const value of values.filter(Boolean)) {
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+
+  return [...counts.entries()]
+    .map(([value, count]) => ({ value, count }))
+    .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
+}
+
+function toolPayloadSummary(toolEvents) {
+  const byName = new Map();
+
+  for (const event of toolEvents) {
+    const name = String(event.data?.toolName ?? event.attrs?.toolName ?? event.name ?? event.type ?? 'tool');
+    const current = byName.get(name) ?? { name, calls: 0, argsChars: 0, resultChars: 0 };
+    current.calls += 1;
+    current.argsChars += charLength(
+      event.attrs?.args ??
+        event.attrs?.arguments ??
+        event.attrs?.input ??
+        event.data?.args ??
+        event.data?.arguments ??
+        event.data?.input,
+    );
+    current.resultChars += charLength(
+      event.attrs?.result ??
+        event.attrs?.output ??
+        event.attrs?.stdout ??
+        event.data?.result ??
+        event.data?.output ??
+        event.data?.stdout,
+    );
+    byName.set(name, current);
+  }
+
+  return [...byName.values()]
+    .sort((a, b) => b.resultChars + b.argsChars - (a.resultChars + a.argsChars) || a.name.localeCompare(b.name))
+    .slice(0, 12);
+}
+
+function requestPayloadSummary(sessionDir, llmRequests, toolEvents) {
+  const systemPromptFiles = [
+    ...new Set(llmRequests.map((event) => event.attrs?.systemPromptFile).filter(Boolean)),
+  ];
+  const toolsFiles = [
+    ...new Set(llmRequests.map((event) => event.attrs?.toolsFile).filter(Boolean)),
+  ];
+  const systemPrompts = systemPromptFiles
+    .map((file) => join(sessionDir, file))
+    .filter(existsSync)
+    .map(parseContentFile);
+  const toolFileSummaries = toolsFiles
+    .map((file) => join(sessionDir, file))
+    .filter(existsSync)
+    .map(parseContentFile);
+  const tools = toolFileSummaries.flatMap((summary) => (Array.isArray(summary.content) ? summary.content : []));
+  const toolSchemas = tools.map(toolSchemaSize);
+  const mcpToolNames = toolSchemas.map((tool) => tool.name).filter((name) => name.startsWith('mcp_'));
+  const reasoningEfforts = countedValues(llmRequests.map(reasoningEffort)).map(({ value, count }) => ({
+    effort: value,
+    count,
+  }));
+  const subagentLogCount = listFiles(sessionDir, '.jsonl').filter((file) => basename(file).startsWith('runSubagent-')).length;
+
+  return {
+    systemPromptFiles: systemPrompts.length,
+    systemPromptChars: systemPrompts.reduce((sum, summary) => sum + summary.chars, 0),
+    toolSchemaFiles: toolFileSummaries.length,
+    toolSchemaChars: toolFileSummaries.reduce((sum, summary) => sum + summary.chars, 0),
+    toolCount: toolSchemas.length,
+    mcpToolCount: mcpToolNames.length,
+    mcpToolNames: [...new Set(mcpToolNames)].sort(),
+    largestToolSchemas: toolSchemas.sort((a, b) => b.totalChars - a.totalChars).slice(0, 8),
+    modelCallsWithSystemPromptFile: llmRequests.filter((event) => event.attrs?.systemPromptFile).length,
+    modelCallsWithToolsFile: llmRequests.filter((event) => event.attrs?.toolsFile).length,
+    reasoningEfforts,
+    toolResultCharsByName: toolPayloadSummary(toolEvents),
+    subagentLogCount,
   };
 }
 
@@ -280,16 +452,20 @@ function debugEvidence(llmRequests, agentResponses) {
   const maxInputTokens = Math.max(0, ...inputSeries);
   const maxRequestTokens = Math.max(0, ...outputCaps);
   const reasoningEvents = agentResponses.filter((event) => String(event.attrs?.reasoning ?? '').trim()).length;
+  const efforts = countedValues(llmRequests.map(reasoningEffort));
+  const primaryEffort = efforts[0]?.value ?? '';
 
   return {
     reasoning: {
-      visible: reasoningEvents > 0,
-      level: '',
+      visible: reasoningEvents > 0 || Boolean(primaryEffort),
+      level: primaryEffort,
       events: reasoningEvents,
-      source: reasoningEvents > 0 ? 'agent_response.attrs.reasoning' : '',
+      source: primaryEffort ? 'llm_request.attrs.requestOptions.reasoning.effort' : reasoningEvents > 0 ? 'agent_response.attrs.reasoning' : '',
       help:
-        reasoningEvents > 0
-          ? 'VS Code debug logs include reasoning text on agent_response events, but these logs do not expose a low/medium/high/xhigh reasoning-level field.'
+        primaryEffort
+          ? 'VS Code Agent Debug Logs expose the request reasoning effort in llm_request.attrs.requestOptions.reasoning.effort.'
+          : reasoningEvents > 0
+            ? 'VS Code debug logs include reasoning text on agent_response events, but no request reasoning effort was imported.'
           : 'No reasoning text field was present on imported agent_response events.',
     },
     context: {
@@ -325,8 +501,11 @@ function modelBreakdownFromLlmRequests(llmRequests) {
 
     current.rawModels.add(rawModel || 'unknown');
     current.turns += 1;
-    current.tokens.input += Number(event.attrs?.inputTokens ?? 0);
-    current.tokens.output += Number(event.attrs?.outputTokens ?? 0);
+    const tokenFields = llmTokenFields(event);
+    current.tokens.input += tokenFields.billableInputTokens;
+    current.tokens.cachedInput += tokenFields.cachedInputTokens;
+    current.tokens.cacheWrite += tokenFields.cacheWriteTokens;
+    current.tokens.output += tokenFields.outputTokens;
     byModel.set(displayModel, current);
   }
 
@@ -444,9 +623,14 @@ function eventAttributeSummary(event) {
   const candidates = [
     ['model', attrs.model],
     ['inputTokens', attrs.inputTokens],
+    ['cachedTokens', attrs.cachedTokens ?? attrs.cachedInputTokens ?? attrs.cacheReadTokens],
+    ['cacheWriteTokens', attrs.cacheWriteTokens ?? attrs.cachedWriteTokens],
     ['outputTokens', attrs.outputTokens],
     ['maxTokens', attrs.maxTokens],
     ['ttft', attrs.ttft],
+    ['reasoningEffort', event.type === 'llm_request' ? reasoningEffort(event) : undefined],
+    ['systemPromptFile', attrs.systemPromptFile],
+    ['toolsFile', attrs.toolsFile],
     ['toolName', data.toolName ?? attrs.toolName],
     ['details', attrs.details],
     ['content', attrs.content],
@@ -532,12 +716,14 @@ function sessionFromDebugLog(sessionDir, workspaceDir) {
     modelBreakdown,
     llmRequests.find((event) => event.attrs?.model)?.attrs?.model,
   );
-  const input = llmRequests.reduce((sum, event) => sum + Number(event.attrs?.inputTokens ?? 0), 0);
+  const input = llmRequests.reduce((sum, event) => sum + llmTokenFields(event).billableInputTokens, 0);
+  const cachedInput = llmRequests.reduce((sum, event) => sum + llmTokenFields(event).cachedInputTokens, 0);
+  const cacheWrite = llmRequests.reduce((sum, event) => sum + llmTokenFields(event).cacheWriteTokens, 0);
   const output = llmRequests.reduce(
-    (sum, event) => sum + Number(event.attrs?.outputTokens ?? 0),
+    (sum, event) => sum + llmTokenFields(event).outputTokens,
     0,
   );
-  const tokens = { input, cachedInput: 0, cacheWrite: 0, output };
+  const tokens = { input, cachedInput, cacheWrite, output };
   const usd = modelBreakdown.length
     ? modelBreakdown.reduce((sum, entry) => sum + entry.cost.usd, 0)
     : costUsd(model, tokens);
@@ -554,6 +740,7 @@ function sessionFromDebugLog(sessionDir, workspaceDir) {
       Number(lastEvent?.ts ?? statSync(join(sessionDir, 'main.jsonl')).mtimeMs),
     ).toISOString();
   const evidence = debugEvidence(llmRequests, assistantEvents, main);
+  const payload = requestPayloadSummary(sessionDir, llmRequests, toolEvents);
 
   const turns = [
     ...userMessages.map((event) => ({
@@ -601,19 +788,28 @@ function sessionFromDebugLog(sessionDir, workspaceDir) {
     traceSummary: {
       modelTurns: llmRequests.length,
       toolCalls: toolEvents.length,
-      totalTokens: input + output,
+      totalTokens: input + cachedInput + cacheWrite + output,
       errors: errorEvents.length,
       totalEvents: main.length,
       reasoningEvents: evidence.reasoning.events,
       maxInputTokens: evidence.context.maxInputTokens,
       maxRequestTokens: evidence.context.maxRequestTokens,
+      reasoningEfforts: payload.reasoningEfforts,
     },
     advancedSignals: evidence,
+    requestPayload: payload,
     traceEvents: capTraceEvents(
       main.map((event, index) => {
-        const inputTokens = event.type === 'llm_request' ? Number(event.attrs?.inputTokens ?? 0) : 0;
-        const outputTokens =
-          event.type === 'llm_request' ? Number(event.attrs?.outputTokens ?? 0) : 0;
+        const tokenFields =
+          event.type === 'llm_request'
+            ? llmTokenFields(event)
+            : {
+                inputTokens: 0,
+                billableInputTokens: 0,
+                cachedInputTokens: 0,
+                cacheWriteTokens: 0,
+                outputTokens: 0,
+              };
 
         return {
           index,
@@ -623,13 +819,16 @@ function sessionFromDebugLog(sessionDir, workspaceDir) {
           status: String(event.status ?? 'unknown'),
           detail: eventDetail(event),
           attributes: eventAttributeSummary(event),
-          inputTokens,
-          outputTokens,
+          inputTokens: tokenFields.inputTokens,
+          cachedInputTokens: tokenFields.cachedInputTokens,
+          cacheWriteTokens: tokenFields.cacheWriteTokens,
+          outputTokens: tokenFields.outputTokens,
           ttftMs: event.type === 'llm_request' ? Number(event.attrs?.ttft ?? 0) : 0,
           maxTokens: event.type === 'llm_request' ? Number(event.attrs?.maxTokens ?? 0) : 0,
           hasReasoning: event.type === 'agent_response' && Boolean(String(event.attrs?.reasoning ?? '').trim()),
+          reasoningEffort: event.type === 'llm_request' ? reasoningEffort(event) : '',
           ...(event.type === 'llm_request'
-            ? eventModelCostFields(event.attrs?.model, inputTokens, outputTokens)
+            ? eventModelCostFields(event.attrs?.model, tokenFields)
             : {}),
         };
       }),
@@ -745,8 +944,16 @@ function sessionFromChatSnapshot(file, workspaceDir) {
             status: 'ok',
             detail: String(request?.message?.text ?? '').slice(0, 140),
             inputTokens: userInputTokens,
+            cachedInputTokens: 0,
+            cacheWriteTokens: 0,
             outputTokens: 0,
-            ...eventModelCostFields(rawRequestModel, userInputTokens, 0),
+            ...eventModelCostFields(rawRequestModel, {
+              inputTokens: userInputTokens,
+              billableInputTokens: userInputTokens,
+              cachedInputTokens: 0,
+              cacheWriteTokens: 0,
+              outputTokens: 0,
+            }),
           },
           {
             index: index * 2 + 1,
@@ -756,8 +963,16 @@ function sessionFromChatSnapshot(file, workspaceDir) {
             status: 'ok',
             detail: `${assistantOutputTokens.toLocaleString()} completion tokens`,
             inputTokens: 0,
+            cachedInputTokens: 0,
+            cacheWriteTokens: 0,
             outputTokens: assistantOutputTokens,
-            ...eventModelCostFields(rawRequestModel, 0, assistantOutputTokens),
+            ...eventModelCostFields(rawRequestModel, {
+              inputTokens: 0,
+              billableInputTokens: 0,
+              cachedInputTokens: 0,
+              cacheWriteTokens: 0,
+              outputTokens: assistantOutputTokens,
+            }),
           },
         ];
       }),

@@ -74,6 +74,74 @@
     </div>
   </section>
 
+  @if (cost.requestPayload?.hasEvidence) {
+    <section class="payload-evidence" aria-label="Request payload evidence">
+      <div class="section-label">
+        <h4>Request payload</h4>
+        <p>
+          Source-backed sizes
+          <app-help-popover [text]="cost.requestPayload!.boundary" label="Explain request payload evidence"></app-help-popover>
+        </p>
+      </div>
+
+      <div class="payload-grid">
+        <article>
+          <span>System prompt</span>
+          <strong>{{ formatCompactNumber(cost.requestPayload!.systemPromptChars) }} chars</strong>
+          <em>{{ cost.requestPayload!.modelCallsWithSystemPromptFile | number }} model calls referenced it</em>
+        </article>
+        <article>
+          <span>Tool schemas</span>
+          <strong>{{ formatCompactNumber(cost.requestPayload!.toolSchemaChars) }} chars</strong>
+          <em>{{ cost.requestPayload!.toolCount | number }} tools · {{ cost.requestPayload!.mcpToolCount | number }} MCP</em>
+        </article>
+        <article>
+          <span>Reasoning effort</span>
+          <strong>{{ cost.requestPayload!.reasoning }}</strong>
+          <em>from requestOptions when present</em>
+        </article>
+        <article>
+          <span>Subagent logs</span>
+          <strong>{{ cost.requestPayload!.subagentLogCount | number }}</strong>
+          <em>nested run files found beside main.jsonl</em>
+        </article>
+      </div>
+
+      <div class="payload-lists">
+        <article>
+          <span>Largest schema payloads</span>
+          @if (cost.requestPayload!.largestToolSchemas.length) {
+            <ol>
+              @for (tool of cost.requestPayload!.largestToolSchemas.slice(0, 4); track tool.name) {
+                <li>
+                  <strong>{{ tool.name }}</strong>
+                  <em>{{ formatCompactNumber(tool.totalChars) }} chars</em>
+                </li>
+              }
+            </ol>
+          } @else {
+            <p>No tool schema side file was imported for this run.</p>
+          }
+        </article>
+        <article>
+          <span>Largest tool payloads</span>
+          @if (cost.requestPayload!.toolResultCharsByName.length) {
+            <ol>
+              @for (tool of cost.requestPayload!.toolResultCharsByName.slice(0, 4); track tool.name) {
+                <li>
+                  <strong>{{ tool.name }}</strong>
+                  <em>{{ tool.calls | number }} calls · {{ formatCompactNumber(tool.resultChars) }} result chars</em>
+                </li>
+              }
+            </ol>
+          } @else {
+            <p>No tool result payload sizes were imported for this run.</p>
+          }
+        </article>
+      </div>
+    </section>
+  }
+
   <div class="section-label">
     <h4>Token categories</h4>
   </div>
@@ -142,7 +210,13 @@
         </span>
         <span role="cell" data-label="Cost">
           ${{ model.totalUsd | number: '1.6-6' }}
-          <em>{{ model.inputUsd | number: '1.6-6' }} in / {{ model.outputUsd | number: '1.6-6' }} out</em>
+          <em>
+            {{ model.inputUsd | number: '1.6-6' }} in
+            @if (model.cachedInputUsd || model.cacheWriteUsd) {
+              / {{ model.cachedInputUsd | number: '1.6-6' }} cached
+            }
+            / {{ model.outputUsd | number: '1.6-6' }} out
+          </em>
         </span>
         <span role="cell" data-label="Share">{{ model.share | number: '1.0-0' }}%</span>
       </div>

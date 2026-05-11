@@ -130,21 +130,25 @@ Good for:
 - spotting whether cost came mostly from input/context or output
 - estimating AI credit consumption from visible local token totals
 - understanding whether a run is tiny, normal, or a large share of a monthly allowance
+- spotting source-backed request payload clues such as large system prompts, large tool schemas, MCP tool presence, tool-result payload size, cached input totals, and request reasoning effort
 
 Not invoice-grade for:
 
 - exact GitHub invoice reconciliation
-- provider-side cached input when VS Code logs do not expose cached token fields
+- provider-side cached input when the generated session data does not include numeric cached-token fields
 - billing adjustments, promotions, policy effects, or later GitHub pricing changes
 - exact attribution of input tokens to instructions, MCP servers, workspace context, or tool results unless the source logs expose those sections directly
 
 ## Cache Reality
 
-Local VS Code debug logs observed so far usually expose input and output token totals, but not complete provider cache billing fields.
+The scanner imports input, output, and cached-input token totals from VS Code Agent Debug Log `llm_request` events when those fields are present.
 
 That means:
 
-- When `cachedInput` and `cacheWrite` are zero in a debug-log import, that currently means those cache fields were not present in the local log source. It should not be presented as proof that provider-side cache billing was zero.
+- `attrs.cachedTokens` is treated as cached input and priced separately from normal input. The normal input bucket is `inputTokens - cachedTokens`.
+- When `cachedInput` and `cacheWrite` are zero in a debug-log import, that means no numeric cache-token totals were imported for that run. It should not be presented as proof that provider-side cache billing was zero.
+- If Agent Debug Logs expose additional numeric cached-token fields for a model call, ingestion should preserve those exact fields and the Cost view should price them separately.
+- `cache_control` hints or prompt-cache metadata can explain that caching was requested or used, but they are not enough on their own to calculate billable cached-token totals.
 - Cached input is not a discount against output. It is a separate input/context bucket when a billing source exposes it. Output tokens remain priced as output tokens.
 - Input-heavy sessions may be overestimated if GitHub billed a large portion of input as cheaper cached input.
 - Output-heavy sessions are usually easier to reason about because output remains priced as output.
@@ -154,4 +158,5 @@ That means:
 
 - GitHub billing can still differ because GitHub may apply provider-side cache accounting or billing adjustments not present in local logs.
 - Unknown model ids are preserved for display and priced with a visible fallback until the pricing table is updated.
+- Request payload sizes are optimization evidence, not exact cost allocation. The app can show that a tools file was large or that MCP tools were present, but it should not say "this MCP server cost $X" unless source logs expose section-level token totals.
 - The pricing table should be rechecked against GitHub Docs whenever GitHub changes model availability or usage-based rates.

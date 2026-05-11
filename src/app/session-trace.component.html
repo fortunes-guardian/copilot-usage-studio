@@ -74,8 +74,14 @@
             <p>{{ event.detail }}</p>
             @if (event.inputTokens || event.outputTokens) {
               <em class="event-token-badge">
-                {{ (event.totalTokens ?? event.inputTokens + event.outputTokens) | number }} tokens
-                <span>{{ event.inputTokens | number }} in / {{ event.outputTokens | number }} out</span>
+                {{ (event.totalTokens ?? event.inputTokens + event.outputTokens + (event.cacheWriteTokens ?? 0)) | number }} tokens
+                <span>
+                  {{ event.inputTokens | number }} in
+                  @if (event.cachedInputTokens) {
+                    · {{ event.cachedInputTokens | number }} cached
+                  }
+                  / {{ event.outputTokens | number }} out
+                </span>
               </em>
             } @else {
               <em>{{ event.type }}</em>
@@ -130,7 +136,13 @@
                     <i class="input-bar" [style.width.%]="inputShare(event)"></i>
                     <i class="output-bar"></i>
                   </div>
-                  <p>{{ event.inputTokens | number }} input / {{ event.outputTokens | number }} output</p>
+                  <p>
+                    {{ event.inputTokens | number }} input
+                    @if (event.cachedInputTokens) {
+                      / {{ event.cachedInputTokens | number }} cached
+                    }
+                    / {{ event.outputTokens | number }} output
+                  </p>
                 </div>
               }
               @if (details.usesFallbackPrice) {

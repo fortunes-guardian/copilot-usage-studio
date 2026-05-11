@@ -3,7 +3,6 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 
 import { AnalyticsPageComponent } from './analytics-page.component';
 import { ComparePageComponent } from './compare-page.component';
-import { HelpPopoverComponent } from './help-popover.component';
 import { SessionDataService } from './session-data.service';
 import { SessionDataStatePanelComponent } from './session-data-state-panel.component';
 import { CopilotSession, TraceEvent } from './session-data.model';
@@ -44,7 +43,6 @@ type SelectedRunView = 'overview' | 'cost' | 'turns' | 'trace';
   imports: [
     AnalyticsPageComponent,
     DecimalPipe,
-    HelpPopoverComponent,
     ComparePageComponent,
     SessionDataStatePanelComponent,
     PricingPageComponent,
@@ -84,7 +82,7 @@ export class App {
   protected readonly pricingSourceUrl = PRICING_SOURCE_URL;
   protected readonly help = {
     appEstimate:
-      'Estimated from local VS Code token counts and GitHub published model prices. This is useful for debugging a run, but it is not your GitHub bill.',
+      'Estimated from imported local token counts and GitHub published model prices. This is useful for debugging a run, but it is not your GitHub bill.',
     debugLogs:
       'Best source for cost debugging. These VS Code logs include the model used plus input and output token counts for each model call.',
     chatSnapshots:
@@ -101,7 +99,7 @@ export class App {
       'Everything sent into the model: prompt, repo context, prior conversation, and tool results.',
     outputTokens: 'Generated model response tokens.',
     cachedInput:
-      'Tokens served from a provider cache when that data is available. Current local VS Code debug logs do not show this field.',
+      'Input/context tokens reported by VS Code as cachedTokens on model calls. These are priced separately from normal input when present.',
     cacheWrite:
       'Provider cache creation tokens when the billing source exposes them. GitHub lists this mainly for Anthropic pricing rows.',
     priceRow:
@@ -396,7 +394,7 @@ export class App {
 
   protected tokenSourceHelp(tokenSource: string): string {
     if (tokenSource === 'llm_request_token_totals') {
-      return 'Strongest local token source: VS Code logged input and output token counts for each model call. Cache billing is still not visible here.';
+      return 'Strongest local token source: VS Code logged input/output token counts for each model call. When cachedTokens is present, ingestion prices that cached input separately.';
     }
 
     if (tokenSource === 'chat-snapshot-output-plus-visible-input-estimate') {

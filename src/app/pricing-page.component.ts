@@ -51,7 +51,7 @@ export class PricingPageComponent {
       'Everything sent into the model: prompt, repo context, prior conversation, and tool results.',
     outputTokens: 'Generated model response tokens.',
     cachedInput:
-      'Tokens served from a provider cache when that data is available. Current local VS Code debug logs do not show this field.',
+      'Input/context tokens reported by VS Code as cachedTokens on model calls. These are priced separately from normal input when present.',
     cacheWrite:
       'Provider cache creation tokens when the billing source exposes them. GitHub lists this mainly for Anthropic pricing rows.',
     pricingFallback:

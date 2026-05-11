@@ -65,25 +65,43 @@ Why: VS Code can create debug-log folders before a useful agent turn exists. Sho
 
 For debug logs with `llm_request` events:
 
-- `tokens.input` is the sum of `attrs.inputTokens`.
+- `tokens.input` is the sum of normal, non-cached input tokens. For Agent Debug Logs this is `attrs.inputTokens - attrs.cachedTokens` when `cachedTokens` is present, otherwise it is `attrs.inputTokens`.
 - `tokens.output` is the sum of `attrs.outputTokens`.
-- `tokens.cachedInput` is `0`.
-- `tokens.cacheWrite` is `0`.
+- `tokens.cachedInput` is the sum of `attrs.cachedTokens` from `llm_request` events when present.
+- `tokens.cacheWrite` is currently `0` because the scanner does not yet extract numeric cache-write totals from debug-log events.
 - `tokenSource` is `llm_request_token_totals`.
 - `confidence` is `exact`.
 - `modelBreakdown` groups `llm_request` rows by normalized model id and stores raw model ids, turn count, token totals, estimated cost, and the pricing model used.
 - each token-bearing `traceEvents` row stores structured `model`, `rawModel`, `pricingModel`, `totalTokens`, and `estimatedCost` fields.
-- each `llm_request` trace row also preserves `ttftMs` and `maxTokens` when VS Code logged them.
+- each `llm_request` trace row also preserves `ttftMs`, `maxTokens`, and request `reasoningEffort` when VS Code logged them.
 - each `agent_response` trace row records whether a reasoning text field was present.
 - future scans preserve a small bounded `attributes` summary for common fields such as model, token counts, tool name, details, user content preview, or response preview. This is for the Trace inspector only; it is not a raw JSONL dump.
 
 The word `exact` means exact for the local VS Code debug-log token fields that were imported. It does not mean exact final billing. GitHub billing reconciliation can still differ because cache accounting and provider-side billing adjustments are not present in the local log.
 
-`cachedInput` and `cacheWrite` are currently zero for debug-log sessions because the local `llm_request` events observed so far expose `inputTokens` and `outputTokens`, not provider billing cache read/write fields. The UI should describe those cache fields as unavailable from this local source, not as proof that GitHub billed no cache activity.
+`cachedInput` is imported from Agent Debug Log `cachedTokens` when present. This is treated as cached input, not as output and not as a discount against output. `inputTokens` remains useful as the raw prompt/context size, but pricing separates the normal input portion from the cached portion to avoid double-counting.
+
+`cacheWrite` remains zero unless a future log shape exposes a clear numeric cache-write field such as `cacheWriteTokens`. Do not infer billable cached-token totals from `cache_control` hints or prompt-cache metadata alone.
 
 Cached input should be treated as a separate billing bucket, not as a subtraction from output. If a run has large output tokens, missing cache fields may not change the main cost story because output is still billed as output. If a run is input/context-heavy, missing cached-input visibility can materially change how close the local estimate is to a GitHub invoice.
 
 Model names are normalized for display without discarding the raw id. For example, `claude-sonnet-4.6` becomes `Claude Sonnet 4.6`, but the raw id remains in `modelBreakdown.rawModels`. Why: VS Code logs provider ids, while users expect readable model names and pricing needs a canonical key. Unknown models are not relabeled as a known model; they keep their raw label and use `pricingModel` to show any fallback pricing assumption.
+
+## Request payload evidence
+
+Agent Debug Logs can include more than token totals. The scanner now preserves bounded request-payload evidence when present:
+
+- `llm_request.attrs.requestOptions.reasoning.effort`
+- `llm_request.attrs.systemPromptFile`
+- `llm_request.attrs.toolsFile`
+- `system_prompt_*.json` side-file character totals
+- `tools_*.json` side-file character totals, tool count, MCP tool count, MCP tool names, and largest tool schemas
+- grouped `tool_call` argument/result character counts
+- nested `runSubagent-*.jsonl` file count
+
+Why: this explains what kind of setup payload was available to the model request. Large instruction payloads, large tool schemas, many MCP tools, and large tool results can all be practical optimization targets.
+
+Important boundary: these are source-backed size and presence signals. They are not exact per-section billing rows. Exact local cost is still calculated at the `llm_request` model-call level from logged token totals. Only show exact instruction/MCP cost if a future source exposes token counts for those specific sections.
 
 For chat snapshots:
 
@@ -160,12 +178,12 @@ Why these labels exist: the cost debugger has enough detail to explain a run, bu
 Advanced evidence is imported under `advancedSignals`, but most of it is not shown directly in the primary UI.
 
 - `advancedSignals.reasoning.visible` means the raw log included `agent_response.attrs.reasoning`.
-- `advancedSignals.reasoning.level` is intentionally blank for the current observed logs. The logs show reasoning text, not the user-facing low/medium/high/xhigh reasoning setting.
+- `advancedSignals.reasoning.level` is populated from `llm_request.attrs.requestOptions.reasoning.effort` when present.
 - `advancedSignals.context.maxInputTokens` is the largest imported `llm_request.attrs.inputTokens`.
 - `advancedSignals.context.maxRequestTokens` comes from `llm_request.attrs.maxTokens` when present.
 - `advancedSignals.context.requestCapShare` compares max input tokens with that observed request cap.
 
-Why: reasoning and context pressure are potentially valuable cost-debugging signals, but weak or overly technical evidence should not clutter the main debugger. Reasoning text presence, request-cap comparison, and raw token movement stay as investigation context rather than primary product claims.
+Why: reasoning and context pressure are potentially valuable cost-debugging signals, but weak or overly technical evidence should not clutter the main debugger. Reasoning effort is now preserved when it is source-backed; request-cap comparison and raw token movement stay as investigation context rather than primary product claims.
 
 ## Per-turn cost breakdown
 
@@ -178,13 +196,13 @@ The UI supports two reads:
 
 Why: session totals answer "how expensive was this run?" Per-turn costs answer "where did the cost happen?" That is the sharper debugging tool when a developer wants to know whether cost came from the first prompt, accumulated context, repo/tool output, a model switch, or a late-session spike.
 
-## Future request-payload attribution
+## Request-payload attribution roadmap
 
-Observed VS Code debug-log `llm_request` events can include large request payload fields such as `attrs.userRequest`, `attrs.inputMessages`, `attrs.systemPromptFile`, and `attrs.toolsFile`. Transcript events can add tool request and execution detail that is easier to read than the raw model request payload when those transcript events are present. These fields are not yet preserved in the generated app contract; the current `traceEvents.detail` field is a short display summary.
+Observed VS Code debug-log `llm_request` events can include large request payload fields such as `attrs.userRequest`, `attrs.inputMessages`, `attrs.systemPromptFile`, and `attrs.toolsFile`. The scanner now preserves side-file summaries and payload sizes, but it still does not fully bucket every request section.
 
 Future instruction, MCP, and context attribution should use structured payload extraction from those fields instead of parsing the rendered row text. The scanner should normalize request sections into explicit buckets such as user prompt, workspace context, instructions, tool references, tool results, MCP tool calls/results, prior conversation, and system/developer material.
 
-Important boundary: current exact local token counts are exact at the `llm_request` level. Unless VS Code logs per-section token counts, any split across instructions, MCP servers, tool results, or workspace context is an attribution estimate calculated from available payload sections. That can still be useful for optimization, but the UI must label it differently from model-call token totals.
+Important boundary: current exact local token counts are exact at the `llm_request` level. Unless VS Code logs per-section token counts, any split across instructions, MCP servers, tool results, or workspace context is an attribution estimate calculated from available payload sections. Character counts, approximate token counts, and "present in this model call" indicators can still be useful for optimization, but the UI must label them differently from model-call token totals.
 
 ## SQLite workspace state
 

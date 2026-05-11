@@ -51,10 +51,31 @@ interface ModelCostViewModel {
   cachedInputRate: number;
   cacheWriteRate?: number;
   inputUsd: number;
+  cachedInputUsd: number;
+  cacheWriteUsd: number;
   outputUsd: number;
   totalUsd: number;
   share: number;
   usesFallbackPrice: boolean;
+}
+
+interface RequestPayloadViewModel {
+  hasEvidence: boolean;
+  systemPromptChars: number;
+  toolSchemaChars: number;
+  totalSetupChars: number;
+  toolCount: number;
+  mcpToolCount: number;
+  mcpToolNames: string[];
+  modelCallsWithSystemPromptFile: number;
+  modelCallsWithToolsFile: number;
+  reasoning: string;
+  topSchema: { name: string; descriptionChars: number; parameterChars: number; totalChars: number } | null;
+  topToolResult: { name: string; calls: number; argsChars: number; resultChars: number } | null;
+  largestToolSchemas: Array<{ name: string; descriptionChars: number; parameterChars: number; totalChars: number }>;
+  toolResultCharsByName: Array<{ name: string; calls: number; argsChars: number; resultChars: number }>;
+  subagentLogCount: number;
+  boundary: string;
 }
 
 export interface SessionCostViewModel {
@@ -68,6 +89,7 @@ export interface SessionCostViewModel {
   costDrivers: CostDriverViewModel[];
   categoryRows: CostCategoryViewModel[];
   modelRows: ModelCostViewModel[];
+  requestPayload: RequestPayloadViewModel | null;
 }
 
 export interface CostHelpText {
@@ -91,6 +113,16 @@ export class SessionCostComponent {
 
   protected isCacheCategory(category: CostCategoryViewModel): boolean {
     return category.label === 'Cached input' || category.label === 'Cache write';
+  }
+
+  protected formatCompactNumber(value: number): string {
+    if (value >= 1000) {
+      return `${(value / 1000).toLocaleString(undefined, {
+        maximumFractionDigits: value >= 10000 ? 0 : 1,
+      })}k`;
+    }
+
+    return value.toLocaleString();
   }
 }
 

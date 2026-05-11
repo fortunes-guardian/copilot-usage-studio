@@ -81,7 +81,7 @@ Signals are quick explanations, not separate billing rows:
 - **High input context** means the run sent a lot of prompt/context tokens into the model.
 - **Context growth** means later model calls received larger input payloads than early calls. This is expected in many agent runs; it matters because accumulated context can increase cost.
 - **Mixed models** means more than one model contributed to the estimate.
-- **Cache unknown** means local logs did not expose provider cache read/write billing fields.
+- **Cache unknown** means no numeric cached-input or cache-write totals were imported for that run.
 - **State enriched** means VS Code `state.vscdb` improved the label or metadata.
 
 ## Source Quality
@@ -113,9 +113,11 @@ Real-life meaning: the token totals can still be exact local debug-log totals, b
 
 ## Cache Tokens
 
-If the UI says cache billing is not visible locally, that does not mean cache billing was zero.
+If the UI says cache-token totals were not imported, that does not mean cache billing was zero.
 
-It means the local VS Code debug logs we imported show input/output tokens, but do not show provider cache read/write token fields.
+It means that specific run has input/output tokens, but no numeric cached-input or cache-write token fields.
+
+When VS Code Agent Debug Logs expose `cachedTokens`, the app imports it as cached input and prices only the remaining `inputTokens - cachedTokens` as normal input.
 
 Cached tokens are not subtracted from output tokens. They are normally a cheaper input/context billing bucket. Generated output remains generated output.
 

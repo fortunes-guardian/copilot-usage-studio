@@ -69,20 +69,6 @@
   font-weight: 800;
 }
 
-.status {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 999px;
-  padding: 5px 9px;
-  color: #d4edf0;
-  background: rgba(82, 180, 169, 0.16);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: help;
-}
-
 .view-nav {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -650,7 +636,7 @@
   top: 0;
   z-index: 20;
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) auto minmax(120px, 1fr);
+  grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1fr);
   gap: 18px;
   align-items: center;
   border-bottom: 1px solid var(--line);
@@ -688,13 +674,6 @@
 
 .topbar .eyebrow {
   color: #8fa0b5;
-}
-
-.status {
-  justify-self: end;
-  border-color: rgba(31, 209, 165, 0.35);
-  background: var(--teal-soft);
-  color: #bbfff0;
 }
 
 .view-nav {
@@ -1050,17 +1029,12 @@
   }
 
   .topbar {
-    grid-template-columns: minmax(170px, 1fr) auto auto;
+    grid-template-columns: minmax(170px, 1fr) auto minmax(170px, 1fr);
     justify-items: initial;
   }
 
   .view-nav {
     justify-self: center;
-  }
-
-  .status {
-    justify-self: end;
-    width: fit-content;
   }
 }
 
@@ -1157,7 +1131,7 @@
 }
 
 .topbar {
-  grid-template-columns: minmax(190px, 1fr) auto auto;
+  grid-template-columns: minmax(190px, 1fr) auto minmax(190px, 1fr);
   gap: 14px;
   min-height: 58px;
   padding: 10px 18px;
@@ -1212,12 +1186,6 @@
 
 .view-nav button.active {
   box-shadow: 0 7px 18px rgba(111, 92, 255, 0.24);
-}
-
-.status {
-  padding: 4px 8px;
-  font-size: 11px;
-  font-weight: 720;
 }
 
 .app-body {
@@ -1470,16 +1438,12 @@
   }
 
   .topbar {
-    grid-template-columns: minmax(170px, 1fr) auto auto;
+    grid-template-columns: minmax(170px, 1fr) auto minmax(170px, 1fr);
   }
 
   .view-nav {
     justify-self: center;
     grid-column: auto;
-  }
-
-  .status {
-    justify-self: end;
   }
 }
 
@@ -1555,10 +1519,6 @@
   .view-nav button {
     padding: 6px 5px;
     font-size: 11px;
-  }
-
-  .status {
-    font-size: 10px;
   }
 
   .summary-grid,

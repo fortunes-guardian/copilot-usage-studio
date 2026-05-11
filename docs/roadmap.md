@@ -57,6 +57,13 @@ Done:
 - Show “winner/loser” language carefully: cheaper is not always better if the run failed.
 - Extracted Compare into its own top-level Angular component so it is no longer embedded in the root shell template.
 
+Next:
+
+- Add prompt-match detection so runs with the same normalized user prompt can be grouped automatically.
+- Add a "same prompt" comparison mode that defaults to runs with identical prompts and makes A/B selection easier.
+- Improve Compare search and selection: larger searchable selectors, better prompt previews, and clearer empty states.
+- Add side-by-side output/detail comparison only after the app has a reliable readable output source for both runs. Do not imply quality comparison when only cost/debug facts are available.
+
 Why: comparison is useful when testing prompts, models, MCP setup, or workflow changes.
 
 ## Phase 4: Multi-Session Analytics Dashboard
@@ -82,22 +89,23 @@ Next:
 - Browser-check Analytics at desktop and narrow widths.
 - Improve outlier explanation with more real imported sessions.
 - Add saved comparison/cohort concepts later if app-owned SQLite becomes the right durable state layer.
+- Add time-window controls to the Prices/AI-credit usage context so imported credit totals can be viewed for periods such as all time, last 30 days, and last calendar month.
 
 Why: after one run and two-run comparison are understandable, the next developer question is “what is my normal usage pattern, and which runs are outliers?”
 
 ## Phase 5: Advanced Session Signals
 
-Status: pruned back.
+Status: pruned back, with stronger source-backed fields now available.
 
 Done:
 
-- Import `ttft`, `maxTokens`, reasoning-text presence, and max observed input tokens from VS Code debug logs.
+- Import `ttft`, `maxTokens`, reasoning-text presence, request reasoning effort when `llm_request.attrs.requestOptions.reasoning.effort` is present, and max observed input tokens from VS Code debug logs.
 - Removed weak advanced evidence cards from the primary UI.
-- Keep reasoning text presence and request-cap comparison in the generated data contract for future investigation.
+- Keep reasoning text presence, request reasoning effort, and request-cap comparison in the generated data contract for future investigation.
 
 Build:
 
-- Reasoning/thinking level display only if VS Code debug logs, state DBs, or official/source-backed metadata expose it directly.
+- Reasoning/thinking level display now has a source-backed path from Agent Debug Logs. Keep it secondary unless it clearly helps explain a specific run.
 - Context-window usage only after the app stores reliable model context-window sizes and can compare max observed input tokens against that window.
 
 Why: these may become useful cost-debugging signals, but they must earn their place in the UI. The app should not turn weak or overly technical clues into top-level product concepts.
@@ -160,6 +168,7 @@ Done:
 - Extracted the Compare page into a standalone component with its own template and styles.
 - Extracted the Analytics page into a standalone component with its own template, styles, and cohort logic.
 - Removed enough obsolete root CSS for production builds to pass without the component style budget warning.
+- Removed the top-right app-bar `Estimate` pill so the selected-run estimate remains the only prominent run estimate in Sessions.
 
 Build:
 
@@ -241,7 +250,7 @@ Why: the Trace view is currently good for scanning, but debugging needs selectio
 
 ## Phase 10: Input Attribution And MCP Impact
 
-Status: later, needs careful evidence boundaries.
+Status: started, needs careful evidence boundaries.
 
 Debugger questions:
 
@@ -250,8 +259,18 @@ Debugger questions:
 
 Build:
 
-- Add an `Input attribution` panel for expensive model calls after Trace inspection and payload summaries exist.
+- Preserve bounded, structured summaries of relevant Agent Debug Log fields:
+  - `llm_request.attrs.cachedTokens`
+  - `llm_request.attrs.requestOptions.reasoning.effort`
+  - `llm_request.attrs.systemPromptFile`
+  - `llm_request.attrs.toolsFile`
+  - side files such as `system_prompt_*.json` and `tools_*.json`
+  - `tool_call` argument/result payload sizes
+  - nested `runSubagent-*.jsonl` presence
+- Keep `cachedTokens` import covered in debug-log ingestion and add any future explicit numeric cache fields as they appear. Treat `cache_control` hints or prompt-cache metadata as evidence about cache behavior, but not as billable cached-token counts unless the event exposes numeric cached-token totals.
+- Add a compact request-payload evidence section in Cost first, then promote it into a deeper `Input attribution` panel only after the scanner preserves enough structured request sections.
 - Break the request payload into visible buckets when the debug log exposes them: user prompt, environment/workspace context, custom instructions, tool references, tool results, MCP tool calls/results, prior conversation, and system/developer material.
+- For instructions, tools, MCP schemas, and skills, start with source-backed counts: presence, character count, approximate token estimate, and the model calls where the payload appeared.
 - Group tool and MCP activity by server/tool name, with counts and nearby model-call cost.
 - Show "affected nearby cost" first, then only show token/cost allocation for a bucket when the app can calculate it from source-backed request payload sections.
 - Add comparison support for MCP/tool setup changes: which servers/tools appeared, which disappeared, and how model-call input moved afterward.
@@ -261,7 +280,11 @@ Why: the practical optimization question is "what is making my developers' runs 
 Evidence boundary:
 
 - Exact local cost currently exists at the `llm_request` level.
+- Cached input is exact only when the Agent Debug Log exposes numeric `cachedTokens`.
+- Reasoning effort is source-backed when present under `requestOptions.reasoning.effort`.
+- `systemPromptFile` and `toolsFile` side files can show setup payload size, tool count, MCP tool names, and large schema payloads.
 - Tool/MCP/discovery events can be counted and placed near model calls.
+- Character counts and approximate section sizes are useful for optimization, but they are not provider token bills.
 - Per-section input attribution may be derived from raw request payload fields when available, but it is not the same as provider billing unless segment token counts are logged directly.
 
 ## Phase 11: App-Owned SQLite
@@ -270,6 +293,8 @@ Build:
 
 - Immutable scan history.
 - User labels and comparison groups.
+- User-editable run tags such as `new instructions applied`, `MCP compression enabled`, or `baseline prompt`.
+- Saved prompt-test groups so repeated runs of the same prompt can be reviewed later without relying only on automatic matching.
 - Notes tied to session ids.
 - Stored pricing table snapshots.
 - Optional future price scenarios.

@@ -269,6 +269,9 @@ export class SessionTraceComponent implements OnChanges, AfterViewChecked {
         },
         { label: 'Total tokens', value: details.hasCost ? details.totalTokens.toLocaleString() : 'n/a' },
         { label: 'Input', value: event.inputTokens ? event.inputTokens.toLocaleString() : '0' },
+        ...(event.cachedInputTokens
+          ? [{ label: 'Cached', value: event.cachedInputTokens.toLocaleString(), tone: 'cost' as const }]
+          : []),
         { label: 'Output', value: event.outputTokens ? event.outputTokens.toLocaleString() : '0' },
         { label: 'Pricing row', value: details.pricingModel || 'n/a' },
       ];
@@ -314,7 +317,7 @@ export class SessionTraceComponent implements OnChanges, AfterViewChecked {
   }
 
   protected inputShare(event: TraceEvent): number {
-    const totalTokens = event.totalTokens ?? event.inputTokens + event.outputTokens;
+    const totalTokens = event.totalTokens ?? event.inputTokens + event.outputTokens + (event.cacheWriteTokens ?? 0);
 
     return totalTokens > 0 ? (event.inputTokens / totalTokens) * 100 : 0;
   }

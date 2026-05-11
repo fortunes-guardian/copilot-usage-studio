@@ -176,6 +176,11 @@
   border-left-color: var(--warning);
 }
 
+.estimate-note > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
 .estimate-note span,
 .estimate-note strong {
   display: inline-flex;
@@ -295,6 +300,93 @@
   line-height: 1.45;
 }
 
+.payload-evidence {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(31, 209, 165, 0.16);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(31, 209, 165, 0.035);
+}
+
+.payload-grid,
+.payload-lists {
+  display: grid;
+  gap: 8px;
+}
+
+.payload-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.payload-lists {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.payload-grid article,
+.payload-lists article {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  background: var(--surface-soft);
+}
+
+.payload-grid span,
+.payload-lists span {
+  color: var(--muted-2);
+  font-size: 10px;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.payload-grid strong {
+  color: var(--text-strong);
+  font-size: 16px;
+  font-weight: 760;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.payload-grid em,
+.payload-lists em,
+.payload-lists p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.payload-lists ol {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.payload-lists li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.payload-lists li strong {
+  min-width: 0;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 720;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .cost-categories {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -395,7 +487,9 @@
 
 @media (max-width: 1100px) {
   .cost-categories,
-  .driver-grid {
+  .driver-grid,
+  .payload-grid,
+  .payload-lists {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -451,7 +545,9 @@
 
 @media (max-width: 600px) {
   .cost-categories,
-  .driver-grid {
+  .driver-grid,
+  .payload-grid,
+  .payload-lists {
     grid-template-columns: 1fr;
   }
 

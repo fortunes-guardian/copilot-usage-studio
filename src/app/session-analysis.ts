@@ -53,10 +53,10 @@ export function buildCostExplanation(session: CopilotSession, sort: ModelCallSor
       session.tokenSource === 'llm_request_token_totals'
         ? 'Imported from VS Code Copilot debug-log llm_request events. This is the strongest local source for session input and output tokens.'
         : 'Estimated from visible chat/session data. Useful context, but weaker than debug-log llm_request totals.',
-    cacheStatus: hasCacheData ? 'Cache tokens included' : 'Cache billing not visible locally',
+    cacheStatus: hasCacheData ? 'Cache tokens included' : 'No imported cache-token totals',
     cacheDescription: hasCacheData
       ? 'This session includes cached input or cache-write token totals in the generated session data.'
-      : 'The VS Code debug-log events imported for this session expose inputTokens and outputTokens, but not billing cache read/write fields. The estimate therefore prices visible local input/output totals and keeps cache accounting explicit as unavailable.',
+      : 'The generated session data for this run includes input/output token totals, but no numeric cached-input or cache-write totals. The estimate prices the imported local totals and keeps cache accounting explicit as unavailable.',
     modelRows,
     categoryRows,
     costAnswer: answer,
@@ -65,6 +65,7 @@ export function buildCostExplanation(session: CopilotSession, sort: ModelCallSor
     modelCallRows: modelCallRowList,
     topTokenEvents: topTokenEventList,
     turnInsights: turnInsightList,
+    requestPayload: explainRequestPayload(session),
   };
 }
 
@@ -110,7 +111,7 @@ export function sessionTriage(session: CopilotSession): SessionTriage {
       label: 'Cache unknown',
       tone: 'info',
       help:
-        'The local VS Code debug logs imported here do not expose provider cache read/write billing fields. Do not read this as proof that provider-side cache billing was zero.',
+        'No numeric cached-input or cache-write totals were imported for this run. Do not read this as proof that provider-side cache billing was zero.',
     });
   }
 
@@ -141,14 +142,18 @@ export function flowTraceEvents(events: TraceEvent[], modelBreakdown: ModelBreak
     .map((event, index) => {
       const pricingModel = pricingModelForEvent(event, modelBreakdown);
       const price = priceForPricingModel(pricingModel);
+      const normalInputTokens = normalInputTokensForEvent(event);
       const estimatedUsd =
         event.estimatedCost?.usd ??
-        tokenCostUsd(event.inputTokens, price.input) + tokenCostUsd(event.outputTokens, price.output);
+        tokenCostUsd(normalInputTokens, price.input) +
+          tokenCostUsd(event.cachedInputTokens ?? 0, price.cachedInput) +
+          tokenCostUsd(event.cacheWriteTokens ?? 0, price.cacheWrite ?? 0) +
+          tokenCostUsd(event.outputTokens, price.output);
 
       return {
         ...event,
         flowIndex: index + 1,
-        totalTokens: event.totalTokens ?? event.inputTokens + event.outputTokens,
+        totalTokens: eventTotalTokens(event),
         pricingModel,
         estimatedUsd,
       };
@@ -186,10 +191,13 @@ export function matchesTraceFilter(event: TraceEvent, filter: TraceFilter): bool
 export function traceEventDetails(event: TraceEvent, modelBreakdown: ModelBreakdown[]) {
   const pricingModel = pricingModelForEvent(event, modelBreakdown);
   const price = priceForPricingModel(pricingModel);
-  const inputUsd = tokenCostUsd(event.inputTokens, price.input);
+  const normalInputTokens = normalInputTokensForEvent(event);
+  const inputUsd = tokenCostUsd(normalInputTokens, price.input);
+  const cachedInputUsd = tokenCostUsd(event.cachedInputTokens ?? 0, price.cachedInput);
+  const cacheWriteUsd = tokenCostUsd(event.cacheWriteTokens ?? 0, price.cacheWrite ?? 0);
   const outputUsd = tokenCostUsd(event.outputTokens, price.output);
-  const estimatedUsd = event.estimatedCost?.usd ?? inputUsd + outputUsd;
-  const totalTokens = event.totalTokens ?? event.inputTokens + event.outputTokens;
+  const estimatedUsd = event.estimatedCost?.usd ?? inputUsd + cachedInputUsd + cacheWriteUsd + outputUsd;
+  const totalTokens = eventTotalTokens(event);
   const rawModel = event.rawModel || event.model || modelFromEventDetail(event.detail);
   const normalizedFields = [
     { label: 'Raw index', value: `#${event.index}` },
@@ -202,6 +210,15 @@ export function traceEventDetails(event: TraceEvent, modelBreakdown: ModelBreakd
     ...(event.inputTokens || event.outputTokens
       ? [
           { label: 'Input tokens', value: event.inputTokens.toLocaleString() },
+          ...(event.cachedInputTokens
+            ? [
+                { label: 'Cached input tokens', value: event.cachedInputTokens.toLocaleString() },
+                { label: 'Normal input tokens', value: normalInputTokens.toLocaleString() },
+              ]
+            : []),
+          ...(event.cacheWriteTokens
+            ? [{ label: 'Cache write tokens', value: event.cacheWriteTokens.toLocaleString() }]
+            : []),
           { label: 'Output tokens', value: event.outputTokens.toLocaleString() },
           { label: 'Total tokens', value: totalTokens.toLocaleString() },
           { label: 'Pricing row', value: pricingModel },
@@ -299,7 +316,7 @@ function explainCategoryCosts(modelRows: ModelCostRow[]) {
 function costAnswer(session: CopilotSession, modelRows: ModelCostRow[], modelCallRowList: ModelCallRow[]) {
   const sessionCost = Math.max(session.cost.usd, 0);
   const totalTokens = sessionTotalTokens(session);
-  const inputUsd = modelRows.reduce((sum, row) => sum + row.inputUsd, 0);
+  const inputUsd = modelRows.reduce((sum, row) => sum + row.inputUsd + row.cachedInputUsd + row.cacheWriteUsd, 0);
   const outputUsd = modelRows.reduce((sum, row) => sum + row.outputUsd, 0);
   const inputShare = sessionCost > 0 ? (inputUsd / sessionCost) * 100 : 0;
   const outputShare = sessionCost > 0 ? (outputUsd / sessionCost) * 100 : 0;
@@ -316,7 +333,7 @@ function costAnswer(session: CopilotSession, modelRows: ModelCostRow[], modelCal
     categoryShare,
     categoryDetail:
       category === 'Input/context'
-        ? 'Most of the estimate comes from tokens sent into the model: prompt, prior chat, repo context, and tool results.'
+        ? 'Most of the estimate comes from tokens sent into the model: normal input, cached input, prior chat, repo context, and tool results.'
         : 'Most of the estimate comes from generated model output. Inspect long responses or repeated generation.',
     costPer1k,
     inputShare,
@@ -373,6 +390,43 @@ function turnInsights(modelCallRowList: ModelCallRow[]) {
   ];
 }
 
+function explainRequestPayload(session: CopilotSession) {
+  const payload = session.requestPayload;
+
+  if (!payload) {
+    return null;
+  }
+
+  const totalSetupChars = payload.systemPromptChars + payload.toolSchemaChars;
+  const topToolResult = payload.toolResultCharsByName[0] ?? null;
+  const topSchema = payload.largestToolSchemas[0] ?? null;
+  const reasoning = payload.reasoningEfforts.map((entry) => `${entry.effort} (${entry.count})`).join(', ') || 'Not logged';
+
+  return {
+    hasEvidence:
+      totalSetupChars > 0 ||
+      payload.toolCount > 0 ||
+      payload.toolResultCharsByName.length > 0 ||
+      payload.reasoningEfforts.length > 0,
+    systemPromptChars: payload.systemPromptChars,
+    toolSchemaChars: payload.toolSchemaChars,
+    totalSetupChars,
+    toolCount: payload.toolCount,
+    mcpToolCount: payload.mcpToolCount,
+    mcpToolNames: payload.mcpToolNames,
+    modelCallsWithSystemPromptFile: payload.modelCallsWithSystemPromptFile,
+    modelCallsWithToolsFile: payload.modelCallsWithToolsFile,
+    reasoning,
+    topSchema,
+    topToolResult,
+    largestToolSchemas: payload.largestToolSchemas,
+    toolResultCharsByName: payload.toolResultCharsByName,
+    subagentLogCount: payload.subagentLogCount,
+    boundary:
+      'These are source-backed payload sizes and presence signals from VS Code debug logs. They are not exact per-section billing totals unless VS Code logs token counts for that section.',
+  };
+}
+
 function billingRealityCheck(session: CopilotSession, answer: CostAnswer, hasCacheData: boolean) {
   if (hasCacheData) {
     return {
@@ -388,7 +442,7 @@ function billingRealityCheck(session: CopilotSession, answer: CostAnswer, hasCac
   if (answer.outputShare >= 70) {
     return {
       tone: 'low',
-      cacheVisibility: 'Cache fields unavailable',
+      cacheVisibility: 'No imported cache-token totals',
       confidenceLabel: 'Low cache impact likely',
       headline: 'Output dominates this estimate.',
       detail:
@@ -399,17 +453,17 @@ function billingRealityCheck(session: CopilotSession, answer: CostAnswer, hasCac
   if (answer.inputShare >= 60) {
     return {
       tone: 'high',
-      cacheVisibility: 'Cache fields unavailable',
+      cacheVisibility: 'No imported cache-token totals',
       confidenceLabel: 'Cache could materially change estimate',
       headline: 'Input/context dominates this estimate.',
       detail:
-        'VS Code logged input tokens, but did not split normal input from cached input. If much of this context was cached provider-side, the invoice may be lower than this local full-input estimate.',
+        'The imported run has input tokens, but no numeric split between normal input and cached input. If much of this context was cached provider-side, the invoice may be lower than this local full-input estimate.',
     };
   }
 
   return {
     tone: session.confidence === 'exact' ? 'medium' : 'high',
-    cacheVisibility: 'Cache fields unavailable',
+    cacheVisibility: 'No imported cache-token totals',
     confidenceLabel: session.confidence === 'exact' ? 'Directional billing estimate' : 'Rough billing estimate',
     headline: 'Cache impact is unknown for this token mix.',
     detail:
@@ -418,7 +472,7 @@ function billingRealityCheck(session: CopilotSession, answer: CostAnswer, hasCac
 }
 
 function explainCostDrivers(session: CopilotSession, modelRows: ModelCostRow[], topTokenEventList: TopTokenEvent[]) {
-  const inputUsd = modelRows.reduce((sum, row) => sum + row.inputUsd, 0);
+  const inputUsd = modelRows.reduce((sum, row) => sum + row.inputUsd + row.cachedInputUsd + row.cacheWriteUsd, 0);
   const outputUsd = modelRows.reduce((sum, row) => sum + row.outputUsd, 0);
   const sessionCost = Math.max(session.cost.usd, 0);
   const inputShare = sessionCost > 0 ? (inputUsd / sessionCost) * 100 : 0;
@@ -442,7 +496,9 @@ function explainCostDrivers(session: CopilotSession, modelRows: ModelCostRow[], 
       value: `${Math.round(inputShare)}%`,
       detail:
         inputShare >= outputShare
-          ? `Most cost is prompt/context material sent into the model: ${session.tokens.input.toLocaleString()} input tokens.`
+          ? `Most cost is prompt/context material sent into the model: ${(
+              session.tokens.input + session.tokens.cachedInput + session.tokens.cacheWrite
+            ).toLocaleString()} input/cache tokens.`
           : `Output is the larger priced category here, but input still contributes ${inputShare.toFixed(0)}% of this estimate.`,
       tone: inputShare >= 75 ? 'high' : inputShare >= 50 ? 'medium' : 'low',
     },
@@ -518,13 +574,16 @@ function pricedModelCallEvents(events: TraceEvent[], modelBreakdown: ModelBreakd
     .map((event) => {
       const pricingModel = pricingModelForEvent(event, modelBreakdown);
       const price = priceForPricingModel(pricingModel);
-      const inputUsd = tokenCostUsd(event.inputTokens, price.input);
+      const normalInputTokens = normalInputTokensForEvent(event);
+      const inputUsd = tokenCostUsd(normalInputTokens, price.input);
+      const cachedInputUsd = tokenCostUsd(event.cachedInputTokens ?? 0, price.cachedInput);
+      const cacheWriteUsd = tokenCostUsd(event.cacheWriteTokens ?? 0, price.cacheWrite ?? 0);
       const outputUsd = tokenCostUsd(event.outputTokens, price.output);
-      const estimatedUsd = event.estimatedCost?.usd ?? inputUsd + outputUsd;
+      const estimatedUsd = event.estimatedCost?.usd ?? inputUsd + cachedInputUsd + cacheWriteUsd + outputUsd;
 
       return {
         ...event,
-        totalTokens: event.totalTokens ?? event.inputTokens + event.outputTokens,
+        totalTokens: eventTotalTokens(event),
         pricingModel,
         usesFallbackPrice: modelUsesPricingFallback(event.model || modelFromEventDetail(event.detail), pricingModel),
         inputUsd,
@@ -532,6 +591,14 @@ function pricedModelCallEvents(events: TraceEvent[], modelBreakdown: ModelBreakd
         estimatedUsd,
       };
     });
+}
+
+function eventTotalTokens(event: TraceEvent): number {
+  return event.totalTokens ?? event.inputTokens + event.outputTokens + (event.cacheWriteTokens ?? 0);
+}
+
+function normalInputTokensForEvent(event: TraceEvent): number {
+  return Math.max(0, event.inputTokens - (event.cachedInputTokens ?? 0));
 }
 
 function isFlowEvent(event: TraceEvent): boolean {

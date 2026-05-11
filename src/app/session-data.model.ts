@@ -52,6 +52,7 @@ export interface TraceSummary {
   reasoningEvents?: number;
   maxInputTokens?: number;
   maxRequestTokens?: number;
+  reasoningEfforts?: Array<{ effort: string; count: number }>;
 }
 
 export interface TraceEvent {
@@ -63,10 +64,13 @@ export interface TraceEvent {
   detail: string;
   attributes?: Array<{ label: string; value: string }>;
   inputTokens: number;
+  cachedInputTokens?: number;
+  cacheWriteTokens?: number;
   outputTokens: number;
   ttftMs?: number;
   maxTokens?: number;
   hasReasoning?: boolean;
+  reasoningEffort?: string;
   totalTokens?: number;
   model?: string;
   rawModel?: string;
@@ -92,6 +96,32 @@ export interface AdvancedSignals {
   };
 }
 
+export interface RequestPayloadSummary {
+  systemPromptFiles: number;
+  systemPromptChars: number;
+  toolSchemaFiles: number;
+  toolSchemaChars: number;
+  toolCount: number;
+  mcpToolCount: number;
+  mcpToolNames: string[];
+  largestToolSchemas: Array<{
+    name: string;
+    descriptionChars: number;
+    parameterChars: number;
+    totalChars: number;
+  }>;
+  modelCallsWithSystemPromptFile: number;
+  modelCallsWithToolsFile: number;
+  reasoningEfforts: Array<{ effort: string; count: number }>;
+  toolResultCharsByName: Array<{
+    name: string;
+    calls: number;
+    argsChars: number;
+    resultChars: number;
+  }>;
+  subagentLogCount: number;
+}
+
 export interface CopilotSession {
   id: string;
   sourceKind: string;
@@ -114,6 +144,7 @@ export interface CopilotSession {
   confidence: EstimateConfidence;
   traceSummary: TraceSummary;
   advancedSignals?: AdvancedSignals;
+  requestPayload?: RequestPayloadSummary;
   traceEvents: TraceEvent[];
   vscodeState?: VscodeStateEnrichment;
   turns: SessionTurn[];
