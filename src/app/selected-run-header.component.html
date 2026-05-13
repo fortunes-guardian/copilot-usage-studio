@@ -7,14 +7,6 @@
           <app-help-popover [text]="sessionSizeHelp(runTriage)" label="Explain run size"></app-help-popover>
         </span>
       }
-      <span>
-        {{ confidenceLabel(session.confidence) }}
-        <app-help-popover [text]="confidenceHelp(session.confidence)" label="Explain source confidence"></app-help-popover>
-      </span>
-      <span>
-        {{ tokenSourceLabel(session.tokenSource) }}
-        <app-help-popover [text]="tokenSourceHelp(session.tokenSource)" label="Explain token source"></app-help-popover>
-      </span>
       @if (reasoningEffortLabel(session); as effort) {
         <span class="reasoning-chip">
           Reasoning {{ effort }}

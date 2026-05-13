@@ -156,24 +156,22 @@ Comparison is also UI-level diagnosis. It compares two generated sessions withou
 
 Analytics is UI-level aggregation over generated sessions. It does not create new ingestion facts. It starts from the sidebar-filtered sessions, then applies UI cohort controls for time range, workspace, model, and day/week/month trend grouping. It sums cost/tokens, groups model breakdown rows, computes cost per 1k tokens, buckets sessions by size, and flags simple statistical outliers with driver hints. Empty states and reset controls are also UI-only; they do not change the generated session data. Why: this answers "what is normal for the sessions I am looking at?" without mixing cohort-level signals into the selected-run debugger.
 
-Source-confidence terms in the UI should carry inline help. Labels such as debug logs, chat snapshots, state DBs, state enriched, exact local totals, estimated totals, cached input, and cache write all need short explanations at the point of use. Why: this app is only credible if it says why a source is strong, what it does not know, and which fields are local estimates rather than GitHub billing facts.
+Source-confidence terms in the UI should carry inline help only when they help a user make a decision. Prefer plain labels such as debug logs, chat snapshots, token totals, cached input, and cache write. Avoid making users care about implementation terms such as state enrichment unless they are reading ingestion docs.
 
 Run triage labels are derived in the UI from the generated session data. They are intentionally not stored as scanner output yet because the thresholds are product decisions that may change as more sessions are reviewed.
 
 Current size thresholds:
 
-- `Small`: fewer than `50,000` imported tokens.
-- `Medium`: `50,000` to `199,999` imported tokens.
-- `Large`: `200,000` to `599,999` imported tokens.
-- `Very large`: `600,000` or more imported tokens.
+- `Small`: fewer than `100,000` imported tokens.
+- `Medium`: `100,000` to `499,999` imported tokens.
+- `Large`: `500,000` to `1,499,999` imported tokens.
+- `Very large`: `1,500,000` or more imported tokens.
 
 Current cost-signal labels:
 
 - `High input context`: total input tokens are at least `150,000`, or one model call has at least `100,000` input tokens.
-- `Context growth`: average input tokens near the end of the run are at least `25%` higher than near the start. This is expected in many agent runs; it is shown because accumulated context can explain cost.
 - `Mixed models`: more than one model appears in `modelBreakdown`.
-- `Cache unknown`: no cache read/write token fields were imported for the session.
-- `State enriched`: `vscodeState` metadata is present.
+- `vscodeState` metadata may improve titles and labels, but it should not be promoted as a primary user-facing badge.
 
 Why these labels exist: the cost debugger has enough detail to explain a run, but a developer needs quick visual judgement before reading every table. The labels should stay explainable and tuneable.
 

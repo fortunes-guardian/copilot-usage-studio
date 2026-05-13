@@ -1,9 +1,9 @@
 <section class="model-call-table run-panel">
   <div class="model-call-header">
     <div>
-      <p class="eyebrow">Step 2 · Locate</p>
-      <h3>Which model call caused it</h3>
-      <p>Sort the token-bearing calls, then jump into Trace for evidence.</p>
+      <p class="eyebrow">Step 2 · Review</p>
+      <h3>Model call timeline</h3>
+      <p>Scan the priced model calls as a sequence. Colored row edges mean the call contributed at least 10% of the run estimate.</p>
     </div>
     <div class="segmented-control" aria-label="Model call sort">
       <button type="button" [class.active]="sort === 'timeline'" (click)="sortChange.emit('timeline')">
@@ -19,9 +19,9 @@
     @if (topModelCall(); as topCall) {
       <section class="turn-focus-strip" aria-label="Highest cost model call">
         <div>
-          <span>Highest cost call</span>
+          <span>Largest single call</span>
           <strong>#{{ topCall.callNumber }} · ${{ topCall.estimatedUsd | number: '1.4-4' }}</strong>
-          <p>{{ topCall.model || topCall.name }} · {{ topCall.totalTokens | number }} tokens · {{ topCall.share | number: '1.0-0' }}% of estimate</p>
+          <p>{{ topCall.model || topCall.name }} · {{ topCall.totalTokens | number }} tokens · {{ topCall.share | number: '1.0-0' }}% of estimate. Most runs are cumulative, so read this as the biggest spike, not the sole cause.</p>
         </div>
         <div class="token-split" aria-label="Token split">
           <span>Input / output split</span>

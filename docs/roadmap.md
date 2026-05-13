@@ -24,7 +24,10 @@ Done:
 
 Next:
 
-- Replace native title tooltips with a small custom help popover if the native behavior feels too hidden.
+- Verify the Cost page's input token display against raw `llm_request.attrs.inputTokens`, especially when `cachedTokens` is present. The UI should make the difference between raw input, normal billable input, and cached input impossible to misread.
+- Simplify user-facing source language. Prefer "debug-log token totals" or "local token totals" over verbose labels such as "Exact local data" when the distinction does not help the user act.
+- Remove low-value banners and technical caveats from the main Cost view unless they change a decision.
+- Investigate raw VS Code `estimatedCost` evidence. If `llm_request.attrs.estimatedCost` exists and is reliable, preserve it separately from the app-calculated estimate and compare the two.
 
 Why: the core workflow is “I ran an agent, why was this expensive?” The selected run has to be readable before comparison gets deeper.
 
@@ -35,13 +38,15 @@ Status: started.
 Done:
 
 - Session size labels: `Small`, `Medium`, `Large`, `Very large`.
-- Cost-signal labels: `High input context`, `Context growth`, `Mixed models`, `Cache unknown`, `State enriched`.
+- Cost-signal labels started with `High input context`, `Context growth`, `Mixed models`, `Cache unknown`, and `State enriched`; current direction is to keep only labels that help users act.
 - Filters for size, cost signal, and source quality.
 - Better session-list scanning: cost, model, size, source quality, and tokens.
 
 Build:
 
 - Filters for workspace, model, and time window.
+- Recalibrate size thresholds. Current `Very large` at 600k imported tokens is too noisy for these real sessions.
+- Remove or hide low-value badges such as `State enriched`, `Context growth`, and cache/status labels that do not help the developer decide what to optimize.
 
 Why: a developer should spot suspicious runs before opening each one.
 
@@ -52,7 +57,7 @@ Status: built, prompt-testing ergonomics started.
 Done:
 
 - Side-by-side selected-run comparison.
-- Explain what changed: cost, input tokens, output tokens, model mix, tool count, context growth.
+- Explain what changed: cost, input tokens, output tokens, model mix, and tool count.
 - Highlight model switches and price-row changes.
 - Show “winner/loser” language carefully: cheaper is not always better if the run failed.
 - Extracted Compare into its own top-level Angular component so it is no longer embedded in the root shell template.
@@ -125,6 +130,11 @@ Done:
 - Moved the model-call table into the selected-run `Turns` subview so Cost explains the estimate and Turns explains where it happened.
 - Added a Turn insights strip: model-call count, most expensive call, largest input, largest output, and average cost per call.
 
+Next:
+
+- Rebrand this page away from "which model call caused it". Cost usually emerges from a sequence of model calls, not one culprit.
+- Make row highlighting explicit. The yellow highlight currently means medium estimated-cost share; the UI should label that or use a less mysterious visual treatment.
+
 Why: session totals explain that a run was expensive. Per-turn cost explains where it became expensive.
 
 ## Phase 7: UX And Style Rework
@@ -179,6 +189,7 @@ Build:
 - Tune help popover placement for tight table edges if real sessions expose clipped panels.
 - More debugger-like polish.
 - Move selected-run Cost, Turns, and Trace explanation logic out of the root component into focused helpers/services.
+- Continue pruning terminology that leaks implementation details, including "state enriched", source confidence jargon, and repeated debug-log caveats.
 
 Why: the app has complex information. Better style should reduce cognitive load, not hide details.
 

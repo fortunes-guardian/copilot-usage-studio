@@ -5,8 +5,6 @@ import { FormsModule } from '@angular/forms';
 import { CopilotSession } from './session-data.model';
 import { SessionSize, SessionTriage, sessionTriage } from './session-analysis';
 
-export type SessionSourceFilter = 'all' | 'debug-log' | 'chat-snapshot' | 'exact' | 'estimated';
-
 @Component({
   selector: 'app-session-rail',
   imports: [DatePipe, DecimalPipe, FormsModule, NgClass],
@@ -20,15 +18,12 @@ export class SessionRailComponent {
   @Input() query = '';
   @Input() sizeFilter: 'all' | SessionSize = 'all';
   @Input() warningFilter = 'all';
-  @Input() sourceFilter: SessionSourceFilter = 'all';
   @Input({ required: true }) warningOptions: string[] = [];
   @Input({ required: true }) sizeOptions: Array<'all' | SessionSize> = [];
-  @Input({ required: true }) sourceOptions: Array<{ value: SessionSourceFilter; label: string }> = [];
 
   @Output() readonly queryChange = new EventEmitter<string>();
   @Output() readonly sizeFilterChange = new EventEmitter<'all' | SessionSize>();
   @Output() readonly warningFilterChange = new EventEmitter<string>();
-  @Output() readonly sourceFilterChange = new EventEmitter<SessionSourceFilter>();
   @Output() readonly selectSession = new EventEmitter<CopilotSession>();
 
   protected sessionTriage(session: CopilotSession): SessionTriage {

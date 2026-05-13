@@ -93,7 +93,7 @@ export class App {
     stateDbs:
       'VS Code local databases. We read them only to improve titles, labels, location, and restored-session details.',
     stateEnriched:
-      'This many sessions got better names/details from VS Code state. Cost still comes from debug logs, not SQLite.',
+      'This many sessions got better names/details from VS Code state. Cost still comes from debug logs.',
     emptyDebugLogs:
       'Folders VS Code created but never filled with useful chat/model activity. We skip them so they do not look like real zero-cost runs.',
     snapshotsWithoutRequests:
@@ -111,13 +111,13 @@ export class App {
       'The raw model name from VS Code did not match a GitHub price row in the local pricing table, so the estimate uses the displayed fallback price row. Treat this as an explicit estimate assumption.',
   };
   protected readonly sessionTriageHelp =
-    'Fast read derived from imported tokens, model mix, cache visibility, context growth, and VS Code state enrichment. These are cost-debugging signals, not billing rows.';
+    'Fast read derived from imported tokens and model mix. These are cost-debugging signals, not billing rows.';
   protected readonly sizeOptions: Array<'all' | SessionSize> = ['all', 'Small', 'Medium', 'Large', 'Very large'];
   protected readonly sourceOptions: Array<{ value: SessionSourceFilter; label: string }> = [
     { value: 'all', label: 'All sources' },
     { value: 'debug-log', label: 'Debug logs' },
     { value: 'chat-snapshot', label: 'Chat snapshots' },
-    { value: 'exact', label: 'Exact local data' },
+    { value: 'exact', label: 'Token totals' },
     { value: 'estimated', label: 'Estimated data' },
   ];
   protected readonly traceFilterOptions: Array<{ value: TraceFilter; label: string }> = [
@@ -452,7 +452,7 @@ export class App {
 
   protected confidenceLabel(confidence: string): string {
     if (confidence === 'exact') {
-      return 'Exact local data';
+      return 'Token totals';
     }
 
     if (confidence === 'estimated') {

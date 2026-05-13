@@ -6,7 +6,6 @@ import { HelpPopoverComponent } from './help-popover.component';
 import { CopilotSession } from './session-data.model';
 import {
   PricedModelBreakdown,
-  contextStats,
   explainModelCost,
   percentDelta,
   pricingFallbackReason,
@@ -24,7 +23,7 @@ interface ComparisonMetric {
   b: number;
   delta: number;
   percent: number | null;
-  format: 'currency' | 'number' | 'percent';
+  format: 'currency' | 'number';
   lowerIsBetter: boolean;
   help: string;
 }
@@ -44,9 +43,6 @@ interface SessionComparisonAnalysis {
   outputUsd: number;
   cachedInputUsd: number;
   cacheWriteUsd: number;
-  contextGrowth: number;
-  firstInputAvg: number;
-  lastInputAvg: number;
   topModel: PricedModelBreakdown | null;
   modelNames: Set<string>;
   pricingRows: Set<string>;
@@ -125,7 +121,6 @@ export class ComparePageComponent {
     const outputCostDelta = bAnalysis.outputUsd - aAnalysis.outputUsd;
     const toolDelta = b.traceSummary.toolCalls - a.traceSummary.toolCalls;
     const turnDelta = b.traceSummary.modelTurns - a.traceSummary.modelTurns;
-    const contextGrowthDelta = bAnalysis.contextGrowth - aAnalysis.contextGrowth;
 
     return {
       a,
@@ -190,16 +185,6 @@ export class ComparePageComponent {
           lowerIsBetter: false,
           help: 'Tool activity. Tool results can become later input context.',
         },
-        {
-          label: 'Context growth',
-          a: aAnalysis.contextGrowth,
-          b: bAnalysis.contextGrowth,
-          delta: contextGrowthDelta,
-          percent: null,
-          format: 'percent',
-          lowerIsBetter: true,
-          help: 'How much average input tokens grew from early model calls to late model calls.',
-        },
       ] satisfies ComparisonMetric[],
       drivers: this.comparisonDrivers(aAnalysis, bAnalysis, costDelta, inputCostDelta, outputCostDelta, toolDelta, turnDelta),
       modelRows: this.compareModelRows(aAnalysis.modelRows, bAnalysis.modelRows),
@@ -244,7 +229,6 @@ export class ComparePageComponent {
 
   private sessionComparisonAnalysis(session: CopilotSession): SessionComparisonAnalysis {
     const modelRows = session.modelBreakdown.map((entry) => explainModelCost(entry, session.cost.usd));
-    const stats = contextStats(session);
     const topModel = [...modelRows].sort((a, b) => b.totalUsd - a.totalUsd)[0] ?? null;
 
     return {
@@ -255,9 +239,6 @@ export class ComparePageComponent {
       outputUsd: modelRows.reduce((sum, row) => sum + row.outputUsd, 0),
       cachedInputUsd: modelRows.reduce((sum, row) => sum + row.cachedInputUsd, 0),
       cacheWriteUsd: modelRows.reduce((sum, row) => sum + row.cacheWriteUsd, 0),
-      contextGrowth: stats?.growth ?? 0,
-      firstInputAvg: stats?.firstAvg ?? 0,
-      lastInputAvg: stats?.lastAvg ?? 0,
       topModel,
       modelNames: new Set(modelRows.map((row) => row.model)),
       pricingRows: new Set(modelRows.map((row) => row.pricingModel)),
@@ -333,7 +314,6 @@ export class ComparePageComponent {
     turnDelta: number,
   ): ComparisonDriver[] {
     const modelChanged = setsDiffer(a.modelNames, b.modelNames) || setsDiffer(a.pricingRows, b.pricingRows);
-    const contextDelta = b.contextGrowth - a.contextGrowth;
     const topModelChanged = a.topModel?.pricingModel !== b.topModel?.pricingModel;
 
     return [
@@ -362,12 +342,6 @@ export class ComparePageComponent {
         detail: modelChanged
           ? `The model or pricing-row mix changed. A: ${[...a.pricingRows].join(', ')}. B: ${[...b.pricingRows].join(', ')}.`
           : `Both runs used the same imported pricing row mix: ${[...b.pricingRows].join(', ')}.`,
-      },
-      {
-        title: 'Context shape',
-        value: `${contextDelta >= 0 ? '+' : ''}${contextDelta.toFixed(0)} pts`,
-        tone: contextDelta >= 50 ? 'high' : Math.abs(contextDelta) >= 20 ? 'medium' : 'info',
-        detail: `Average input growth moved from ${a.contextGrowth.toFixed(0)}% to ${b.contextGrowth.toFixed(0)}%. This is a cost signal, not proof of a problem.`,
       },
       {
         title: 'Agent activity',

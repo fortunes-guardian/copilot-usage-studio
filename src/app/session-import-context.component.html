@@ -5,7 +5,7 @@
     <span class="import-pill">{{ summary.count | number }} sessions</span>
     <span class="import-pill">${{ summary.usd | number: '1.2-2' }} imported estimate</span>
     <span class="import-pill">{{ ingestion.importedDebugLogSessions | number }} debug logs</span>
-    <span class="import-pill">{{ ingestion.enrichedFromStateDbs | number }} state enriched</span>
+    <span class="import-pill">{{ ingestion.enrichedFromStateDbs | number }} titles improved</span>
   </summary>
 
   <div class="import-context-body">
@@ -27,7 +27,7 @@
         <dd>{{ ingestion.scannedStateDbs | number }}</dd>
       </div>
       <div>
-        <dt>State enriched <app-help-popover [text]="help['stateEnriched']" label="Explain state enrichment"></app-help-popover></dt>
+        <dt>Titles improved <app-help-popover [text]="help['stateEnriched']" label="Explain title improvement"></app-help-popover></dt>
         <dd>{{ ingestion.enrichedFromStateDbs | number }}</dd>
       </div>
       <div>

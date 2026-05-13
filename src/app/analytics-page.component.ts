@@ -413,7 +413,7 @@ export class AnalyticsPageComponent {
     }
 
     if (session.traceSummary.errors === 0 && modelTurns >= 8 && toolCalls >= 8) {
-      return `Large but plausible long agent run: ${modelTurns.toLocaleString()} model turns and ${toolCalls.toLocaleString()} tool calls with no imported errors. Compare context growth before treating it as waste.`;
+      return `Large but plausible long agent run: ${modelTurns.toLocaleString()} model turns and ${toolCalls.toLocaleString()} tool calls with no imported errors. Inspect input/context and tool activity before treating it as waste.`;
     }
 
     return costScore >= tokenScore
@@ -422,15 +422,15 @@ export class AnalyticsPageComponent {
   }
 
   private sessionSize(tokens: number): SessionSize {
-    if (tokens >= 600_000) {
+    if (tokens >= 1_500_000) {
       return 'Very large';
     }
 
-    if (tokens >= 200_000) {
+    if (tokens >= 500_000) {
       return 'Large';
     }
 
-    if (tokens >= 50_000) {
+    if (tokens >= 100_000) {
       return 'Medium';
     }
 

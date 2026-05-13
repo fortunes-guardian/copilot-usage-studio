@@ -30,7 +30,7 @@
           <span>
             Selected event
             @if (openedFromTurns) {
-              · opened from Turns
+              · opened from Calls
             }
           </span>
           <strong>#{{ event.index }} · {{ event.name }}</strong>
@@ -101,7 +101,7 @@
               <p>
                 {{ eventKindLabel(event) }} · {{ event.type }}
                 @if (openedFromTurns) {
-                  <strong>Opened from Turns</strong>
+                  <strong>Opened from Calls</strong>
                 }
               </p>
             </div>

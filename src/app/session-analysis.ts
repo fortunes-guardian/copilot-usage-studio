@@ -73,7 +73,6 @@ export function sessionTriage(session: CopilotSession): SessionTriage {
   const totalTokens = sessionTotalTokens(session);
   const size = sessionSize(totalTokens);
   const warnings: SessionWarning[] = [];
-  const growth = contextGrowth(session);
   const maxInput = Math.max(
     ...session.traceEvents.filter((event) => event.type === 'llm_request').map((event) => event.inputTokens),
     0,
@@ -88,39 +87,12 @@ export function sessionTriage(session: CopilotSession): SessionTriage {
     });
   }
 
-  if (growth !== null && growth >= 25) {
-    warnings.push({
-      label: 'Context growth',
-      tone: growth >= 80 ? 'medium' : 'info',
-      help:
-        'Expected in many agent runs: later model calls received more input tokens than early calls. It matters because accumulated context is often resent and can become a major cost driver.',
-    });
-  }
-
   if (session.modelBreakdown.length > 1) {
     warnings.push({
       label: 'Mixed models',
       tone: 'medium',
       help:
         'This run used more than one model. Cost is the sum of each model row, so model switches can make estimates harder to read at a glance.',
-    });
-  }
-
-  if (session.tokens.cachedInput === 0 && session.tokens.cacheWrite === 0) {
-    warnings.push({
-      label: 'Cache unknown',
-      tone: 'info',
-      help:
-        'No numeric cached-input or cache-write totals were imported for this run. Do not read this as proof that provider-side cache billing was zero.',
-    });
-  }
-
-  if (session.vscodeState) {
-    warnings.push({
-      label: 'State enriched',
-      tone: 'info',
-      help:
-        'The title or metadata was improved from VS Code state.vscdb. Pricing still comes from token-bearing debug-log events.',
     });
   }
 
@@ -133,7 +105,7 @@ export function sessionTriage(session: CopilotSession): SessionTriage {
 }
 
 export function sessionSizeHelp(triage: SessionTriage): string {
-  return `${triage.size} session based on ${triage.totalTokens.toLocaleString()} imported tokens. Current thresholds: Small under 50k, Medium under 200k, Large under 600k, Very large at 600k or more.`;
+  return `${triage.size} session based on ${triage.totalTokens.toLocaleString()} imported tokens. Current thresholds: Small under 100k, Medium under 500k, Large under 1.5M, Very large at 1.5M or more.`;
 }
 
 export function flowTraceEvents(events: TraceEvent[], modelBreakdown: ModelBreakdown[]) {
@@ -288,10 +260,11 @@ function explainModelCost(entry: ModelBreakdown, sessionCostUsd: number) {
 function explainCategoryCosts(modelRows: ModelCostRow[]) {
   return [
     {
-      label: 'Input',
+      label: 'Normal input',
       tokens: sumTokens(modelRows, 'input'),
       usd: modelRows.reduce((sum, row) => sum + row.inputUsd, 0),
-      description: 'Prompt, context, tool, and repository material sent into the model.',
+      description:
+        'Non-cached prompt/context tokens priced at the normal input rate. Raw VS Code inputTokens can be higher when cachedTokens are present.',
     },
     {
       label: 'Output',
@@ -482,11 +455,6 @@ function explainCostDrivers(session: CopilotSession, modelRows: ModelCostRow[], 
   const topCallShare = topCall && sessionCost > 0 ? (topCall.estimatedUsd / sessionCost) * 100 : 0;
   const topModel = [...modelRows].sort((a, b) => b.totalUsd - a.totalUsd)[0];
   const topModelShare = topModel && sessionCost > 0 ? (topModel.totalUsd / sessionCost) * 100 : 0;
-  const stats = contextStats(session);
-  const growth = stats?.growth ?? 0;
-  const firstAvg = stats?.firstAvg ?? 0;
-  const lastAvg = stats?.lastAvg ?? 0;
-  const llmEventCount = stats?.count ?? 0;
   const toolCalls = session.traceSummary.toolCalls;
   const toolsPerTurn = session.traceSummary.modelTurns > 0 ? toolCalls / session.traceSummary.modelTurns : 0;
   const mixedModelCount = modelRows.length;
@@ -510,15 +478,6 @@ function explainCostDrivers(session: CopilotSession, modelRows: ModelCostRow[], 
         ? `Raw event index #${topCall.index} used ${topCall.totalTokens.toLocaleString()} tokens and accounts for about ${topCallShare.toFixed(0)}% of this run.`
         : 'No token-bearing model calls were imported for this session.',
       tone: topCallShare >= 25 ? 'high' : topCallShare >= 10 ? 'medium' : 'low',
-    },
-    {
-      title: 'Context growth',
-      value: llmEventCount >= 2 ? `${growth >= 0 ? '+' : ''}${growth.toFixed(0)}%` : 'n/a',
-      detail:
-        llmEventCount >= 2
-          ? `Average input moved from ${Math.round(firstAvg).toLocaleString()} tokens at the start to ${Math.round(lastAvg).toLocaleString()} near the end.`
-          : 'Not enough model calls to detect whether context grew during the run.',
-      tone: growth >= 80 ? 'high' : growth >= 25 ? 'medium' : 'low',
     },
     {
       title: 'Model mix',
@@ -680,43 +639,19 @@ function tokenTotal(tokens: TokenBreakdown): number {
 }
 
 function sessionSize(tokens: number): SessionSize {
-  if (tokens >= 600_000) {
+  if (tokens >= 1_500_000) {
     return 'Very large';
   }
 
-  if (tokens >= 200_000) {
+  if (tokens >= 500_000) {
     return 'Large';
   }
 
-  if (tokens >= 50_000) {
+  if (tokens >= 100_000) {
     return 'Medium';
   }
 
   return 'Small';
-}
-
-function contextGrowth(session: CopilotSession): number | null {
-  return contextStats(session)?.growth ?? null;
-}
-
-function contextStats(session: CopilotSession): { firstAvg: number; lastAvg: number; growth: number; count: number } | null {
-  const llmEvents = session.traceEvents
-    .filter((event) => event.type === 'llm_request' && (event.inputTokens || event.outputTokens))
-    .sort((a, b) => a.index - b.index);
-
-  if (llmEvents.length < 2) {
-    return null;
-  }
-
-  const firstAvg = average(llmEvents.slice(0, 3).map((event) => event.inputTokens));
-  const lastAvg = average(llmEvents.slice(-3).map((event) => event.inputTokens));
-
-  return {
-    firstAvg,
-    lastAvg,
-    growth: firstAvg > 0 ? ((lastAvg - firstAvg) / firstAvg) * 100 : 0,
-    count: llmEvents.length,
-  };
 }
 
 function sumTokens(rows: { tokens: TokenBreakdown }[], field: keyof TokenBreakdown): number {

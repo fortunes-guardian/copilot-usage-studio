@@ -105,7 +105,7 @@ describe('session analysis', () => {
     const triage = sessionTriage(session);
     const eventDetails = traceEventDetails(session.traceEvents[3], session.modelBreakdown);
 
-    expect(triage.size).toBe('Large');
+    expect(triage.size).toBe('Medium');
     expect(triage.warnings.map((warning) => warning.label)).toContain('High input context');
     expect(matchesTraceFilter(session.traceEvents[2], 'tool')).toBe(true);
     expect(matchesTraceFilter(session.traceEvents[3], 'model')).toBe(true);

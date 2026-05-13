@@ -34,10 +34,6 @@ export class SelectedRunHeaderComponent {
   @Input() filteredCount = 0;
   @Input() pricingFallbacks: PricingFallback[] = [];
   @Input({ required: true }) sessionSizeHelp!: (triage: SessionTriage) => string;
-  @Input({ required: true }) confidenceLabel!: (confidence: string) => string;
-  @Input({ required: true }) confidenceHelp!: (confidence: string) => string;
-  @Input({ required: true }) tokenSourceLabel!: (tokenSource: string) => string;
-  @Input({ required: true }) tokenSourceHelp!: (tokenSource: string) => string;
   @Input({ required: true }) pricingFallbackReason!: (model: string, pricingModel: string) => string;
 
   @Output() readonly allowancePlanChange = new EventEmitter<string>();
@@ -58,8 +54,8 @@ export class SelectedRunHeaderComponent {
     const label = this.reasoningEffortLabel(session);
 
     return label
-      ? `Source-backed request reasoning effort from llm_request.attrs.requestOptions.reasoning.effort. Imported values: ${label}.`
-      : 'No request reasoning effort was imported for this run.';
+      ? `Reasoning setting VS Code recorded for this run's model requests. Higher reasoning can improve hard tasks, but it may also use more tokens or take longer. Imported values: ${label}.`
+      : 'VS Code did not record a reasoning setting for this run.';
   }
 }
 

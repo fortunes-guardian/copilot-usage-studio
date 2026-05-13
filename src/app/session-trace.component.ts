@@ -234,7 +234,7 @@ export class SessionTraceComponent implements OnChanges, AfterViewChecked {
 
     if (kind === 'model-call') {
       return details.hasCost
-        ? 'This is the event priced by Cost and located from Turns.'
+        ? 'This is the event priced by Cost and opened from Calls.'
         : 'This event is model-related, but the imported row does not include token totals.';
     }
 

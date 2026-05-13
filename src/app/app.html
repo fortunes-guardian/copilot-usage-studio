@@ -49,14 +49,11 @@
         [query]="query()"
         [sizeFilter]="sizeFilter()"
         [warningFilter]="warningFilter()"
-        [sourceFilter]="sourceFilter()"
         [warningOptions]="warningOptions()"
         [sizeOptions]="sizeOptions"
-        [sourceOptions]="sourceOptions"
         (queryChange)="setQuery($event)"
         (sizeFilterChange)="setSizeFilter($event)"
         (warningFilterChange)="setWarningFilter($event)"
-        (sourceFilterChange)="setSourceFilter($event)"
         (selectSession)="selectSession($event)"
       ></app-session-rail>
     }
@@ -107,10 +104,6 @@
           [filteredCount]="filteredSessions().length"
           [pricingFallbacks]="selectedPricingFallbacks()"
           [sessionSizeHelp]="sessionSizeHelp"
-          [confidenceLabel]="confidenceLabel"
-          [confidenceHelp]="confidenceHelp"
-          [tokenSourceLabel]="tokenSourceLabel"
-          [tokenSourceHelp]="tokenSourceHelp"
           [pricingFallbackReason]="pricingFallbackReason"
           (allowancePlanChange)="setAllowancePlan($event)"
           (openFirstFilteredSession)="openFirstFilteredSession()"
@@ -146,9 +139,9 @@
               [class.active]="selectedRunView() === 'turns'"
               (click)="selectedRunView.set('turns')"
             >
-              <span>2 · Locate</span>
-              <strong>Turns</strong>
-              <em>{{ cost.costAnswer.topCallLabel }} · {{ cost.costAnswer.topCallShare | number: '1.0-0' }}% of estimate</em>
+              <span>2 · Review</span>
+              <strong>Calls</strong>
+              <em>{{ cost.modelCallRows.length | number }} model calls</em>
             </button>
             <button
               type="button"

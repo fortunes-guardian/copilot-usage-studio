@@ -107,11 +107,6 @@
               {{ metric.delta < 0 ? '-' : '+' }}${{ abs(metric.delta) | number: '1.2-4' }}
             </strong>
             <em>A ${{ metric.a | number: '1.2-4' }} / B ${{ metric.b | number: '1.2-4' }}</em>
-          } @else if (metric.format === 'percent') {
-            <strong [class.saving]="metric.lowerIsBetter && metric.delta < 0">
-              {{ metric.delta >= 0 ? '+' : '' }}{{ metric.delta | number: '1.0-0' }} pts
-            </strong>
-            <em>A {{ metric.a | number: '1.0-0' }}% / B {{ metric.b | number: '1.0-0' }}%</em>
           } @else {
             <strong [class.saving]="metric.lowerIsBetter && metric.delta < 0">
               {{ metric.delta >= 0 ? '+' : '' }}{{ metric.delta | number }}
@@ -154,7 +149,7 @@
           <span>Price row</span>
           <span>Cost A / B</span>
           <span>Token delta</span>
-          <span>Turns A / B</span>
+          <span>Model calls A / B</span>
           <span>Cost delta</span>
         </div>
         @for (model of diff.modelRows; track model.model + model.pricingModel) {

@@ -4,6 +4,52 @@ Start here when resuming the project.
 
 ## Latest Step
 
+Started the UX/data cleanup pass from real-session feedback.
+
+What changed:
+
+- Removed the `Estimate scope` banner from the Cost page.
+- Removed the request-payload/source-backed payload evidence block from the main Cost page.
+- Renamed the selected-run `Turns` navigation to `Calls` and changed the panel framing from "which model call caused it" to "model call timeline".
+- Raised run-size thresholds so `Very large` now starts at `1.5M` imported tokens instead of `600k`.
+- Removed low-value triage badges for `Context growth`, `Cache unknown`, and `State enriched`; the remaining badges are more action-oriented.
+- Changed user-facing "Exact local data" wording to `Token totals`.
+- Renamed import-context `state enriched` copy to `titles improved`.
+- Changed Cost token categories from `Input` to `Normal input` so cached-token sessions are less likely to look bugged.
+- Removed Compare's context-growth metric/driver.
+- Documented the `estimatedCost` investigation: it was not found in the referenced `29fa1393-f3da-41b0-80a6-f867d7a56a67` debug-log folder by literal or structured key search.
+
+Why: the app was starting to leak implementation mechanics into the primary workflow. The default UI should explain cost, not teach users every ingestion caveat.
+
+Verification:
+
+- `npm test -- --watch=false`
+- `npm run build`
+- Browser DOM check on `http://127.0.0.1:4301/` confirmed `Calls`, `Token totals`, and `titles improved` render in the live app.
+
+Known note:
+
+- `npm run build` still passes with the existing initial bundle budget warning, currently about 32.2 kB over the 500 kB budget.
+- The in-app browser click path remains intermittently slow, so the live verification used reload plus DOM inspection.
+
+## Previous Step
+
+Captured the next UX/data-quality cleanup set from real use.
+
+Tracked items:
+
+- Verify the Cost page's input token display, especially raw input vs normal billable input when cached input is present.
+- Raise or recalibrate the `Very large` threshold because 600k imported tokens is too noisy for these sessions.
+- Remove or soften low-value user-facing terminology: `Exact local data`, `State enriched`, `Context growth`, and cache-status chips/tooltips that do not help action.
+- Rebrand `Turns` because expensive runs usually come from a sequence of calls, not one single culprit call.
+- Remove the `Estimate scope` banner and the request-payload evidence section from the main Cost page.
+- Clarify or reduce the yellow row highlight in the model-call table.
+- Investigate whether VS Code Agent Debug Logs expose a raw `estimatedCost` object and, if yes, whether it should be preserved alongside app-calculated cost.
+
+Why: the app is now useful enough that the main risk is over-explaining source mechanics. The next pass should preserve evidence while making the default UI calmer and more actionable.
+
+## Previous Step
+
 Completed a full light-mode cohesion pass across the app.
 
 What changed:

@@ -26,14 +26,6 @@
         }
       </select>
     </label>
-    <label>
-      <span>Source</span>
-      <select [ngModel]="sourceFilter" (ngModelChange)="sourceFilterChange.emit($event)">
-        @for (source of sourceOptions; track source.value) {
-          <option [value]="source.value">{{ source.label }}</option>
-        }
-      </select>
-    </label>
   </div>
 
   <p class="filter-count">{{ filteredSessions.length }} of {{ sessions.length }} sessions shown</p>

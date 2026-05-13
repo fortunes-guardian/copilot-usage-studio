@@ -66,6 +66,7 @@ Observed `attrs` fields:
 | `inputTokens` | Raw input/context tokens sent to the model | Preserved on trace rows as raw local evidence |
 | `cachedTokens` | Cached input tokens reported by VS Code | Imported as `cachedInput`; priced with GitHub cached-input rate |
 | `outputTokens` | Generated output tokens | Imported as `output`; priced with GitHub output rate |
+| `estimatedCost` | Possible future/alternate source cost field | Not observed in the checked `29fa1393-f3da-41b0-80a6-f867d7a56a67` Agent Debug Log folder on May 13, 2026; keep as a roadmap item and preserve separately if found |
 | `ttft` | Time to first token in ms | Preserved on trace rows |
 | `responseId` | Provider/VS Code response id | Preserved in bounded attributes |
 | `userRequest` | Current request payload, often JSON string | Used for previews only; may be large |

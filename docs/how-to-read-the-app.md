@@ -45,7 +45,7 @@ The **Prompt testing** panel is the guardrail for clean A/B comparisons:
 Read it in this order:
 
 - **Headline delta**: how run B changed versus run A.
-- **Metric cards**: cost, input tokens, output tokens, model turns, tool calls, and context growth.
+- **Metric cards**: cost, input tokens, output tokens, model turns, and tool calls.
 - **What changed**: the app's best explanation of the movement.
 - **Model and price-row movement**: whether cost changed because the model/pricing mix changed.
 
@@ -71,7 +71,7 @@ Read it in this order:
 
 - **Top metrics**: total cost/tokens, average cost/tokens, and cost per 1k tokens.
 - **Runs to inspect**: the highest-token and most expensive runs; click one to open the selected-run debugger.
-- **Outlier signals**: sessions that are unusually high compared with the current cohort, with a first-pass explanation of the likely driver. Current explanations can call out input/context dominance, model price rows, context growth, tool activity, plausible long agent work, or suspicious low-activity spikes.
+- **Outlier signals**: sessions that are unusually high compared with the current cohort, with a first-pass explanation of the likely driver. Current explanations can call out input/context dominance, model price rows, tool activity, plausible long agent work, or suspicious low-activity spikes.
 - **Model breakdown**: which model/pricing rows are contributing the cost.
 - **Distribution and trend**: whether cost is spread across many runs or concentrated in a few periods.
 
@@ -79,18 +79,17 @@ Read it in this order:
 
 The app now labels each selected run by size:
 
-- **Small**: under `50k` imported tokens.
-- **Medium**: `50k` to under `200k`.
-- **Large**: `200k` to under `600k`.
-- **Very large**: `600k` or more.
+- **Small**: under `100k` imported tokens.
+- **Medium**: `100k` to under `500k`.
+- **Large**: `500k` to under `1.5M`.
+- **Very large**: `1.5M` or more.
 
 Signals are quick explanations, not separate billing rows:
 
 - **High input context** means the run sent a lot of prompt/context tokens into the model.
-- **Context growth** means later model calls received larger input payloads than early calls. This is expected in many agent runs; it matters because accumulated context can increase cost.
 - **Mixed models** means more than one model contributed to the estimate.
-- **Cache unknown** means no numeric cached-input or cache-write totals were imported for that run.
-- **State enriched** means VS Code `state.vscdb` improved the label or metadata.
+
+VS Code `state.vscdb` can improve titles and labels, but normal users should not need to care about that term while debugging cost.
 
 ## Source Quality
 
@@ -115,7 +114,7 @@ Where fallback pricing appears:
 
 - the selected-run header shows a `Fallback pricing` chip
 - the selected run shows a `Pricing assumption` callout
-- Cost, Turns, Compare, Analytics, and Prices mark the fallback row directly
+- Cost, Calls, Compare, Analytics, and Prices mark the fallback row directly
 
 Real-life meaning: the token totals can still be exact local debug-log totals, but the price applied to those tokens is an assumption until the local GitHub pricing table includes the logged model id.
 
@@ -195,6 +194,6 @@ The log can be filtered to:
 
 Clicking an event opens the inspector. For model calls, the inspector shows the raw event index, timestamp, model, pricing row, input/output tokens, estimated event cost, and latency/cap fields when VS Code logged them.
 
-The **Turns** table links each model call back to Trace. Use that path when the question is: "this turn looks expensive; what exact log event produced that number?"
+The **Calls** table links each model call back to Trace. Use that path when the question is: "this model call looks expensive; what exact log event produced that number?"
 
 The inspector shows bounded summaries, not the full raw JSONL payload. That is intentional: the app should expose useful local evidence without turning `public/data/sessions.json` into a raw log dump.
