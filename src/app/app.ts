@@ -1,4 +1,4 @@
-import { DecimalPipe } from '@angular/common';
+import { DecimalPipe, DOCUMENT } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 
 import { AnalyticsPageComponent } from './analytics-page.component';
@@ -37,6 +37,7 @@ import {
 
 type ActiveView = 'sessions' | 'compare' | 'analytics' | 'pricing';
 type SelectedRunView = 'overview' | 'cost' | 'turns' | 'trace';
+type ThemeMode = 'light' | 'dark';
 
 @Component({
   selector: 'app-root',
@@ -59,6 +60,7 @@ type SelectedRunView = 'overview' | 'cost' | 'turns' | 'trace';
 })
 export class App {
   private readonly sessionDataService = inject(SessionDataService);
+  private readonly document = inject(DOCUMENT);
 
   protected readonly sessionData = this.sessionDataService.sessionData;
   protected readonly sessionDataLoadState = this.sessionDataService.loadState;
@@ -77,6 +79,7 @@ export class App {
   protected readonly modelCallSort = signal<ModelCallSort>('timeline');
   protected readonly activeView = signal<ActiveView>('sessions');
   protected readonly selectedRunView = signal<SelectedRunView>('overview');
+  protected readonly theme = signal<ThemeMode>(this.readStoredTheme());
   protected readonly allowancePlan = signal<CopilotAllowancePlan>('business-standard');
   protected readonly allowancePlans = COPILOT_ALLOWANCE_PLANS;
   protected readonly pricingSourceUrl = PRICING_SOURCE_URL;
@@ -277,6 +280,21 @@ export class App {
       this.compareA.set(sessionData.sessions[0]?.id ?? null);
       this.compareB.set(sessionData.sessions[1]?.id ?? null);
     });
+
+    effect(() => {
+      const theme = this.theme();
+      this.document.documentElement.dataset['theme'] = theme;
+      this.document.documentElement.style.colorScheme = theme;
+      this.persistTheme(theme);
+    });
+  }
+
+  protected toggleTheme(): void {
+    this.theme.set(this.theme() === 'light' ? 'dark' : 'light');
+  }
+
+  protected themeLabel(): string {
+    return this.theme() === 'light' ? 'Light' : 'Dark';
   }
 
   protected selectSession(session: CopilotSession): void {
@@ -446,6 +464,22 @@ export class App {
     }
 
     return confidence;
+  }
+
+  private readStoredTheme(): ThemeMode {
+    try {
+      return globalThis.localStorage?.getItem('copilot-cost-debugger-theme') === 'dark' ? 'dark' : 'light';
+    } catch {
+      return 'light';
+    }
+  }
+
+  private persistTheme(theme: ThemeMode): void {
+    try {
+      globalThis.localStorage?.setItem('copilot-cost-debugger-theme', theme);
+    } catch {
+      // Non-browser test/runtime environments can ignore persistence.
+    }
   }
 
 }

@@ -256,7 +256,7 @@
 }
 
 .compare-caveat {
-  color: #ffcf75 !important;
+  color: var(--warning-text, #ffcf75) !important;
 }
 
 .comparison-grid {
@@ -409,11 +409,11 @@
 }
 
 .saving {
-  color: #35d07f !important;
+  color: var(--success-text, #35d07f) !important;
 }
 
 .warning-text {
-  color: #ffcf75 !important;
+  color: var(--warning-text, #ffcf75) !important;
   font-weight: 900;
 }
 

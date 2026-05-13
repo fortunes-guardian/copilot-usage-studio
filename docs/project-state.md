@@ -4,6 +4,31 @@ Start here when resuming the project.
 
 ## Latest Step
 
+Implemented light mode as the default app theme, with a persistent dark/light toggle.
+
+What changed:
+
+- Added a real theme mode signal in the root shell, persisted to `localStorage`.
+- Made light mode the default while preserving dark mode behind the top-bar toggle.
+- Added light/dark design tokens for page, rail, cards, controls, shadows, accent gradients, scrollbar color, and status text.
+- Updated key component CSS that had hard-coded dark-only values, especially the session rail, selected-run header, help popovers, pricing panels, trace inspector, turns, compare, overview, and cost warning colors.
+
+Why: the app needs to feel like a polished local debugger, not a dark-mode-only prototype. The light theme keeps the existing violet/teal accents and gradients but shifts the base UI to bright surfaces, softer shadows, and clearer text contrast.
+
+Verification:
+
+- `npm test -- --watch=false`
+- `npm run build`
+- Restarted the local dev server on `http://127.0.0.1:4301/`.
+- Browser DOM check confirmed light mode is the default and the toggle switches Light -> Dark -> Light.
+
+Known note:
+
+- `npm run build` still passes with the existing initial bundle budget warning, currently about 22.5 kB over the 500 kB budget.
+- In-app screenshot capture timed out during visual verification, so the pass used DOM/toggle checks plus build/test validation.
+
+## Previous Step
+
 Surfaced source-backed reasoning effort in the UI.
 
 What changed:

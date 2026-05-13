@@ -6,7 +6,7 @@
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 12px;
-  background: linear-gradient(135deg, rgba(111, 92, 255, 0.13), rgba(39, 214, 176, 0.055)), var(--surface-soft);
+  background: var(--header-gradient, linear-gradient(135deg, rgba(111, 92, 255, 0.13), rgba(39, 214, 176, 0.055)), var(--surface-soft));
 }
 
 .detail-header > div:first-child {
@@ -97,7 +97,7 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 4px 7px;
-  background: rgba(5, 12, 22, 0.38);
+  background: var(--control-bg, rgba(5, 12, 22, 0.38));
   color: var(--text);
   font: inherit;
   font-size: 11px;
@@ -108,7 +108,7 @@ h2 {
   height: 6px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(97, 112, 133, 0.18);
 }
 
 .credit-bar span {

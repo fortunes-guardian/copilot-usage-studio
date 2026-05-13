@@ -290,7 +290,7 @@
   border-radius: 999px;
   padding: 4px 8px;
   background: var(--teal-soft);
-  color: #bbfff0;
+  color: var(--success-text, #bbfff0);
   font: inherit;
   font-size: 12px;
   font-weight: 900;
@@ -309,7 +309,7 @@
   border-radius: 999px;
   padding: 0 12px;
   background: var(--teal-soft);
-  color: #bbfff0;
+  color: var(--success-text, #bbfff0);
   font: inherit;
   font-size: 12px;
   font-weight: 800;
@@ -343,7 +343,7 @@
 }
 
 .warning-text {
-  color: #ffe0a0 !important;
+  color: var(--warning-text, #ffe0a0) !important;
   font-weight: 800;
 }
 

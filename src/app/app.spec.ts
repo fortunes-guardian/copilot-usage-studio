@@ -119,6 +119,7 @@ describe('App', () => {
     expect(compiled.textContent).toContain('1 sessions');
     expect(compiled.textContent).toContain('Triage');
     expect(compiled.textContent).toContain('Cache unknown');
+    expect(compiled.textContent).toContain('Light');
   });
 });
 

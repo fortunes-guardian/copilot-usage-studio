@@ -1,4 +1,4 @@
-<main class="shell">
+<main class="shell" [class.theme-light]="theme() === 'light'" [class.theme-dark]="theme() === 'dark'">
   <header class="topbar">
     <div class="brand">
       <span class="brand-mark" aria-hidden="true">CD</span>
@@ -22,6 +22,21 @@
         Prices
       </button>
     </nav>
+
+    <div class="topbar-actions">
+      <button
+        type="button"
+        class="theme-toggle"
+        [attr.aria-pressed]="theme() === 'dark'"
+        [attr.aria-label]="'Switch to ' + (theme() === 'light' ? 'dark' : 'light') + ' theme'"
+        (click)="toggleTheme()"
+      >
+        <span class="theme-toggle-track" aria-hidden="true">
+          <span class="theme-toggle-thumb"></span>
+        </span>
+        <span>{{ themeLabel() }}</span>
+      </button>
+    </div>
 
   </header>
 

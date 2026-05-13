@@ -477,7 +477,7 @@
 }
 
 .warning-text {
-  color: #ffe0a0 !important;
+  color: var(--warning-text, #ffe0a0) !important;
   font-weight: 800;
 }
 

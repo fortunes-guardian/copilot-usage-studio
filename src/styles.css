@@ -16,6 +16,18 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+html[data-theme="light"],
+html[data-theme="light"] body {
+  background: #f4f7fb;
+  color: #182536;
+}
+
+html[data-theme="dark"],
+html[data-theme="dark"] body {
+  background: #090d14;
+  color: #d7dde7;
+}
+
 button,
 input,
 select {

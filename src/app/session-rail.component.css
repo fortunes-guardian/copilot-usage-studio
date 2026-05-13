@@ -11,8 +11,8 @@
   border-right: 1px solid var(--line);
   padding: 14px;
   background: var(--rail);
-  color: #f7fafc;
-  scrollbar-color: #34475e transparent;
+  color: var(--text);
+  scrollbar-color: var(--scrollbar, #34475e) transparent;
 }
 
 .search,
@@ -63,7 +63,7 @@
   border: 1px solid var(--line);
   border-radius: 11px;
   padding: 11px;
-  background: #0e1723;
+  background: var(--session-card-bg, var(--surface));
   color: inherit;
   text-align: left;
   cursor: pointer;
@@ -72,13 +72,13 @@
 
 .session-card:hover {
   border-color: var(--line-strong);
-  background: #142033;
+  background: var(--session-card-hover, var(--surface-raised));
   transform: translateY(-1px);
 }
 
 .session-card.active {
   border-color: var(--accent);
-  background: #201a3e;
+  background: var(--session-card-active, var(--surface-soft));
   box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
@@ -144,13 +144,13 @@
 .triage-badge.medium {
   border-color: rgba(255, 186, 74, 0.45);
   background: rgba(255, 186, 74, 0.12);
-  color: #ffe0a0;
+  color: var(--warning-text, #ffe0a0);
 }
 
 .triage-badge.high {
   border-color: rgba(255, 107, 95, 0.5);
   background: rgba(255, 107, 95, 0.12);
-  color: #ffc2bd;
+  color: var(--danger-text, #ffc2bd);
 }
 
 .empty {
@@ -168,7 +168,7 @@
 .session-list::-webkit-scrollbar-thumb {
   border: 3px solid transparent;
   border-radius: 999px;
-  background: #34475e;
+  background: var(--scrollbar, #34475e);
   background-clip: padding-box;
 }
 

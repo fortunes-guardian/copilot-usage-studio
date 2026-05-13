@@ -110,13 +110,13 @@
 .triage-badge.medium {
   border-color: rgba(255, 186, 74, 0.42);
   background: rgba(255, 186, 74, 0.12);
-  color: #ffe0a0;
+  color: var(--warning-text, #ffe0a0);
 }
 
 .triage-badge.high {
   border-color: rgba(240, 121, 90, 0.42);
   background: rgba(240, 121, 90, 0.14);
-  color: #ffc2b4;
+  color: var(--danger-text, #ffc2b4);
 }
 
 .session-details {

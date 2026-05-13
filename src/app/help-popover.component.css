@@ -43,7 +43,7 @@ button span,
 button:hover,
 .help-popover:hover .help-trigger {
   border-color: rgba(39, 214, 176, 0.64);
-  color: #bbfff0;
+  color: var(--success-text, #bbfff0);
   background: rgba(39, 214, 176, 0.1);
 }
 
@@ -61,9 +61,9 @@ button:focus-visible {
   border: 1px solid var(--line-strong);
   border-radius: 10px;
   padding: 10px 11px;
-  background: #0d1520;
+  background: var(--surface-raised, #0d1520);
   color: var(--text);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow, 0 16px 40px rgba(0, 0, 0, 0.35));
   font-size: 12px;
   font-weight: 520;
   line-height: 1.45;

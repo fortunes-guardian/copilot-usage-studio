@@ -314,7 +314,7 @@
 }
 
 .warning-text {
-  color: #ffcf91 !important;
+  color: var(--warning-text, #ffcf91) !important;
 }
 
 .share-cell {
