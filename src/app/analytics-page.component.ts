@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 import { HelpPopoverComponent } from './help-popover.component';
 import { CopilotSession } from './session-data.model';
-import { contextStats, sessionTotalTokens, tokenTotal, usesPricingFallback } from './session-cost-utils';
+import { sessionTotalTokens, tokenTotal, usesPricingFallback } from './session-cost-utils';
 
 type SessionSize = 'Small' | 'Medium' | 'Large' | 'Very large';
 type AnalyticsTimeRange = 'all' | '7d' | '30d' | '90d';
@@ -383,10 +383,10 @@ export class AnalyticsPageComponent {
 
   private analyticsOutlierReason(session: CopilotSession, costScore: number, tokenScore: number): string {
     const totalTokens = sessionTotalTokens(session);
-    const inputShare = totalTokens ? (session.tokens.input / totalTokens) * 100 : 0;
+    const inputTokens = session.tokens.input + session.tokens.cachedInput + session.tokens.cacheWrite;
+    const inputShare = totalTokens ? (inputTokens / totalTokens) * 100 : 0;
     const topModel = this.maxBy(session.modelBreakdown, (row) => row.cost.usd);
     const topModelShare = topModel && session.cost.usd > 0 ? (topModel.cost.usd / session.cost.usd) * 100 : 0;
-    const stats = contextStats(session);
     const modelTurns = session.traceSummary.modelTurns;
     const toolCalls = session.traceSummary.toolCalls;
     const traceActivity = modelTurns + toolCalls;
@@ -396,16 +396,12 @@ export class AnalyticsPageComponent {
       return `Suspicious spike: ${totalTokens.toLocaleString()} tokens with only ${traceActivity.toLocaleString()} imported model/tool events. Inspect the largest model call and source log shape.`;
     }
 
-    if (inputShare >= 85 && session.tokens.input >= 100_000) {
+    if (inputShare >= 85 && inputTokens >= 100_000) {
       return `Mostly input/context tokens (${inputShare.toFixed(0)}% of imported tokens). Check prompt context, repo reads, prior conversation, and tool results.`;
     }
 
     if (topModel && topModelShare >= 70) {
       return `${topModel.pricingModel} produced ${topModelShare.toFixed(0)}% of this run's estimate. Model mix is the first thing to inspect.`;
-    }
-
-    if (stats && stats.growth >= 50) {
-      return `Average input grew ${stats.growth.toFixed(0)}% from early to late model calls, so repeated context is likely driving the increase.`;
     }
 
     if (toolCalls >= 20) {

@@ -4,6 +4,28 @@ Start here when resuming the project.
 
 ## Latest Step
 
+Removed noisy token-source UI and clarified cached-token presentation.
+
+What changed:
+
+- Removed the Sessions source filter and selected-run source/confidence chips such as `Token totals` and `Debug-log token counts`.
+- Kept Cost buckets distinct: `Normal input`, `Cached input`, `Cache write`, and `Output` are separate because they use different pricing rows.
+- Updated Compare so cached input is its own metric instead of being folded into input.
+- Rewrote the Reasoning tooltip to explain the user-facing meaning rather than the raw JSON path.
+- Confirmed the suspected input-token bug is presentation, not pricing math: generated data stores `inputTokens - cachedTokens` as normal input and stores `cachedTokens` separately.
+
+Why: the app should show useful cost buckets, not ingestion jargon. Cached tokens are real pricing data, so the UI must keep them distinct rather than "fixing" input by merging them back together.
+
+Verification:
+
+- `npm test -- --watch=false`
+
+Known note:
+
+- Next pass should visually improve how Cost shows raw input versus normal/cached input for individual Trace events, especially in cached sessions.
+
+## Previous Step
+
 Started the UX/data cleanup pass from real-session feedback.
 
 What changed:

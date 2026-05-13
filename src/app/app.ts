@@ -10,7 +10,7 @@ import { PricingPageComponent } from './pricing-page.component';
 import { SessionCostComponent } from './session-cost.component';
 import { SessionImportContextComponent } from './session-import-context.component';
 import { SessionOverviewComponent } from './session-overview.component';
-import { SessionRailComponent, SessionSourceFilter } from './session-rail.component';
+import { SessionRailComponent } from './session-rail.component';
 import { SessionTraceComponent } from './session-trace.component';
 import { SessionTurnsComponent } from './session-turns.component';
 import { SelectedRunHeaderComponent } from './selected-run-header.component';
@@ -71,7 +71,6 @@ export class App {
   protected readonly query = signal('');
   protected readonly sizeFilter = signal<'all' | SessionSize>('all');
   protected readonly warningFilter = signal<string>('all');
-  protected readonly sourceFilter = signal<SessionSourceFilter>('all');
   protected readonly traceView = signal<'logs' | 'flow'>('logs');
   protected readonly traceFilter = signal<TraceFilter>('all');
   protected readonly selectedTraceEventIndex = signal<number | null>(null);
@@ -113,13 +112,6 @@ export class App {
   protected readonly sessionTriageHelp =
     'Fast read derived from imported tokens and model mix. These are cost-debugging signals, not billing rows.';
   protected readonly sizeOptions: Array<'all' | SessionSize> = ['all', 'Small', 'Medium', 'Large', 'Very large'];
-  protected readonly sourceOptions: Array<{ value: SessionSourceFilter; label: string }> = [
-    { value: 'all', label: 'All sources' },
-    { value: 'debug-log', label: 'Debug logs' },
-    { value: 'chat-snapshot', label: 'Chat snapshots' },
-    { value: 'exact', label: 'Token totals' },
-    { value: 'estimated', label: 'Estimated data' },
-  ];
   protected readonly traceFilterOptions: Array<{ value: TraceFilter; label: string }> = [
     { value: 'all', label: 'All events' },
     { value: 'model', label: 'Model calls' },
@@ -192,14 +184,12 @@ export class App {
     const query = this.query().trim().toLowerCase();
     const sizeFilter = this.sizeFilter();
     const warningFilter = this.warningFilter();
-    const sourceFilter = this.sourceFilter();
     const sessions = [...this.sessions()].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
 
     return sessions.filter((session) =>
       this.matchesQuery(session, query) &&
       this.matchesSizeFilter(session, sizeFilter) &&
-      this.matchesWarningFilter(session, warningFilter) &&
-      this.matchesSourceFilter(session, sourceFilter),
+      this.matchesWarningFilter(session, warningFilter),
     );
   });
 
@@ -324,10 +314,6 @@ export class App {
     this.warningFilter.set(value);
   }
 
-  protected setSourceFilter(value: SessionSourceFilter): void {
-    this.sourceFilter.set(value);
-  }
-
   protected setAllowancePlan(value: string): void {
     if (COPILOT_ALLOWANCE_PLANS.some((plan) => plan.id === value)) {
       this.allowancePlan.set(value as CopilotAllowancePlan);
@@ -392,78 +378,6 @@ export class App {
 
   private matchesWarningFilter(session: CopilotSession, value: string): boolean {
     return value === 'all' || this.sessionTriage(session).warnings.some((warning) => warning.label === value);
-  }
-
-  private matchesSourceFilter(session: CopilotSession, value: SessionSourceFilter): boolean {
-    if (value === 'all') {
-      return true;
-    }
-
-    if (value === 'debug-log') {
-      return session.sourceKind === 'vscode-copilot-debug-log';
-    }
-
-    if (value === 'chat-snapshot') {
-      return session.sourceKind === 'vscode-chat-session-snapshot';
-    }
-
-    return session.confidence === value;
-  }
-
-  protected tokenSourceHelp(tokenSource: string): string {
-    if (tokenSource === 'llm_request_token_totals') {
-      return 'Strongest local token source: VS Code logged input/output token counts for each model call. When cachedTokens is present, ingestion prices that cached input separately.';
-    }
-
-    if (tokenSource === 'chat-snapshot-output-plus-visible-input-estimate') {
-      return 'We estimate from visible chat text and any completion token fields. This is weaker than debug logs.';
-    }
-
-    return 'Token source recorded by the scanner. Treat unknown sources as lower confidence until documented.';
-  }
-
-  protected tokenSourceLabel(tokenSource: string): string {
-    if (tokenSource === 'llm_request_token_totals') {
-      return 'Debug-log token counts';
-    }
-
-    if (tokenSource === 'chat-snapshot-output-plus-visible-input-estimate') {
-      return 'Chat snapshot estimate';
-    }
-
-    return tokenSource;
-  }
-
-  protected confidenceHelp(confidence: string): string {
-    if (confidence === 'exact') {
-      return 'Exact for the token fields VS Code logged locally. It is still not a final billing guarantee.';
-    }
-
-    if (confidence === 'estimated') {
-      return 'Estimated from weaker local data. Useful for direction, but not billing-grade.';
-    }
-
-    if (confidence === 'reconciled') {
-      return 'Matched to an external billing or usage source while preserving the local estimate.';
-    }
-
-    return 'Sample or incomplete data. Use only as rough context.';
-  }
-
-  protected confidenceLabel(confidence: string): string {
-    if (confidence === 'exact') {
-      return 'Token totals';
-    }
-
-    if (confidence === 'estimated') {
-      return 'Estimated data';
-    }
-
-    if (confidence === 'reconciled') {
-      return 'Reconciled data';
-    }
-
-    return confidence;
   }
 
   private readStoredTheme(): ThemeMode {

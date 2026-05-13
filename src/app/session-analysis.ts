@@ -78,7 +78,9 @@ export function sessionTriage(session: CopilotSession): SessionTriage {
     0,
   );
 
-  if (session.tokens.input >= 150_000 || maxInput >= 100_000) {
+  const totalInputTokens = session.tokens.input + session.tokens.cachedInput + session.tokens.cacheWrite;
+
+  if (totalInputTokens >= 150_000 || maxInput >= 100_000) {
     warnings.push({
       label: 'High input context',
       tone: 'high',

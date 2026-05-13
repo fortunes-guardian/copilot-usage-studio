@@ -146,14 +146,24 @@ export class ComparePageComponent {
           help: 'Local estimate from imported VS Code token totals and GitHub price rows.',
         },
         {
-          label: 'Input tokens',
+          label: 'Normal input tokens',
           a: a.tokens.input,
           b: b.tokens.input,
           delta: b.tokens.input - a.tokens.input,
           percent: percentDelta(a.tokens.input, b.tokens.input),
           format: 'number',
           lowerIsBetter: true,
-          help: 'Prompt, repo context, prior conversation, and tool results sent into the model.',
+          help: 'Prompt/context tokens priced at the normal input rate. Cached input is shown separately when present.',
+        },
+        {
+          label: 'Cached input tokens',
+          a: a.tokens.cachedInput,
+          b: b.tokens.cachedInput,
+          delta: b.tokens.cachedInput - a.tokens.cachedInput,
+          percent: percentDelta(a.tokens.cachedInput, b.tokens.cachedInput),
+          format: 'number',
+          lowerIsBetter: true,
+          help: 'Prompt/context tokens VS Code reported as cachedTokens. These are priced with the cached-input rate, not merged into normal input.',
         },
         {
           label: 'Output tokens',
@@ -388,5 +398,4 @@ function normalizePrompt(prompt: string): string {
     .replace(/\s+/g, ' ')
     .trim();
 }
-
 

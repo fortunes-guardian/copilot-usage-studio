@@ -105,10 +105,10 @@
           }
         </span>
         <span role="cell" data-label="Tokens">
-          {{ model.tokens.input | number }} in /
+          {{ model.tokens.input | number }} normal in /
           {{ model.tokens.output | number }} out
           @if (model.tokens.cachedInput || model.tokens.cacheWrite) {
-            <em>{{ model.tokens.cachedInput | number }} cached / {{ model.tokens.cacheWrite | number }} write</em>
+            <em>{{ model.tokens.cachedInput | number }} cached in / {{ model.tokens.cacheWrite | number }} cache write</em>
           }
         </span>
         <span role="cell" data-label="Rates / 1M">

@@ -17,15 +17,16 @@ Done:
 - Add source-confidence help for ingest, source, confidence, cache, and cost terms.
 - Show logs and agent flow chart with token/cost detail.
 - Add session size and cost-signal labels.
-- Add session filters for size, source quality, and cost signal.
+- Add session filters for size and cost signal. Source-quality filters were removed from the main Sessions rail because they were implementation jargon.
 - Add a per-turn model-call cost breakdown with timeline and largest-first modes.
 - Split selected-run debugging into `Overview`, `Cost`, `Turns`, and `Trace` subviews.
 - Add Cost and Turns answer panels so the user sees the likely driver before reading detailed tables.
+- Keep `Normal input`, `Cached input`, `Cache write`, and `Output` visibly separate in cost views and comparisons.
 
 Next:
 
-- Verify the Cost page's input token display against raw `llm_request.attrs.inputTokens`, especially when `cachedTokens` is present. The UI should make the difference between raw input, normal billable input, and cached input impossible to misread.
-- Simplify user-facing source language. Prefer "debug-log token totals" or "local token totals" over verbose labels such as "Exact local data" when the distinction does not help the user act.
+- Improve raw model-call detail display for cached sessions. The math is correct, but the UI should make the difference between raw `inputTokens`, normal input, and cached input impossible to misread.
+- Keep user-facing source language minimal. Show debug-log/source confidence in docs or ingest diagnostics, not as primary selected-run chips.
 - Remove low-value banners and technical caveats from the main Cost view unless they change a decision.
 - Investigate raw VS Code `estimatedCost` evidence. If `llm_request.attrs.estimatedCost` exists and is reliable, preserve it separately from the app-calculated estimate and compare the two.
 
@@ -39,13 +40,13 @@ Done:
 
 - Session size labels: `Small`, `Medium`, `Large`, `Very large`.
 - Cost-signal labels started with `High input context`, `Context growth`, `Mixed models`, `Cache unknown`, and `State enriched`; current direction is to keep only labels that help users act.
-- Filters for size, cost signal, and source quality.
-- Better session-list scanning: cost, model, size, source quality, and tokens.
+- Filters for size and cost signal.
+- Better session-list scanning: cost, model, size, and tokens.
 
 Build:
 
 - Filters for workspace, model, and time window.
-- Recalibrate size thresholds. Current `Very large` at 600k imported tokens is too noisy for these real sessions.
+- Recalibrate size thresholds from real usage as more sessions are imported. Current `Very large` starts at 1.5M imported tokens.
 - Remove or hide low-value badges such as `State enriched`, `Context growth`, and cache/status labels that do not help the developer decide what to optimize.
 
 Why: a developer should spot suspicious runs before opening each one.
