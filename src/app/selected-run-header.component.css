@@ -203,6 +203,27 @@ h2 {
   outline-offset: 2px;
 }
 
+:host-context(.theme-light) .detail-header {
+  border-color: rgba(189, 203, 218, 0.9);
+  box-shadow: var(--shadow-soft);
+}
+
+:host-context(.theme-light) .source-meta > span {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+:host-context(.theme-light) .price {
+  border-color: rgba(12, 159, 131, 0.22);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(12, 159, 131, 0.1), transparent 42%),
+    rgba(255, 255, 255, 0.62);
+  box-shadow: 0 10px 24px rgba(31, 45, 64, 0.08);
+}
+
+:host-context(.theme-light) .source-callout {
+  box-shadow: var(--shadow-soft);
+}
+
 @media (max-width: 900px) {
   .detail-header,
   .source-callout {

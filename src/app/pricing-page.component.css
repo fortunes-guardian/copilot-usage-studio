@@ -344,4 +344,36 @@
   font-weight: 760;
 }
 
+:host-context(.theme-light) .pricing-source,
+:host-context(.theme-light) .pricing-table,
+:host-context(.theme-light) .pricing-note,
+:host-context(.theme-light) .allowance-panel {
+  box-shadow: var(--shadow-soft);
+}
+
+:host-context(.theme-light) .pricing-source {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.46)),
+    var(--surface);
+}
+
+:host-context(.theme-light) .pricing-note {
+  background:
+    linear-gradient(135deg, rgba(12, 159, 131, 0.045), rgba(111, 92, 255, 0.02)),
+    var(--surface);
+}
+
+:host-context(.theme-light) .allowance-panel {
+  border-color: rgba(189, 203, 218, 0.9);
+}
+
+:host-context(.theme-light) .allowance-card,
+:host-context(.theme-light) .allowance-meter div {
+  background: rgba(255, 255, 255, 0.68);
+}
+
+:host-context(.theme-light) .pricing-table {
+  background: var(--surface);
+}
+
 

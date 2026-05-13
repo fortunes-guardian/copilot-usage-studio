@@ -905,6 +905,69 @@
   padding: 10px;
 }
 
+:host-context(.theme-light) .trace-actions button,
+:host-context(.theme-light) .segmented-control,
+:host-context(.theme-light) .trace-inspector,
+:host-context(.theme-light) .event-log {
+  box-shadow: var(--shadow-soft);
+}
+
+:host-context(.theme-light) .trace-actions button,
+:host-context(.theme-light) .segmented-control {
+  background: rgba(255, 255, 255, 0.68);
+}
+
+:host-context(.theme-light) .selected-event-strip,
+:host-context(.theme-light) .trace-inspector {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.66)),
+    var(--surface-raised);
+}
+
+:host-context(.theme-light) .selected-event-strip dl div,
+:host-context(.theme-light) .inspector-primary-facts div,
+:host-context(.theme-light) .inspector-token-split,
+:host-context(.theme-light) .inspector-group,
+:host-context(.theme-light) .inspector-topline > div,
+:host-context(.theme-light) .inspector-cost {
+  background: rgba(255, 255, 255, 0.66);
+}
+
+:host-context(.theme-light) .event-log {
+  background: var(--surface);
+}
+
+:host-context(.theme-light) .event-row {
+  background: rgba(255, 255, 255, 0.68);
+}
+
+:host-context(.theme-light) .event-row:hover,
+:host-context(.theme-light) .event-row.active {
+  background: rgba(12, 159, 131, 0.08);
+}
+
+:host-context(.theme-light) .event-row.token-bearing {
+  background:
+    linear-gradient(90deg, rgba(111, 92, 255, 0.075), transparent 42%),
+    rgba(255, 255, 255, 0.7);
+}
+
+:host-context(.theme-light) .inspector-lens {
+  background:
+    linear-gradient(135deg, rgba(12, 159, 131, 0.055), transparent 58%),
+    var(--surface);
+}
+
+:host-context(.theme-light) .inspector-lens.model-call {
+  background:
+    linear-gradient(135deg, rgba(111, 92, 255, 0.09), transparent 58%),
+    var(--surface);
+}
+
+:host-context(.theme-light) .raw-event pre {
+  background: #f4f8fc;
+}
+
 @media (max-width: 1250px) {
   .trace-workbench {
     grid-template-columns: minmax(0, 1fr);

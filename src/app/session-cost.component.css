@@ -678,4 +678,39 @@
   font-weight: 720;
 }
 
+:host-context(.theme-light) .cost-explainer {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.44)),
+    var(--surface);
+  box-shadow: var(--shadow);
+}
+
+:host-context(.theme-light) .primary-diagnosis {
+  border-color: rgba(111, 92, 255, 0.22);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(111, 92, 255, 0.13), transparent 38%),
+    linear-gradient(135deg, rgba(12, 159, 131, 0.06), rgba(111, 92, 255, 0.035)),
+    var(--surface);
+}
+
+:host-context(.theme-light) .diagnostic-facts > div,
+:host-context(.theme-light) .driver-grid article,
+:host-context(.theme-light) .cost-categories article,
+:host-context(.theme-light) .payload-grid article,
+:host-context(.theme-light) .payload-lists article {
+  background: rgba(255, 255, 255, 0.64);
+}
+
+:host-context(.theme-light) .estimate-note,
+:host-context(.theme-light) .payload-evidence {
+  background:
+    linear-gradient(135deg, rgba(12, 159, 131, 0.04), rgba(111, 92, 255, 0.02)),
+    var(--surface);
+}
+
+:host-context(.theme-light) .cost-table {
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
 

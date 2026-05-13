@@ -82,4 +82,16 @@ button:focus-visible {
   transform: translateY(0);
 }
 
+:host-context(.theme-light) button,
+:host-context(.theme-light) .help-trigger {
+  border-color: rgba(129, 145, 165, 0.34);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+:host-context(.theme-light) .help-panel {
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 42px rgba(31, 45, 64, 0.16);
+  backdrop-filter: blur(14px);
+}
+
 

@@ -4,6 +4,54 @@ Start here when resuming the project.
 
 ## Latest Step
 
+Completed a full light-mode cohesion pass across the app.
+
+What changed:
+
+- Tuned the shared light-theme tokens: softer page background, calmer violet/teal gradients, clearer surfaces, and more consistent shadow strength.
+- Polished the Sessions debugger flow as one connected workspace: session rail, selected-run header, run tabs, Overview, Cost, Turns, and Trace.
+- Added light-mode-specific component styling for cards, tables, trace rows, sticky trace inspector, help popovers, pricing panels, and session cards.
+- Kept dark mode intact by using theme-scoped overrides rather than replacing the shared component styles.
+
+Why: light mode was working, but some panels still looked like dark-mode components translated literally into bright colors. This pass makes the app feel more coherent in light mode while preserving the existing accent-gradient identity.
+
+Verification:
+
+- `npm test -- --watch=false`
+- `npm run build`
+- Browser DOM check on `http://127.0.0.1:4301/` confirmed light mode loads by default and the selected-run debugger navigation renders.
+
+Known note:
+
+- `npm run build` still passes with the existing initial bundle budget warning, now about 38.1 kB over the 500 kB budget after the CSS-heavy polish pass.
+- In-app screenshot/click automation remains flaky, so final verification used build/test plus live DOM inspection.
+
+## Previous Step
+
+Polished the light-theme Compare and Analytics pages after the first visual pass.
+
+What changed:
+
+- Rebalanced the Compare page gradients so the prompt-testing and comparison-readout areas read as focused highlights instead of competing page backgrounds.
+- Moved Analytics cohort totals out of the right rail into a compact summary strip above the main model table.
+- Kept Model breakdown as the first major Analytics object, with Distribution and Recent trend as supporting panels.
+- Tightened Analytics controls, card shadows, table surfaces, and metric spacing so the page feels closer to the rest of the light theme.
+
+Why: the light theme was functional, but these two pages still felt like older dark-mode layouts wearing bright colors. The pass keeps the teal/violet accent language while making the page hierarchy clearer: filters, cohort totals, then model breakdown.
+
+Verification:
+
+- `npm test -- --watch=false`
+- `npm run build`
+- Browser DOM check on `http://127.0.0.1:4301/` confirmed the updated Analytics and Compare structures render.
+
+Known note:
+
+- `npm run build` still passes with the existing initial bundle budget warning, currently about 23.4 kB over the 500 kB budget.
+- In-app screenshot capture is still timing out, so verification used live navigation plus DOM checks rather than captured screenshots.
+
+## Previous Step
+
 Implemented light mode as the default app theme, with a persistent dark/light toggle.
 
 What changed:

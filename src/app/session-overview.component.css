@@ -152,6 +152,28 @@
   overflow-wrap: anywhere;
 }
 
+:host-context(.theme-light) .overview-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.42)),
+    var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+:host-context(.theme-light) .facts > div,
+:host-context(.theme-light) .session-details dl > div {
+  background: rgba(255, 255, 255, 0.62);
+}
+
+:host-context(.theme-light) .session-triage {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255, 186, 74, 0.13), transparent 34%),
+    var(--surface);
+}
+
+:host-context(.theme-light) .triage-badge {
+  background: rgba(255, 255, 255, 0.72);
+}
+
 @media (max-width: 1050px) {
   .overview-grid,
   .session-details dl {

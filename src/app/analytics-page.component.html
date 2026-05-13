@@ -61,6 +61,26 @@
         }
       </section>
     } @else {
+      <section class="analytics-panel summary-panel analytics-summary-strip" aria-label="Analytics summary">
+        <div class="panel-heading">
+          <div>
+            <h3>Cohort totals</h3>
+            <p>Totals for the current Analytics filters.</p>
+          </div>
+        </div>
+        <section class="analytics-metrics" aria-label="Analytics summary metrics">
+          @for (metric of stats.metrics; track metric.label) {
+            <article class="metric">
+              <span class="metric-label">
+                {{ metric.label }}
+                <app-help-popover [text]="metric.help" [label]="'Explain ' + metric.label"></app-help-popover>
+              </span>
+              <strong>{{ metric.value }}</strong>
+            </article>
+          }
+        </section>
+      </section>
+
       <section class="analytics-primary">
         <div class="analytics-panel model-panel">
           <div class="panel-heading">
@@ -104,21 +124,6 @@
         </div>
 
         <aside class="analytics-side">
-          <div class="analytics-panel summary-panel">
-            <h3>Cohort totals</h3>
-            <section class="analytics-metrics" aria-label="Analytics summary">
-              @for (metric of stats.metrics; track metric.label) {
-                <article class="metric">
-                  <span class="metric-label">
-                    {{ metric.label }}
-                    <app-help-popover [text]="metric.help" [label]="'Explain ' + metric.label"></app-help-popover>
-                  </span>
-                  <strong>{{ metric.value }}</strong>
-                </article>
-              }
-            </section>
-          </div>
-
           <div class="analytics-panel">
             <h3>Distribution</h3>
             <div class="stat-list compact">

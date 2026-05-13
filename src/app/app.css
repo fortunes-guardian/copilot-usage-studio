@@ -1580,17 +1580,17 @@
 .shell {
   --bg: #f4f7fb;
   --top: rgba(255, 255, 255, 0.86);
-  --rail: #edf3f8;
+  --rail: #eef5f7;
   --surface: #ffffff;
   --surface-raised: #ffffff;
-  --surface-soft: #f7fafc;
-  --surface-tint: #eef5ff;
-  --text: #243247;
+  --surface-soft: #f8fbfd;
+  --surface-tint: #eef6ff;
+  --text: #26364a;
   --text-strong: #081423;
-  --muted: #617085;
-  --muted-2: #8390a3;
-  --line: #dce5ef;
-  --line-strong: #b9c8d8;
+  --muted: #617187;
+  --muted-2: #8191a5;
+  --line: #dbe5ee;
+  --line-strong: #b6c8da;
   --accent: #6f5cff;
   --accent-2: #0c9f83;
   --warning: #c77900;
@@ -1598,16 +1598,18 @@
   --accent-soft: rgba(111, 92, 255, 0.13);
   --teal-soft: rgba(12, 159, 131, 0.1);
   --focus-ring: rgba(12, 159, 131, 0.42);
-  --shadow: 0 18px 46px rgba(31, 45, 64, 0.11);
-  --shadow-soft: 0 8px 22px rgba(31, 45, 64, 0.08);
-  --control-bg: rgba(255, 255, 255, 0.72);
-  --nav-bg: rgba(255, 255, 255, 0.66);
+  --shadow: 0 18px 42px rgba(31, 45, 64, 0.1);
+  --shadow-soft: 0 8px 22px rgba(31, 45, 64, 0.07);
+  --control-bg: rgba(255, 255, 255, 0.82);
+  --nav-bg: rgba(255, 255, 255, 0.72);
   --session-card-bg: rgba(255, 255, 255, 0.7);
   --session-card-hover: #ffffff;
   --session-card-active: linear-gradient(135deg, rgba(111, 92, 255, 0.12), rgba(12, 159, 131, 0.08)), #ffffff;
-  --header-gradient: linear-gradient(135deg, rgba(111, 92, 255, 0.13), rgba(12, 159, 131, 0.08)), var(--surface);
-  --page-gradient: radial-gradient(circle at 78% 2%, rgba(111, 92, 255, 0.14), transparent 32%),
-    radial-gradient(circle at 14% 0%, rgba(12, 159, 131, 0.12), transparent 25%),
+  --header-gradient: radial-gradient(circle at 100% 0%, rgba(111, 92, 255, 0.12), transparent 34%),
+    linear-gradient(135deg, rgba(12, 159, 131, 0.065), rgba(111, 92, 255, 0.035)),
+    var(--surface);
+  --page-gradient: radial-gradient(circle at 78% 0%, rgba(111, 92, 255, 0.11), transparent 30%),
+    radial-gradient(circle at 12% 0%, rgba(12, 159, 131, 0.105), transparent 24%),
     var(--bg);
   --scrollbar: #b7c6d7;
   --success-text: #047863;
@@ -1770,6 +1772,53 @@
 
 .shell.theme-light .session-card.active {
   background: var(--session-card-active);
+}
+
+.shell.theme-light .content {
+  gap: 16px;
+}
+
+.shell.theme-light .detail,
+.shell.theme-light .ingestion,
+.shell.theme-light .import-context,
+.shell.theme-light .run-tabs button {
+  box-shadow: var(--shadow-soft);
+}
+
+.shell.theme-light .detail {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.36)),
+    var(--surface);
+}
+
+.shell.theme-light .run-tabs {
+  border: 1px solid rgba(219, 229, 238, 0.82);
+  border-radius: 14px;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.48);
+  box-shadow: var(--shadow-soft);
+}
+
+.shell.theme-light .run-tabs button {
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.shell.theme-light .run-tabs button:hover {
+  background: #ffffff;
+}
+
+.shell.theme-light .run-tabs button.active {
+  box-shadow: 0 10px 24px rgba(31, 45, 64, 0.11);
+}
+
+.shell.theme-light .import-context {
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.shell.theme-light .source-callout {
+  background:
+    linear-gradient(135deg, rgba(12, 159, 131, 0.045), rgba(111, 92, 255, 0.02)),
+    var(--surface);
 }
 
 .shell.theme-light .credit-meter select,

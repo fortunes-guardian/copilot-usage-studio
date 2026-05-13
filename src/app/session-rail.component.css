@@ -153,6 +153,32 @@
   color: var(--danger-text, #ffc2bd);
 }
 
+:host-context(.theme-light) .sidebar {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(12, 159, 131, 0.09), transparent 32%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.2)),
+    var(--rail);
+}
+
+:host-context(.theme-light) .search input,
+:host-context(.theme-light) .filters select {
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+:host-context(.theme-light) .session-card {
+  box-shadow: 0 8px 20px rgba(31, 45, 64, 0.055);
+}
+
+:host-context(.theme-light) .session-card:hover {
+  box-shadow: 0 12px 26px rgba(31, 45, 64, 0.09);
+}
+
+:host-context(.theme-light) .session-card.active {
+  border-color: rgba(111, 92, 255, 0.5);
+  box-shadow: 0 0 0 2px rgba(111, 92, 255, 0.12), 0 14px 30px rgba(31, 45, 64, 0.1);
+}
+
 .empty {
   margin: 0;
   color: var(--muted);
