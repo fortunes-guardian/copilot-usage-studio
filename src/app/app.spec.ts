@@ -153,6 +153,22 @@ describe('App', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Inspect the source event');
   });
+
+  it('opens the matching trace event from a model call', async () => {
+    const fixture = TestBed.createComponent(App);
+    TestBed.inject(HttpTestingController).expectOne('/data/sessions.json').flush(sessionDataFixture);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    clickButtonContaining(fixture.nativeElement, 'Calls');
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('.trace-link') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Opened from Calls');
+    expect(fixture.nativeElement.textContent).toContain('#1');
+    expect(fixture.nativeElement.textContent).toContain('panel/editAgent');
+  });
 });
 
 function clickButtonContaining(root: HTMLElement, text: string): void {

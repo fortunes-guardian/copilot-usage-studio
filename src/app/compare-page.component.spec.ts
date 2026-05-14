@@ -71,6 +71,23 @@ describe('ComparePageComponent', () => {
     expect(text).toContain('write +400');
     expect(text).toContain('out +500');
   });
+
+  it('renders the headline comparison delta and manual-comparison caveat', () => {
+    fixture.componentRef.setInput('sessions', [
+      sessionFixture('run-a', 'Review branch', 0.05, 10_000, 0, 0, 1_000, 1, 1),
+      sessionFixture('run-b', 'Scan repository', 0.12, 20_000, 0, 0, 2_000, 2, 3),
+    ]);
+    fixture.componentRef.setInput('compareA', 'run-a');
+    fixture.componentRef.setInput('compareB', 'run-b');
+    fixture.detectChanges();
+
+    const text = compactText(fixture.nativeElement.textContent as string);
+
+    expect(text).toContain('Manual comparison read');
+    expect(text).toContain('+$0.07');
+    expect(text).toContain('Run B is more expensive');
+    expect(text).toContain('These first prompts differ');
+  });
 });
 
 function sessionFixture(

@@ -62,7 +62,7 @@ The Analytics view is intentionally separate from the selected-run debugger:
 - **Compare runs** explains how run B differs from run A.
 - **Analytics** explains the current group of sessions.
 
-The sidebar filters define the starting group. If you filter to exact debug-log sessions, Analytics only summarizes those sessions. The Analytics controls then narrow that group by time range, workspace, and model, and choose whether the trend is grouped by day, week, or month.
+The sidebar filters define the starting group. Analytics only summarizes the sessions currently visible after sidebar search, size, and signal filters. The Analytics controls then narrow that group by time range, workspace, and model, and choose whether the trend is grouped by day, week, or month.
 
 The Analytics reset button resets only the Analytics controls. It does not clear sidebar filters. This is intentional: sidebar filters define the global working set, while Analytics controls define the dashboard cohort inside that working set.
 

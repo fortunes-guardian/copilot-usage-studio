@@ -32,6 +32,28 @@ describe('AnalyticsPageComponent', () => {
     expect(opened[0].id).toBe('expensive-run');
     expect(fixture.nativeElement.textContent).toContain('Open run');
   });
+
+  it('shows a resettable empty state when analytics controls exclude visible sessions', () => {
+    fixture.componentRef.setInput('sessions', [sessionFixture('small-run', 'Small run', 0.01, 10_000)]);
+    fixture.componentRef.setInput('totalSessionCount', 1);
+    fixture.detectChanges();
+
+    const workspaceSelect = fixture.nativeElement.querySelectorAll('select')[1] as HTMLSelectElement;
+    workspaceSelect.value = 'missing-workspace';
+    workspaceSelect.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('No sessions in this Analytics cohort');
+    expect(fixture.nativeElement.textContent).toContain('Reset Analytics filters');
+
+    const resetButton = [...fixture.nativeElement.querySelectorAll('button')].find((button) =>
+      button.textContent.includes('Reset Analytics filters'),
+    ) as HTMLButtonElement;
+    resetButton.click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Model breakdown');
+  });
 });
 
 function sessionFixture(id: string, title: string, usd: number, input: number): CopilotSession {

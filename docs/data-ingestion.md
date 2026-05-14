@@ -139,7 +139,7 @@ The app displays:
 - first prompt, workspace, model, timestamps, tags, source kind, token source
 - VS Code Agent Debug Log style session details: session type, location, status, created time, and last activity
 - session size and cost-signal labels for fast triage
-- a Billing Reality Check in the Cost view that explains cache visibility and invoice-risk direction from the imported token mix
+- Cost-view token categories that keep normal input, cached input, cache write, and output visibly separate
 - trace summary cards: model turns, tool calls, total tokens, errors, and total events
 - a cost debugger with cost drivers, token categories, per-model pricing rows, and the largest model calls
 - a capped trace event preview for logs, a clickable Trace inspector, and flow-chart views
@@ -185,7 +185,7 @@ Advanced evidence is imported under `advancedSignals`, but most of it is not sho
 
 Why: reasoning and context pressure are potentially valuable cost-debugging signals, but weak or overly technical evidence should not clutter the main debugger. Reasoning effort is now preserved when it is source-backed; request-cap comparison and raw token movement stay as investigation context rather than primary product claims.
 
-## Per-turn cost breakdown
+## Calls cost breakdown
 
 The selected-run debugger now expands the older largest-model-calls view into an ordered table of token-bearing model calls. Each row shows the call index, raw event number, timestamp, model, pricing row, input tokens, output tokens, estimated cost, input/output cost split, share of session cost, and nearby prior context.
 
@@ -194,7 +194,7 @@ The UI supports two reads:
 - `Timeline`: best for understanding where the session became expensive.
 - `Largest first`: best for quickly finding the biggest token/cost burn.
 
-Why: session totals answer "how expensive was this run?" Per-turn costs answer "where did the cost happen?" That is the sharper debugging tool when a developer wants to know whether cost came from the first prompt, accumulated context, repo/tool output, a model switch, or a late-session spike.
+Why: session totals answer "how expensive was this run?" Calls answer "where did the cost happen?" That is the sharper debugging tool when a developer wants to know whether cost came from the first prompt, accumulated context, repo/tool output, a model switch, or a late-session spike.
 
 ## Request-payload attribution roadmap
 

@@ -96,7 +96,9 @@ export class SessionTraceComponent implements OnChanges, AfterViewChecked {
       `[data-trace-event-index="${eventIndex}"]`,
     );
 
-    row?.scrollIntoView({ block: 'center' });
+    if (typeof row?.scrollIntoView === 'function') {
+      row.scrollIntoView({ block: 'center' });
+    }
   }
 
   protected eventRowClass(event: TraceEvent): string[] {

@@ -13,14 +13,14 @@ Done:
 - Show GitHub price rows used by the estimator.
 - Store structured model, pricing row, token total, and estimated cost on token-bearing trace events.
 - Convert estimates into GitHub AI credits and show Business/Enterprise allowance context.
-- Show cost drivers: input burn, largest model call, context growth, model mix, and tool activity.
-- Add source-confidence help for ingest, source, confidence, cache, and cost terms.
+- Show cost drivers: input/cache cost, largest model call, model mix, and tool activity.
+- Keep source-confidence language in docs and ingestion diagnostics rather than primary selected-run chips.
 - Show logs and agent flow chart with token/cost detail.
 - Add session size and cost-signal labels.
 - Add session filters for size and cost signal. Source-quality filters were removed from the main Sessions rail because they were implementation jargon.
 - Add a per-turn model-call cost breakdown with timeline and largest-first modes.
-- Split selected-run debugging into `Overview`, `Cost`, `Turns`, and `Trace` subviews.
-- Add Cost and Turns answer panels so the user sees the likely driver before reading detailed tables.
+- Split selected-run debugging into `Overview`, `Cost`, `Calls`, and `Trace` subviews.
+- Add Cost and Calls answer panels so the user sees the likely driver before reading detailed tables.
 - Keep `Normal input`, `Cached input`, `Cache write`, and `Output` visibly separate in cost views and comparisons.
 - Added regression tests for the shared cache-aware pricing buckets, including normal input, cached input, cache write, and output.
 - Added scanner fixture tests for raw Agent Debug Log `cachedTokens`, invalid cached-token splits, cache-write pricing, and merged cache audits.
@@ -28,7 +28,7 @@ Done:
 Next:
 
 - Improve raw model-call detail display for cached sessions. The math is tested, but the UI should make the difference between raw `inputTokens`, normal input, and cached input impossible to misread.
-- Keep user-facing source language minimal. Show debug-log/source confidence in docs or ingest diagnostics, not as primary selected-run chips.
+- Keep user-facing source language minimal. Show debug-log/source details in docs or ingest diagnostics, not as primary selected-run chips.
 - Remove low-value banners and technical caveats from the main Cost view unless they change a decision.
 - Investigate raw VS Code `estimatedCost` evidence. If `llm_request.attrs.estimatedCost` exists and is reliable, preserve it separately from the app-calculated estimate and compare the two.
 
@@ -41,7 +41,7 @@ Status: started.
 Done:
 
 - Session size labels: `Small`, `Medium`, `Large`, `Very large`.
-- Cost-signal labels started with `High input context`, `Context growth`, `Mixed models`, `Cache unknown`, and `State enriched`; current direction is to keep only labels that help users act.
+- Cost-signal labels now focus on actionable signals such as `High input context` and `Mixed models`.
 - Filters for size and cost signal.
 - Better session-list scanning: cost, model, size, and tokens.
 
@@ -49,7 +49,7 @@ Build:
 
 - Filters for workspace, model, and time window.
 - Recalibrate size thresholds from real usage as more sessions are imported. Current `Very large` starts at 1.5M imported tokens.
-- Remove or hide low-value badges such as `State enriched`, `Context growth`, and cache/status labels that do not help the developer decide what to optimize.
+- Continue recalibrating labels from real usage and avoid reintroducing source/status jargon that does not help the developer decide what to optimize.
 
 Why: a developer should spot suspicious runs before opening each one.
 
@@ -71,6 +71,7 @@ Done:
 - Added same-prompt spread explanations for repeated prompt groups.
 - Added Compare component tests for repeated-prompt spread explanation and A/B swap behavior.
 - Added Compare fixture coverage for cached-token movement rows.
+- Added Compare headline delta/caveat test coverage.
 
 Next:
 
@@ -98,10 +99,11 @@ Done:
 - Separates a few obvious outlier cases, including plausible long agent runs and suspicious low-activity spikes.
 - Extracted Analytics into its own Angular component so the dashboard no longer lives inside the root shell template.
 - Added explicit `Open run` cues and test coverage for Analytics action cards that open selected sessions.
+- Extracted Analytics calculation logic into `session-analytics.ts` and covered filters, cached token model rows, trend grouping, distribution, and outlier reasons with tests.
+- Added Analytics empty-state/reset test coverage.
 
 Next:
 
-- Browser-check Analytics at desktop and narrow widths.
 - Keep clarifying the difference between `Time range` as the included-session filter and `Group trend by` as the trend bucket display.
 - Improve outlier explanation with more real imported sessions.
 - Add saved comparison/cohort concepts later if app-owned SQLite becomes the right durable state layer.
@@ -136,15 +138,14 @@ Done:
 - Shows each token-bearing model call with index, timestamp, model, pricing row, input tokens, output tokens, estimated cost, input/output cost split, and share of session cost.
 - Kept a sorted `Largest first` mode so high-cost calls remain easy to find.
 - Adds nearby prior-event context so a developer can tell what kind of activity preceded the expensive call.
-- Moved the model-call table into the selected-run `Turns` subview so Cost explains the estimate and Turns explains where it happened.
+- Moved the model-call table into the selected-run `Calls` subview so Cost explains the estimate and Calls explains where it happened.
 - Added a Turn insights strip: model-call count, most expensive call, largest input, largest output, and average cost per call.
 
 Next:
 
-- Rebrand this page away from "which model call caused it". Cost usually emerges from a sequence of model calls, not one culprit.
 - Make row highlighting explicit. The yellow highlight currently means medium estimated-cost share; the UI should label that or use a less mysterious visual treatment.
 
-Why: session totals explain that a run was expensive. Per-turn cost explains where it became expensive.
+Why: session totals explain that a run was expensive. Calls explain where it became expensive.
 
 ## Phase 7: UX And Style Rework
 
@@ -164,22 +165,22 @@ Done:
 - Removed the old hidden Compare copy from the Sessions view.
 - Reordered the selected-run view so the run hero, summary, and Cost debugger come before supporting metadata.
 - Compacted Data provenance into the top Sessions workspace overview.
-- Added selected-run subviews for Overview, Cost, Turns, and Trace.
-- Made Cost and Turns lead with diagnostic answer panels before the detailed tables.
-- Reworked the selected-run navigation into an investigation map: Run facts, then Cost diagnose, Turns locate, and Trace verify.
+- Added selected-run subviews for Overview, Cost, Calls, and Trace.
+- Made Cost and Calls lead with diagnostic answer panels before the detailed tables.
+- Reworked the selected-run navigation into an investigation map: Run facts, then Cost diagnose, Calls review, and Trace verify.
 - Polished Trace rows and inspector grouping so Trace reads like the evidence step in the debugger flow.
 - Extracted the selected-run Overview subview into its own Angular component.
 - Extracted the selected-run Cost subview into its own Angular component.
-- Extracted the selected-run Turns and Trace subviews into standalone Angular components.
+- Extracted the selected-run Calls and Trace subviews into standalone Angular components.
 - Added the first proper help popover component and started using it in the Cost debugger.
 - Replaced native browser `title` tooltips with the shared help popover across the app UI.
 - Reworked the help icon to a centered `i` mark and removed stale `.help-dot` styles.
-- Improved Cost and Turns responsive tables so narrow screens show labeled card rows instead of relying only on horizontal scroll.
+- Improved Cost and Calls responsive tables so narrow screens show labeled card rows instead of relying only on horizontal scroll.
 - Applied the first dark diagnostic design-token layer.
 - Added the first density/typography polish pass: modern system font stack, quieter weights, smaller headings, tighter cards, smoother states, and clamped long session prompts.
 - Pruned redundant Sessions/Overview facts so repeated model, token, source, run-size, provenance, and fallback-pricing details have clearer primary locations.
 - Changed narrow layout behavior so the session rail moves below the content instead of replacing it.
-- Made unknown-model pricing fallbacks visible across selected run, Cost, Turns, Compare, Analytics, and Prices.
+- Made unknown-model pricing fallbacks visible across selected run, Cost, Calls, Compare, Analytics, and Prices.
 - Added a selected-run AI-credit meter and Prices-page allowance selector for Copilot Business/Enterprise included credits.
 - Added a visible "open run is outside current filters" state when sidebar filters hide the selected session.
 - Restyled Overview Run Triage labels as compact chips.
@@ -191,6 +192,7 @@ Done:
 - Removed enough obsolete root CSS for production builds to pass without the component style budget warning.
 - Removed the top-right app-bar `Estimate` pill so the selected-run estimate remains the only prominent run estimate in Sessions.
 - Added app-shell test coverage for `Overview -> Cost -> Calls -> Trace` selected-run navigation.
+- Added app-shell test coverage for opening a model call from Calls in the matching Trace event.
 - Removed stale Cost view-model fields for old source/cache caveat panels that are no longer part of the Cost UI.
 
 Build:
@@ -199,8 +201,8 @@ Build:
 - Finish responsive polish for remaining dense tables in Compare, Analytics, and Prices.
 - Tune help popover placement for tight table edges if real sessions expose clipped panels.
 - More debugger-like polish.
-- Move selected-run Cost, Turns, and Trace explanation logic out of the root component into focused helpers/services.
-- Continue pruning terminology that leaks implementation details, including "state enriched", source confidence jargon, and repeated debug-log caveats.
+- Keep selected-run Cost, Calls, and Trace explanation logic in focused helpers/services.
+- Continue pruning terminology that leaks implementation details, including "state enriched", source jargon, and repeated debug-log caveats.
 
 Why: the app has complex information. Better style should reduce cognitive load, not hide details.
 
@@ -213,8 +215,12 @@ Done:
 - Moved GitHub Copilot pricing into one shared JSON file used by the scanner, verifier, and UI.
 - Added a visible app data loading/error state for `/data/sessions.json`.
 - Moved generated session-data loading into `SessionDataService`.
-- Added shared UI cost helpers for model-cost rows, token totals, context growth, percent deltas, and pricing fallback explanations.
+- Added shared UI cost helpers for model-cost rows, token totals, percent deltas, and pricing fallback explanations.
 - Added script-side tests for model normalization, unknown-model fallback, direct pricing matches, and fallback-row pricing.
+- Extracted selected-run Cost, Calls, and Trace state into `SelectedRunExplanationService`.
+- Extracted Analytics filtering, model rows, trend rows, distribution, and outlier logic into `session-analytics.ts`.
+- Added UI/helper tests for Analytics calculations, Analytics open-run actions, Analytics empty states, session rail filters, selected-run navigation, Calls-to-Trace, Compare delta copy, and selected-run pricing fallback assumptions.
+- Added Prices page tests for AI-credit usage windows and fallback pricing row labels.
 
 Build:
 
@@ -225,13 +231,10 @@ Build:
   - weak chat snapshots
   - optional transcript availability
 - Add UI tests for:
-  - source/size/signal filters
-  - unknown model pricing fallback display
-  - Analytics empty states
-  - Compare delta copy
-- Move selected-run Cost, Turns, and Trace explanation logic out of the root component into focused helpers/services.
+  - selected Trace inspector details
+- Continue moving page-level interpretation logic out of large components when it has stable behavior and useful test cases.
 
-Why: the app is now past prototype shape. The risky parts are no longer just "can we show the data?" They are "can pricing, source confidence, and filters stay correct as the UI grows?"
+Why: the app is now past prototype shape. The risky parts are no longer just "can we show the data?" They are "can pricing, cache buckets, fallback assumptions, and filters stay correct as the UI grows?"
 
 ## Phase 8.5: Local Packaging
 
@@ -257,7 +260,7 @@ Done:
 - Make Trace log rows clickable.
 - Open a right-side detail drawer or inline inspector for the selected event.
 - Show the full normalized event fields: raw index, timestamp, type, name, status, token totals, model, pricing row, estimated cost, latency fields, and source detail.
-- Link model-call rows in `Turns` to the matching raw event in `Trace`.
+- Link model-call rows in `Calls` to the matching raw event in `Trace`.
 - Add event filters for model calls, tool calls, discovery/customization events, user messages, and agent responses.
 - Preserve enough debug-log payload summary during ingestion to make this useful without forcing the UI to parse raw VS Code JSONL directly. Current `traceEvents.detail` strings are too short for a good inspector by themselves.
 
@@ -265,7 +268,7 @@ Still to improve:
 
 - Tune inspector layout as more real logs are imported.
 - Add more useful bounded summaries for common VS Code debug-log event shapes when the source payload exposes them.
-- Add UI tests around Turns-to-Trace linking and the selected-event inspector.
+- Add UI tests around selected-event inspector details.
 - Consider optional enrichment from matching `GitHub.copilot-chat/transcripts/<session-id>.jsonl` only after the UI can show source availability and confidence. Transcripts can be rich, but they are not consistently complete across sessions or restarts.
 
 Why: the Trace view is currently good for scanning, but debugging needs selection. VS Code's own Agent Debug Logs let a user click an event and inspect details. This app should do the same, with cost fields added.

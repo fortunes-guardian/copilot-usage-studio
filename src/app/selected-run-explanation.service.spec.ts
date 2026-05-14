@@ -71,6 +71,36 @@ describe('SelectedRunExplanationService', () => {
     expect(state.selectedPricingFallbacks()).toEqual([]);
     expect(state.selectedTriage()).toBeNull();
   });
+
+  it('surfaces pricing fallbacks as selected-run assumptions', () => {
+    const fallbackSession = buildSession();
+    fallbackSession.model = 'gpt-4o';
+    fallbackSession.modelBreakdown = [
+      {
+        model: 'gpt-4o',
+        rawModels: ['gpt-4o'],
+        turns: 1,
+        tokens: { input: 10_000, cachedInput: 0, cacheWrite: 0, output: 500 },
+        cost: { usd: 0.01, eur: 0.01 },
+        pricingModel: 'GPT-5.4',
+      },
+    ];
+
+    const state = service.createState({
+      filteredSessions: signal<CopilotSession[]>([fallbackSession]),
+      selectedSession: signal<CopilotSession | null>(fallbackSession),
+      modelCallSort: signal<'timeline' | 'largest'>('timeline'),
+      traceFilter: signal<
+        'all' | 'model' | 'tool' | 'discovery' | 'message' | 'response' | 'error'
+      >('all'),
+      selectedTraceEventIndex: signal<number | null>(null),
+    });
+
+    expect(state.selectedPricingFallbacks()).toEqual([
+      { model: 'gpt-4o', pricingModel: 'GPT-5.4', turns: 1 },
+    ]);
+    expect(state.costExplanation()?.modelRows[0].usesFallbackPrice).toBe(true);
+  });
 });
 
 function buildSession(): CopilotSession {

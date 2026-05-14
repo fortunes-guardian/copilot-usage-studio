@@ -209,7 +209,7 @@ That means:
 - Cached input is not a discount against output. It is a separate input/context bucket when a billing source exposes it. Output tokens remain priced as output tokens.
 - Input-heavy sessions may be overestimated if GitHub billed a large portion of input as cheaper cached input.
 - Output-heavy sessions are usually easier to reason about because output remains priced as output.
-- The Cost view includes a Billing Reality Check that labels cache uncertainty as likely low impact, material, or directional based on the imported input/output cost split.
+- The Cost view keeps normal input, cached input, cache write, and output as separate priced categories. If cached-token fields are missing for a run, the app does not infer them.
 
 ## Current Limitations
 
