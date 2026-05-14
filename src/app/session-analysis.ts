@@ -42,30 +42,17 @@ export function buildCostExplanation(session: CopilotSession, sort: ModelCallSor
   const costDrivers = explainCostDrivers(session, modelRows, topTokenEventList);
   const hasCacheData = session.tokens.cachedInput > 0 || session.tokens.cacheWrite > 0;
   const answer = costAnswer(session, modelRows, modelCallRowList);
-  const billingReality = billingRealityCheck(session, answer, hasCacheData);
   const turnInsightList = turnInsights(modelCallRowList);
 
   return {
     hasCacheData,
-    sourceStrength:
-      session.tokenSource === 'llm_request_token_totals' ? 'Exact local token counts' : 'Estimated token counts',
-    sourceDescription:
-      session.tokenSource === 'llm_request_token_totals'
-        ? 'Imported from VS Code Copilot debug-log llm_request events. This is the strongest local source for session input and output tokens.'
-        : 'Estimated from visible chat/session data. Useful context, but weaker than debug-log llm_request totals.',
-    cacheStatus: hasCacheData ? 'Cache tokens included' : 'No imported cache-token totals',
-    cacheDescription: hasCacheData
-      ? 'This session includes cached input or cache-write token totals in the generated session data.'
-      : 'The generated session data for this run includes input/output token totals, but no numeric cached-input or cache-write totals. The estimate prices the imported local totals and keeps cache accounting explicit as unavailable.',
     modelRows,
     categoryRows,
     costAnswer: answer,
-    billingReality,
     costDrivers,
     modelCallRows: modelCallRowList,
     topTokenEvents: topTokenEventList,
     turnInsights: turnInsightList,
-    requestPayload: explainRequestPayload(session),
   };
 }
 
@@ -362,87 +349,6 @@ function turnInsights(modelCallRowList: ModelCallRow[]) {
       detail: 'Useful for spotting whether cost came from one spike or many steady calls.',
     },
   ];
-}
-
-function explainRequestPayload(session: CopilotSession) {
-  const payload = session.requestPayload;
-
-  if (!payload) {
-    return null;
-  }
-
-  const totalSetupChars = payload.systemPromptChars + payload.toolSchemaChars;
-  const topToolResult = payload.toolResultCharsByName[0] ?? null;
-  const topSchema = payload.largestToolSchemas[0] ?? null;
-  const reasoning = payload.reasoningEfforts.map((entry) => `${entry.effort} (${entry.count})`).join(', ') || 'Not logged';
-
-  return {
-    hasEvidence:
-      totalSetupChars > 0 ||
-      payload.toolCount > 0 ||
-      payload.toolResultCharsByName.length > 0 ||
-      payload.reasoningEfforts.length > 0,
-    systemPromptChars: payload.systemPromptChars,
-    toolSchemaChars: payload.toolSchemaChars,
-    totalSetupChars,
-    toolCount: payload.toolCount,
-    mcpToolCount: payload.mcpToolCount,
-    mcpToolNames: payload.mcpToolNames,
-    modelCallsWithSystemPromptFile: payload.modelCallsWithSystemPromptFile,
-    modelCallsWithToolsFile: payload.modelCallsWithToolsFile,
-    reasoning,
-    topSchema,
-    topToolResult,
-    largestToolSchemas: payload.largestToolSchemas,
-    toolResultCharsByName: payload.toolResultCharsByName,
-    subagentLogCount: payload.subagentLogCount,
-    boundary:
-      'These are source-backed payload sizes and presence signals from VS Code debug logs. They are not exact per-section billing totals unless VS Code logs token counts for that section.',
-  };
-}
-
-function billingRealityCheck(session: CopilotSession, answer: CostAnswer, hasCacheData: boolean) {
-  if (hasCacheData) {
-    return {
-      tone: 'low',
-      cacheVisibility: 'Cache fields present',
-      confidenceLabel: 'Cache-aware local estimate',
-      headline: 'This run includes cache token fields in the generated session data.',
-      detail:
-        'The app can price normal input, cached input, cache write, and output separately for this run. It is still a local estimate, not an invoice.',
-    };
-  }
-
-  if (answer.outputShare >= 70) {
-    return {
-      tone: 'low',
-      cacheVisibility: 'No imported cache-token totals',
-      confidenceLabel: 'Low cache impact likely',
-      headline: 'Output dominates this estimate.',
-      detail:
-        'Missing cached input is less likely to change the main story because generated output remains billed as output. Use the estimate to debug response size and repeated generation first.',
-    };
-  }
-
-  if (answer.inputShare >= 60) {
-    return {
-      tone: 'high',
-      cacheVisibility: 'No imported cache-token totals',
-      confidenceLabel: 'Cache could materially change estimate',
-      headline: 'Input/context dominates this estimate.',
-      detail:
-        'The imported run has input tokens, but no numeric split between normal input and cached input. If much of this context was cached provider-side, the invoice may be lower than this local full-input estimate.',
-    };
-  }
-
-  return {
-    tone: session.confidence === 'exact' ? 'medium' : 'high',
-    cacheVisibility: 'No imported cache-token totals',
-    confidenceLabel: session.confidence === 'exact' ? 'Directional billing estimate' : 'Rough billing estimate',
-    headline: 'Cache impact is unknown for this token mix.',
-    detail:
-      'The imported data is still useful for finding the expensive turns and model mix, but it cannot prove how GitHub split input between normal and cached billing buckets.',
-  };
 }
 
 function explainCostDrivers(session: CopilotSession, modelRows: ModelCostRow[], topTokenEventList: TopTokenEvent[]) {

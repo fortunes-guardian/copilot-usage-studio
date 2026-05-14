@@ -92,7 +92,6 @@ describe('session analysis', () => {
   it('builds selected-run cost and turn analysis without Angular state', () => {
     const explanation = buildCostExplanation(session, 'largest');
 
-    expect(explanation.sourceStrength).toBe('Exact local token counts');
     expect(explanation.hasCacheData).toBe(false);
     expect(explanation.modelRows[0].model).toBe('Claude Sonnet 4.6');
     expect(explanation.modelCallRows).toHaveLength(2);

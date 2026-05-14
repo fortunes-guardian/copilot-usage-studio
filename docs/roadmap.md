@@ -70,10 +70,10 @@ Done:
 - Replaced native Compare dropdowns with app-owned searchable run pickers.
 - Added same-prompt spread explanations for repeated prompt groups.
 - Added Compare component tests for repeated-prompt spread explanation and A/B swap behavior.
+- Added Compare fixture coverage for cached-token movement rows.
 
 Next:
 
-- Add fixture coverage for Compare cached-token movement rows.
 - Add an explicit same-prompt group drawer once there are enough repeated-prompt sessions to validate the flow.
 - Add side-by-side output/detail comparison only after the app has a reliable readable output source for both runs. Do not imply quality comparison when only cost/debug facts are available.
 
@@ -97,11 +97,11 @@ Done:
 - Includes a reset for Analytics-only filters and a clear empty state when the current cohort has no sessions.
 - Separates a few obvious outlier cases, including plausible long agent runs and suspicious low-activity spikes.
 - Extracted Analytics into its own Angular component so the dashboard no longer lives inside the root shell template.
+- Added explicit `Open run` cues and test coverage for Analytics action cards that open selected sessions.
 
 Next:
 
 - Browser-check Analytics at desktop and narrow widths.
-- Verify and fix bottom Analytics buttons if `Runs to inspect` or `Outlier signals` navigation does not reliably open the selected session.
 - Keep clarifying the difference between `Time range` as the included-session filter and `Group trend by` as the trend bucket display.
 - Improve outlier explanation with more real imported sessions.
 - Add saved comparison/cohort concepts later if app-owned SQLite becomes the right durable state layer.
@@ -190,6 +190,8 @@ Done:
 - Extracted the Analytics page into a standalone component with its own template, styles, and cohort logic.
 - Removed enough obsolete root CSS for production builds to pass without the component style budget warning.
 - Removed the top-right app-bar `Estimate` pill so the selected-run estimate remains the only prominent run estimate in Sessions.
+- Added app-shell test coverage for `Overview -> Cost -> Calls -> Trace` selected-run navigation.
+- Removed stale Cost view-model fields for old source/cache caveat panels that are no longer part of the Cost UI.
 
 Build:
 
@@ -223,7 +225,6 @@ Build:
   - weak chat snapshots
   - optional transcript availability
 - Add UI tests for:
-  - selected-run tabs
   - source/size/signal filters
   - unknown model pricing fallback display
   - Analytics empty states

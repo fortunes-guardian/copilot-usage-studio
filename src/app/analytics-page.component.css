@@ -290,6 +290,25 @@
   line-height: 1.25;
 }
 
+.open-cue {
+  justify-self: start;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 7px;
+  background: rgba(12, 159, 131, 0.08);
+  color: var(--accent-strong, var(--accent)) !important;
+  font-size: 10px !important;
+  font-weight: 760;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.highlight-list button:hover .open-cue,
+.highlight-list button:focus-visible .open-cue {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: rgba(12, 159, 131, 0.14);
+}
+
 .stat-list.compact div {
   padding: 10px;
 }

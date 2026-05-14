@@ -55,6 +55,22 @@ describe('ComparePageComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('A is Run 2');
     expect(fixture.nativeElement.textContent).toContain('B is Run 1');
   });
+
+  it('shows cached-token movement separately in the model movement table', () => {
+    fixture.componentRef.setInput('sessions', [
+      sessionFixture('run-a', 'Cache prompt', 0.02, 10_000, 2_000, 0, 1_000, 1, 1),
+      sessionFixture('run-b', 'Cache prompt', 0.03, 8_000, 12_000, 400, 1_500, 2, 1),
+    ]);
+    fixture.componentRef.setInput('compareA', 'run-a');
+    fixture.componentRef.setInput('compareB', 'run-b');
+    fixture.detectChanges();
+
+    const text = compactText(fixture.nativeElement.textContent as string);
+
+    expect(text).toContain('normal -2,000 · cached +10,000');
+    expect(text).toContain('write +400');
+    expect(text).toContain('out +500');
+  });
 });
 
 function sessionFixture(
@@ -109,4 +125,8 @@ function sessionFixture(
     traceEvents: [],
     turns: [{ role: 'user', text: firstPrompt, tokens: 2 }],
   };
+}
+
+function compactText(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
 }

@@ -4,6 +4,27 @@ Start here when resuming the project.
 
 ## Latest Step
 
+Hardened Compare, Analytics navigation, and selected-run tab coverage.
+
+What changed:
+
+- Added Compare fixture coverage for cached-token movement rows, so normal input, cached input, cache write, and output deltas stay visibly separate.
+- Added an Analytics component test proving bottom action cards emit the selected run.
+- Added explicit `Open run` cues to Analytics `Runs to inspect` and `Outlier signals` cards.
+- Added an app-shell regression test for the selected-run `Overview -> Cost -> Calls -> Trace` navigation flow.
+- Removed stale Cost view-model fields for old source/cache caveat panels that are no longer part of the UI.
+- Updated the user guide so Cost is described as priced buckets plus model rows, not the removed Billing Reality Check panel.
+
+Why: the product is past prototype shape. The risky parts now are quiet regressions: cached-token deltas getting merged back into generic input, dashboard action cards feeling broken, or the selected-run debugger flow drifting during UI polish.
+
+Verification:
+
+- `npm run test:scripts`
+- `npm test -- --watch=false`
+- `npm run build`
+
+## Previous Step
+
 Added script and Compare regression coverage, plus Prices usage windows.
 
 What changed:
@@ -1182,18 +1203,14 @@ Keep tightening reliability and the UI/code structure before attempting evidence
 
 Build:
 
-- Add a same-prompt explanation readout in Compare that names why the cheapest/most expensive repeated-prompt run differs: normal input, cached input, output, model turns, tool calls, or pricing row.
-- Add fixture tests for cached-token movement rows in Compare model tables.
-- Audit Analytics `Runs to inspect` and `Outlier signals` buttons. User reports some bottom links feel broken, so verify whether navigation, filter state, or disabled-session handling is at fault.
 - Continue Analytics clarity work: keep `Time range` as the inclusion filter and `Group trend by` as display bucketing, and remove/rename anything that still makes those controls feel like competing filters.
 - Add app-owned run tags after there is durable local state, so users can mark changes such as `new instructions applied` or `MCP compression enabled`.
-- Move selected-run explanation logic out of the root component into focused services/helpers, starting with Cost and Trace calculations.
+- Continue moving remaining selected-run and dashboard interpretation logic into focused services/helpers where it is still embedded in components.
 - Continue replacing native title tooltips with `HelpPopoverComponent` where the explanation is important enough to be discoverable.
 - Add fixture-based scanner/verifier tests for mixed models, unknown model fallback, and missing/malformed generated data.
 - Centralize model normalization and pricing fallback rules so model matching cannot drift between scanner and UI.
 - Treat Chat Debug transcripts as optional enrichment only. If imported later, show transcript availability and source labels clearly, and never require transcripts for cost totals.
 - Consider a mobile/narrow layout where filters and session list become a top drawer or compact selector instead of sitting below content.
-- Replace native title tooltips with a small custom help popover for important cost terms.
 - Continue visual polish of Sessions: tune table density, tighten the run tabs, and keep making each subview feel intentionally composed.
 - Park cost allocation for Input/MCP attribution until the imported source fields prove exactly what can be shown. Source-backed presence, character counts, approximate section size, and nearby affected model-call cost are acceptable first steps if the UI labels them honestly.
 

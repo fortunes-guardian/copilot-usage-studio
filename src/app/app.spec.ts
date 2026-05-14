@@ -70,6 +70,19 @@ describe('App', () => {
             inputTokens: 0,
             outputTokens: 0,
           },
+          {
+            index: 1,
+            timestamp: '2026-05-01T13:28:20.000Z',
+            type: 'llm_request',
+            name: 'panel/editAgent',
+            status: 'ok',
+            detail: 'Claude Sonnet 4.6: 100 in / 10 out',
+            model: 'Claude Sonnet 4.6',
+            pricingModel: 'Claude Sonnet 4.6',
+            inputTokens: 100,
+            outputTokens: 10,
+            estimatedCost: { usd: 0.00045, eur: 0.0004185 },
+          },
         ],
         vscodeState: {
           sourcePath: 'state.vscdb',
@@ -121,6 +134,34 @@ describe('App', () => {
     expect(compiled.textContent).not.toContain('Token totals');
     expect(compiled.textContent).toContain('Light');
   });
+
+  it('navigates the selected-run debugger tabs', async () => {
+    const fixture = TestBed.createComponent(App);
+    TestBed.inject(HttpTestingController).expectOne('/data/sessions.json').flush(sessionDataFixture);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    clickButtonContaining(fixture.nativeElement, 'Cost');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Where the estimate comes from');
+
+    clickButtonContaining(fixture.nativeElement, 'Calls');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Model call timeline');
+
+    clickButtonContaining(fixture.nativeElement, 'Trace');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Inspect the source event');
+  });
 });
+
+function clickButtonContaining(root: HTMLElement, text: string): void {
+  const button = [...root.querySelectorAll('button')].find((candidate) =>
+    candidate.textContent?.includes(text),
+  );
+
+  expect(button).toBeTruthy();
+  button?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+}
 
 

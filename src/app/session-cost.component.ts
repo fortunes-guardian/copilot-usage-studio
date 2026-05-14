@@ -18,14 +18,6 @@ interface CostAnswerViewModel {
   costPer1k: number;
 }
 
-interface BillingRealityViewModel {
-  tone: string;
-  confidenceLabel: string;
-  headline: string;
-  cacheVisibility: string;
-  detail: string;
-}
-
 interface CostDriverViewModel {
   title: string;
   value: string;
@@ -59,37 +51,12 @@ interface ModelCostViewModel {
   usesFallbackPrice: boolean;
 }
 
-interface RequestPayloadViewModel {
-  hasEvidence: boolean;
-  systemPromptChars: number;
-  toolSchemaChars: number;
-  totalSetupChars: number;
-  toolCount: number;
-  mcpToolCount: number;
-  mcpToolNames: string[];
-  modelCallsWithSystemPromptFile: number;
-  modelCallsWithToolsFile: number;
-  reasoning: string;
-  topSchema: { name: string; descriptionChars: number; parameterChars: number; totalChars: number } | null;
-  topToolResult: { name: string; calls: number; argsChars: number; resultChars: number } | null;
-  largestToolSchemas: Array<{ name: string; descriptionChars: number; parameterChars: number; totalChars: number }>;
-  toolResultCharsByName: Array<{ name: string; calls: number; argsChars: number; resultChars: number }>;
-  subagentLogCount: number;
-  boundary: string;
-}
-
 export interface SessionCostViewModel {
   hasCacheData: boolean;
-  sourceStrength: string;
-  sourceDescription: string;
-  cacheStatus: string;
-  cacheDescription: string;
   costAnswer: CostAnswerViewModel;
-  billingReality: BillingRealityViewModel;
   costDrivers: CostDriverViewModel[];
   categoryRows: CostCategoryViewModel[];
   modelRows: ModelCostViewModel[];
-  requestPayload: RequestPayloadViewModel | null;
 }
 
 export interface CostHelpText {

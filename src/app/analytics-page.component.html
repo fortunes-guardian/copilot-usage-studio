@@ -200,6 +200,7 @@
                 <strong>{{ highlight.value }}</strong>
                 @if (highlight.session) {
                   <em>{{ highlight.session.title }}</em>
+                  <span class="open-cue">Open run</span>
                 }
               </button>
             }
@@ -217,6 +218,7 @@
                 </span>
                 <strong>{{ outlier.session.title }}</strong>
                 <em>{{ outlier.reason }}</em>
+                <span class="open-cue">Open run</span>
               </button>
             } @empty {
               <p class="empty">No outliers in the current Analytics cohort.</p>
