@@ -23,6 +23,100 @@ function expectedCostUsd(model, tokens) {
   return costUsdForTokens(model, tokens, pricing, fallbackPricingModel);
 }
 
+function emptyCacheTokenAudit() {
+  return {
+    modelCalls: 0,
+    callsWithCachedTokens: 0,
+    invalidCachedTokenSplits: 0,
+    rawInputTokens: 0,
+    normalInputTokens: 0,
+    cachedInputTokens: 0,
+    cacheWriteTokens: 0,
+    outputTokens: 0,
+    maxCachedInputShare: 0,
+  };
+}
+
+function auditFromTraceEvents(traceEvents = []) {
+  return traceEvents
+    .filter((event) => event.type === 'llm_request')
+    .reduce((audit, event) => {
+      const rawInputTokens = Number(event.inputTokens ?? 0);
+      const cachedInputTokens = Number(event.cachedInputTokens ?? 0);
+      const cacheWriteTokens = Number(event.cacheWriteTokens ?? 0);
+      const outputTokens = Number(event.outputTokens ?? 0);
+
+      audit.modelCalls += 1;
+      audit.rawInputTokens += rawInputTokens;
+      audit.normalInputTokens += Math.max(0, rawInputTokens - cachedInputTokens);
+      audit.cachedInputTokens += cachedInputTokens;
+      audit.cacheWriteTokens += cacheWriteTokens;
+      audit.outputTokens += outputTokens;
+
+      if (cachedInputTokens > 0) {
+        audit.callsWithCachedTokens += 1;
+      }
+
+      if (cachedInputTokens > rawInputTokens) {
+        audit.invalidCachedTokenSplits += 1;
+      }
+
+      audit.maxCachedInputShare = Math.max(
+        audit.maxCachedInputShare,
+        rawInputTokens > 0 ? cachedInputTokens / rawInputTokens : 0,
+      );
+
+      return audit;
+    }, emptyCacheTokenAudit());
+}
+
+function mergeCacheTokenAudits(audits) {
+  return audits.reduce((total, audit) => {
+    for (const field of [
+      'modelCalls',
+      'callsWithCachedTokens',
+      'invalidCachedTokenSplits',
+      'rawInputTokens',
+      'normalInputTokens',
+      'cachedInputTokens',
+      'cacheWriteTokens',
+      'outputTokens',
+    ]) {
+      total[field] += Number(audit?.[field] ?? 0);
+    }
+    total.maxCachedInputShare = Math.max(total.maxCachedInputShare, Number(audit?.maxCachedInputShare ?? 0));
+    return total;
+  }, emptyCacheTokenAudit());
+}
+
+function compareCacheTokenAudit(actual, expected, label) {
+  if (!actual || typeof actual !== 'object') {
+    fail(`${label} missing cacheTokenAudit`);
+    return;
+  }
+
+  for (const field of [
+    'modelCalls',
+    'callsWithCachedTokens',
+    'invalidCachedTokenSplits',
+    'rawInputTokens',
+    'normalInputTokens',
+    'cachedInputTokens',
+    'cacheWriteTokens',
+    'outputTokens',
+  ]) {
+    if (Number(actual[field] ?? NaN) !== Number(expected[field] ?? NaN)) {
+      fail(`${label} cacheTokenAudit.${field}=${actual[field] ?? 'missing'} does not match expected ${expected[field]}`);
+    }
+  }
+
+  if (Math.abs(Number(actual.maxCachedInputShare ?? NaN) - expected.maxCachedInputShare) > 0.000000001) {
+    fail(
+      `${label} cacheTokenAudit.maxCachedInputShare=${actual.maxCachedInputShare ?? 'missing'} does not match expected ${expected.maxCachedInputShare}`,
+    );
+  }
+}
+
 if (sessionData.schemaVersion !== 1) {
   fail(`Expected schemaVersion 1, found ${sessionData.schemaVersion ?? 'missing'}`);
 }
@@ -105,6 +199,9 @@ for (const session of sessionData.sessions ?? []) {
       }
     }
   }
+
+  const expectedCacheTokenAudit = auditFromTraceEvents(session.traceEvents);
+  compareCacheTokenAudit(session.cacheTokenAudit, expectedCacheTokenAudit, session.id);
 
   if (session.vscodeState) {
     if (!session.vscodeState.sourcePath) {
@@ -204,6 +301,15 @@ for (const warning of sessionData.ingestion?.warnings ?? []) {
   warn(warning);
 }
 
+const expectedIngestionCacheTokenAudit = mergeCacheTokenAudits(
+  (sessionData.sessions ?? []).map((session) => session.cacheTokenAudit).filter(Boolean),
+);
+compareCacheTokenAudit(
+  sessionData.ingestion?.cacheTokenAudit,
+  expectedIngestionCacheTokenAudit,
+  'ingestion',
+);
+
 if (warnings.length) {
   console.warn(`Session data verification warnings (${warnings.length}):`);
   for (const warning of warnings) {
@@ -219,4 +325,8 @@ if (errors.length) {
   process.exit(1);
 }
 
+const cacheTokenAudit = sessionData.ingestion?.cacheTokenAudit ?? emptyCacheTokenAudit();
 console.log(`Session data verification passed: ${sessionData.sessions?.length ?? 0} sessions in ${file}`);
+console.log(
+  `Cache split audit: ${cacheTokenAudit.callsWithCachedTokens}/${cacheTokenAudit.modelCalls} model calls include cachedTokens; ${cacheTokenAudit.invalidCachedTokenSplits} invalid cached/input splits; ${Number(cacheTokenAudit.normalInputTokens ?? 0).toLocaleString()} normal input + ${Number(cacheTokenAudit.cachedInputTokens ?? 0).toLocaleString()} cached input from ${Number(cacheTokenAudit.rawInputTokens ?? 0).toLocaleString()} raw inputTokens.`,
+);

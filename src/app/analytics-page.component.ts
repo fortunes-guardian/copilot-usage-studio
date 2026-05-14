@@ -183,7 +183,7 @@ export class AnalyticsPageComponent {
         {
           label: 'Total tokens',
           value: totalTokens.toLocaleString(),
-          help: 'Input, output, cache-read, and cache-write token fields combined across included sessions.',
+          help: 'Normal input, cached input, cache write, and output token fields combined across included sessions.',
         },
         {
           label: 'Avg cost / run',
@@ -261,6 +261,8 @@ export class AnalyticsPageComponent {
         sessions: Set<string>;
         tokens: number;
         input: number;
+        cachedInput: number;
+        cacheWrite: number;
         output: number;
         cost: number;
       }
@@ -278,6 +280,8 @@ export class AnalyticsPageComponent {
             sessions: new Set<string>(),
             tokens: 0,
             input: 0,
+            cachedInput: 0,
+            cacheWrite: 0,
             output: 0,
             cost: 0,
           };
@@ -286,6 +290,8 @@ export class AnalyticsPageComponent {
         current.sessions.add(session.id);
         current.tokens += tokenTotal(entry.tokens);
         current.input += entry.tokens.input;
+        current.cachedInput += entry.tokens.cachedInput;
+        current.cacheWrite += entry.tokens.cacheWrite;
         current.output += entry.tokens.output;
         current.cost += entry.cost.usd;
         rows.set(key, current);

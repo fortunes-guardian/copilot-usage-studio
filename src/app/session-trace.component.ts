@@ -268,9 +268,12 @@ export class SessionTraceComponent implements OnChanges, AfterViewChecked {
           tone: details.hasCost ? 'cost' : 'plain',
         },
         { label: 'Total tokens', value: details.hasCost ? details.totalTokens.toLocaleString() : 'n/a' },
-        { label: 'Input', value: event.inputTokens ? event.inputTokens.toLocaleString() : '0' },
+        { label: 'Normal input', value: this.normalInputTokens(event).toLocaleString() },
         ...(event.cachedInputTokens
-          ? [{ label: 'Cached', value: event.cachedInputTokens.toLocaleString(), tone: 'cost' as const }]
+          ? [{ label: 'Cached input', value: event.cachedInputTokens.toLocaleString(), tone: 'cost' as const }]
+          : []),
+        ...(event.cacheWriteTokens
+          ? [{ label: 'Cache write', value: event.cacheWriteTokens.toLocaleString(), tone: 'cost' as const }]
           : []),
         { label: 'Output', value: event.outputTokens ? event.outputTokens.toLocaleString() : '0' },
         ...(event.reasoningEffort
@@ -320,9 +323,29 @@ export class SessionTraceComponent implements OnChanges, AfterViewChecked {
   }
 
   protected inputShare(event: TraceEvent): number {
-    const totalTokens = event.totalTokens ?? event.inputTokens + event.outputTokens + (event.cacheWriteTokens ?? 0);
+    const totalTokens = this.pricedTokenTotal(event);
 
-    return totalTokens > 0 ? (event.inputTokens / totalTokens) * 100 : 0;
+    return totalTokens > 0 ? (this.normalInputTokens(event) / totalTokens) * 100 : 0;
+  }
+
+  protected cachedInputShare(event: TraceEvent): number {
+    const totalTokens = this.pricedTokenTotal(event);
+
+    return totalTokens > 0 ? ((event.cachedInputTokens ?? 0) / totalTokens) * 100 : 0;
+  }
+
+  protected outputShare(event: TraceEvent): number {
+    const totalTokens = this.pricedTokenTotal(event);
+
+    return totalTokens > 0 ? (event.outputTokens / totalTokens) * 100 : 0;
+  }
+
+  protected normalInputTokens(event: TraceEvent): number {
+    return Math.max(0, event.inputTokens - (event.cachedInputTokens ?? 0));
+  }
+
+  protected pricedTokenTotal(event: TraceEvent): number {
+    return this.normalInputTokens(event) + (event.cachedInputTokens ?? 0) + (event.cacheWriteTokens ?? 0) + event.outputTokens;
   }
 
   private groupForField(label: string, groups: TraceDetailGroup[]): TraceDetailGroup {

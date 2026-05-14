@@ -4,6 +4,83 @@ Start here when resuming the project.
 
 ## Latest Step
 
+Completed a token-bucket UI harmonization pass.
+
+What changed:
+
+- Standardized user-facing labels around four priced buckets: `Normal input`, `Cached input`, `Cache write`, and `Output`.
+- Kept `Raw inputTokens` as source-evidence wording in Trace/details only.
+- Updated Cost, Calls, Trace, Analytics, Compare, and Prices copy so cache-heavy sessions do not look like input totals are missing or contradictory.
+- Compare now treats input/context cost movement as normal input + cached input + cache write, not just normal input.
+- Calls now shows `normal in`, `cached in`, `cache write`, and `out` in the model-call table and focus strip.
+- Analytics model breakdown now shows cached/cache-write buckets in the token detail line when present.
+- Scanner-generated model-call detail now says `raw in` so the raw VS Code `inputTokens` field is not confused with normal priced input.
+
+Why: after cache-aware pricing, the biggest UX risk was inconsistent use of the word "input". The app now reserves "normal input" for the priced non-cached bucket, "cached input" for `cachedTokens`, and "raw inputTokens" for the original VS Code field.
+
+Verification:
+
+- `npm run scan`
+- `npm run verify:data`
+- `npm test -- --watch=false`
+- `npm run build`
+- Browser sanity check on `http://127.0.0.1:4301/` for Cost, Calls, Trace, Analytics, Compare, and Prices token labels.
+
+Known note:
+
+- `npm run build` still passes with the existing initial bundle budget warning, currently about 32.9 kB over the 500 kB budget.
+
+## Previous Step
+
+Added a cache-token split audit to ingestion and verification.
+
+What changed:
+
+- Scanner now writes `cacheTokenAudit` on each imported session and on the top-level ingestion metadata.
+- The audit records model-call count, calls with cached tokens, invalid cached/input splits, raw input tokens, normal input tokens, cached input tokens, cache-write tokens, output tokens, and max cached-input share.
+- Scanner now warns if a future VS Code log reports `cachedTokens > inputTokens`; pricing remains safe by clamping that impossible split.
+- Verifier recomputes the audit from generated trace rows and fails if it does not reconcile.
+- Pricing and schema docs now state the evidence boundary clearly: GitHub documents the pricing buckets, while `inputTokens - cachedTokens` is an observed local VS Code Agent Debug Log mapping verified against imported data.
+
+Why: the cache math is too important to leave as an implicit assumption. The app now has a repeatable proof that generated session data obeys the raw-input-to-normal-plus-cached split it prices.
+
+Verification:
+
+- `node --check scripts/scan-vscode-sessions.mjs`
+- `node --check scripts/verify-session-data.mjs`
+- `npm run scan`
+- `npm run verify:data`
+
+Current cache audit:
+
+```text
+23/116 model calls include cachedTokens; 0 invalid cached/input splits; 3,272,520 normal input + 713,970 cached input from 3,986,490 raw inputTokens.
+```
+
+## Previous Step
+
+Completed the cached-session Cost/Trace clarity pass.
+
+What changed:
+
+- Trace event rows now show `normal in`, `cached in`, `cache write`, and `out` instead of presenting raw VS Code `inputTokens` as the visible input bucket.
+- Trace inspector primary facts now show priced buckets first: normal input, cached input, cache write, output, estimate, and pricing row.
+- Raw VS Code `inputTokens` is preserved in the normalized event detail as `Raw inputTokens`, so source evidence is still available when inspecting a single model call.
+- Added test expectations that cached events expose all three relevant values: raw `inputTokens`, normal input, and cached input.
+
+Why: Cost and Trace should speak the same language. The main debugger should show billable buckets; raw VS Code fields should be available as source evidence, not confused with priced input.
+
+Verification:
+
+- `npm test -- --watch=false`
+- `npm run build`
+
+Known note:
+
+- `npm run build` still passes with the existing initial bundle budget warning, currently about 30.1 kB over the 500 kB budget.
+
+## Previous Step
+
 Removed noisy token-source UI and clarified cached-token presentation.
 
 What changed:
@@ -19,10 +96,6 @@ Why: the app should show useful cost buckets, not ingestion jargon. Cached token
 Verification:
 
 - `npm test -- --watch=false`
-
-Known note:
-
-- Next pass should visually improve how Cost shows raw input versus normal/cached input for individual Trace events, especially in cached sessions.
 
 ## Previous Step
 

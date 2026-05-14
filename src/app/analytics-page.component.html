@@ -109,7 +109,19 @@
                   }
                 </strong>
                 <span>{{ model.sessionCount | number }}</span>
-                <span>{{ model.tokens | number }}<em>{{ model.input | number }} in / {{ model.output | number }} out</em></span>
+                <span>
+                  {{ model.tokens | number }}
+                  <em>
+                    {{ model.input | number }} normal in
+                    @if (model.cachedInput) {
+                      / {{ model.cachedInput | number }} cached in
+                    }
+                    @if (model.cacheWrite) {
+                      / {{ model.cacheWrite | number }} cache write
+                    }
+                    / {{ model.output | number }} out
+                  </em>
+                </span>
                 <span>${{ model.cost | number: '1.2-4' }}</span>
                 <span>${{ model.costPer1k | number: '1.4-4' }}</span>
                 <span class="share-cell">

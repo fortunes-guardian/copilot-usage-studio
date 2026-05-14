@@ -143,6 +143,61 @@ Not invoice-grade for:
 
 The scanner imports input, output, and cached-input token totals from VS Code Agent Debug Log `llm_request` events when those fields are present. In the observed VS Code Agent Debug Log shape, `attrs.cachedTokens` is present on many model calls and is the key field for cached input.
 
+## Evidence For The Token Buckets
+
+GitHub's Copilot pricing docs describe three token categories for usage-based billing: input tokens, output tokens, and cached tokens. The same page defines input as what is sent to the model, output as what the model generates, and cached tokens as context the model reuses or stores.
+
+The GitHub Copilot model pricing table is also bucketed by rate. For OpenAI, Google, xAI, and GitHub fine-tuned models, the table has separate `Input`, `Cached input`, and `Output` columns. For Anthropic models, GitHub documents an additional `Cache write` column.
+
+Those docs support this pricing shape:
+
+```text
+cost =
+  normal_input_tokens * input_rate +
+  cached_input_tokens * cached_input_rate +
+  cache_write_tokens * cache_write_rate +
+  output_tokens * output_rate
+```
+
+The local VS Code Agent Debug Log field names are not a public GitHub billing API contract. They are observed local debug-log fields. In the sessions inspected so far, `attrs.inputTokens` is the raw input/context total sent to the model, `attrs.cachedTokens` is the cached portion of that input, and `attrs.outputTokens` is generated output.
+
+Because GitHub prices cached input separately, the app treats the observed local fields like this:
+
+```text
+raw_input_tokens = attrs.inputTokens
+cached_input_tokens = attrs.cachedTokens
+normal_input_tokens = max(0, attrs.inputTokens - attrs.cachedTokens)
+output_tokens = attrs.outputTokens
+```
+
+This avoids double-counting. If the app priced all `inputTokens` at the normal input rate and also priced `cachedTokens` at the cached-input rate, the cached portion would be counted twice.
+
+Confidence level:
+
+- High confidence that GitHub bills Copilot usage with distinct input, cached-input, cache-write, and output buckets where those rate columns exist.
+- High confidence that the observed VS Code debug-log `cachedTokens` field should be treated as cached input, because the name and values match GitHub's cached-token billing category.
+- Medium confidence that `cachedTokens` is always a subset of `inputTokens` for this local debug-log schema. The scanner preserves pricing safety by clamping impossible splits, emits a warning if it ever sees one, and the verifier fails generated data where `cachedInputTokens > inputTokens`. This remains an observed VS Code debug-log convention rather than a separately documented public API.
+- Low confidence in any claim that a missing `cachedTokens` field means no provider-side caching occurred. Missing local fields mean "not visible locally", not "zero on GitHub's invoice".
+
+The generated data now carries an ingestion-level cache audit. Run:
+
+```text
+npm run scan
+npm run verify:data
+```
+
+The verifier prints a line like:
+
+```text
+Cache split audit: 23/116 model calls include cachedTokens; 0 invalid cached/input splits; 3,272,520 normal input + 713,970 cached input from 3,986,490 raw inputTokens.
+```
+
+This audit does not make VS Code's debug-log schema a public billing API, but it proves the local data imported into the app obeys the relationship the pricing math depends on:
+
+```text
+raw_input_tokens = normal_input_tokens + cached_input_tokens
+```
+
 That means:
 
 - `attrs.cachedTokens` is treated as cached input and priced with GitHub's cached-input rate for the model. The normal input bucket is `inputTokens - cachedTokens`.

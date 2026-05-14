@@ -87,7 +87,13 @@
     <div class="cost-row cost-row-heading" role="row">
       <span>Model</span>
       <span>Price row <app-help-popover [text]="help.priceRow" label="Explain price row"></app-help-popover></span>
-      <span>Tokens <app-help-popover [text]="help.inputTokens + ' ' + help.outputTokens" label="Explain token columns"></app-help-popover></span>
+      <span>
+        Tokens
+        <app-help-popover
+          [text]="'Token columns use priced buckets: normal input, cached input, cache write, and output. Raw VS Code inputTokens is kept in Trace event details.'"
+          label="Explain token columns"
+        ></app-help-popover>
+      </span>
       <span>Rates / 1M <app-help-popover [text]="help.appEstimate" label="Explain rates"></app-help-popover></span>
       <span>Cost</span>
       <span>Share</span>
@@ -126,6 +132,9 @@
             {{ model.inputUsd | number: '1.6-6' }} in
             @if (model.cachedInputUsd || model.cacheWriteUsd) {
               / {{ model.cachedInputUsd | number: '1.6-6' }} cached
+            }
+            @if (model.cacheWriteUsd) {
+              / {{ model.cacheWriteUsd | number: '1.6-6' }} write
             }
             / {{ model.outputUsd | number: '1.6-6' }} out
           </em>

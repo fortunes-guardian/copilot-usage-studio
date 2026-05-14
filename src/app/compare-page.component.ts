@@ -40,6 +40,7 @@ interface SessionComparisonAnalysis {
   modelRows: PricedModelBreakdown[];
   totalTokens: number;
   inputUsd: number;
+  inputContextUsd: number;
   outputUsd: number;
   cachedInputUsd: number;
   cacheWriteUsd: number;
@@ -117,7 +118,7 @@ export class ComparePageComponent {
     const bAnalysis = this.sessionComparisonAnalysis(b);
     const totalTokenDelta = bAnalysis.totalTokens - aAnalysis.totalTokens;
     const costDelta = b.cost.usd - a.cost.usd;
-    const inputCostDelta = bAnalysis.inputUsd - aAnalysis.inputUsd;
+    const inputCostDelta = bAnalysis.inputContextUsd - aAnalysis.inputContextUsd;
     const outputCostDelta = bAnalysis.outputUsd - aAnalysis.outputUsd;
     const toolDelta = b.traceSummary.toolCalls - a.traceSummary.toolCalls;
     const turnDelta = b.traceSummary.modelTurns - a.traceSummary.modelTurns;
@@ -164,6 +165,16 @@ export class ComparePageComponent {
           format: 'number',
           lowerIsBetter: true,
           help: 'Prompt/context tokens VS Code reported as cachedTokens. These are priced with the cached-input rate, not merged into normal input.',
+        },
+        {
+          label: 'Cache write tokens',
+          a: a.tokens.cacheWrite,
+          b: b.tokens.cacheWrite,
+          delta: b.tokens.cacheWrite - a.tokens.cacheWrite,
+          percent: percentDelta(a.tokens.cacheWrite, b.tokens.cacheWrite),
+          format: 'number',
+          lowerIsBetter: true,
+          help: 'Cache creation tokens when VS Code exposes a numeric cache-write field. These are priced separately from normal and cached input.',
         },
         {
           label: 'Output tokens',
@@ -246,6 +257,7 @@ export class ComparePageComponent {
       modelRows,
       totalTokens: sessionTotalTokens(session),
       inputUsd: modelRows.reduce((sum, row) => sum + row.inputUsd, 0),
+      inputContextUsd: modelRows.reduce((sum, row) => sum + row.inputUsd + row.cachedInputUsd + row.cacheWriteUsd, 0),
       outputUsd: modelRows.reduce((sum, row) => sum + row.outputUsd, 0),
       cachedInputUsd: modelRows.reduce((sum, row) => sum + row.cachedInputUsd, 0),
       cacheWriteUsd: modelRows.reduce((sum, row) => sum + row.cacheWriteUsd, 0),
@@ -342,7 +354,7 @@ export class ComparePageComponent {
         tone: Math.abs(inputCostDelta) >= Math.abs(outputCostDelta) ? 'high' : 'medium',
         detail:
           Math.abs(inputCostDelta) >= Math.abs(outputCostDelta)
-            ? `Input/context cost moved by ${inputCostDelta >= 0 ? '+' : '-'}$${Math.abs(inputCostDelta).toFixed(4)}. This is usually repo context, prior chat, or tool results.`
+            ? `Input/context cost moved by ${inputCostDelta >= 0 ? '+' : '-'}$${Math.abs(inputCostDelta).toFixed(4)} across normal input, cached input, and cache-write buckets. This is usually repo context, prior chat, or tool results.`
             : `Output cost moved by ${outputCostDelta >= 0 ? '+' : '-'}$${Math.abs(outputCostDelta).toFixed(4)}. The later run generated more or less text.`,
       },
       {

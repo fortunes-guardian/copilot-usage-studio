@@ -98,10 +98,10 @@ export class App {
     snapshotsWithoutRequests:
       'Chat files without usable request records. They do not contain enough structure to import safely.',
     inputTokens:
-      'Everything sent into the model: prompt, repo context, prior conversation, and tool results.',
+      'Normal, non-cached input/context tokens priced at the GitHub input rate. Raw VS Code inputTokens can be higher when cachedTokens are present.',
     outputTokens: 'Generated model response tokens.',
     cachedInput:
-      'Input/context tokens reported by VS Code as cachedTokens on model calls. These are priced separately from normal input when present.',
+      'Input/context tokens VS Code reported as cachedTokens. They are part of the raw input sent to the model, but priced with GitHub cached-input rates instead of normal input rates.',
     cacheWrite:
       'Provider cache creation tokens when the billing source exposes them. GitHub lists this mainly for Anthropic pricing rows.',
     priceRow:

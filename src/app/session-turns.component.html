@@ -24,12 +24,24 @@
           <p>{{ topCall.model || topCall.name }} · {{ topCall.totalTokens | number }} tokens · {{ topCall.share | number: '1.0-0' }}% of estimate. Most runs are cumulative, so read this as the biggest spike, not the sole cause.</p>
         </div>
         <div class="token-split" aria-label="Token split">
-          <span>Input / output split</span>
+          <span>Input/cache/output split</span>
           <div class="token-split-bar">
-            <i class="input-bar" [style.width.%]="inputShare(topCall)"></i>
+            <i class="input-bar" [style.width.%]="normalInputShare(topCall)"></i>
+            @if (topCall.cachedInputTokens) {
+              <i class="cached-input-bar" [style.width.%]="cachedInputShare(topCall)"></i>
+            }
             <i class="output-bar" [style.width.%]="outputShare(topCall)"></i>
           </div>
-          <p>{{ topCall.inputTokens | number }} in / {{ topCall.outputTokens | number }} out</p>
+          <p>
+            {{ normalInputTokens(topCall) | number }} normal in
+            @if (topCall.cachedInputTokens) {
+              / {{ topCall.cachedInputTokens | number }} cached in
+            }
+            @if (topCall.cacheWriteTokens) {
+              / {{ topCall.cacheWriteTokens | number }} cache write
+            }
+            / {{ topCall.outputTokens | number }} out
+          </p>
         </div>
         <button type="button" class="trace-jump" (click)="openTraceEvent.emit(topCall.index)">
           Open trace #{{ topCall.index }}
@@ -88,11 +100,23 @@
           </span>
           <span role="cell" data-label="Tokens">
             {{ event.totalTokens | number }}
-            <em>{{ event.inputTokens | number }} in / {{ event.outputTokens | number }} out</em>
+            <em>
+              {{ normalInputTokens(event) | number }} normal in
+              @if (event.cachedInputTokens) {
+                / {{ event.cachedInputTokens | number }} cached in
+              }
+              @if (event.cacheWriteTokens) {
+                / {{ event.cacheWriteTokens | number }} cache write
+              }
+              / {{ event.outputTokens | number }} out
+            </em>
           </span>
           <span role="cell" data-label="Cost">
             ${{ event.estimatedUsd | number: '1.6-6' }}
-            <em>{{ event.inputUsd | number: '1.6-6' }} in / {{ event.outputUsd | number: '1.6-6' }} out</em>
+            <em>
+              {{ inputCostUsd(event) | number: '1.6-6' }} input/cache
+              / {{ event.outputUsd | number: '1.6-6' }} out
+            </em>
           </span>
           <span role="cell" data-label="Share">
             <span class="share-meter" aria-hidden="true"><i></i></span>

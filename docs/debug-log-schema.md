@@ -94,6 +94,22 @@ cost_usd =
 
 `cachedTokens` is not a discount against output. It is cached input. Output remains output.
 
+The scanner also writes a `cacheTokenAudit` object for each Agent Debug Log session and for the full ingestion result. This is a guardrail around the observed schema:
+
+| Field | Meaning |
+| --- | --- |
+| `modelCalls` | Number of `llm_request` model calls audited |
+| `callsWithCachedTokens` | Model calls where VS Code exposed a positive cached-token field |
+| `invalidCachedTokenSplits` | Model calls where raw cached tokens exceeded raw input tokens before scanner safety clamping |
+| `rawInputTokens` | Sum of raw `attrs.inputTokens` from audited model calls |
+| `normalInputTokens` | Sum of `max(0, inputTokens - cachedTokens)` |
+| `cachedInputTokens` | Sum of imported cached input tokens |
+| `cacheWriteTokens` | Sum of imported cache-write tokens, when exposed |
+| `outputTokens` | Sum of output tokens from audited model calls |
+| `maxCachedInputShare` | Largest cached/input share seen on one model call |
+
+The verifier recomputes this audit from generated trace rows. It fails if generated cache fields are invalid or if the audit does not reconcile. This is intentionally local evidence, not a claim that VS Code Agent Debug Logs are a stable public API.
+
 ## Request Options
 
 Observed `requestOptions` shapes include:
@@ -168,7 +184,7 @@ Top-level fields:
 | `pricingVersion` | Version of `data/github-copilot-pricing.json` used |
 | `pricingSourceUrl` | GitHub Docs pricing source |
 | `usdToEur` | Legacy compatibility, currently `1` |
-| `ingestion` | Scan counters and warnings |
+| `ingestion` | Scan counters, warnings, and the aggregate `cacheTokenAudit` |
 | `sessions` | Imported sessions |
 
 Session fields:
@@ -188,6 +204,7 @@ Session fields:
 | `cost.usd` | Local USD estimate |
 | `confidence` | Exact for imported debug-log token fields; estimated for weaker sources |
 | `traceSummary` | Counts and headline trace signals |
+| `cacheTokenAudit` | Local audit of raw input, normal input, cached input, and invalid cache splits for `llm_request` rows |
 | `requestPayload` | Bounded setup/tool payload evidence |
 | `traceEvents` | Capped normalized trace rows |
 | `vscodeState` | Optional `state.vscdb` metadata enrichment |

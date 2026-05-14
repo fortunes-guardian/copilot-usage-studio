@@ -314,6 +314,10 @@
   background: var(--accent);
 }
 
+.cached-input-bar {
+  background: var(--accent-2);
+}
+
 .output-bar {
   flex: 1;
   background: var(--warning);

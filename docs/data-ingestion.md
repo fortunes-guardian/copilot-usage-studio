@@ -244,3 +244,12 @@ npm run verify:data
 ```
 
 The verifier checks the generated session-data shape, duplicate ids, required source metadata, valid timestamps, non-negative token fields, model breakdown pricing, token-bearing trace event pricing, optional VS Code state metadata, and guards against importing sessions with neither token totals nor turns.
+
+It also recomputes the cache split audit. This is the guardrail for the observed VS Code mapping:
+
+```text
+normal_input_tokens = max(0, inputTokens - cachedTokens)
+cached_input_tokens = cachedTokens
+```
+
+The audit proves, for the generated data, how many model calls exposed `cachedTokens`, whether any impossible `cachedTokens > inputTokens` splits were found, and whether normal plus cached input reconciles back to raw `inputTokens`.

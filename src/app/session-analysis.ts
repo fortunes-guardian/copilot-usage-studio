@@ -183,12 +183,10 @@ export function traceEventDetails(event: TraceEvent, modelBreakdown: ModelBreakd
     ...(rawModel ? [{ label: 'Raw model', value: rawModel }] : []),
     ...(event.inputTokens || event.outputTokens
       ? [
-          { label: 'Input tokens', value: event.inputTokens.toLocaleString() },
+          { label: 'Raw inputTokens', value: event.inputTokens.toLocaleString() },
+          { label: 'Normal input tokens', value: normalInputTokens.toLocaleString() },
           ...(event.cachedInputTokens
-            ? [
-                { label: 'Cached input tokens', value: event.cachedInputTokens.toLocaleString() },
-                { label: 'Normal input tokens', value: normalInputTokens.toLocaleString() },
-              ]
+            ? [{ label: 'Cached input tokens', value: event.cachedInputTokens.toLocaleString() }]
             : []),
           ...(event.cacheWriteTokens
             ? [{ label: 'Cache write tokens', value: event.cacheWriteTokens.toLocaleString() }]
@@ -345,10 +343,10 @@ function turnInsights(modelCallRowList: ModelCallRow[]) {
         : 'No priced model call rows are available.',
     },
     {
-      label: 'Largest input',
+      label: 'Largest raw input',
       value: largestInput ? `#${largestInput.callNumber} · ${largestInput.inputTokens.toLocaleString()}` : 'None',
       detail: largestInput
-        ? 'This is the biggest prompt/context payload sent into the model.'
+        ? 'This is the biggest raw inputTokens payload sent into the model before splitting normal and cached input.'
         : 'No input token totals were imported.',
     },
     {
@@ -463,13 +461,13 @@ function explainCostDrivers(session: CopilotSession, modelRows: ModelCostRow[], 
 
   return [
     {
-      title: 'Input context burn',
+      title: 'Input/cache cost',
       value: `${Math.round(inputShare)}%`,
       detail:
         inputShare >= outputShare
           ? `Most cost is prompt/context material sent into the model: ${(
               session.tokens.input + session.tokens.cachedInput + session.tokens.cacheWrite
-            ).toLocaleString()} input/cache tokens.`
+            ).toLocaleString()} normal input, cached input, and cache-write tokens.`
           : `Output is the larger priced category here, but input still contributes ${inputShare.toFixed(0)}% of this estimate.`,
       tone: inputShare >= 75 ? 'high' : inputShare >= 50 ? 'medium' : 'low',
     },
@@ -549,6 +547,8 @@ function pricedModelCallEvents(events: TraceEvent[], modelBreakdown: ModelBreakd
         pricingModel,
         usesFallbackPrice: modelUsesPricingFallback(event.model || modelFromEventDetail(event.detail), pricingModel),
         inputUsd,
+        cachedInputUsd,
+        cacheWriteUsd,
         outputUsd,
         estimatedUsd,
       };

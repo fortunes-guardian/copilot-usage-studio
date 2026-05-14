@@ -266,20 +266,86 @@ function numericAttr(attrs, names) {
 function llmTokenFields(event) {
   const inputTokens = Number(event.attrs?.inputTokens ?? 0);
   const outputTokens = Number(event.attrs?.outputTokens ?? 0);
-  const cachedInputTokens = Math.min(
-    inputTokens,
-    numericAttr(event.attrs, ['cachedTokens', 'cachedInputTokens', 'cacheReadTokens']),
-  );
+  const rawCachedInputTokens = numericAttr(event.attrs, ['cachedTokens', 'cachedInputTokens', 'cacheReadTokens']);
+  const cachedInputTokens = Math.min(inputTokens, rawCachedInputTokens);
   const cacheWriteTokens = numericAttr(event.attrs, ['cacheWriteTokens', 'cachedWriteTokens']);
   const billableInputTokens = Math.max(0, inputTokens - cachedInputTokens);
 
   return {
     inputTokens,
     billableInputTokens,
+    rawCachedInputTokens,
     cachedInputTokens,
     cacheWriteTokens,
     outputTokens,
   };
+}
+
+function cacheTokenAuditFromLlmRequests(llmRequests) {
+  return llmRequests.reduce(
+    (audit, event) => {
+      const tokenFields = llmTokenFields(event);
+
+      audit.modelCalls += 1;
+      audit.rawInputTokens += tokenFields.inputTokens;
+      audit.normalInputTokens += tokenFields.billableInputTokens;
+      audit.cachedInputTokens += tokenFields.cachedInputTokens;
+      audit.cacheWriteTokens += tokenFields.cacheWriteTokens;
+      audit.outputTokens += tokenFields.outputTokens;
+
+      if (tokenFields.rawCachedInputTokens > 0) {
+        audit.callsWithCachedTokens += 1;
+      }
+
+      if (tokenFields.rawCachedInputTokens > tokenFields.inputTokens) {
+        audit.invalidCachedTokenSplits += 1;
+      }
+
+      const rawInputShare =
+        tokenFields.inputTokens > 0 ? tokenFields.cachedInputTokens / tokenFields.inputTokens : 0;
+      audit.maxCachedInputShare = Math.max(audit.maxCachedInputShare, rawInputShare);
+
+      return audit;
+    },
+    {
+      modelCalls: 0,
+      callsWithCachedTokens: 0,
+      invalidCachedTokenSplits: 0,
+      rawInputTokens: 0,
+      normalInputTokens: 0,
+      cachedInputTokens: 0,
+      cacheWriteTokens: 0,
+      outputTokens: 0,
+      maxCachedInputShare: 0,
+    },
+  );
+}
+
+function mergeCacheTokenAudits(audits) {
+  return audits.reduce(
+    (total, audit) => ({
+      modelCalls: total.modelCalls + audit.modelCalls,
+      callsWithCachedTokens: total.callsWithCachedTokens + audit.callsWithCachedTokens,
+      invalidCachedTokenSplits: total.invalidCachedTokenSplits + audit.invalidCachedTokenSplits,
+      rawInputTokens: total.rawInputTokens + audit.rawInputTokens,
+      normalInputTokens: total.normalInputTokens + audit.normalInputTokens,
+      cachedInputTokens: total.cachedInputTokens + audit.cachedInputTokens,
+      cacheWriteTokens: total.cacheWriteTokens + audit.cacheWriteTokens,
+      outputTokens: total.outputTokens + audit.outputTokens,
+      maxCachedInputShare: Math.max(total.maxCachedInputShare, audit.maxCachedInputShare),
+    }),
+    {
+      modelCalls: 0,
+      callsWithCachedTokens: 0,
+      invalidCachedTokenSplits: 0,
+      rawInputTokens: 0,
+      normalInputTokens: 0,
+      cachedInputTokens: 0,
+      cacheWriteTokens: 0,
+      outputTokens: 0,
+      maxCachedInputShare: 0,
+    },
+  );
 }
 
 function eventModelCostFields(rawModel, tokenFields) {
@@ -546,7 +612,7 @@ function timestampForEvent(event) {
 
 function eventDetail(event) {
   if (event.type === 'llm_request') {
-    return `${event.attrs?.model ?? 'model'}: ${Number(event.attrs?.inputTokens ?? 0).toLocaleString()} in / ${Number(
+    return `${event.attrs?.model ?? 'model'}: ${Number(event.attrs?.inputTokens ?? 0).toLocaleString()} raw in / ${Number(
       event.attrs?.outputTokens ?? 0,
     ).toLocaleString()} out`;
   }
@@ -741,6 +807,13 @@ function sessionFromDebugLog(sessionDir, workspaceDir) {
     ).toISOString();
   const evidence = debugEvidence(llmRequests, assistantEvents, main);
   const payload = requestPayloadSummary(sessionDir, llmRequests, toolEvents);
+  const cacheTokenAudit = cacheTokenAuditFromLlmRequests(llmRequests);
+
+  if (cacheTokenAudit.invalidCachedTokenSplits > 0) {
+    diagnostics.warnings.push(
+      `${sessionDir}: ${cacheTokenAudit.invalidCachedTokenSplits} model call(s) reported cachedTokens greater than inputTokens; cached input was clamped for pricing safety`,
+    );
+  }
 
   const turns = [
     ...userMessages.map((event) => ({
@@ -796,6 +869,7 @@ function sessionFromDebugLog(sessionDir, workspaceDir) {
       maxRequestTokens: evidence.context.maxRequestTokens,
       reasoningEfforts: payload.reasoningEfforts,
     },
+    cacheTokenAudit,
     advancedSignals: evidence,
     requestPayload: payload,
     traceEvents: capTraceEvents(
@@ -910,6 +984,17 @@ function sessionFromChatSnapshot(file, workspaceDir) {
       reasoningEvents: 0,
       maxInputTokens: input,
       maxRequestTokens: 0,
+    },
+    cacheTokenAudit: {
+      modelCalls: 0,
+      callsWithCachedTokens: 0,
+      invalidCachedTokenSplits: 0,
+      rawInputTokens: 0,
+      normalInputTokens: 0,
+      cachedInputTokens: 0,
+      cacheWriteTokens: 0,
+      outputTokens: 0,
+      maxCachedInputShare: 0,
     },
     advancedSignals: {
       reasoning: {
@@ -1106,6 +1191,7 @@ writeFileSync(
       ingestion: {
         ...diagnostics,
         importedSessions: sessions.length,
+        cacheTokenAudit: mergeCacheTokenAudits(sessions.map((session) => session.cacheTokenAudit).filter(Boolean)),
       },
       sessions,
     },

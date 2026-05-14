@@ -55,6 +55,18 @@ export interface TraceSummary {
   reasoningEfforts?: Array<{ effort: string; count: number }>;
 }
 
+export interface CacheTokenAudit {
+  modelCalls: number;
+  callsWithCachedTokens: number;
+  invalidCachedTokenSplits: number;
+  rawInputTokens: number;
+  normalInputTokens: number;
+  cachedInputTokens: number;
+  cacheWriteTokens: number;
+  outputTokens: number;
+  maxCachedInputShare: number;
+}
+
 export interface TraceEvent {
   index: number;
   timestamp: string;
@@ -143,6 +155,7 @@ export interface CopilotSession {
   cost: CostBreakdown;
   confidence: EstimateConfidence;
   traceSummary: TraceSummary;
+  cacheTokenAudit?: CacheTokenAudit;
   advancedSignals?: AdvancedSignals;
   requestPayload?: RequestPayloadSummary;
   traceEvents: TraceEvent[];
@@ -167,6 +180,7 @@ export interface SessionData {
     skippedChatSnapshotsWithoutRequests: number;
     skippedDuplicateChatSnapshots: number;
     importedSessions: number;
+    cacheTokenAudit?: CacheTokenAudit;
     warnings: string[];
   };
   sessions: CopilotSession[];

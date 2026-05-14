@@ -160,7 +160,9 @@ describe('session analysis', () => {
     expect(explanation.modelRows[0].inputUsd).toBeCloseTo(0.0056975);
     expect(explanation.modelRows[0].cachedInputUsd).toBeCloseTo(0.005408);
     expect(eventDetails.inputUsd).toBeCloseTo(0.0056975);
+    expect(eventDetails.normalizedFields).toContainEqual({ label: 'Raw inputTokens', value: '23,911' });
     expect(eventDetails.normalizedFields).toContainEqual({ label: 'Normal input tokens', value: '2,279' });
+    expect(eventDetails.normalizedFields).toContainEqual({ label: 'Cached input tokens', value: '21,632' });
   });
 });
 

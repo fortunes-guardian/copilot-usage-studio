@@ -90,9 +90,9 @@
   <div class="pricing-note">
     <strong>Calculation rule</strong>
     <p>
-      Per-1M-token GitHub rates are multiplied by imported VS Code token totals. Estimates stay in USD because GitHub
-      prices and AI credits are USD-native. Agent Debug Logs can expose cached input as <code>cachedTokens</code>;
-      cache write is only priced when a numeric cache-write field is imported.
+      Per-1M-token GitHub rates are multiplied by imported VS Code token buckets. Normal input is
+      <code>inputTokens - cachedTokens</code> when cached tokens are present. Estimates stay in USD because GitHub
+      prices and AI credits are USD-native; cache write is only priced when a numeric cache-write field is imported.
     </p>
   </div>
 
@@ -102,7 +102,7 @@
       <span>Provider</span>
       <span>Status</span>
       <span>Category</span>
-      <span>Input <app-help-popover [text]="help.inputTokens" label="Explain input tokens"></app-help-popover></span>
+      <span>Normal input <app-help-popover [text]="help.inputTokens" label="Explain normal input"></app-help-popover></span>
       <span>Cached input <app-help-popover [text]="help.cachedInput" label="Explain cached input"></app-help-popover></span>
       <span>Cache write <app-help-popover [text]="help.cacheWrite" label="Explain cache write"></app-help-popover></span>
       <span>Output <app-help-popover [text]="help.outputTokens" label="Explain output tokens"></app-help-popover></span>
