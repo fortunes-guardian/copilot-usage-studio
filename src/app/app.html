@@ -62,25 +62,37 @@
     <app-session-data-state-panel [state]="sessionDataLoadState()" [error]="sessionDataLoadError()"></app-session-data-state-panel>
 
     @if (activeView() === 'pricing') {
-      <app-pricing-page
-        [sessions]="sessions()"
-        [selectedAllowancePlan]="allowancePlan()"
-        (selectedAllowancePlanChange)="setAllowancePlan($event)"
-      ></app-pricing-page>
+      @defer {
+        <app-pricing-page
+          [sessions]="sessions()"
+          [selectedAllowancePlan]="allowancePlan()"
+          (selectedAllowancePlanChange)="setAllowancePlan($event)"
+        ></app-pricing-page>
+      } @placeholder {
+        <p class="deferred-panel">Loading prices…</p>
+      }
     } @else if (activeView() === 'analytics') {
-      <app-analytics-page
-        [sessions]="filteredSessions()"
-        [totalSessionCount]="sessions().length"
-        (openSession)="openSession($event)"
-      ></app-analytics-page>
+      @defer {
+        <app-analytics-page
+          [sessions]="filteredSessions()"
+          [totalSessionCount]="sessions().length"
+          (openSession)="openSession($event)"
+        ></app-analytics-page>
+      } @placeholder {
+        <p class="deferred-panel">Loading analytics…</p>
+      }
     } @else if (activeView() === 'compare') {
-      <app-compare-page
-        [sessions]="sessions()"
-        [compareA]="compareA()"
-        [compareB]="compareB()"
-        (compareAChange)="compareA.set($event)"
-        (compareBChange)="compareB.set($event)"
-      ></app-compare-page>
+      @defer {
+        <app-compare-page
+          [sessions]="sessions()"
+          [compareA]="compareA()"
+          [compareB]="compareB()"
+          (compareAChange)="compareA.set($event)"
+          (compareBChange)="compareB.set($event)"
+        ></app-compare-page>
+      } @placeholder {
+        <p class="deferred-panel">Loading comparison…</p>
+      }
     } @else if (activeView() === 'sessions') {
     <section class="sessions-page">
       @if (sessionData()?.ingestion; as ingestion) {

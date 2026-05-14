@@ -71,6 +71,12 @@
   font-weight: 720;
 }
 
+.analytics-controls label > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .analytics-controls select {
   width: 100%;
   min-height: 30px;
@@ -109,7 +115,7 @@
 
 .analytics-metrics {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -183,6 +189,12 @@
 
 .panel-heading p {
   margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.panel-note {
+  margin: -3px 0 0;
   color: var(--muted);
   font-size: 12px;
 }

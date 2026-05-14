@@ -4,6 +4,188 @@ Start here when resuming the project.
 
 ## Latest Step
 
+Added script and Compare regression coverage, plus Prices usage windows.
+
+What changed:
+
+- Exported scanner token/pricing helpers safely without running a scan on import.
+- Added `npm run test:scripts` for Node-side script tests.
+- Added scanner fixture tests for raw `inputTokens`, `cachedTokens`, cache-write pricing, invalid cached-token splits, and merged cache audits.
+- Added pricing utility tests for model normalization, direct pricing matches, unknown-model fallback, and fallback-row pricing.
+- Added Compare component tests for repeated-prompt spread explanations and A/B swap behavior.
+- Added a Prices usage-window selector so the AI-credit allowance meter can show all imported sessions, last 7 days, last 30 days, or last 90 days.
+
+Why: the cost debugger is only useful if the ingestion, pricing, and comparison layers keep agreeing as the UI evolves. These tests protect the cache and fallback assumptions that would be easiest to break silently.
+
+Verification:
+
+- `npm run test:scripts`
+- `npm test -- --watch=false`
+- `npm run build`
+
+## Previous Step
+
+Added focused regression tests for cache-aware pricing buckets.
+
+What changed:
+
+- Added `session-cost-utils.spec.ts`.
+- Pinned the four priced token buckets in tests: normal input, cached input, cache write, and output.
+- Added a GPT-5.4 cache-heavy fixture that proves cached input is discounted, not free, and not subtracted from output.
+- Added a session total-token assertion so `normal + cached + cache write + output` stays explicit.
+
+Why: the most important trust boundary is pricing math. The UI can keep changing, but cache-aware cost calculation must not regress back to raw input-only or "cached means free" behavior.
+
+Verification:
+
+- `npm test -- --watch=false`
+- `npm run build`
+
+## Previous Step
+
+Added AI-credit context to Analytics cost displays.
+
+What changed:
+
+- Added `AI credits used` beside the Analytics cohort total estimate.
+- Converted Analytics model, distribution, trend, and outlier cost displays into USD plus AI credits where the extra context helps.
+- Added a short Business allowance comparison in the cohort totals copy.
+- Renamed the `Trend` control to `Group trend by` and added help text that separates included time range from trend bucketing.
+
+Why: Analytics was showing the right USD estimate, but GitHub billing is easier to reason about in AI credits. The page now answers both "how many dollars is this cohort?" and "how much allowance did that represent?" without making the user visit Prices.
+
+Verification:
+
+- `npm test -- --watch=false`
+- `npm run build`
+
+## Previous Step
+
+Replaced Compare's native run dropdowns with app-owned run pickers.
+
+What changed:
+
+- Removed the native select controls from Compare's Baseline A and Candidate B selectors.
+- Added compact selected-run summaries plus searchable result popovers for both sides.
+- Search results now show title, timestamp, USD estimate, and total token count.
+- Choosing a run clears and closes the picker, while the same-prompt A/B swap behavior remains intact.
+
+Why: the native dropdown/search hybrid still felt broken because users had to open a browser select to see filtered options. Compare now uses one visible, product-owned interaction model.
+
+Verification:
+
+- `npm test -- --watch=false`
+- `npm run build`
+
+## Previous Step
+
+Made Compare selector search visible and widened the run pickers.
+
+What changed:
+
+- Added clickable search results under both Baseline A and Candidate B search fields.
+- The native dropdowns still exist, but search no longer depends on opening the dropdown to see whether it worked.
+- Widened the selector columns so longer run names are less cramped.
+- Search result rows show title, timestamp, and USD estimate.
+
+Why: native selects hide filtered options until opened, so the previous search felt broken even when the underlying option list changed. Visible result rows make search behavior obvious.
+
+Verification:
+
+- `npm test -- --watch=false`
+- `npm run build`
+
+## Previous Step
+
+Clarified same-prompt A/B selection after larger repeated-prompt testing.
+
+What changed:
+
+- Refreshed imports again; the app now sees 15 sessions.
+- Updated same-prompt run picker copy from `Select any two runs from this prompt group` to `Choose one Baseline A and one Candidate B`.
+- Changed tiny `A` / `B` buttons into explicit `Set A`, `Set B`, `A selected`, and `B selected` controls.
+- Added safe swap behavior: if a user assigns the run currently used by the other side, the previous run is moved over instead of leaving A and B pointing at the same session.
+
+Why: the previous UI was ambiguous. Users could reasonably read `Select any two runs` as selecting two rows, but the product model is one baseline run and one candidate run. The controls now say what they do.
+
+Verification:
+
+- `npm run scan`
+- `npm test -- --watch=false`
+- `npm run build`
+
+Known note:
+
+- Browser click-through verification timed out in the in-app browser during this pass, after build and tests passed. Recheck visually on the running app when the browser connection is responsive.
+
+## Previous Step
+
+Improved same-prompt Compare after testing real repeated prompt sessions.
+
+What changed:
+
+- Refreshed imported VS Code sessions; the app now sees 12 sessions including the user's repeated-prompt tests.
+- Confirmed Compare detects two repeated prompt groups: one with 3 matching runs and one with 2 matching runs.
+- Added a selected prompt-group run picker beside the repeated prompt groups.
+- Each matching run now shows a local group number, timestamp, cost, token total, model turns, and tool calls.
+- Each run has direct `A` and `B` buttons so a 3-run same-prompt group can compare any pair without using the long dropdowns.
+
+Why: the old repeated-prompt UI was technically correct but weak for real prompt testing. `Oldest -> newest` and `Cheapest -> highest` are useful shortcuts, but a group with three or more identical prompts needs direct pair selection.
+
+Verification:
+
+- `npm run scan`
+- `npm run verify:data`
+- `npm test -- --watch=false`
+- `npm run build`
+- Browser visual check on Compare at `http://127.0.0.1:4301/` confirmed the 3-run and 2-run prompt groups, run labels, and A/B controls.
+
+## Previous Step
+
+Polished Compare for searchable run selection and clearer token movement.
+
+What changed:
+
+- Added separate search boxes for Baseline A and Candidate B.
+- Kept the currently selected run in each selector even when the search text does not match it, so filtering does not make the selection appear blank.
+- Changed the model table from a single token delta to a `Token movement` column.
+- Token movement now shows total movement plus normal input, cached input, cache write, and output deltas where relevant.
+- Tightened Compare selector/table spacing so the page remains readable after adding cache-aware details.
+
+Why: Compare should help users evaluate two runs without fighting long dropdowns, and cache-aware pricing means a single "input" or "token delta" number is no longer specific enough.
+
+Verification:
+
+- `npm test -- --watch=false`
+- `npm run build`
+- Browser sanity check on `http://127.0.0.1:4301/compare` behavior through the Compare nav, including search fields and token movement text.
+
+## Previous Step
+
+Removed the initial bundle warning by deferring non-active top-level pages.
+
+What changed:
+
+- Wrapped Compare, Analytics, and Prices in Angular `@defer` blocks so they load only when their nav view is opened.
+- Kept Sessions as the first loaded debugger workspace.
+- Added a small shared deferred-page placeholder for the brief lazy-load state.
+- Verified that the production build now emits Compare, Analytics, and Prices as lazy chunks.
+
+Why: the app was still loading every top-level page up front even though a user starts in Sessions. Deferring secondary pages keeps the first debugger surface lighter without changing the product behavior or hiding features.
+
+Verification:
+
+- `npm run build`
+- `npm test -- --watch=false`
+- Browser navigation check on `http://127.0.0.1:4301/` for Compare, Analytics, Prices, and Sessions.
+
+Current build note:
+
+- Initial bundle is now `474.63 kB`, under the `500 kB` budget.
+- Lazy chunks are emitted for Compare (`25.29 kB`), Analytics (`25.23 kB`), and Prices (`18.16 kB`).
+
+## Previous Step
+
 Completed a token-bucket UI harmonization pass.
 
 What changed:
@@ -1000,10 +1182,11 @@ Keep tightening reliability and the UI/code structure before attempting evidence
 
 Build:
 
-- Improve Compare for prompt testing: detect same-prompt runs, make same-prompt A/B selection easy, and improve search/preview ergonomics.
+- Add a same-prompt explanation readout in Compare that names why the cheapest/most expensive repeated-prompt run differs: normal input, cached input, output, model turns, tool calls, or pricing row.
+- Add fixture tests for cached-token movement rows in Compare model tables.
+- Audit Analytics `Runs to inspect` and `Outlier signals` buttons. User reports some bottom links feel broken, so verify whether navigation, filter state, or disabled-session handling is at fault.
+- Continue Analytics clarity work: keep `Time range` as the inclusion filter and `Group trend by` as display bucketing, and remove/rename anything that still makes those controls feel like competing filters.
 - Add app-owned run tags after there is durable local state, so users can mark changes such as `new instructions applied` or `MCP compression enabled`.
-- Add time-window controls to the Prices/AI-credit usage context so credit totals can be read by recent periods instead of all imported sessions only.
-- Add fixture coverage for Agent Debug Log `cachedTokens` so cache-aware pricing cannot regress.
 - Move selected-run explanation logic out of the root component into focused services/helpers, starting with Cost and Trace calculations.
 - Continue replacing native title tooltips with `HelpPopoverComponent` where the explanation is important enough to be discoverable.
 - Add fixture-based scanner/verifier tests for mixed models, unknown model fallback, and missing/malformed generated data.

@@ -43,7 +43,10 @@
         </select>
       </label>
       <label>
-        <span>Trend</span>
+        <span>
+          Group trend by
+          <app-help-popover [text]="help.trendGrouping" label="Explain trend grouping"></app-help-popover>
+        </span>
         <select [ngModel]="analyticsGrouping()" (ngModelChange)="setAnalyticsGrouping($event)">
           @for (option of analyticsGroupingOptions; track option.value) {
             <option [value]="option.value">{{ option.label }}</option>
@@ -65,7 +68,11 @@
         <div class="panel-heading">
           <div>
             <h3>Cohort totals</h3>
-            <p>Totals for the current Analytics filters.</p>
+            <p>
+              Current filters: {{ stats.timeRangeLabel }}, {{ stats.workspaceLabel }}, {{ stats.modelLabel }}.
+              {{ stats.totalCredits | number: '1.0-1' }} AI credits, about
+              {{ stats.businessAllowanceShare | number: '1.0-1' }}% of one Business monthly allowance.
+            </p>
           </div>
         </div>
         <section class="analytics-metrics" aria-label="Analytics summary metrics">
@@ -122,7 +129,10 @@
                     / {{ model.output | number }} out
                   </em>
                 </span>
-                <span>${{ model.cost | number: '1.2-4' }}</span>
+                <span>
+                  ${{ model.cost | number: '1.2-4' }}
+                  <em>{{ aiCredits(model.cost) | number: '1.0-1' }} credits</em>
+                </span>
                 <span>${{ model.costPer1k | number: '1.4-4' }}</span>
                 <span class="share-cell">
                   {{ model.share | number: '1.0-0' }}%
@@ -143,7 +153,10 @@
                 <div>
                   <span>{{ bucket.size }}</span>
                   <strong>{{ bucket.count | number }} runs</strong>
-                  <em>{{ bucket.tokens | number }} tokens · ${{ bucket.cost | number: '1.2-4' }} · {{ bucket.share | number: '1.0-0' }}%</em>
+                  <em>
+                    {{ bucket.tokens | number }} tokens · ${{ bucket.cost | number: '1.2-4' }} ·
+                    {{ aiCredits(bucket.cost) | number: '1.0-1' }} credits · {{ bucket.share | number: '1.0-0' }}%
+                  </em>
                 </div>
               }
             </div>
@@ -151,12 +164,16 @@
 
           <div class="analytics-panel">
             <h3>Recent trend</h3>
+            <p class="panel-note">Grouped {{ stats.groupingLabel.toLowerCase() }} within the selected time range.</p>
             <div class="stat-list compact">
               @for (row of stats.trendRows; track row.key) {
                 <div>
                   <span>{{ row.label }}</span>
                   <strong>{{ row.count | number }} runs</strong>
-                  <em>{{ row.tokens | number }} tokens · ${{ row.cost | number: '1.2-4' }}</em>
+                  <em>
+                    {{ row.tokens | number }} tokens · ${{ row.cost | number: '1.2-4' }} ·
+                    {{ aiCredits(row.cost) | number: '1.0-1' }} credits
+                  </em>
                 </div>
               } @empty {
                 <p class="empty">No trend rows for the current Analytics cohort.</p>
@@ -194,7 +211,10 @@
           <div class="highlight-list">
             @for (outlier of stats.outliers; track outlier.session.id) {
               <button type="button" (click)="emitOpenSession(outlier.session)">
-                <span>{{ outlier.tokens | number }} tokens · ${{ outlier.session.cost.usd | number: '1.2-4' }}</span>
+                <span>
+                  {{ outlier.tokens | number }} tokens · ${{ outlier.session.cost.usd | number: '1.2-4' }} ·
+                  {{ aiCredits(outlier.session.cost.usd) | number: '1.0-1' }} credits
+                </span>
                 <strong>{{ outlier.session.title }}</strong>
                 <em>{{ outlier.reason }}</em>
               </button>

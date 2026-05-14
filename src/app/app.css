@@ -968,6 +968,16 @@
   color: var(--muted);
 }
 
+.deferred-panel {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  background: var(--surface);
+  color: var(--muted);
+  box-shadow: var(--shadow-soft);
+}
+
 .ingestion dd,
 .detail-subtitle {
   color: var(--text);

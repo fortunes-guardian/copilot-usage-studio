@@ -61,6 +61,13 @@ interface PromptMatchGroup {
   tokenRange: number;
 }
 
+interface PromptGroupInsight {
+  title: string;
+  detail: string;
+  costDelta: number;
+  tokenDelta: number;
+}
+
 @Component({
   selector: 'app-compare-page',
   imports: [DecimalPipe, FormsModule, HelpPopoverComponent, NgClass],
@@ -71,6 +78,10 @@ export class ComparePageComponent {
   private readonly sessionsInput = signal<CopilotSession[]>([]);
   private readonly compareAInput = signal<string | null>(null);
   private readonly compareBInput = signal<string | null>(null);
+  protected readonly baselineQuery = signal('');
+  protected readonly candidateQuery = signal('');
+  protected readonly baselinePickerOpen = signal(false);
+  protected readonly candidatePickerOpen = signal(false);
 
   @Output() readonly compareAChange = new EventEmitter<string | null>();
   @Output() readonly compareBChange = new EventEmitter<string | null>();
@@ -90,6 +101,14 @@ export class ComparePageComponent {
   protected readonly sessionOptions = computed(() => this.sessionsInput());
   protected readonly selectedAId = computed(() => this.compareAInput() ?? this.sessionOptions()[0]?.id ?? null);
   protected readonly selectedBId = computed(() => this.compareBInput() ?? this.sessionOptions()[1]?.id ?? null);
+  protected readonly selectedASession = computed(() =>
+    this.sessionOptions().find((session) => session.id === this.selectedAId()) ?? null,
+  );
+  protected readonly selectedBSession = computed(() =>
+    this.sessionOptions().find((session) => session.id === this.selectedBId()) ?? null,
+  );
+  protected readonly baselineOptions = computed(() => this.filteredSessionOptions(this.baselineQuery(), this.selectedAId()));
+  protected readonly candidateOptions = computed(() => this.filteredSessionOptions(this.candidateQuery(), this.selectedBId()));
   protected readonly abs = Math.abs;
   protected readonly pricingFallbackReason = pricingFallbackReason;
   protected readonly promptGroups = computed(() => this.samePromptGroups(this.sessionOptions()));
@@ -104,6 +123,11 @@ export class ComparePageComponent {
     return normalizePrompt(a.firstPrompt) && normalizePrompt(a.firstPrompt) === normalizePrompt(b.firstPrompt)
       ? this.promptGroups().find((group) => group.key === normalizePrompt(a.firstPrompt)) ?? null
       : null;
+  });
+  protected readonly selectedPromptInsight = computed(() => {
+    const match = this.selectedPromptMatch();
+
+    return match ? this.promptGroupInsight(match) : null;
   });
 
   protected readonly comparison = computed(() => {
@@ -213,13 +237,68 @@ export class ComparePageComponent {
   });
 
   protected setCompareA(value: string | null): void {
+    const previousA = this.selectedAId();
+    const previousB = this.selectedBId();
+
     this.compareAInput.set(value);
     this.compareAChange.emit(value);
+
+    if (value && value === previousB && previousA && previousA !== value) {
+      this.compareBInput.set(previousA);
+      this.compareBChange.emit(previousA);
+    }
+
+    this.baselineQuery.set('');
+    this.baselinePickerOpen.set(false);
   }
 
   protected setCompareB(value: string | null): void {
+    const previousA = this.selectedAId();
+    const previousB = this.selectedBId();
+
     this.compareBInput.set(value);
     this.compareBChange.emit(value);
+
+    if (value && value === previousA && previousB && previousB !== value) {
+      this.compareAInput.set(previousB);
+      this.compareAChange.emit(previousB);
+    }
+
+    this.candidateQuery.set('');
+    this.candidatePickerOpen.set(false);
+  }
+
+  protected setBaselineQuery(value: string): void {
+    this.baselineQuery.set(value);
+    this.baselinePickerOpen.set(true);
+  }
+
+  protected setCandidateQuery(value: string): void {
+    this.candidateQuery.set(value);
+    this.candidatePickerOpen.set(true);
+  }
+
+  protected openBaselinePicker(): void {
+    this.baselinePickerOpen.set(true);
+  }
+
+  protected openCandidatePicker(): void {
+    this.candidatePickerOpen.set(true);
+  }
+
+  protected closePickerOnFocusOut(side: 'baseline' | 'candidate', event: FocusEvent): void {
+    const nextTarget = event.relatedTarget;
+
+    if (nextTarget instanceof Node && event.currentTarget instanceof Node && event.currentTarget.contains(nextTarget)) {
+      return;
+    }
+
+    if (side === 'baseline') {
+      this.baselinePickerOpen.set(false);
+      return;
+    }
+
+    this.candidatePickerOpen.set(false);
   }
 
   protected applyPromptGroup(group: PromptMatchGroup): void {
@@ -232,20 +311,100 @@ export class ComparePageComponent {
     this.setCompareB(group.mostExpensive.id);
   }
 
-  protected sessionOptionLabel(session: CopilotSession): string {
-    const date = new Intl.DateTimeFormat(undefined, {
+  protected compactPrompt(prompt: string): string {
+    const compact = prompt.replace(/\s+/g, ' ').trim();
+    return compact.length > 140 ? `${compact.slice(0, 139)}…` : compact;
+  }
+
+  protected compactDate(value: string): string {
+    return new Intl.DateTimeFormat(undefined, {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-    }).format(new Date(session.startedAt));
-
-    return `${session.title} · ${date} · $${session.cost.usd.toFixed(2)}`;
+    }).format(new Date(value));
   }
 
-  protected compactPrompt(prompt: string): string {
-    const compact = prompt.replace(/\s+/g, ' ').trim();
-    return compact.length > 140 ? `${compact.slice(0, 139)}…` : compact;
+  protected runTokenTotal(session: CopilotSession): number {
+    return sessionTotalTokens(session);
+  }
+
+  protected selectedRunNumber(group: PromptMatchGroup, sessionId: string | null): number | null {
+    const index = group.sessions.findIndex((session) => session.id === sessionId);
+    return index >= 0 ? index + 1 : null;
+  }
+
+  protected tokenDeltaLabel(value: number): string {
+    return `${value >= 0 ? '+' : ''}${value.toLocaleString()}`;
+  }
+
+  protected promptGroupInsight(group: PromptMatchGroup): PromptGroupInsight {
+    const cheaper = this.sessionComparisonAnalysis(group.cheapest);
+    const expensive = this.sessionComparisonAnalysis(group.mostExpensive);
+    const costDelta = expensive.session.cost.usd - cheaper.session.cost.usd;
+    const tokenDelta = expensive.totalTokens - cheaper.totalTokens;
+    const drivers = [
+      {
+        label: 'normal input',
+        costDelta: expensive.inputUsd - cheaper.inputUsd,
+        detail:
+          'The higher-cost run sent more non-cached prompt, repo, chat, or tool-result context to the model.',
+      },
+      {
+        label: 'cached input',
+        costDelta: expensive.cachedInputUsd - cheaper.cachedInputUsd,
+        detail:
+          'The higher-cost run had more cached input. Cached tokens are discounted, but they still count toward local estimate and AI credits.',
+      },
+      {
+        label: 'cache write',
+        costDelta: expensive.cacheWriteUsd - cheaper.cacheWriteUsd,
+        detail: 'The higher-cost run wrote more prompt/context into provider cache, which has its own pricing row when exposed.',
+      },
+      {
+        label: 'output',
+        costDelta: expensive.outputUsd - cheaper.outputUsd,
+        detail: 'The higher-cost run generated more response text.',
+      },
+    ].sort((a, b) => Math.abs(b.costDelta) - Math.abs(a.costDelta));
+    const topDriver = drivers[0];
+    const turnDelta = expensive.session.traceSummary.modelTurns - cheaper.session.traceSummary.modelTurns;
+    const toolDelta = expensive.session.traceSummary.toolCalls - cheaper.session.traceSummary.toolCalls;
+    const activity =
+      Math.abs(turnDelta) >= Math.abs(toolDelta)
+        ? `${Math.abs(turnDelta).toLocaleString()} ${turnDelta >= 0 ? 'more' : 'fewer'} model turns`
+        : `${Math.abs(toolDelta).toLocaleString()} ${toolDelta >= 0 ? 'more' : 'fewer'} tool calls`;
+
+    return {
+      title:
+        costDelta === 0
+          ? 'No cost spread'
+          : `${topDriver.label[0].toUpperCase()}${topDriver.label.slice(1)} moved cost most`,
+      detail:
+        costDelta === 0
+          ? 'These same-prompt runs have the same imported estimate. Compare output quality or raw trace details if behavior differed.'
+          : `${topDriver.detail} Cheapest to highest moved by $${costDelta.toFixed(4)}, ${Math.abs(tokenDelta).toLocaleString()} tokens, and ${activity}.`,
+      costDelta,
+      tokenDelta,
+    };
+  }
+
+  private filteredSessionOptions(query: string, selectedId: string | null): CopilotSession[] {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    if (!normalizedQuery) {
+      return this.sessionOptions();
+    }
+
+    const matches = this.sessionOptions().filter((session) =>
+      [session.title, session.firstPrompt, session.model, session.workspace]
+        .join(' ')
+        .toLowerCase()
+        .includes(normalizedQuery),
+    );
+    const selected = this.sessionOptions().find((session) => session.id === selectedId);
+
+    return selected && !matches.some((session) => session.id === selected.id) ? [selected, ...matches] : matches;
   }
 
   private sessionComparisonAnalysis(session: CopilotSession): SessionComparisonAnalysis {
@@ -395,6 +554,10 @@ export class ComparePageComponent {
           aTokens,
           bTokens,
           tokenDelta: bTokens - aTokens,
+          inputDelta: (b?.tokens.input ?? 0) - (a?.tokens.input ?? 0),
+          cachedInputDelta: (b?.tokens.cachedInput ?? 0) - (a?.tokens.cachedInput ?? 0),
+          cacheWriteDelta: (b?.tokens.cacheWrite ?? 0) - (a?.tokens.cacheWrite ?? 0),
+          outputDelta: (b?.tokens.output ?? 0) - (a?.tokens.output ?? 0),
           aTurns: a?.turns ?? 0,
           bTurns: b?.turns ?? 0,
         };

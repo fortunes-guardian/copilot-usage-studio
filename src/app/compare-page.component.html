@@ -6,22 +6,82 @@
       <p>Pick a baseline and a candidate run. The page explains what changed in cost, tokens, activity, and model mix.</p>
     </div>
     <div class="selectors">
-      <label>
+      <div class="run-picker" [class.open]="baselinePickerOpen()" (focusout)="closePickerOnFocusOut('baseline', $event)">
         <span>Baseline A</span>
-        <select [ngModel]="selectedAId()" (ngModelChange)="setCompareA($event)">
-          @for (session of sessionOptions(); track session.id) {
-            <option [value]="session.id">{{ sessionOptionLabel(session) }}</option>
-          }
-        </select>
-      </label>
-      <label>
+        @if (selectedASession(); as selected) {
+          <button type="button" class="selected-run" (click)="openBaselinePicker()" aria-label="Open baseline run picker">
+            <strong>{{ selected.title }}</strong>
+            <em>{{ compactDate(selected.startedAt) }} · ${{ selected.cost.usd | number: '1.2-4' }}</em>
+          </button>
+        }
+        <input
+          type="search"
+          placeholder="Search baseline runs"
+          [ngModel]="baselineQuery()"
+          (ngModelChange)="setBaselineQuery($event)"
+          (focus)="openBaselinePicker()"
+          aria-label="Search baseline runs"
+        />
+        @if (baselinePickerOpen()) {
+          <div class="selector-results" role="listbox" aria-label="Baseline run results">
+            @for (session of baselineOptions().slice(0, 8); track session.id) {
+              <button
+                type="button"
+                [class.active]="session.id === selectedAId()"
+                role="option"
+                [attr.aria-selected]="session.id === selectedAId()"
+                (click)="setCompareA(session.id)"
+              >
+                <strong>{{ session.title }}</strong>
+                <span>
+                  {{ compactDate(session.startedAt) }} · ${{ session.cost.usd | number: '1.2-4' }} ·
+                  {{ runTokenTotal(session) | number }} tokens
+                </span>
+              </button>
+            } @empty {
+              <em>No matching runs</em>
+            }
+          </div>
+        }
+      </div>
+      <div class="run-picker" [class.open]="candidatePickerOpen()" (focusout)="closePickerOnFocusOut('candidate', $event)">
         <span>Candidate B</span>
-        <select [ngModel]="selectedBId()" (ngModelChange)="setCompareB($event)">
-          @for (session of sessionOptions(); track session.id) {
-            <option [value]="session.id">{{ sessionOptionLabel(session) }}</option>
-          }
-        </select>
-      </label>
+        @if (selectedBSession(); as selected) {
+          <button type="button" class="selected-run" (click)="openCandidatePicker()" aria-label="Open candidate run picker">
+            <strong>{{ selected.title }}</strong>
+            <em>{{ compactDate(selected.startedAt) }} · ${{ selected.cost.usd | number: '1.2-4' }}</em>
+          </button>
+        }
+        <input
+          type="search"
+          placeholder="Search candidate runs"
+          [ngModel]="candidateQuery()"
+          (ngModelChange)="setCandidateQuery($event)"
+          (focus)="openCandidatePicker()"
+          aria-label="Search candidate runs"
+        />
+        @if (candidatePickerOpen()) {
+          <div class="selector-results" role="listbox" aria-label="Candidate run results">
+            @for (session of candidateOptions().slice(0, 8); track session.id) {
+              <button
+                type="button"
+                [class.active]="session.id === selectedBId()"
+                role="option"
+                [attr.aria-selected]="session.id === selectedBId()"
+                (click)="setCompareB(session.id)"
+              >
+                <strong>{{ session.title }}</strong>
+                <span>
+                  {{ compactDate(session.startedAt) }} · ${{ session.cost.usd | number: '1.2-4' }} ·
+                  {{ runTokenTotal(session) | number }} tokens
+                </span>
+              </button>
+            } @empty {
+              <em>No matching runs</em>
+            }
+          </div>
+        }
+      </div>
     </div>
   </div>
 
@@ -63,6 +123,56 @@
             </div>
           </article>
         }
+      </div>
+    }
+
+    @if (selectedPromptMatch(); as match) {
+      <div class="prompt-run-picker" aria-label="Runs sharing selected prompt">
+        <div class="prompt-run-heading">
+          <strong>{{ match.sessions.length | number }} matching runs</strong>
+          <span>
+            Choose one Baseline A and one Candidate B.
+            @if (selectedRunNumber(match, selectedAId()); as baselineRun) {
+              A is Run {{ baselineRun }}.
+            }
+            @if (selectedRunNumber(match, selectedBId()); as candidateRun) {
+              B is Run {{ candidateRun }}.
+            }
+          </span>
+        </div>
+        @if (selectedPromptInsight(); as insight) {
+          <div class="prompt-insight">
+            <span>Same-prompt spread</span>
+            <strong>{{ insight.title }}</strong>
+            <p>{{ insight.detail }}</p>
+            <em>
+              Cheapest → highest: +${{ insight.costDelta | number: '1.2-4' }} ·
+              {{ insight.tokenDelta >= 0 ? '+' : '' }}{{ insight.tokenDelta | number }} tokens
+            </em>
+          </div>
+        }
+        <div class="prompt-run-list">
+          @for (session of match.sessions; track session.id; let index = $index) {
+            <article
+              [class.baseline]="session.id === selectedAId()"
+              [class.candidate]="session.id === selectedBId()"
+            >
+              <div>
+                <strong>Run {{ index + 1 }} · {{ compactDate(session.startedAt) }}</strong>
+                <span>${{ session.cost.usd | number: '1.2-4' }} · {{ runTokenTotal(session) | number }} tokens</span>
+                <em>{{ session.traceSummary.modelTurns | number }} turns · {{ session.traceSummary.toolCalls | number }} tools</em>
+              </div>
+              <div class="prompt-run-actions">
+                <button type="button" [class.active]="session.id === selectedAId()" (click)="setCompareA(session.id)">
+                  {{ session.id === selectedAId() ? 'A selected' : 'Set A' }}
+                </button>
+                <button type="button" [class.active]="session.id === selectedBId()" (click)="setCompareB(session.id)">
+                  {{ session.id === selectedBId() ? 'B selected' : 'Set B' }}
+                </button>
+              </div>
+            </article>
+          }
+        </div>
       </div>
     }
   </section>
@@ -148,7 +258,7 @@
           <span>Model</span>
           <span>Price row</span>
           <span>Cost A / B</span>
-          <span>Token delta</span>
+          <span>Token movement</span>
           <span>Model calls A / B</span>
           <span>Cost delta</span>
         </div>
@@ -168,7 +278,16 @@
               }
             </span>
             <span>${{ model.aCost | number: '1.4-6' }} / ${{ model.bCost | number: '1.4-6' }}</span>
-            <span>{{ model.tokenDelta >= 0 ? '+' : '' }}{{ model.tokenDelta | number }}</span>
+            <span class="token-movement">
+              <strong>{{ model.tokenDelta >= 0 ? '+' : '' }}{{ model.tokenDelta | number }}</strong>
+              <em>
+                normal {{ tokenDeltaLabel(model.inputDelta) }} · cached {{ tokenDeltaLabel(model.cachedInputDelta) }}
+              </em>
+              @if (model.cacheWriteDelta) {
+                <em>write {{ tokenDeltaLabel(model.cacheWriteDelta) }}</em>
+              }
+              <em>out {{ tokenDeltaLabel(model.outputDelta) }}</em>
+            </span>
             <span>{{ model.aTurns | number }} / {{ model.bTurns | number }}</span>
             <span [class.saving]="model.costDelta < 0">
               {{ model.costDelta < 0 ? '-' : '+' }}${{ abs(model.costDelta) | number: '1.4-6' }}

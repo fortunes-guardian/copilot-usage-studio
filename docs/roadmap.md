@@ -22,10 +22,12 @@ Done:
 - Split selected-run debugging into `Overview`, `Cost`, `Turns`, and `Trace` subviews.
 - Add Cost and Turns answer panels so the user sees the likely driver before reading detailed tables.
 - Keep `Normal input`, `Cached input`, `Cache write`, and `Output` visibly separate in cost views and comparisons.
+- Added regression tests for the shared cache-aware pricing buckets, including normal input, cached input, cache write, and output.
+- Added scanner fixture tests for raw Agent Debug Log `cachedTokens`, invalid cached-token splits, cache-write pricing, and merged cache audits.
 
 Next:
 
-- Improve raw model-call detail display for cached sessions. The math is correct, but the UI should make the difference between raw `inputTokens`, normal input, and cached input impossible to misread.
+- Improve raw model-call detail display for cached sessions. The math is tested, but the UI should make the difference between raw `inputTokens`, normal input, and cached input impossible to misread.
 - Keep user-facing source language minimal. Show debug-log/source confidence in docs or ingest diagnostics, not as primary selected-run chips.
 - Remove low-value banners and technical caveats from the main Cost view unless they change a decision.
 - Investigate raw VS Code `estimatedCost` evidence. If `llm_request.attrs.estimatedCost` exists and is reliable, preserve it separately from the app-calculated estimate and compare the two.
@@ -65,10 +67,13 @@ Done:
 - Detect repeated normalized first prompts and label whether the current comparison is same-prompt or manual.
 - Add a `Prompt testing` panel with same-prompt empty state and quick pair actions when repeated prompts exist.
 - Improve A/B selector labels with timestamp and estimated USD cost.
+- Replaced native Compare dropdowns with app-owned searchable run pickers.
+- Added same-prompt spread explanations for repeated prompt groups.
+- Added Compare component tests for repeated-prompt spread explanation and A/B swap behavior.
 
 Next:
 
-- Improve Compare search and selection beyond native selects: larger searchable selectors, richer prompt previews, and keyboard-friendly filtering.
+- Add fixture coverage for Compare cached-token movement rows.
 - Add an explicit same-prompt group drawer once there are enough repeated-prompt sessions to validate the flow.
 - Add side-by-side output/detail comparison only after the app has a reliable readable output source for both runs. Do not imply quality comparison when only cost/debug facts are available.
 
@@ -84,6 +89,7 @@ Done:
 - Starts from the current sidebar filters as the analytics universe.
 - Adds Analytics-specific controls for time range, workspace, model, and day/week/month grouping.
 - Shows session count, total tokens, total estimated cost, average tokens, average cost, and cost per 1k tokens.
+- Shows AI credits used for the current Analytics cohort and converts key cost displays into USD plus credits.
 - Highlights highest-token and most expensive sessions.
 - Shows model/pricing-row breakdowns.
 - Shows grouped trend rows, size distribution, and outlier signals.
@@ -95,9 +101,11 @@ Done:
 Next:
 
 - Browser-check Analytics at desktop and narrow widths.
+- Verify and fix bottom Analytics buttons if `Runs to inspect` or `Outlier signals` navigation does not reliably open the selected session.
+- Keep clarifying the difference between `Time range` as the included-session filter and `Group trend by` as the trend bucket display.
 - Improve outlier explanation with more real imported sessions.
 - Add saved comparison/cohort concepts later if app-owned SQLite becomes the right durable state layer.
-- Add time-window controls to the Prices/AI-credit usage context so imported credit totals can be viewed for periods such as all time, last 30 days, and last calendar month.
+- Consider calendar-month AI-credit usage windows if billing-cycle style comparison becomes important.
 
 Why: after one run and two-run comparison are understandable, the next developer question is “what is my normal usage pattern, and which runs are outliers?”
 
@@ -204,14 +212,13 @@ Done:
 - Added a visible app data loading/error state for `/data/sessions.json`.
 - Moved generated session-data loading into `SessionDataService`.
 - Added shared UI cost helpers for model-cost rows, token totals, context growth, percent deltas, and pricing fallback explanations.
+- Added script-side tests for model normalization, unknown-model fallback, direct pricing matches, and fallback-row pricing.
 
 Build:
 
-- Centralize model normalization and pricing fallback rules.
 - Add fixture-based scanner tests for:
   - exact debug-log token totals
   - mixed-model sessions
-  - unknown model fallback
   - empty debug logs
   - weak chat snapshots
   - optional transcript availability

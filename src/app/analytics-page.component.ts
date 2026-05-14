@@ -3,6 +3,7 @@ import { Component, EventEmitter, Input, Output, computed, signal } from '@angul
 import { FormsModule } from '@angular/forms';
 
 import { HelpPopoverComponent } from './help-popover.component';
+import { COPILOT_AI_CREDIT_USD, COPILOT_ALLOWANCE_PLANS } from './pricing';
 import { CopilotSession } from './session-data.model';
 import { sessionTotalTokens, tokenTotal, usesPricingFallback } from './session-cost-utils';
 
@@ -50,6 +51,8 @@ export class AnalyticsPageComponent {
   protected readonly help = {
     analyticsScope:
       'Multi-session analytics start from the sessions currently included by the sidebar filters, then apply the Analytics controls on this page.',
+    trendGrouping:
+      'Time range chooses which sessions are included. Trend grouping only changes how the included sessions are bucketed in the Recent trend panel.',
   };
   protected readonly sizeOptions: SessionSize[] = ['Small', 'Medium', 'Large', 'Very large'];
   protected readonly analyticsTimeOptions: Array<{ value: AnalyticsTimeRange; label: string }> = [
@@ -126,6 +129,11 @@ export class AnalyticsPageComponent {
     const avgTokens = count ? totalTokens / count : 0;
     const avgCost = count ? totalCost / count : 0;
     const costPer1k = totalTokens ? (totalCost / totalTokens) * 1000 : 0;
+    const totalCredits = this.aiCredits(totalCost);
+    const businessAllowance = COPILOT_ALLOWANCE_PLANS.find((plan) => plan.id === 'business-standard');
+    const businessAllowanceShare = businessAllowance
+      ? (totalCredits / businessAllowance.creditsPerUserMonthly) * 100
+      : 0;
     const highestTokens = this.maxBy(sessions, (session) => sessionTotalTokens(session));
     const highestCost = this.maxBy(sessions, (session) => session.cost.usd);
     const modelRows = this.analyticsModelRows(sessions, totalCost);
@@ -178,7 +186,12 @@ export class AnalyticsPageComponent {
         {
           label: 'Total estimate',
           value: `$${totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-          help: 'Sum of local cost estimates for the sessions currently included by the sidebar filters.',
+          help: 'Sum of local USD cost estimates for the current Analytics cohort.',
+        },
+        {
+          label: 'AI credits used',
+          value: `${totalCredits.toLocaleString(undefined, { maximumFractionDigits: 1 })}`,
+          help: `GitHub documents 1 AI credit = $${COPILOT_AI_CREDIT_USD.toFixed(2)} USD. This converts the same local estimate into credits.`,
         },
         {
           label: 'Total tokens',
@@ -219,6 +232,8 @@ export class AnalyticsPageComponent {
       trendRows,
       distribution,
       outliers,
+      totalCredits,
+      businessAllowanceShare,
     };
   });
 
@@ -249,6 +264,10 @@ export class AnalyticsPageComponent {
     if (session) {
       this.openSession.emit(session);
     }
+  }
+
+  protected aiCredits(costUsd: number): number {
+    return costUsd / COPILOT_AI_CREDIT_USD;
   }
 
   private analyticsModelRows(sessions: CopilotSession[], totalCost: number) {

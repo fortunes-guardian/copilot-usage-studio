@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { homedir, platform } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import {
   costUsdForTokens,
   normalizeModel,
@@ -263,7 +264,7 @@ function numericAttr(attrs, names) {
   return 0;
 }
 
-function llmTokenFields(event) {
+export function llmTokenFields(event) {
   const inputTokens = Number(event.attrs?.inputTokens ?? 0);
   const outputTokens = Number(event.attrs?.outputTokens ?? 0);
   const rawCachedInputTokens = numericAttr(event.attrs, ['cachedTokens', 'cachedInputTokens', 'cacheReadTokens']);
@@ -281,7 +282,7 @@ function llmTokenFields(event) {
   };
 }
 
-function cacheTokenAuditFromLlmRequests(llmRequests) {
+export function cacheTokenAuditFromLlmRequests(llmRequests) {
   return llmRequests.reduce(
     (audit, event) => {
       const tokenFields = llmTokenFields(event);
@@ -321,7 +322,7 @@ function cacheTokenAuditFromLlmRequests(llmRequests) {
   );
 }
 
-function mergeCacheTokenAudits(audits) {
+export function mergeCacheTokenAudits(audits) {
   return audits.reduce(
     (total, audit) => ({
       modelCalls: total.modelCalls + audit.modelCalls,
@@ -348,7 +349,7 @@ function mergeCacheTokenAudits(audits) {
   );
 }
 
-function eventModelCostFields(rawModel, tokenFields) {
+export function eventModelCostFields(rawModel, tokenFields) {
   const normalizedModel = normalizeModel(rawModel, pricing);
   const pricingModel = pricingModelForModel(normalizedModel, pricing, fallbackPricingModel);
   const tokens = {
@@ -1157,47 +1158,53 @@ function workspaceDirsFromUserDir(userDir) {
   return listDirs(workspaceStorage);
 }
 
-const userDirs = explicitRoots.length ? explicitRoots : defaultCodeUserDirs();
-DatabaseSync = await loadSqliteSupport();
-diagnostics.scannedRoots = userDirs;
-const workspaceDirs = userDirs.flatMap((root) => {
-  if (basename(dirname(root)) === 'workspaceStorage' || existsSync(join(root, 'workspace.json'))) {
-    return [root];
-  }
-  return workspaceDirsFromUserDir(root);
-});
+async function main() {
+  const userDirs = explicitRoots.length ? explicitRoots : defaultCodeUserDirs();
+  DatabaseSync = await loadSqliteSupport();
+  diagnostics.scannedRoots = userDirs;
+  const workspaceDirs = userDirs.flatMap((root) => {
+    if (basename(dirname(root)) === 'workspaceStorage' || existsSync(join(root, 'workspace.json'))) {
+      return [root];
+    }
+    return workspaceDirsFromUserDir(root);
+  });
 
-const sessions = workspaceDirs
-  .flatMap(parseWorkspace)
-  .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
-const seenIds = new Set();
-for (const session of sessions) {
-  if (seenIds.has(session.id)) {
-    diagnostics.warnings.push(`Duplicate session id imported: ${session.id}`);
+  const sessions = workspaceDirs
+    .flatMap(parseWorkspace)
+    .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+  const seenIds = new Set();
+  for (const session of sessions) {
+    if (seenIds.has(session.id)) {
+      diagnostics.warnings.push(`Duplicate session id imported: ${session.id}`);
+    }
+    seenIds.add(session.id);
   }
-  seenIds.add(session.id);
+
+  mkdirSync(dirname(outFile), { recursive: true });
+  writeFileSync(
+    outFile,
+    JSON.stringify(
+      {
+        schemaVersion: sessionDataSchemaVersion,
+        generatedAt: new Date().toISOString(),
+        pricingVersion,
+        pricingSourceUrl,
+        usdToEur,
+        ingestion: {
+          ...diagnostics,
+          importedSessions: sessions.length,
+          cacheTokenAudit: mergeCacheTokenAudits(sessions.map((session) => session.cacheTokenAudit).filter(Boolean)),
+        },
+        sessions,
+      },
+      null,
+      2,
+    ),
+  );
+
+  console.log(`Wrote ${sessions.length} sessions to ${outFile}`);
 }
 
-mkdirSync(dirname(outFile), { recursive: true });
-writeFileSync(
-  outFile,
-  JSON.stringify(
-    {
-      schemaVersion: sessionDataSchemaVersion,
-      generatedAt: new Date().toISOString(),
-      pricingVersion,
-      pricingSourceUrl,
-      usdToEur,
-      ingestion: {
-        ...diagnostics,
-        importedSessions: sessions.length,
-        cacheTokenAudit: mergeCacheTokenAudits(sessions.map((session) => session.cacheTokenAudit).filter(Boolean)),
-      },
-      sessions,
-    },
-    null,
-    2,
-  ),
-);
-
-console.log(`Wrote ${sessions.length} sessions to ${outFile}`);
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main();
+}

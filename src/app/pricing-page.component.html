@@ -50,11 +50,23 @@
           }
         </select>
       </label>
+      <label>
+        <span>
+          Usage window
+          <app-help-popover [text]="help.usageWindow" label="Explain usage window"></app-help-popover>
+        </span>
+        <select [ngModel]="usageTimeRange()" (ngModelChange)="setUsageTimeRange($event)">
+          @for (option of usageTimeOptions; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </label>
 
       <div class="allowance-meter">
         <div>
-          <span>Imported sessions</span>
+          <span>{{ selectedAllowanceUsage().windowLabel }}</span>
           <strong>{{ selectedAllowanceUsage().credits | number: '1.0-1' }} credits</strong>
+          <em>{{ selectedAllowanceUsage().sessions | number }} of {{ selectedAllowanceUsage().totalSessions | number }} sessions</em>
         </div>
         <div>
           <span>Monthly allowance</span>

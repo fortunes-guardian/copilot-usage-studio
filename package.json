@@ -8,6 +8,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "test:scripts": "node --test scripts/*.test.mjs",
     "clean:ng-cache": "ng cache clean",
     "scan": "node scripts/scan-vscode-sessions.mjs",
     "verify:data": "node scripts/verify-session-data.mjs"
