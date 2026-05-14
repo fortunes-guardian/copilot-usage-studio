@@ -7,6 +7,7 @@ import { SessionDataService } from './session-data.service';
 import { SessionDataStatePanelComponent } from './session-data-state-panel.component';
 import { CopilotSession, TraceEvent } from './session-data.model';
 import { PricingPageComponent } from './pricing-page.component';
+import { SelectedRunExplanationService } from './selected-run-explanation.service';
 import { SessionCostComponent } from './session-cost.component';
 import { SessionImportContextComponent } from './session-import-context.component';
 import { SessionOverviewComponent } from './session-overview.component';
@@ -22,17 +23,12 @@ import {
   pricingFallbackReason,
 } from './pricing';
 import {
-  buildCostExplanation,
-  flowTraceEvents,
-  matchesTraceFilter,
   ModelCallSort,
   SessionSize,
   SessionTriage,
   sessionSizeHelp,
   sessionTriage,
-  traceEventDetails,
   TraceFilter,
-  usesPricingFallback,
 } from './session-analysis';
 
 type ActiveView = 'sessions' | 'compare' | 'analytics' | 'pricing';
@@ -60,6 +56,7 @@ type ThemeMode = 'light' | 'dark';
 })
 export class App {
   private readonly sessionDataService = inject(SessionDataService);
+  private readonly selectedRunExplanationService = inject(SelectedRunExplanationService);
   private readonly document = inject(DOCUMENT);
 
   protected readonly sessionData = this.sessionDataService.sessionData;
@@ -111,7 +108,13 @@ export class App {
   };
   protected readonly sessionTriageHelp =
     'Fast read derived from imported tokens and model mix. These are cost-debugging signals, not billing rows.';
-  protected readonly sizeOptions: Array<'all' | SessionSize> = ['all', 'Small', 'Medium', 'Large', 'Very large'];
+  protected readonly sizeOptions: Array<'all' | SessionSize> = [
+    'all',
+    'Small',
+    'Medium',
+    'Large',
+    'Very large',
+  ];
   protected readonly traceFilterOptions: Array<{ value: TraceFilter; label: string }> = [
     { value: 'all', label: 'All events' },
     { value: 'model', label: 'Model calls' },
@@ -134,62 +137,17 @@ export class App {
 
     return ['all', ...[...labels].sort()];
   });
-  protected readonly costExplanation = computed(() => {
-    const session = this.selectedSession();
-    const sessionData = this.sessionData();
-
-    if (!session || !sessionData) {
-      return null;
-    }
-
-    return buildCostExplanation(session, this.modelCallSort());
-  });
-  protected readonly flowEvents = computed(() => {
-    const session = this.selectedSession();
-    const sessionData = this.sessionData();
-
-    if (!session || !sessionData) {
-      return [];
-    }
-
-    return flowTraceEvents(session.traceEvents, session.modelBreakdown);
-  });
-  protected readonly filteredTraceEvents = computed(() => {
-    const session = this.selectedSession();
-
-    if (!session) {
-      return [];
-    }
-
-    return session.traceEvents.filter((event) => matchesTraceFilter(event, this.traceFilter()));
-  });
-  protected readonly selectedTraceEvent = computed(() => {
-    const events = this.filteredTraceEvents();
-    const selectedIndex = this.selectedTraceEventIndex();
-
-    return events.find((event) => event.index === selectedIndex) ?? events[0] ?? null;
-  });
-  protected readonly selectedTraceEventDetails = computed(() => {
-    const event = this.selectedTraceEvent();
-    const session = this.selectedSession();
-    const sessionData = this.sessionData();
-
-    if (!event || !session || !sessionData) {
-      return null;
-    }
-
-    return traceEventDetails(event, session.modelBreakdown);
-  });
   protected readonly filteredSessions = computed(() => {
     const query = this.query().trim().toLowerCase();
     const sizeFilter = this.sizeFilter();
     const warningFilter = this.warningFilter();
     const sessions = [...this.sessions()].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
 
-    return sessions.filter((session) =>
-      this.matchesQuery(session, query) &&
-      this.matchesSizeFilter(session, sizeFilter) &&
-      this.matchesWarningFilter(session, warningFilter),
+    return sessions.filter(
+      (session) =>
+        this.matchesQuery(session, query) &&
+        this.matchesSizeFilter(session, sizeFilter) &&
+        this.matchesWarningFilter(session, warningFilter),
     );
   });
 
@@ -197,38 +155,24 @@ export class App {
     const id = this.selectedId() ?? this.filteredSessions()[0]?.id;
     return this.sessions().find((session) => session.id === id) ?? null;
   });
-  protected readonly selectedSessionOutsideFilters = computed(() => {
-    const session = this.selectedSession();
-
-    return Boolean(session && !this.filteredSessions().some((filteredSession) => filteredSession.id === session.id));
+  private readonly selectedRunExplanationState = this.selectedRunExplanationService.createState({
+    filteredSessions: this.filteredSessions,
+    selectedSession: this.selectedSession,
+    modelCallSort: this.modelCallSort,
+    traceFilter: this.traceFilter,
+    selectedTraceEventIndex: this.selectedTraceEventIndex,
   });
-  protected readonly selectedPricingFallbacks = computed(() => {
-    const session = this.selectedSession();
-
-    if (!session) {
-      return [];
-    }
-
-    return session.modelBreakdown
-      .filter((entry) => usesPricingFallback(entry.model, entry.pricingModel))
-      .map((entry) => ({
-        model: entry.model,
-        pricingModel: entry.pricingModel,
-        turns: entry.turns,
-      }));
-  });
-  protected readonly selectedTriage = computed(() => {
-    const session = this.selectedSession();
-    return session ? this.sessionTriage(session) : null;
-  });
-  protected readonly selectedAllowance = computed(() =>
-    COPILOT_ALLOWANCE_PLANS.find((plan) => plan.id === this.allowancePlan()) ?? COPILOT_ALLOWANCE_PLANS[0],
+  protected readonly selectedAllowance = computed(
+    () =>
+      COPILOT_ALLOWANCE_PLANS.find((plan) => plan.id === this.allowancePlan()) ??
+      COPILOT_ALLOWANCE_PLANS[0],
   );
   protected readonly selectedAllowanceUsage = computed(() => {
     const session = this.selectedSession();
     const allowance = this.selectedAllowance();
     const credits = session ? session.cost.usd / COPILOT_AI_CREDIT_USD : 0;
-    const share = allowance.creditsPerUserMonthly > 0 ? (credits / allowance.creditsPerUserMonthly) * 100 : 0;
+    const share =
+      allowance.creditsPerUserMonthly > 0 ? (credits / allowance.creditsPerUserMonthly) * 100 : 0;
 
     return {
       credits,
@@ -237,6 +181,17 @@ export class App {
       over: Math.max(credits - allowance.creditsPerUserMonthly, 0),
     };
   });
+  protected readonly costExplanation = this.selectedRunExplanationState.costExplanation;
+  protected readonly flowEvents = this.selectedRunExplanationState.flowEvents;
+  protected readonly filteredTraceEvents = this.selectedRunExplanationState.filteredTraceEvents;
+  protected readonly selectedTraceEvent = this.selectedRunExplanationState.selectedTraceEvent;
+  protected readonly selectedTraceEventDetails =
+    this.selectedRunExplanationState.selectedTraceEventDetails;
+  protected readonly selectedSessionOutsideFilters =
+    this.selectedRunExplanationState.selectedSessionOutsideFilters;
+  protected readonly selectedPricingFallbacks =
+    this.selectedRunExplanationState.selectedPricingFallbacks;
+  protected readonly selectedTriage = this.selectedRunExplanationState.selectedTriage;
 
   protected readonly summary = computed(() => {
     const sessions = this.sessions();
@@ -366,7 +321,13 @@ export class App {
       return true;
     }
 
-    return [session.firstPrompt, session.title, session.workspace, session.model, session.tags.join(' ')]
+    return [
+      session.firstPrompt,
+      session.title,
+      session.workspace,
+      session.model,
+      session.tags.join(' '),
+    ]
       .join(' ')
       .toLowerCase()
       .includes(query);
@@ -377,12 +338,17 @@ export class App {
   }
 
   private matchesWarningFilter(session: CopilotSession, value: string): boolean {
-    return value === 'all' || this.sessionTriage(session).warnings.some((warning) => warning.label === value);
+    return (
+      value === 'all' ||
+      this.sessionTriage(session).warnings.some((warning) => warning.label === value)
+    );
   }
 
   private readStoredTheme(): ThemeMode {
     try {
-      return globalThis.localStorage?.getItem('copilot-cost-debugger-theme') === 'dark' ? 'dark' : 'light';
+      return globalThis.localStorage?.getItem('copilot-cost-debugger-theme') === 'dark'
+        ? 'dark'
+        : 'light';
     } catch {
       return 'light';
     }
@@ -395,7 +361,4 @@ export class App {
       // Non-browser test/runtime environments can ignore persistence.
     }
   }
-
 }
-
-
