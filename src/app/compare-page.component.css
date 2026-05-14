@@ -702,6 +702,11 @@
     display: grid;
   }
 
+  .prompt-lab,
+  .prompt-lab:has(.prompt-run-picker) {
+    grid-template-columns: 1fr;
+  }
+
   .comparison-grid,
   .driver-grid,
   .selectors,

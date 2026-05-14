@@ -24,10 +24,10 @@ Done:
 - Keep `Normal input`, `Cached input`, `Cache write`, and `Output` visibly separate in cost views and comparisons.
 - Added regression tests for the shared cache-aware pricing buckets, including normal input, cached input, cache write, and output.
 - Added scanner fixture tests for raw Agent Debug Log `cachedTokens`, invalid cached-token splits, cache-write pricing, and merged cache audits.
+- Added Trace inspector coverage for cached model-call details, fallback pricing labels, and tool events that are not directly priced.
 
 Next:
 
-- Improve raw model-call detail display for cached sessions. The math is tested, but the UI should make the difference between raw `inputTokens`, normal input, and cached input impossible to misread.
 - Keep user-facing source language minimal. Show debug-log/source details in docs or ingest diagnostics, not as primary selected-run chips.
 - Remove low-value banners and technical caveats from the main Cost view unless they change a decision.
 - Investigate raw VS Code `estimatedCost` evidence. If `llm_request.attrs.estimatedCost` exists and is reliable, preserve it separately from the app-calculated estimate and compare the two.
@@ -194,11 +194,12 @@ Done:
 - Added app-shell test coverage for `Overview -> Cost -> Calls -> Trace` selected-run navigation.
 - Added app-shell test coverage for opening a model call from Calls in the matching Trace event.
 - Removed stale Cost view-model fields for old source/cache caveat panels that are no longer part of the Cost UI.
+- Tightened Compare and Prices responsive CSS so repeated-prompt comparison and allowance cards collapse cleanly on narrower screens.
 
 Build:
 
 - Bring Compare, Analytics, and Prices up to the same visual polish level as the Sessions debugger.
-- Finish responsive polish for remaining dense tables in Compare, Analytics, and Prices.
+- Continue browser-checking dense pages with real imported data as the UI changes.
 - Tune help popover placement for tight table edges if real sessions expose clipped panels.
 - More debugger-like polish.
 - Keep selected-run Cost, Calls, and Trace explanation logic in focused helpers/services.
@@ -221,6 +222,7 @@ Done:
 - Extracted Analytics filtering, model rows, trend rows, distribution, and outlier logic into `session-analytics.ts`.
 - Added UI/helper tests for Analytics calculations, Analytics open-run actions, Analytics empty states, session rail filters, selected-run navigation, Calls-to-Trace, Compare delta copy, and selected-run pricing fallback assumptions.
 - Added Prices page tests for AI-credit usage windows and fallback pricing row labels.
+- Added selected Trace inspector tests for cached model calls, fallback pricing, and tool-call detail boundaries.
 
 Build:
 
@@ -230,8 +232,6 @@ Build:
   - empty debug logs
   - weak chat snapshots
   - optional transcript availability
-- Add UI tests for:
-  - selected Trace inspector details
 - Continue moving page-level interpretation logic out of large components when it has stable behavior and useful test cases.
 
 Why: the app is now past prototype shape. The risky parts are no longer just "can we show the data?" They are "can pricing, cache buckets, fallback assumptions, and filters stay correct as the UI grows?"
@@ -262,13 +262,13 @@ Done:
 - Show the full normalized event fields: raw index, timestamp, type, name, status, token totals, model, pricing row, estimated cost, latency fields, and source detail.
 - Link model-call rows in `Calls` to the matching raw event in `Trace`.
 - Add event filters for model calls, tool calls, discovery/customization events, user messages, and agent responses.
+- Add UI tests around selected-event inspector details, including cached token splits and tool events.
 - Preserve enough debug-log payload summary during ingestion to make this useful without forcing the UI to parse raw VS Code JSONL directly. Current `traceEvents.detail` strings are too short for a good inspector by themselves.
 
 Still to improve:
 
 - Tune inspector layout as more real logs are imported.
 - Add more useful bounded summaries for common VS Code debug-log event shapes when the source payload exposes them.
-- Add UI tests around selected-event inspector details.
 - Consider optional enrichment from matching `GitHub.copilot-chat/transcripts/<session-id>.jsonl` only after the UI can show source availability and confidence. Transcripts can be rich, but they are not consistently complete across sessions or restarts.
 
 Why: the Trace view is currently good for scanning, but debugging needs selection. VS Code's own Agent Debug Logs let a user click an event and inspect details. This app should do the same, with cost fields added.
