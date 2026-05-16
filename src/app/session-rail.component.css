@@ -38,7 +38,12 @@
 
 .filters {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+}
+
+.filters .wide {
+  grid-column: 1 / -1;
 }
 
 .filter-count {

@@ -654,6 +654,10 @@ function summaryValue(value) {
   return boundedText(JSON.stringify(compactObject(value)));
 }
 
+function sourceEstimatedCost(event) {
+  return summaryValue(event.attrs?.estimatedCost);
+}
+
 function compactObject(value) {
   if (!value || typeof value !== 'object') {
     return value;
@@ -693,6 +697,7 @@ function eventAttributeSummary(event) {
     ['cachedTokens', attrs.cachedTokens ?? attrs.cachedInputTokens ?? attrs.cacheReadTokens],
     ['cacheWriteTokens', attrs.cacheWriteTokens ?? attrs.cachedWriteTokens],
     ['outputTokens', attrs.outputTokens],
+    ['sourceEstimatedCost', attrs.estimatedCost],
     ['maxTokens', attrs.maxTokens],
     ['ttft', attrs.ttft],
     ['reasoningEffort', event.type === 'llm_request' ? reasoningEffort(event) : undefined],
@@ -756,7 +761,7 @@ function parseAssistantResponse(raw) {
     .join('\n');
 }
 
-function sessionFromDebugLog(sessionDir, workspaceDir) {
+export function sessionFromDebugLog(sessionDir, workspaceDir) {
   const main = readJsonl(join(sessionDir, 'main.jsonl'));
   if (!main.length) {
     diagnostics.skippedEmptyDebugLogs += 1;
@@ -905,6 +910,9 @@ function sessionFromDebugLog(sessionDir, workspaceDir) {
           ...(event.type === 'llm_request'
             ? eventModelCostFields(event.attrs?.model, tokenFields)
             : {}),
+          ...(event.type === 'llm_request' && sourceEstimatedCost(event)
+            ? { sourceEstimatedCost: sourceEstimatedCost(event) }
+            : {}),
         };
       }),
     ),
@@ -912,10 +920,10 @@ function sessionFromDebugLog(sessionDir, workspaceDir) {
   };
 }
 
-function sessionFromChatSnapshot(file, workspaceDir) {
+export function sessionFromChatSnapshot(file, workspaceDir) {
   const records = readJsonl(file);
   const snapshot =
-    records.find((record) => record.kind === 0 && record.v?.requests) ??
+    records.find((record) => record.kind === 0 && record.v?.requests)?.v ??
     records[0]?.v ??
     records[0];
   const requests = snapshot?.requests ?? [];

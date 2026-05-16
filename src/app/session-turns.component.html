@@ -121,6 +121,9 @@
           <span role="cell" data-label="Share">
             <span class="share-meter" aria-hidden="true"><i></i></span>
             {{ event.share | number: '1.0-0' }}%
+            @if (impactLabel(event)) {
+              <em class="impact-label">{{ impactLabel(event) }}</em>
+            }
           </span>
           <span role="cell" data-label="Nearby context">
             {{ event.contextLabel }}

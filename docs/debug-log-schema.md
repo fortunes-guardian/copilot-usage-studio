@@ -66,7 +66,7 @@ Observed `attrs` fields:
 | `inputTokens` | Raw input/context tokens sent to the model | Preserved on trace rows as raw local evidence |
 | `cachedTokens` | Cached input tokens reported by VS Code | Imported as `cachedInput`; priced with GitHub cached-input rate |
 | `outputTokens` | Generated output tokens | Imported as `output`; priced with GitHub output rate |
-| `estimatedCost` | Possible future/alternate source cost field | Not observed in the checked `29fa1393-f3da-41b0-80a6-f867d7a56a67` Agent Debug Log folder on May 13, 2026; keep as a roadmap item and preserve separately if found |
+| `estimatedCost` | Possible VS Code/source estimate object | Preserved separately on trace events as `sourceEstimatedCost` when present. It does not replace the app-calculated estimate. |
 | `ttft` | Time to first token in ms | Preserved on trace rows |
 | `responseId` | Provider/VS Code response id | Preserved in bounded attributes |
 | `userRequest` | Current request payload, often JSON string | Used for previews only; may be large |
@@ -209,7 +209,7 @@ Session fields:
 | `traceEvents` | Capped normalized trace rows |
 | `vscodeState` | Optional `state.vscdb` metadata enrichment |
 
-Token-bearing trace events preserve raw `inputTokens`, optional `cachedInputTokens`, optional `cacheWriteTokens`, `outputTokens`, `model`, `rawModel`, `pricingModel`, `totalTokens`, and `estimatedCost`.
+Token-bearing trace events preserve raw `inputTokens`, optional `cachedInputTokens`, optional `cacheWriteTokens`, `outputTokens`, `model`, `rawModel`, `pricingModel`, `totalTokens`, app-calculated `estimatedCost`, and optional source-provided `sourceEstimatedCost`.
 
 ## Feature Boundaries
 

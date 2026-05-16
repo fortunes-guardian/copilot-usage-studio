@@ -10,6 +10,30 @@
   </label>
 
   <div class="filters" aria-label="Session filters">
+    <label class="wide">
+      <span>Time</span>
+      <select [ngModel]="timeFilter" (ngModelChange)="timeFilterChange.emit($event)">
+        @for (option of timeOptions; track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+    <label class="wide">
+      <span>Workspace</span>
+      <select [ngModel]="workspaceFilter" (ngModelChange)="workspaceFilterChange.emit($event)">
+        @for (workspace of workspaceOptions; track workspace) {
+          <option [value]="workspace">{{ workspace === 'all' ? 'All workspaces' : workspace }}</option>
+        }
+      </select>
+    </label>
+    <label class="wide">
+      <span>Model</span>
+      <select [ngModel]="modelFilter" (ngModelChange)="modelFilterChange.emit($event)">
+        @for (model of modelOptions; track model) {
+          <option [value]="model">{{ model === 'all' ? 'All models' : model }}</option>
+        }
+      </select>
+    </label>
     <label>
       <span>Size</span>
       <select [ngModel]="sizeFilter" (ngModelChange)="sizeFilterChange.emit($event)">

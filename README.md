@@ -21,7 +21,7 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
 
 - Imports VS Code Copilot debug-log sessions.
 - Enriches titles and metadata from VS Code `state.vscdb`.
-- Filters sessions by size, cost signal, and source quality.
+- Filters sessions by search, time window, workspace, model, size, and cost signal.
 - Shows a selected-run Cost debugger:
   - run size and cost-signal labels
   - a primary-driver answer for the current estimate
@@ -54,8 +54,7 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
 
 ```bash
 npm install
-npm run scan
-npm run verify:data
+npm run refresh:data
 npm start
 ```
 
@@ -87,6 +86,14 @@ npm run verify:data
 ```
 
 The app reads `public/data/sessions.json`. Running `npm run scan` regenerates that file from local VS Code data.
+
+For the normal refresh path, use:
+
+```bash
+npm run refresh:data
+```
+
+That runs the scan and verifier together.
 
 ## Preferred Data Source
 
@@ -138,6 +145,7 @@ Important: this app shows a local estimate, not a GitHub invoice. VS Code Agent 
 
 ```bash
 npm run scan
+npm run refresh:data
 npm run verify:data
 npm test -- --watch=false
 npm run build

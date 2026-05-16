@@ -88,6 +88,7 @@ export interface TraceEvent {
   rawModel?: string;
   pricingModel?: string;
   estimatedCost?: CostBreakdown;
+  sourceEstimatedCost?: string;
 }
 
 export interface AdvancedSignals {

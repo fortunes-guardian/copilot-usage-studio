@@ -8,8 +8,7 @@ Use the Angular dev server:
 
 ```bash
 npm install
-npm run scan
-npm run verify:data
+npm run refresh:data
 npm start
 ```
 
@@ -44,6 +43,8 @@ Then serve the generated `dist/` output with a small local static server.
 Why: Angular production output is just static assets plus the generated `public/data/sessions.json` copy. This is a good first packaging target because it avoids an app server and keeps the data model simple.
 
 Current build status: `npm run build` passes without a component style budget warning after the Prices, loading/error, and Compare component extraction passes.
+
+For day-to-day local use, `npm run refresh:data` is the intended one-command data refresh. It regenerates `public/data/sessions.json` from local VS Code data and immediately verifies the generated file.
 
 ## Future Option: Desktop App
 

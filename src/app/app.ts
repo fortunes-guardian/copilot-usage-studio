@@ -34,6 +34,7 @@ import {
 type ActiveView = 'sessions' | 'compare' | 'analytics' | 'pricing';
 type SelectedRunView = 'overview' | 'cost' | 'turns' | 'trace';
 type ThemeMode = 'light' | 'dark';
+type SessionTimeFilter = 'all' | '7d' | '30d' | '90d';
 
 @Component({
   selector: 'app-root',
@@ -68,6 +69,9 @@ export class App {
   protected readonly query = signal('');
   protected readonly sizeFilter = signal<'all' | SessionSize>('all');
   protected readonly warningFilter = signal<string>('all');
+  protected readonly workspaceFilter = signal<string>('all');
+  protected readonly modelFilter = signal<string>('all');
+  protected readonly timeFilter = signal<SessionTimeFilter>('all');
   protected readonly traceView = signal<'logs' | 'flow'>('logs');
   protected readonly traceFilter = signal<TraceFilter>('all');
   protected readonly selectedTraceEventIndex = signal<number | null>(null);
@@ -115,6 +119,12 @@ export class App {
     'Large',
     'Very large',
   ];
+  protected readonly timeOptions: Array<{ value: SessionTimeFilter; label: string }> = [
+    { value: 'all', label: 'All time' },
+    { value: '7d', label: 'Last 7 days' },
+    { value: '30d', label: 'Last 30 days' },
+    { value: '90d', label: 'Last 90 days' },
+  ];
   protected readonly traceFilterOptions: Array<{ value: TraceFilter; label: string }> = [
     { value: 'all', label: 'All events' },
     { value: 'model', label: 'Model calls' },
@@ -137,17 +147,34 @@ export class App {
 
     return ['all', ...[...labels].sort()];
   });
+  protected readonly workspaceOptions = computed(() => [
+    'all',
+    ...[...new Set(this.sessions().map((session) => session.workspace).filter(Boolean))].sort(),
+  ]);
+  protected readonly modelOptions = computed(() => [
+    'all',
+    ...[...new Set(this.sessions().map((session) => session.model).filter(Boolean))].sort(),
+  ]);
+  private readonly latestSessionTime = computed(() =>
+    Math.max(0, ...this.sessions().map((session) => Date.parse(session.startedAt) || 0)),
+  );
   protected readonly filteredSessions = computed(() => {
     const query = this.query().trim().toLowerCase();
     const sizeFilter = this.sizeFilter();
     const warningFilter = this.warningFilter();
+    const workspaceFilter = this.workspaceFilter();
+    const modelFilter = this.modelFilter();
+    const timeFilter = this.timeFilter();
     const sessions = [...this.sessions()].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
 
     return sessions.filter(
       (session) =>
         this.matchesQuery(session, query) &&
         this.matchesSizeFilter(session, sizeFilter) &&
-        this.matchesWarningFilter(session, warningFilter),
+        this.matchesWarningFilter(session, warningFilter) &&
+        this.matchesWorkspaceFilter(session, workspaceFilter) &&
+        this.matchesModelFilter(session, modelFilter) &&
+        this.matchesTimeFilter(session, timeFilter),
     );
   });
 
@@ -269,6 +296,18 @@ export class App {
     this.warningFilter.set(value);
   }
 
+  protected setWorkspaceFilter(value: string): void {
+    this.workspaceFilter.set(value);
+  }
+
+  protected setModelFilter(value: string): void {
+    this.modelFilter.set(value);
+  }
+
+  protected setTimeFilter(value: SessionTimeFilter): void {
+    this.timeFilter.set(value);
+  }
+
   protected setAllowancePlan(value: string): void {
     if (COPILOT_ALLOWANCE_PLANS.some((plan) => plan.id === value)) {
       this.allowancePlan.set(value as CopilotAllowancePlan);
@@ -342,6 +381,30 @@ export class App {
       value === 'all' ||
       this.sessionTriage(session).warnings.some((warning) => warning.label === value)
     );
+  }
+
+  private matchesWorkspaceFilter(session: CopilotSession, value: string): boolean {
+    return value === 'all' || session.workspace === value;
+  }
+
+  private matchesModelFilter(session: CopilotSession, value: string): boolean {
+    return value === 'all' || session.model === value;
+  }
+
+  private matchesTimeFilter(session: CopilotSession, value: SessionTimeFilter): boolean {
+    if (value === 'all') {
+      return true;
+    }
+
+    const latest = this.latestSessionTime();
+    const startedAt = Date.parse(session.startedAt);
+    const days = Number(value.replace('d', ''));
+
+    if (!latest || !Number.isFinite(startedAt) || !Number.isFinite(days)) {
+      return false;
+    }
+
+    return startedAt >= latest - days * 24 * 60 * 60 * 1000;
   }
 
   private readStoredTheme(): ThemeMode {

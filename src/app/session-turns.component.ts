@@ -66,6 +66,18 @@ export class SessionTurnsComponent {
     return '';
   }
 
+  protected impactLabel(event: ModelCallRowViewModel): string {
+    if (event.share >= 25) {
+      return 'High share';
+    }
+
+    if (event.share >= 10) {
+      return 'Medium share';
+    }
+
+    return '';
+  }
+
   protected inputShare(event: ModelCallRowViewModel): number {
     return event.totalTokens > 0 ? (event.inputTokens / event.totalTokens) * 100 : 0;
   }

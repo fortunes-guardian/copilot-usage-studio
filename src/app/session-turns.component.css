@@ -346,6 +346,23 @@
   background: var(--warning);
 }
 
+.impact-label {
+  width: fit-content;
+  border: 1px solid rgba(244, 160, 65, 0.28);
+  border-radius: 999px;
+  padding: 2px 7px;
+  background: rgba(244, 160, 65, 0.12);
+  color: var(--warning-text, #ffe0a0) !important;
+  font-size: 11px !important;
+  font-weight: 760;
+}
+
+.high-impact .impact-label {
+  border-color: rgba(255, 91, 110, 0.3);
+  background: rgba(255, 91, 110, 0.12);
+  color: var(--danger-text, #ffd0d7) !important;
+}
+
 .warning-text {
   color: var(--warning-text, #ffe0a0) !important;
   font-weight: 800;

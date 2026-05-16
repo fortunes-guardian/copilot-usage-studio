@@ -68,7 +68,7 @@ For debug logs with `llm_request` events:
 - `tokens.input` is the sum of normal, non-cached input tokens. For Agent Debug Logs this is `attrs.inputTokens - attrs.cachedTokens` when `cachedTokens` is present, otherwise it is `attrs.inputTokens`.
 - `tokens.output` is the sum of `attrs.outputTokens`.
 - `tokens.cachedInput` is the sum of `attrs.cachedTokens` from `llm_request` events when present.
-- `tokens.cacheWrite` is currently `0` because the scanner does not yet extract numeric cache-write totals from debug-log events.
+- `tokens.cacheWrite` is imported only when the scanner sees a clear numeric cache-write field such as `cacheWriteTokens` or `cachedWriteTokens`.
 - `tokenSource` is `llm_request_token_totals`.
 - `confidence` is `exact`.
 - `modelBreakdown` groups `llm_request` rows by normalized model id and stores raw model ids, turn count, token totals, estimated cost, and the pricing model used.
@@ -81,7 +81,7 @@ The word `exact` means exact for the local VS Code debug-log token fields that w
 
 `cachedInput` is imported from Agent Debug Log `cachedTokens` when present. This is treated as cached input, not as output and not as a discount against output. `inputTokens` remains useful as the raw prompt/context size, but pricing separates the normal input portion from the cached portion to avoid double-counting.
 
-`cacheWrite` remains zero unless a future log shape exposes a clear numeric cache-write field such as `cacheWriteTokens`. Do not infer billable cached-token totals from `cache_control` hints or prompt-cache metadata alone.
+`cacheWrite` remains zero unless the log exposes a clear numeric cache-write field such as `cacheWriteTokens` or `cachedWriteTokens`. Do not infer billable cached-token totals from `cache_control` hints or prompt-cache metadata alone.
 
 Cached input should be treated as a separate billing bucket, not as a subtraction from output. If a run has large output tokens, missing cache fields may not change the main cost story because output is still billed as output. If a run is input/context-heavy, missing cached-input visibility can materially change how close the local estimate is to a GitHub invoice.
 

@@ -25,12 +25,13 @@ Done:
 - Added regression tests for the shared cache-aware pricing buckets, including normal input, cached input, cache write, and output.
 - Added scanner fixture tests for raw Agent Debug Log `cachedTokens`, invalid cached-token splits, cache-write pricing, and merged cache audits.
 - Added Trace inspector coverage for cached model-call details, fallback pricing labels, and tool events that are not directly priced.
+- Preserved raw VS Code `llm_request.attrs.estimatedCost` separately on trace events when present, without mixing it into the app-calculated estimate.
 
 Next:
 
 - Keep user-facing source language minimal. Show debug-log/source details in docs or ingest diagnostics, not as primary selected-run chips.
 - Remove low-value banners and technical caveats from the main Cost view unless they change a decision.
-- Investigate raw VS Code `estimatedCost` evidence. If `llm_request.attrs.estimatedCost` exists and is reliable, preserve it separately from the app-calculated estimate and compare the two.
+- Compare raw VS Code `estimatedCost` with the app-calculated estimate only after enough real sessions show this field consistently.
 
 Why: the core workflow is “I ran an agent, why was this expensive?” The selected run has to be readable before comparison gets deeper.
 
@@ -43,11 +44,11 @@ Done:
 - Session size labels: `Small`, `Medium`, `Large`, `Very large`.
 - Cost-signal labels now focus on actionable signals such as `High input context` and `Mixed models`.
 - Filters for size and cost signal.
+- Filters for workspace, model, and anchored time windows.
 - Better session-list scanning: cost, model, size, and tokens.
 
 Build:
 
-- Filters for workspace, model, and time window.
 - Recalibrate size thresholds from real usage as more sessions are imported. Current `Very large` starts at 1.5M imported tokens.
 - Continue recalibrating labels from real usage and avoid reintroducing source/status jargon that does not help the developer decide what to optimize.
 
@@ -140,10 +141,11 @@ Done:
 - Adds nearby prior-event context so a developer can tell what kind of activity preceded the expensive call.
 - Moved the model-call table into the selected-run `Calls` subview so Cost explains the estimate and Calls explains where it happened.
 - Added a Turn insights strip: model-call count, most expensive call, largest input, largest output, and average cost per call.
+- Made row highlighting explicit with `High share` and `Medium share` labels.
 
 Next:
 
-- Make row highlighting explicit. The yellow highlight currently means medium estimated-cost share; the UI should label that or use a less mysterious visual treatment.
+- Keep checking row density with real imported sessions as the Calls table grows.
 
 Why: session totals explain that a run was expensive. Calls explain where it became expensive.
 
@@ -223,14 +225,12 @@ Done:
 - Added UI/helper tests for Analytics calculations, Analytics open-run actions, Analytics empty states, session rail filters, selected-run navigation, Calls-to-Trace, Compare delta copy, and selected-run pricing fallback assumptions.
 - Added Prices page tests for AI-credit usage windows and fallback pricing row labels.
 - Added selected Trace inspector tests for cached model calls, fallback pricing, and tool-call detail boundaries.
+- Added fixture-based scanner tests for exact Agent Debug Log token totals, mixed-model sessions, empty debug logs, and weak chat snapshots.
+- Fixed chat snapshot parsing for `kind: 0` envelopes so valid snapshot payloads are not skipped.
 
 Build:
 
 - Add fixture-based scanner tests for:
-  - exact debug-log token totals
-  - mixed-model sessions
-  - empty debug logs
-  - weak chat snapshots
   - optional transcript availability
 - Continue moving page-level interpretation logic out of large components when it has stable behavior and useful test cases.
 
@@ -243,11 +243,11 @@ Status: documented.
 Done:
 
 - Added [local deployment notes](local-deployment.md) covering dev mode, static local builds, future desktop wrapper, and future CLI.
+- Added `npm run refresh:data` as the one-command local scan plus verify flow.
 
 Build:
 
 - Decide whether the next practical distribution target is a static local build with a small serve command or a desktop wrapper.
-- Add a one-command refresh flow after the scanner interface settles.
 
 Why: this project should stay local-first because the useful source data lives on the developer machine and may contain prompts, file paths, repo context, and tool results.
 

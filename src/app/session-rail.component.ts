@@ -5,6 +5,8 @@ import { FormsModule } from '@angular/forms';
 import { CopilotSession } from './session-data.model';
 import { SessionSize, SessionTriage, sessionTriage } from './session-analysis';
 
+type SessionTimeFilter = 'all' | '7d' | '30d' | '90d';
+
 @Component({
   selector: 'app-session-rail',
   imports: [DatePipe, DecimalPipe, FormsModule, NgClass],
@@ -18,12 +20,21 @@ export class SessionRailComponent {
   @Input() query = '';
   @Input() sizeFilter: 'all' | SessionSize = 'all';
   @Input() warningFilter = 'all';
+  @Input() workspaceFilter = 'all';
+  @Input() modelFilter = 'all';
+  @Input() timeFilter: SessionTimeFilter = 'all';
   @Input({ required: true }) warningOptions: string[] = [];
   @Input({ required: true }) sizeOptions: Array<'all' | SessionSize> = [];
+  @Input({ required: true }) workspaceOptions: string[] = [];
+  @Input({ required: true }) modelOptions: string[] = [];
+  @Input({ required: true }) timeOptions: Array<{ value: SessionTimeFilter; label: string }> = [];
 
   @Output() readonly queryChange = new EventEmitter<string>();
   @Output() readonly sizeFilterChange = new EventEmitter<'all' | SessionSize>();
   @Output() readonly warningFilterChange = new EventEmitter<string>();
+  @Output() readonly workspaceFilterChange = new EventEmitter<string>();
+  @Output() readonly modelFilterChange = new EventEmitter<string>();
+  @Output() readonly timeFilterChange = new EventEmitter<SessionTimeFilter>();
   @Output() readonly selectSession = new EventEmitter<CopilotSession>();
 
   protected sessionTriage(session: CopilotSession): SessionTriage {

@@ -188,6 +188,9 @@ export function traceEventDetails(event: TraceEvent, modelBreakdown: ModelBreakd
               maximumFractionDigits: 6,
             })}`,
           },
+          ...(event.sourceEstimatedCost
+            ? [{ label: 'Source estimatedCost', value: event.sourceEstimatedCost }]
+            : []),
         ]
       : []),
     ...(event.ttftMs ? [{ label: 'TTFT', value: `${event.ttftMs.toLocaleString()} ms` }] : []),
