@@ -23,6 +23,12 @@ Observed files:
 | `tools_*.json` | Request side file referenced by model calls | Used for tool schema size, tool count, MCP tool count, and largest tool schemas |
 | `models.json` | Model metadata and capabilities | Future enrichment source for context windows/model capabilities |
 
+Related optional file:
+
+| File | Meaning | App use |
+| --- | --- | --- |
+| `../transcripts/<session-id>.jsonl` | Chat Debug transcript rows that sometimes match an Agent Debug Log session | Recorded as optional availability metadata only; not used for pricing |
+
 ## Event Envelope
 
 JSONL events use a common envelope:
@@ -205,6 +211,7 @@ Session fields:
 | `confidence` | Exact for imported debug-log token fields; estimated for weaker sources |
 | `traceSummary` | Counts and headline trace signals |
 | `cacheTokenAudit` | Local audit of raw input, normal input, cached input, and invalid cache splits for `llm_request` rows |
+| `transcript` | Optional matching Chat Debug transcript availability: `available`, `sourcePath`, and `eventCount` |
 | `requestPayload` | Bounded setup/tool payload evidence |
 | `traceEvents` | Capped normalized trace rows |
 | `vscodeState` | Optional `state.vscdb` metadata enrichment |
@@ -232,3 +239,4 @@ Do not overclaim:
 - `cache_control` hints are not billable cached-token totals.
 - Tool/MCP character counts are optimization evidence, not exact cost allocation.
 - Chat Debug transcripts can be useful, but they are not the pricing source and can disappear or differ after restart.
+- Transcript availability is recorded so future inspector features can be honest about source coverage. Missing transcripts do not weaken a debug-log session estimate.

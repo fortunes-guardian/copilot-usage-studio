@@ -217,6 +217,21 @@ for (const session of sessionData.sessions ?? []) {
     }
   }
 
+  if (session.transcript) {
+    if (typeof session.transcript.available !== 'boolean') {
+      fail(`${session.id} transcript.available must be boolean`);
+    }
+    if (!Number.isFinite(session.transcript.eventCount) || session.transcript.eventCount < 0) {
+      fail(`${session.id} transcript.eventCount is invalid`);
+    }
+    if (session.transcript.available && !session.transcript.sourcePath) {
+      fail(`${session.id} transcript is available but missing sourcePath`);
+    }
+    if (!session.transcript.available && session.transcript.eventCount !== 0) {
+      fail(`${session.id} transcript unavailable but has non-zero eventCount`);
+    }
+  }
+
   if (!Date.parse(session.startedAt) || !Date.parse(session.endedAt)) {
     fail(`${session.id} has invalid timestamps`);
   }
@@ -299,6 +314,15 @@ for (const field of ['scannedStateDbs', 'enrichedFromStateDbs']) {
 
 for (const warning of sessionData.ingestion?.warnings ?? []) {
   warn(warning);
+}
+
+for (const field of ['debugLogSessionsWithTranscripts', 'transcriptEventsAvailable']) {
+  if (
+    sessionData.ingestion?.[field] !== undefined &&
+    (!Number.isFinite(sessionData.ingestion[field]) || sessionData.ingestion[field] < 0)
+  ) {
+    fail(`ingestion.${field} is invalid`);
+  }
 }
 
 const expectedIngestionCacheTokenAudit = mergeCacheTokenAudits(

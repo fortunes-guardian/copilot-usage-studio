@@ -27,6 +27,8 @@ const diagnostics = {
   enrichedFromStateDbs: 0,
   importedDebugLogSessions: 0,
   importedChatSnapshotSessions: 0,
+  debugLogSessionsWithTranscripts: 0,
+  transcriptEventsAvailable: 0,
   skippedEmptyDebugLogs: 0,
   skippedChatSnapshotsWithoutRequests: 0,
   skippedDuplicateChatSnapshots: 0,
@@ -251,6 +253,26 @@ function listFiles(dir, suffix) {
 
 function costUsd(model, tokens) {
   return costUsdForTokens(model, tokens, pricing, fallbackPricingModel);
+}
+
+function transcriptAvailability(workspaceDir, sessionId) {
+  const sourcePath = join(workspaceDir, 'GitHub.copilot-chat', 'transcripts', `${sessionId}.jsonl`);
+
+  if (!existsSync(sourcePath)) {
+    return {
+      available: false,
+      sourcePath: '',
+      eventCount: 0,
+    };
+  }
+
+  const eventCount = readJsonl(sourcePath).length;
+
+  return {
+    available: true,
+    sourcePath,
+    eventCount,
+  };
 }
 
 function numericAttr(attrs, names) {
@@ -814,6 +836,12 @@ export function sessionFromDebugLog(sessionDir, workspaceDir) {
   const evidence = debugEvidence(llmRequests, assistantEvents, main);
   const payload = requestPayloadSummary(sessionDir, llmRequests, toolEvents);
   const cacheTokenAudit = cacheTokenAuditFromLlmRequests(llmRequests);
+  const transcript = transcriptAvailability(workspaceDir, sid);
+
+  if (transcript.available) {
+    diagnostics.debugLogSessionsWithTranscripts += 1;
+    diagnostics.transcriptEventsAvailable += transcript.eventCount;
+  }
 
   if (cacheTokenAudit.invalidCachedTokenSplits > 0) {
     diagnostics.warnings.push(
@@ -876,6 +904,7 @@ export function sessionFromDebugLog(sessionDir, workspaceDir) {
       reasoningEfforts: payload.reasoningEfforts,
     },
     cacheTokenAudit,
+    transcript,
     advancedSignals: evidence,
     requestPayload: payload,
     traceEvents: capTraceEvents(
@@ -1004,6 +1033,11 @@ export function sessionFromChatSnapshot(file, workspaceDir) {
       cacheWriteTokens: 0,
       outputTokens: 0,
       maxCachedInputShare: 0,
+    },
+    transcript: {
+      available: false,
+      sourcePath: '',
+      eventCount: 0,
     },
     advancedSignals: {
       reasoning: {

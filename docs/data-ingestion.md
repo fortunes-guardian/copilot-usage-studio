@@ -48,6 +48,8 @@ Why this matters: VS Code has at least two adjacent debug surfaces:
 
 Design decision: the scanner may eventually import transcript details only as optional enrichment with clear source labels and availability counts. Missing transcript detail must not downgrade or invalidate a debug-log session.
 
+Current implementation: for each Agent Debug Log session, the scanner checks for a matching transcript file and records only whether it exists, its path, and its row count. That availability signal does not affect tokens, costs, model rows, or confidence. It is a future inspection hook, not a pricing source.
+
 ## What counts as an imported session
 
 Debug-log folders are imported only when they contain at least one meaningful chat signal:

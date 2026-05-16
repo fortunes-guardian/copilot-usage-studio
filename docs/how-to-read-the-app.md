@@ -25,6 +25,7 @@ Start with the session list:
 Then open one session and read the Cost debugger.
 
 - **Run Triage**: quick labels for size and cost signals before reading the details.
+- **Overview evidence**: model calls, tool calls, errors, raw events, and reasoning effort when VS Code logged the request setting.
 - **Cost drivers**: quick diagnosis of what pushed the cost up.
 - **Token categories**: normal input, cached input, cache write, and output. These are separate because GitHub prices them separately.
 - **Model table**: which models were used and which GitHub price row applied.

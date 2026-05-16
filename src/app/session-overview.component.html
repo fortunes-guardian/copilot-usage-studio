@@ -6,6 +6,10 @@
     </div>
     <div class="facts trace-cards">
       <div>
+        <span>Model calls</span>
+        <strong>{{ session.traceSummary.modelTurns | number }}</strong>
+      </div>
+      <div>
         <span>Tool calls</span>
         <strong>{{ session.traceSummary.toolCalls | number }}</strong>
       </div>
@@ -17,6 +21,15 @@
         <span>Raw events</span>
         <strong>{{ session.traceSummary.totalEvents | number }}</strong>
       </div>
+      @if (reasoningLabel(); as reasoning) {
+        <div>
+          <span>
+            Reasoning
+            <app-help-popover [text]="reasoningHelp()" label="Explain reasoning"></app-help-popover>
+          </span>
+          <strong>{{ reasoning }}</strong>
+        </div>
+      }
     </div>
   </section>
 

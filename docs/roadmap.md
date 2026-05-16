@@ -26,6 +26,7 @@ Done:
 - Added scanner fixture tests for raw Agent Debug Log `cachedTokens`, invalid cached-token splits, cache-write pricing, and merged cache audits.
 - Added Trace inspector coverage for cached model-call details, fallback pricing labels, and tool events that are not directly priced.
 - Preserved raw VS Code `llm_request.attrs.estimatedCost` separately on trace events when present, without mixing it into the app-calculated estimate.
+- Recorded optional matching Chat Debug transcript availability for debug-log sessions without using transcripts for pricing.
 
 Next:
 
@@ -197,6 +198,7 @@ Done:
 - Added app-shell test coverage for opening a model call from Calls in the matching Trace event.
 - Removed stale Cost view-model fields for old source/cache caveat panels that are no longer part of the Cost UI.
 - Tightened Compare and Prices responsive CSS so repeated-prompt comparison and allowance cards collapse cleanly on narrower screens.
+- Added source-backed reasoning effort to the selected-run Overview only when VS Code logs the request setting.
 
 Build:
 
@@ -227,11 +229,10 @@ Done:
 - Added selected Trace inspector tests for cached model calls, fallback pricing, and tool-call detail boundaries.
 - Added fixture-based scanner tests for exact Agent Debug Log token totals, mixed-model sessions, empty debug logs, and weak chat snapshots.
 - Fixed chat snapshot parsing for `kind: 0` envelopes so valid snapshot payloads are not skipped.
+- Added fixture-based scanner tests for optional transcript availability while keeping pricing driven by Agent Debug Log token fields.
 
 Build:
 
-- Add fixture-based scanner tests for:
-  - optional transcript availability
 - Continue moving page-level interpretation logic out of large components when it has stable behavior and useful test cases.
 
 Why: the app is now past prototype shape. The risky parts are no longer just "can we show the data?" They are "can pricing, cache buckets, fallback assumptions, and filters stay correct as the UI grows?"

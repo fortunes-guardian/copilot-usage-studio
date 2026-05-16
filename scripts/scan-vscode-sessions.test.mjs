@@ -142,6 +142,44 @@ test('imports exact debug-log token totals from a session fixture', () => {
     assert.equal(session.traceEvents[2].cachedInputTokens, 21_632);
     assert.equal(session.traceEvents[2].reasoningEffort, 'high');
     assert.equal(session.traceEvents[2].sourceEstimatedCost, '{"currency":"USD","total":"0.02"}');
+    assert.deepEqual(session.transcript, {
+      available: false,
+      sourcePath: '',
+      eventCount: 0,
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('records optional transcript availability without using it for pricing', () => {
+  const { root, sessionDir, workspaceDir } = tempSessionFixture('debug-log-with-transcript');
+  const transcriptDir = join(workspaceDir, 'GitHub.copilot-chat', 'transcripts');
+  try {
+    mkdirSync(transcriptDir, { recursive: true });
+    writeJsonl(join(transcriptDir, 'debug-log-with-transcript.jsonl'), [
+      { type: 'assistant.turn_start' },
+      { type: 'tool.execution_complete', toolName: 'read_file' },
+    ]);
+    writeJsonl(join(sessionDir, 'main.jsonl'), [
+      event(1, 'user_message', 'user message', { attrs: { content: 'Read one file.' } }),
+      event(2, 'llm_request', 'panel/editAgent', {
+        attrs: { model: 'gpt-5.4', inputTokens: 10_000, cachedTokens: 7_500, outputTokens: 100 },
+      }),
+    ]);
+
+    const session = sessionFromDebugLog(sessionDir, workspaceDir);
+
+    assert.equal(session.transcript.available, true);
+    assert.equal(session.transcript.eventCount, 2);
+    assert.match(session.transcript.sourcePath, /debug-log-with-transcript\.jsonl$/);
+    assert.deepEqual(session.tokens, {
+      input: 2_500,
+      cachedInput: 7_500,
+      cacheWrite: 0,
+      output: 100,
+    });
+    assert.equal(session.traceSummary.totalTokens, 10_100);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -218,6 +256,7 @@ test('keeps chat snapshots visibly estimated and cache-empty', () => {
     assert.equal(session.confidence, 'estimated');
     assert.equal(session.tokens.cachedInput, 0);
     assert.equal(session.cacheTokenAudit.modelCalls, 0);
+    assert.equal(session.transcript.available, false);
     assert.equal(session.traceEvents.length, 2);
     assert.equal(session.traceEvents[0].type, 'user_message');
     assert.equal(session.traceEvents[1].outputTokens, 120);

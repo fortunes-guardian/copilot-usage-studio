@@ -67,6 +67,12 @@ export interface CacheTokenAudit {
   maxCachedInputShare: number;
 }
 
+export interface TranscriptAvailability {
+  available: boolean;
+  sourcePath: string;
+  eventCount: number;
+}
+
 export interface TraceEvent {
   index: number;
   timestamp: string;
@@ -157,6 +163,7 @@ export interface CopilotSession {
   confidence: EstimateConfidence;
   traceSummary: TraceSummary;
   cacheTokenAudit?: CacheTokenAudit;
+  transcript?: TranscriptAvailability;
   advancedSignals?: AdvancedSignals;
   requestPayload?: RequestPayloadSummary;
   traceEvents: TraceEvent[];
@@ -177,6 +184,8 @@ export interface SessionData {
     enrichedFromStateDbs: number;
     importedDebugLogSessions: number;
     importedChatSnapshotSessions: number;
+    debugLogSessionsWithTranscripts?: number;
+    transcriptEventsAvailable?: number;
     skippedEmptyDebugLogs: number;
     skippedChatSnapshotsWithoutRequests: number;
     skippedDuplicateChatSnapshots: number;
