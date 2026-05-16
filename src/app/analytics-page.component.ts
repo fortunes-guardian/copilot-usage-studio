@@ -62,7 +62,6 @@ export class AnalyticsPageComponent {
   protected readonly analyticsModelFilter = signal('all');
   protected readonly analyticsGrouping = signal<AnalyticsGrouping>('day');
   protected readonly selectedCreditPlan = signal('business-standard');
-  protected readonly creditSeats = signal(1);
   protected readonly help = {
     analyticsScope:
       'Multi-session analytics start from the sessions currently included by the sidebar filters, then apply the Analytics controls on this page.',
@@ -71,7 +70,7 @@ export class AnalyticsPageComponent {
     creditWindow:
       'Credit windows are based on imported local sessions, anchored to the latest imported session date. They estimate AI credit usage; they are not a GitHub invoice.',
     creditAllowance:
-      'GitHub Copilot included AI credits are monthly and pooled at the billing entity level. This lets you compare the imported local cohort with a plan-and-seat allowance.',
+      'Compares this imported local cohort with the monthly included AI credits for one Copilot license. It is a developer planning view, not an org invoice.',
   };
   protected readonly sizeOptions: SessionSize[] = ['Small', 'Medium', 'Large', 'Very large'];
   protected readonly analyticsTimeOptions: Array<{ value: AnalyticsTimeRange; label: string }> = [
@@ -146,10 +145,17 @@ export class AnalyticsPageComponent {
         label: 'Business',
         creditsPerUserMonthly: 1900,
       };
-    const seatCount = Math.max(1, Math.round(this.creditSeats()));
-    const monthlyAllowance = selectedPlan ? selectedPlan.creditsPerUserMonthly * seatCount : 0;
+    const monthlyAllowance = selectedPlan ? selectedPlan.creditsPerUserMonthly : 0;
     const allowanceShare = monthlyAllowance > 0 ? (totalCredits / monthlyAllowance) * 100 : 0;
     const remainingCredits = monthlyAllowance > 0 ? Math.max(0, monthlyAllowance - totalCredits) : 0;
+    const allowanceStatus =
+      allowanceShare >= 100
+        ? 'Above one-license monthly allowance'
+        : allowanceShare >= 75
+          ? 'High for one license'
+          : allowanceShare >= 40
+            ? 'Worth watching'
+            : 'Comfortable';
     const highestTokens = maxBy(sessions, (session) => sessionTotalTokens(session));
     const highestCost = maxBy(sessions, (session) => session.cost.usd);
     const modelRows = analyticsModelRows(sessions, totalCost);
@@ -242,10 +248,10 @@ export class AnalyticsPageComponent {
       outliers,
       totalCredits,
       selectedPlan,
-      seatCount,
       monthlyAllowance,
       allowanceShare,
       remainingCredits,
+      allowanceStatus,
     };
   });
 
@@ -267,11 +273,6 @@ export class AnalyticsPageComponent {
 
   protected setCreditPlan(value: string): void {
     this.selectedCreditPlan.set(value);
-  }
-
-  protected setCreditSeats(value: number | string): void {
-    const parsed = Number(value);
-    this.creditSeats.set(Number.isFinite(parsed) ? Math.max(1, Math.round(parsed)) : 1);
   }
 
   protected resetAnalyticsFilters(): void {

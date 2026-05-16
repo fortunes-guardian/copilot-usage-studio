@@ -22,7 +22,7 @@ Done:
 - Add a per-turn model-call cost breakdown with timeline and largest-first modes.
 - Split selected-run debugging into `Overview`, `Cost`, `Calls`, and `Trace` subviews.
 - Add Cost and Calls answer panels so the user sees the likely driver before reading detailed tables.
-- Added a compact request-payload evidence section in Cost for source-backed system prompt size, tool schema size, MCP tool count, and largest tool payloads.
+- Added a compact setup-clues section in Cost for system prompt size, tool schema size, MCP tool count, and largest tool text groups.
 - Keep `Normal input`, `Cached input`, `Cache write`, and `Output` visibly separate in cost views and comparisons.
 - Added regression tests for the shared cache-aware pricing buckets, including normal input, cached input, cache write, and output.
 - Added scanner fixture tests for raw Agent Debug Log `cachedTokens`, invalid cached-token splits, cache-write pricing, and merged cache audits.
@@ -96,11 +96,12 @@ Done:
 - Shows session count, total tokens, total estimated cost, average tokens, average cost, and cost per 1k tokens.
 - Shows AI credits used for the current Analytics cohort and converts key cost displays into USD plus credits.
 - Added Analytics credit windows for current month, previous month, and rolling ranges, anchored to the latest imported session date.
-- Added plan and seat controls so the current Analytics cohort can be compared against Copilot Business/Enterprise monthly included AI credits.
+- Added a plan selector so the current Analytics cohort can be compared against one Copilot Business/Enterprise monthly included-credit allowance.
 - Highlights highest-token and most expensive sessions.
 - Shows model/pricing-row breakdowns.
-- Shows grouped trend rows, size distribution, and outlier signals.
-- Explains likely outlier drivers such as input/context dominance, expensive model share, context growth, and high tool-call count.
+- Shows grouped credit trend rows, run size mix, and outlier signals.
+- Makes trend and size rows actionable by opening the highest-cost run in that bucket.
+- Explains likely outlier drivers such as input/context dominance, expensive model share, and high tool-call count.
 - Includes a reset for Analytics-only filters and a clear empty state when the current cohort has no sessions.
 - Separates a few obvious outlier cases, including plausible long agent runs and suspicious low-activity spikes.
 - Extracted Analytics into its own Angular component so the dashboard no longer lives inside the root shell template.
@@ -113,7 +114,7 @@ Next:
 - Keep clarifying the difference between `Credit window` as the included-session filter and `Group trend by` as the trend bucket display.
 - Improve outlier explanation with more real imported sessions.
 - Add saved comparison/cohort concepts later if app-owned SQLite becomes the right durable state layer.
-- Consider calendar-month AI-credit usage windows if billing-cycle style comparison becomes important.
+- Consider org/team license-pool modelling later only if the app imports team-wide data. A local VS Code import should stay focused on one developer's runs.
 
 Why: after one run and two-run comparison are understandable, the next developer question is “what is my normal usage pattern, and which runs are outliers?”
 
@@ -203,6 +204,7 @@ Done:
 - Removed stale Cost view-model fields for old source/cache caveat panels that are no longer part of the Cost UI.
 - Tightened Compare and Prices responsive CSS so repeated-prompt comparison and allowance cards collapse cleanly on narrower screens.
 - Added source-backed reasoning effort to the selected-run Overview only when VS Code logs the request setting.
+- Renamed Cost request-payload copy to `Setup payload clues` so it reads as optimization evidence, not exact per-item billing.
 
 Build:
 

@@ -1,3 +1,4 @@
+import { COPILOT_AI_CREDIT_USD } from './pricing';
 import { CopilotSession } from './session-data.model';
 import { sessionTotalTokens, tokenTotal, usesPricingFallback } from './session-cost-utils';
 
@@ -27,6 +28,9 @@ export interface AnalyticsTrendRow {
   count: number;
   tokens: number;
   cost: number;
+  credits: number;
+  topSession: CopilotSession | null;
+  topSessionCost: number;
 }
 
 export interface AnalyticsDistributionRow {
@@ -35,6 +39,9 @@ export interface AnalyticsDistributionRow {
   tokens: number;
   cost: number;
   share: number;
+  credits: number;
+  topSession: CopilotSession | null;
+  topSessionCost: number;
 }
 
 export interface AnalyticsOutlier {
@@ -137,11 +144,18 @@ export function analyticsTrendRows(sessions: CopilotSession[], grouping: Analyti
 
   for (const session of sessions) {
     const group = analyticsGroupKey(session.startedAt, grouping);
-    const current = rows.get(group.key) ?? { ...group, count: 0, tokens: 0, cost: 0 };
+    const current =
+      rows.get(group.key) ??
+      { ...group, count: 0, tokens: 0, cost: 0, credits: 0, topSession: null, topSessionCost: 0 };
 
     current.count += 1;
     current.tokens += sessionTotalTokens(session);
     current.cost += session.cost.usd;
+    current.credits = current.cost / COPILOT_AI_CREDIT_USD;
+    if (!current.topSession || session.cost.usd > current.topSessionCost) {
+      current.topSession = session;
+      current.topSessionCost = session.cost.usd;
+    }
     rows.set(group.key, current);
   }
 
@@ -155,6 +169,7 @@ export function analyticsDistribution(sessions: CopilotSession[], totalCost: num
     const bucket = sessions.filter((session) => sessionSize(sessionTotalTokens(session)) === size);
     const tokens = bucket.reduce((sum, session) => sum + sessionTotalTokens(session), 0);
     const cost = bucket.reduce((sum, session) => sum + session.cost.usd, 0);
+    const topSession = maxBy(bucket, (session) => session.cost.usd);
 
     return {
       size,
@@ -162,6 +177,9 @@ export function analyticsDistribution(sessions: CopilotSession[], totalCost: num
       tokens,
       cost,
       share: totalCost > 0 ? (cost / totalCost) * 100 : 0,
+      credits: cost / COPILOT_AI_CREDIT_USD,
+      topSession,
+      topSessionCost: topSession?.cost.usd ?? 0,
     };
   });
 }

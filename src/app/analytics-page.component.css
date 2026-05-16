@@ -51,7 +51,7 @@
 
 .analytics-controls {
   display: grid;
-  grid-template-columns: repeat(6, minmax(120px, 1fr));
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
   gap: 8px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -289,6 +289,7 @@
 }
 
 .highlight-list button,
+.stat-list button,
 .stat-list div {
   display: grid;
   gap: 5px;
@@ -302,21 +303,25 @@
   text-align: left;
 }
 
-.highlight-list button {
+.highlight-list button,
+.stat-list button {
   cursor: pointer;
 }
 
-.highlight-list button:hover {
+.highlight-list button:hover,
+.stat-list button:hover {
   border-color: var(--line-strong);
 }
 
-.highlight-list button:disabled {
+.highlight-list button:disabled,
+.stat-list button:disabled {
   cursor: default;
   opacity: 0.65;
 }
 
 .highlight-list span,
 .highlight-list em,
+.stat-list small,
 .stat-list span,
 .stat-list em,
 .cost-row span,
@@ -326,6 +331,12 @@
   font-size: 12px;
   font-style: normal;
   line-height: 1.35;
+}
+
+.stat-list small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .row-kicker {
@@ -362,7 +373,8 @@
   background: rgba(12, 159, 131, 0.14);
 }
 
-.stat-list.compact div {
+.stat-list.compact div,
+.stat-list.compact button {
   padding: 10px;
 }
 

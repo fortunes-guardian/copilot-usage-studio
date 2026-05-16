@@ -112,12 +112,14 @@ describe('session analytics helpers', () => {
       label: 'Week of 2026-04-27',
     });
     expect(analyticsTrendRows(sessions, 'week')[0].count).toBe(2);
+    expect(analyticsTrendRows(sessions, 'week')[0].topSession?.id).toBe('large');
     expect(analyticsDistribution(sessions, 0.3).map((row) => [row.size, row.count])).toEqual([
       ['Small', 1],
       ['Medium', 0],
       ['Large', 1],
       ['Very large', 0],
     ]);
+    expect(analyticsDistribution(sessions, 0.3).find((row) => row.size === 'Large')?.topSession?.id).toBe('large');
     expect(sessionSize(1_500_000)).toBe('Very large');
   });
 

@@ -27,7 +27,7 @@ Then open one session and read the Cost debugger.
 - **Run Triage**: quick labels for size and cost signals before reading the details.
 - **Overview evidence**: model calls, tool calls, errors, raw events, and reasoning effort when VS Code logged the request setting.
 - **Cost drivers**: quick diagnosis of what pushed the cost up.
-- **Request payload evidence**: source-backed setup sizes, such as system prompt size, tool schema size, MCP tool count, and tool argument/result text. These are optimization clues, not exact per-item billing splits.
+- **Setup payload clues**: character sizes for instructions, tool schemas, MCP tool counts, and tool argument/result text. These are optimization clues, not exact per-item billing splits.
 - **Token categories**: normal input, cached input, cache write, and output. These are separate because GitHub prices them separately.
 - **Model table**: which models were used and which GitHub price row applied.
 - **Calls**: every token-bearing model call, either in timeline order or sorted by the biggest cost.
@@ -68,18 +68,18 @@ The sidebar filters define the starting group. Analytics only summarizes the ses
 
 The credit window is an estimate window for imported local sessions. `Current month` and `Previous month` are anchored to the latest imported session date, so historical imported data still makes sense. It is not GitHub billing reconciliation.
 
-The plan and seat controls compare the local estimated AI credits with GitHub's monthly included-credit allowance for Copilot Business or Enterprise. This is useful for “does this usage matter?” thinking, but it still only covers sessions imported into the app.
+The plan selector compares the local estimated AI credits with the monthly included-credit allowance for one Copilot Business or Enterprise license. This is useful for “does this usage matter for my own workflow?” thinking, but it still only covers sessions imported into the app. Org-wide seat pools are intentionally not modelled while the app is reading one developer's local VS Code data.
 
 The Analytics reset button resets only the Analytics controls. It does not clear sidebar filters. This is intentional: sidebar filters define the global working set, while Analytics controls define the dashboard cohort inside that working set.
 
 Read it in this order:
 
-- **Monthly credit view**: estimated credits used versus the selected plan and seat allowance.
+- **Monthly credit view**: estimated credits used versus one selected-plan monthly allowance.
 - **Top metrics**: total cost/tokens, average cost/tokens, AI credits, and cost per 1k tokens.
 - **Model breakdown**: which model/pricing rows are contributing the cost.
 - **Runs to inspect**: the highest-token and most expensive runs; click one to open the selected-run debugger.
 - **Outlier signals**: sessions that are unusually high compared with the current cohort, with a first-pass explanation of the likely driver. Current explanations can call out input/context dominance, model price rows, tool activity, plausible long agent work, or suspicious low-activity spikes.
-- **Distribution and trend**: whether cost is spread across many runs or concentrated in a few periods.
+- **Run size mix and credit trend**: whether cost is spread across many runs or concentrated in a few periods. Each row can open the largest run in that bucket.
 
 ## Run Triage Labels
 

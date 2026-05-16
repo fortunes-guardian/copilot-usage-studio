@@ -58,11 +58,11 @@
 
   @if (hasPayloadEvidence(session.requestPayload)) {
     @if (session.requestPayload; as payload) {
-      <section class="payload-evidence" aria-label="Request payload evidence">
+      <section class="payload-evidence" aria-label="Setup payload clues">
         <div class="section-label">
           <div>
-            <h4>Request payload evidence</h4>
-            <p>Source-backed setup sizes from VS Code side files. These are clues, not per-item billing allocations.</p>
+            <h4>Setup payload clues</h4>
+            <p>Character sizes for instructions, tool schemas, and tool text that may inflate later model input.</p>
           </div>
         </div>
         <div class="payload-grid">
@@ -82,9 +82,9 @@
             <em>{{ mcpToolSummary(payload) }}</em>
           </article>
           <article>
-            <span>Tools with payloads</span>
+            <span>Tool text groups</span>
             <strong>{{ topToolResults(payload).length | number }}</strong>
-            <em>tool names with imported argument/result text; sizes are clues, not billed token totals</em>
+            <em>largest tool argument/result text groups imported for this run</em>
           </article>
         </div>
         <div class="payload-lists">

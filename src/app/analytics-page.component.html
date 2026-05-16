@@ -67,17 +67,6 @@
           }
         </select>
       </label>
-      <label>
-        <span>Seats</span>
-        <input
-          type="number"
-          min="1"
-          step="1"
-          [ngModel]="creditSeats()"
-          (ngModelChange)="setCreditSeats($event)"
-          aria-label="Copilot seats"
-        />
-      </label>
     </section>
 
     @if (stats.count === 0) {
@@ -103,11 +92,12 @@
           <span>Monthly credit view</span>
           <strong>{{ stats.totalCredits | number: '1.0-1' }} / {{ stats.monthlyAllowance | number: '1.0-0' }} credits</strong>
           <em>
-            {{ stats.allowanceShare | number: '1.0-1' }}% of {{ stats.seatCount | number }} {{ stats.selectedPlan.label }}
-            seat{{ stats.seatCount === 1 ? '' : 's' }}.
+            {{ stats.allowanceShare | number: '1.0-1' }}% of one {{ stats.selectedPlan.label }} monthly allowance.
           </em>
           <i><b [style.width.%]="stats.allowanceShare > 100 ? 100 : stats.allowanceShare"></b></i>
-          <small>{{ stats.remainingCredits | number: '1.0-1' }} included credits remaining in this local window estimate.</small>
+          <small>
+            {{ stats.allowanceStatus }} · {{ stats.remainingCredits | number: '1.0-1' }} included credits left in this local estimate.
+          </small>
         </aside>
         <section class="analytics-metrics" aria-label="Analytics summary metrics">
           @for (metric of stats.metrics; track metric.label) {
@@ -181,34 +171,43 @@
 
         <aside class="analytics-side">
           <div class="analytics-panel">
-            <h3>Distribution</h3>
+            <h3>Run size mix</h3>
+            <p class="panel-note">Where the selected cohort concentrates estimated credits.</p>
             <div class="stat-list compact">
               @for (bucket of stats.distribution; track bucket.size) {
-                <div>
+                <button type="button" (click)="emitOpenSession(bucket.topSession)" [disabled]="!bucket.topSession">
                   <span>{{ bucket.size }}</span>
                   <strong>{{ bucket.count | number }} runs</strong>
                   <em>
-                    {{ bucket.tokens | number }} tokens · ${{ bucket.cost | number: '1.2-4' }} ·
-                    {{ aiCredits(bucket.cost) | number: '1.0-1' }} credits · {{ bucket.share | number: '1.0-0' }}%
+                    {{ bucket.credits | number: '1.0-1' }} credits · ${{ bucket.cost | number: '1.2-4' }} ·
+                    {{ bucket.share | number: '1.0-0' }}% of cohort
                   </em>
-                </div>
+                  @if (bucket.topSession) {
+                    <small>Top run: {{ bucket.topSession.title }}</small>
+                    <span class="open-cue">Open run</span>
+                  }
+                </button>
               }
             </div>
           </div>
 
           <div class="analytics-panel">
-            <h3>Recent trend</h3>
-            <p class="panel-note">Grouped {{ stats.groupingLabel.toLowerCase() }} within the selected time range.</p>
+            <h3>Credit trend</h3>
+            <p class="panel-note">Grouped {{ stats.groupingLabel.toLowerCase() }}. Open the largest run in any bucket.</p>
             <div class="stat-list compact">
               @for (row of stats.trendRows; track row.key) {
-                <div>
+                <button type="button" (click)="emitOpenSession(row.topSession)" [disabled]="!row.topSession">
                   <span>{{ row.label }}</span>
                   <strong>{{ row.count | number }} runs</strong>
                   <em>
-                    {{ row.tokens | number }} tokens · ${{ row.cost | number: '1.2-4' }} ·
-                    {{ aiCredits(row.cost) | number: '1.0-1' }} credits
+                    {{ row.credits | number: '1.0-1' }} credits · ${{ row.cost | number: '1.2-4' }} ·
+                    {{ row.tokens | number }} tokens
                   </em>
-                </div>
+                  @if (row.topSession) {
+                    <small>Top run: {{ row.topSession.title }}</small>
+                    <span class="open-cue">Open run</span>
+                  }
+                </button>
               } @empty {
                 <p class="empty">No trend rows for the current Analytics cohort.</p>
               }
