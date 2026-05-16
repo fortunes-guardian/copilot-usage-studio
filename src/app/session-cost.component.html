@@ -82,9 +82,9 @@
             <em>{{ mcpToolSummary(payload) }}</em>
           </article>
           <article>
-            <span>Tool results</span>
+            <span>Tools with payloads</span>
             <strong>{{ topToolResults(payload).length | number }}</strong>
-            <em>largest imported argument/result payload groups</em>
+            <em>tool names with imported argument/result text; sizes are clues, not billed token totals</em>
           </article>
         </div>
         <div class="payload-lists">
@@ -104,7 +104,7 @@
             }
           </article>
           <article>
-            <span>Largest tool payloads</span>
+            <span>Largest tool argument/result text</span>
             @if (topToolResults(payload).length) {
               <ol>
                 @for (tool of topToolResults(payload); track tool.name) {

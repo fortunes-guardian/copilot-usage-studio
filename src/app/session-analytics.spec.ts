@@ -1,4 +1,5 @@
 import {
+  analyticsDateWindow,
   analyticsDistribution,
   analyticsGroupKey,
   analyticsModelRows,
@@ -35,6 +36,33 @@ describe('session analytics helpers', () => {
     expect(filterAnalyticsSessions(sessions, '7d', 'repo-a', 'GPT-5.4').map((session) => session.id)).toEqual([
       'new-a',
     ]);
+  });
+
+  it('filters current and previous month windows from the latest imported session date', () => {
+    const sessions = [
+      sessionFixture('april', 'April', 'repo', 'GPT-5.4', 'GPT-5.4', '2026-04-15T12:00:00.000Z', 0.02, {
+        input: 10_000,
+        cachedInput: 0,
+        cacheWrite: 0,
+        output: 1_000,
+      }),
+      sessionFixture('may', 'May', 'repo', 'GPT-5.4', 'GPT-5.4', '2026-05-20T12:00:00.000Z', 0.03, {
+        input: 20_000,
+        cachedInput: 0,
+        cacheWrite: 0,
+        output: 1_000,
+      }),
+    ];
+
+    expect(filterAnalyticsSessions(sessions, 'current-month', 'all', 'all').map((session) => session.id)).toEqual([
+      'may',
+    ]);
+    expect(filterAnalyticsSessions(sessions, 'previous-month', 'all', 'all').map((session) => session.id)).toEqual([
+      'april',
+    ]);
+    expect(new Date(analyticsDateWindow(sessions, 'current-month').start ?? 0).toISOString()).toBe(
+      '2026-05-01T00:00:00.000Z',
+    );
   });
 
   it('keeps cached token buckets visible in model rows', () => {

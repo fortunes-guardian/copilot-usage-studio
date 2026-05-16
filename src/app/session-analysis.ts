@@ -373,16 +373,16 @@ function explainCostDrivers(session: CopilotSession, modelRows: ModelCostRow[], 
 
   return [
     {
-      title: 'Input/cache cost',
-      value: `${Math.round(inputShare)}%`,
+      title: 'Input-side spend',
+      value: `$${inputUsd.toFixed(4)}`,
       detail:
         inputShare >= outputShare
-          ? `${inputShare.toFixed(0)}% of USD estimate comes from input-side pricing: $${normalInputUsd.toFixed(
+          ? `${inputShare.toFixed(0)}% of the $${sessionCost.toFixed(4)} run estimate. Split: $${normalInputUsd.toFixed(
               4,
             )} normal input, $${cachedInputUsd.toFixed(4)} cached input${
               cacheWriteUsd ? `, $${cacheWriteUsd.toFixed(4)} cache write` : ''
             }.`
-          : `Output is the larger priced category here, but input/cache still contributes ${inputShare.toFixed(0)}% of this USD estimate.`,
+          : `Input/cache contributes ${inputShare.toFixed(0)}% of the $${sessionCost.toFixed(4)} run estimate. Output is larger here.`,
       tone: inputShare >= 75 ? 'high' : inputShare >= 50 ? 'medium' : 'low',
     },
     {

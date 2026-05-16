@@ -31,6 +31,12 @@ interface AnalyticsHighlight {
   help: string;
 }
 
+interface CreditPlanOption {
+  id: string;
+  label: string;
+  creditsPerUserMonthly: number;
+}
+
 @Component({
   selector: 'app-analytics-page',
   imports: [DecimalPipe, FormsModule, HelpPopoverComponent],
@@ -55,15 +61,23 @@ export class AnalyticsPageComponent {
   protected readonly analyticsWorkspaceFilter = signal('all');
   protected readonly analyticsModelFilter = signal('all');
   protected readonly analyticsGrouping = signal<AnalyticsGrouping>('day');
+  protected readonly selectedCreditPlan = signal('business-standard');
+  protected readonly creditSeats = signal(1);
   protected readonly help = {
     analyticsScope:
       'Multi-session analytics start from the sessions currently included by the sidebar filters, then apply the Analytics controls on this page.',
     trendGrouping:
       'Time range chooses which sessions are included. Trend grouping only changes how the included sessions are bucketed in the Recent trend panel.',
+    creditWindow:
+      'Credit windows are based on imported local sessions, anchored to the latest imported session date. They estimate AI credit usage; they are not a GitHub invoice.',
+    creditAllowance:
+      'GitHub Copilot included AI credits are monthly and pooled at the billing entity level. This lets you compare the imported local cohort with a plan-and-seat allowance.',
   };
   protected readonly sizeOptions: SessionSize[] = ['Small', 'Medium', 'Large', 'Very large'];
   protected readonly analyticsTimeOptions: Array<{ value: AnalyticsTimeRange; label: string }> = [
     { value: 'all', label: 'All time' },
+    { value: 'current-month', label: 'Current month' },
+    { value: 'previous-month', label: 'Previous month' },
     { value: '7d', label: 'Last 7 days' },
     { value: '30d', label: 'Last 30 days' },
     { value: '90d', label: 'Last 90 days' },
@@ -73,6 +87,11 @@ export class AnalyticsPageComponent {
     { value: 'week', label: 'By week' },
     { value: 'month', label: 'By month' },
   ];
+  protected readonly creditPlanOptions: CreditPlanOption[] = COPILOT_ALLOWANCE_PLANS.map((plan) => ({
+    id: plan.id,
+    label: plan.label.replace('Copilot ', ''),
+    creditsPerUserMonthly: plan.creditsPerUserMonthly,
+  }));
 
   protected readonly analyticsWorkspaceOptions = computed(() => {
     const workspaces = new Set(this.sessionsInput().map((session) => session.workspace).filter(Boolean));
@@ -120,10 +139,17 @@ export class AnalyticsPageComponent {
     const avgCost = count ? totalCost / count : 0;
     const costPer1k = totalTokens ? (totalCost / totalTokens) * 1000 : 0;
     const totalCredits = this.aiCredits(totalCost);
-    const businessAllowance = COPILOT_ALLOWANCE_PLANS.find((plan) => plan.id === 'business-standard');
-    const businessAllowanceShare = businessAllowance
-      ? (totalCredits / businessAllowance.creditsPerUserMonthly) * 100
-      : 0;
+    const selectedPlan =
+      this.creditPlanOptions.find((plan) => plan.id === this.selectedCreditPlan()) ??
+      this.creditPlanOptions[0] ?? {
+        id: 'business-standard',
+        label: 'Business',
+        creditsPerUserMonthly: 1900,
+      };
+    const seatCount = Math.max(1, Math.round(this.creditSeats()));
+    const monthlyAllowance = selectedPlan ? selectedPlan.creditsPerUserMonthly * seatCount : 0;
+    const allowanceShare = monthlyAllowance > 0 ? (totalCredits / monthlyAllowance) * 100 : 0;
+    const remainingCredits = monthlyAllowance > 0 ? Math.max(0, monthlyAllowance - totalCredits) : 0;
     const highestTokens = maxBy(sessions, (session) => sessionTotalTokens(session));
     const highestCost = maxBy(sessions, (session) => session.cost.usd);
     const modelRows = analyticsModelRows(sessions, totalCost);
@@ -156,6 +182,10 @@ export class AnalyticsPageComponent {
           : 'Filtered sessions',
       timeRangeLabel:
         this.analyticsTimeOptions.find((option) => option.value === this.analyticsTimeRange())?.label ?? 'All time',
+      creditWindowLabel:
+        this.analyticsTimeRange() === 'all'
+          ? 'All included sessions'
+          : this.analyticsTimeOptions.find((option) => option.value === this.analyticsTimeRange())?.label ?? 'Selected window',
       workspaceLabel: this.analyticsWorkspaceFilter() === 'all' ? 'All workspaces' : this.analyticsWorkspaceFilter(),
       modelLabel: this.analyticsModelFilter() === 'all' ? 'All models' : this.analyticsModelFilter(),
       groupingLabel:
@@ -211,7 +241,11 @@ export class AnalyticsPageComponent {
       distribution,
       outliers,
       totalCredits,
-      businessAllowanceShare,
+      selectedPlan,
+      seatCount,
+      monthlyAllowance,
+      allowanceShare,
+      remainingCredits,
     };
   });
 
@@ -229,6 +263,15 @@ export class AnalyticsPageComponent {
 
   protected setAnalyticsGrouping(value: AnalyticsGrouping): void {
     this.analyticsGrouping.set(value);
+  }
+
+  protected setCreditPlan(value: string): void {
+    this.selectedCreditPlan.set(value);
+  }
+
+  protected setCreditSeats(value: number | string): void {
+    const parsed = Number(value);
+    this.creditSeats.set(Number.isFinite(parsed) ? Math.max(1, Math.round(parsed)) : 1);
   }
 
   protected resetAnalyticsFilters(): void {

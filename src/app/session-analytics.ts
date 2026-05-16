@@ -2,7 +2,7 @@ import { CopilotSession } from './session-data.model';
 import { sessionTotalTokens, tokenTotal, usesPricingFallback } from './session-cost-utils';
 
 export type SessionSize = 'Small' | 'Medium' | 'Large' | 'Very large';
-export type AnalyticsTimeRange = 'all' | '7d' | '30d' | '90d';
+export type AnalyticsTimeRange = 'all' | 'current-month' | 'previous-month' | '7d' | '30d' | '90d';
 export type AnalyticsGrouping = 'day' | 'week' | 'month';
 
 export interface AnalyticsModelRow {
@@ -50,10 +50,16 @@ export function filterAnalyticsSessions(
   workspace: string,
   model: string,
 ): CopilotSession[] {
-  const cutoff = analyticsCutoff(sessions, timeRange);
+  const window = analyticsDateWindow(sessions, timeRange);
 
   return sessions.filter((session) => {
-    if (cutoff && new Date(session.startedAt).getTime() < cutoff) {
+    const timestamp = new Date(session.startedAt).getTime();
+
+    if (window.start !== null && timestamp < window.start) {
+      return false;
+    }
+
+    if (window.end !== null && timestamp >= window.end) {
       return false;
     }
 
@@ -188,14 +194,35 @@ export function analyticsOutliers(
 }
 
 export function analyticsCutoff(sessions: CopilotSession[], timeRange: AnalyticsTimeRange): number | null {
+  return analyticsDateWindow(sessions, timeRange).start;
+}
+
+export function analyticsDateWindow(
+  sessions: CopilotSession[],
+  timeRange: AnalyticsTimeRange,
+): { start: number | null; end: number | null; anchor: Date | null } {
   if (timeRange === 'all' || !sessions.length) {
-    return null;
+    return { start: null, end: null, anchor: null };
+  }
+
+  const latest = Math.max(...sessions.map((session) => new Date(session.startedAt).getTime()).filter(Number.isFinite));
+  if (!Number.isFinite(latest)) {
+    return { start: null, end: null, anchor: null };
+  }
+
+  const anchor = new Date(latest);
+
+  if (timeRange === 'current-month' || timeRange === 'previous-month') {
+    const monthOffset = timeRange === 'current-month' ? 0 : -1;
+    const start = new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth() + monthOffset, 1));
+    const end = new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth() + monthOffset + 1, 1));
+
+    return { start: start.getTime(), end: end.getTime(), anchor };
   }
 
   const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
-  const latest = Math.max(...sessions.map((session) => new Date(session.startedAt).getTime()).filter(Number.isFinite));
 
-  return Number.isFinite(latest) ? latest - days * 24 * 60 * 60 * 1000 : null;
+  return { start: latest - days * 24 * 60 * 60 * 1000, end: null, anchor };
 }
 
 export function analyticsGroupKey(startedAt: string, grouping: AnalyticsGrouping): { key: string; label: string } {

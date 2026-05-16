@@ -14,7 +14,7 @@ Done:
 - Store structured model, pricing row, token total, and estimated cost on token-bearing trace events.
 - Convert estimates into GitHub AI credits and show Business/Enterprise allowance context.
 - Show cost drivers: input/cache cost, largest model call, model mix, and tool activity.
-- Clarified that `Input/cache cost` percentages are USD estimate share, not token share.
+- Clarified the input-side cost driver so it leads with estimated USD spend and treats the percentage as supporting context, not the main fact.
 - Keep source-confidence language in docs and ingestion diagnostics rather than primary selected-run chips.
 - Show logs and agent flow chart with token/cost detail.
 - Add session size and cost-signal labels.
@@ -95,6 +95,8 @@ Done:
 - Adds Analytics-specific controls for time range, workspace, model, and day/week/month grouping.
 - Shows session count, total tokens, total estimated cost, average tokens, average cost, and cost per 1k tokens.
 - Shows AI credits used for the current Analytics cohort and converts key cost displays into USD plus credits.
+- Added Analytics credit windows for current month, previous month, and rolling ranges, anchored to the latest imported session date.
+- Added plan and seat controls so the current Analytics cohort can be compared against Copilot Business/Enterprise monthly included AI credits.
 - Highlights highest-token and most expensive sessions.
 - Shows model/pricing-row breakdowns.
 - Shows grouped trend rows, size distribution, and outlier signals.
@@ -108,7 +110,7 @@ Done:
 
 Next:
 
-- Keep clarifying the difference between `Time range` as the included-session filter and `Group trend by` as the trend bucket display.
+- Keep clarifying the difference between `Credit window` as the included-session filter and `Group trend by` as the trend bucket display.
 - Improve outlier explanation with more real imported sessions.
 - Add saved comparison/cohort concepts later if app-owned SQLite becomes the right durable state layer.
 - Consider calendar-month AI-credit usage windows if billing-cycle style comparison becomes important.

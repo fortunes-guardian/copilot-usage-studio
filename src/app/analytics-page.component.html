@@ -19,7 +19,10 @@
 
     <section class="analytics-controls" aria-label="Analytics cohort controls">
       <label>
-        <span>Time range</span>
+        <span>
+          Credit window
+          <app-help-popover [text]="help.creditWindow" label="Explain credit window"></app-help-popover>
+        </span>
         <select [ngModel]="analyticsTimeRange()" (ngModelChange)="setAnalyticsTimeRange($event)">
           @for (option of analyticsTimeOptions; track option.value) {
             <option [value]="option.value">{{ option.label }}</option>
@@ -53,6 +56,28 @@
           }
         </select>
       </label>
+      <label>
+        <span>
+          Credit plan
+          <app-help-popover [text]="help.creditAllowance" label="Explain credit allowance"></app-help-popover>
+        </span>
+        <select [ngModel]="selectedCreditPlan()" (ngModelChange)="setCreditPlan($event)">
+          @for (plan of creditPlanOptions; track plan.id) {
+            <option [value]="plan.id">{{ plan.label }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        <span>Seats</span>
+        <input
+          type="number"
+          min="1"
+          step="1"
+          [ngModel]="creditSeats()"
+          (ngModelChange)="setCreditSeats($event)"
+          aria-label="Copilot seats"
+        />
+      </label>
     </section>
 
     @if (stats.count === 0) {
@@ -69,12 +94,21 @@
           <div>
             <h3>Cohort totals</h3>
             <p>
-              Current filters: {{ stats.timeRangeLabel }}, {{ stats.workspaceLabel }}, {{ stats.modelLabel }}.
-              {{ stats.totalCredits | number: '1.0-1' }} AI credits, about
-              {{ stats.businessAllowanceShare | number: '1.0-1' }}% of one Business monthly allowance.
+              {{ stats.creditWindowLabel }} · {{ stats.workspaceLabel }} · {{ stats.modelLabel }}.
+              Imported local estimate, not a GitHub invoice.
             </p>
           </div>
         </div>
+        <aside class="credit-window-card" aria-label="Monthly AI credit allowance estimate">
+          <span>Monthly credit view</span>
+          <strong>{{ stats.totalCredits | number: '1.0-1' }} / {{ stats.monthlyAllowance | number: '1.0-0' }} credits</strong>
+          <em>
+            {{ stats.allowanceShare | number: '1.0-1' }}% of {{ stats.seatCount | number }} {{ stats.selectedPlan.label }}
+            seat{{ stats.seatCount === 1 ? '' : 's' }}.
+          </em>
+          <i><b [style.width.%]="stats.allowanceShare > 100 ? 100 : stats.allowanceShare"></b></i>
+          <small>{{ stats.remainingCredits | number: '1.0-1' }} included credits remaining in this local window estimate.</small>
+        </aside>
         <section class="analytics-metrics" aria-label="Analytics summary metrics">
           @for (metric of stats.metrics; track metric.label) {
             <article class="metric">
