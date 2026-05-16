@@ -27,6 +27,7 @@ Then open one session and read the Cost debugger.
 - **Run Triage**: quick labels for size and cost signals before reading the details.
 - **Overview evidence**: model calls, tool calls, errors, raw events, and reasoning effort when VS Code logged the request setting.
 - **Cost drivers**: quick diagnosis of what pushed the cost up.
+- **Request payload evidence**: source-backed setup sizes, such as system prompt size, tool schema size, MCP tool count, and large tool payloads. These are optimization clues, not exact per-item billing splits.
 - **Token categories**: normal input, cached input, cache write, and output. These are separate because GitHub prices them separately.
 - **Model table**: which models were used and which GitHub price row applied.
 - **Calls**: every token-bearing model call, either in timeline order or sorted by the biggest cost.
@@ -125,6 +126,12 @@ When VS Code Agent Debug Logs expose `cachedTokens`, the app imports it as cache
 Cached tokens are not subtracted from output tokens. They are normally a cheaper input/context billing bucket. Generated output remains generated output.
 
 If a run has no numeric cached-token fields, the app does not infer them. It prices the buckets that were imported and keeps cached input/cache write visibly separate in Cost, Calls, Compare, Analytics, and Prices.
+
+## Request Payload Evidence
+
+Some Agent Debug Log model calls reference side files such as `system_prompt_*.json` and `tools_*.json`. When those files are present, the app can show character counts, tool counts, MCP tool names, and the largest tool argument/result payload groups.
+
+Use this as a debugging clue. A very large tools file or repeated large tool result is a real optimization target. It is not the same as saying that one instruction, tool, or MCP server cost a specific dollar amount, because VS Code does not expose provider-billed per-section token totals for those buckets.
 
 ## What To Trust Most
 

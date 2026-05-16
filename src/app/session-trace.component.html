@@ -74,16 +74,16 @@
             <p>{{ event.detail }}</p>
             @if (event.inputTokens || event.outputTokens) {
               <em class="event-token-badge">
-                {{ (event.totalTokens ?? event.inputTokens + event.outputTokens + (event.cacheWriteTokens ?? 0)) | number }} tokens
+                <strong>{{ (event.totalTokens ?? event.inputTokens + event.outputTokens + (event.cacheWriteTokens ?? 0)) | number }} tokens</strong>
                 <span>
                   {{ normalInputTokens(event) | number }} normal in
                   @if (event.cachedInputTokens) {
-                    · {{ event.cachedInputTokens | number }} cached in
+                    <b>{{ event.cachedInputTokens | number }} cached in</b>
                   }
                   @if (event.cacheWriteTokens) {
-                    · {{ event.cacheWriteTokens | number }} cache write
+                    <b>{{ event.cacheWriteTokens | number }} cache write</b>
                   }
-                  / {{ event.outputTokens | number }} out
+                  <b>{{ event.outputTokens | number }} out</b>
                 </span>
               </em>
             } @else {

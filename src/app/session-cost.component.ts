@@ -2,7 +2,7 @@ import { DecimalPipe, NgClass } from '@angular/common';
 import { Component, Input } from '@angular/core';
 
 import { HelpPopoverComponent } from './help-popover.component';
-import { CopilotSession, TokenBreakdown } from './session-data.model';
+import { CopilotSession, RequestPayloadSummary, TokenBreakdown } from './session-data.model';
 
 interface CostAnswerViewModel {
   category: string;
@@ -90,6 +90,53 @@ export class SessionCostComponent {
     }
 
     return value.toLocaleString();
+  }
+
+  protected hasPayloadEvidence(payload: RequestPayloadSummary | undefined): boolean {
+    if (!payload) {
+      return false;
+    }
+
+    return Boolean(
+      payload.systemPromptChars ||
+        payload.toolSchemaChars ||
+        payload.toolCount ||
+        payload.mcpToolCount ||
+        payload.toolResultCharsByName.length ||
+        payload.reasoningEfforts.length,
+    );
+  }
+
+  protected payloadSizeLabel(chars: number): string {
+    if (chars >= 1_000_000) {
+      return `${(chars / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 2 })}M chars`;
+    }
+
+    if (chars >= 1_000) {
+      return `${(chars / 1_000).toLocaleString(undefined, { maximumFractionDigits: chars >= 10_000 ? 0 : 1 })}k chars`;
+    }
+
+    return `${chars.toLocaleString()} chars`;
+  }
+
+  protected topToolSchemas(payload: RequestPayloadSummary) {
+    return payload.largestToolSchemas.slice(0, 4);
+  }
+
+  protected topToolResults(payload: RequestPayloadSummary) {
+    return [...payload.toolResultCharsByName]
+      .sort((a, b) => b.resultChars + b.argsChars - (a.resultChars + a.argsChars))
+      .slice(0, 4);
+  }
+
+  protected mcpToolSummary(payload: RequestPayloadSummary): string {
+    if (!payload.mcpToolCount) {
+      return 'No MCP tools found in imported tool schema side files.';
+    }
+
+    const names = payload.mcpToolNames.slice(0, 3).join(', ');
+    const suffix = payload.mcpToolNames.length > 3 ? `, +${payload.mcpToolNames.length - 3} more` : '';
+    return names ? `${names}${suffix}` : 'MCP tools were counted, but names were not available.';
   }
 }
 

@@ -360,6 +360,9 @@ function explainCostDrivers(session: CopilotSession, modelRows: ModelCostRow[], 
   const sessionCost = Math.max(session.cost.usd, 0);
   const inputShare = sessionCost > 0 ? (inputUsd / sessionCost) * 100 : 0;
   const outputShare = sessionCost > 0 ? (outputUsd / sessionCost) * 100 : 0;
+  const normalInputUsd = modelRows.reduce((sum, row) => sum + row.inputUsd, 0);
+  const cachedInputUsd = modelRows.reduce((sum, row) => sum + row.cachedInputUsd, 0);
+  const cacheWriteUsd = modelRows.reduce((sum, row) => sum + row.cacheWriteUsd, 0);
   const topCall = topTokenEventList[0];
   const topCallShare = topCall && sessionCost > 0 ? (topCall.estimatedUsd / sessionCost) * 100 : 0;
   const topModel = [...modelRows].sort((a, b) => b.totalUsd - a.totalUsd)[0];
@@ -374,10 +377,12 @@ function explainCostDrivers(session: CopilotSession, modelRows: ModelCostRow[], 
       value: `${Math.round(inputShare)}%`,
       detail:
         inputShare >= outputShare
-          ? `Most cost is prompt/context material sent into the model: ${(
-              session.tokens.input + session.tokens.cachedInput + session.tokens.cacheWrite
-            ).toLocaleString()} normal input, cached input, and cache-write tokens.`
-          : `Output is the larger priced category here, but input still contributes ${inputShare.toFixed(0)}% of this estimate.`,
+          ? `${inputShare.toFixed(0)}% of USD estimate comes from input-side pricing: $${normalInputUsd.toFixed(
+              4,
+            )} normal input, $${cachedInputUsd.toFixed(4)} cached input${
+              cacheWriteUsd ? `, $${cacheWriteUsd.toFixed(4)} cache write` : ''
+            }.`
+          : `Output is the larger priced category here, but input/cache still contributes ${inputShare.toFixed(0)}% of this USD estimate.`,
       tone: inputShare >= 75 ? 'high' : inputShare >= 50 ? 'medium' : 'low',
     },
     {

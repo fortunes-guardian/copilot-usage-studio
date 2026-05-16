@@ -56,6 +56,73 @@
     </div>
   </section>
 
+  @if (hasPayloadEvidence(session.requestPayload)) {
+    @if (session.requestPayload; as payload) {
+      <section class="payload-evidence" aria-label="Request payload evidence">
+        <div class="section-label">
+          <div>
+            <h4>Request payload evidence</h4>
+            <p>Source-backed setup sizes from VS Code side files. These are clues, not per-item billing allocations.</p>
+          </div>
+        </div>
+        <div class="payload-grid">
+          <article>
+            <span>System prompt</span>
+            <strong>{{ payloadSizeLabel(payload.systemPromptChars) }}</strong>
+            <em>{{ payload.modelCallsWithSystemPromptFile | number }} model calls referenced {{ payload.systemPromptFiles | number }} file(s)</em>
+          </article>
+          <article>
+            <span>Tool schemas</span>
+            <strong>{{ payloadSizeLabel(payload.toolSchemaChars) }}</strong>
+            <em>{{ payload.toolCount | number }} tools from {{ payload.toolSchemaFiles | number }} file(s)</em>
+          </article>
+          <article>
+            <span>MCP tools</span>
+            <strong>{{ payload.mcpToolCount | number }}</strong>
+            <em>{{ mcpToolSummary(payload) }}</em>
+          </article>
+          <article>
+            <span>Tool results</span>
+            <strong>{{ topToolResults(payload).length | number }}</strong>
+            <em>largest imported argument/result payload groups</em>
+          </article>
+        </div>
+        <div class="payload-lists">
+          <article>
+            <span>Largest tool schemas</span>
+            @if (topToolSchemas(payload).length) {
+              <ol>
+                @for (tool of topToolSchemas(payload); track tool.name) {
+                  <li>
+                    <strong>{{ tool.name }}</strong>
+                    <em>{{ payloadSizeLabel(tool.totalChars) }}</em>
+                  </li>
+                }
+              </ol>
+            } @else {
+              <p>No tool schema side-file details were imported for this run.</p>
+            }
+          </article>
+          <article>
+            <span>Largest tool payloads</span>
+            @if (topToolResults(payload).length) {
+              <ol>
+                @for (tool of topToolResults(payload); track tool.name) {
+                  <li>
+                    <strong>{{ tool.name }} · {{ tool.calls | number }} calls</strong>
+                    <em>{{ payloadSizeLabel(tool.argsChars + tool.resultChars) }}</em>
+                  </li>
+                }
+              </ol>
+            } @else {
+              <p>No tool argument/result payload sizes were imported for this run.</p>
+            }
+          </article>
+        </div>
+      </section>
+    }
+  }
+
   <div class="section-label">
     <h4>Token categories</h4>
   </div>

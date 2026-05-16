@@ -14,6 +14,7 @@ Done:
 - Store structured model, pricing row, token total, and estimated cost on token-bearing trace events.
 - Convert estimates into GitHub AI credits and show Business/Enterprise allowance context.
 - Show cost drivers: input/cache cost, largest model call, model mix, and tool activity.
+- Clarified that `Input/cache cost` percentages are USD estimate share, not token share.
 - Keep source-confidence language in docs and ingestion diagnostics rather than primary selected-run chips.
 - Show logs and agent flow chart with token/cost detail.
 - Add session size and cost-signal labels.
@@ -21,6 +22,7 @@ Done:
 - Add a per-turn model-call cost breakdown with timeline and largest-first modes.
 - Split selected-run debugging into `Overview`, `Cost`, `Calls`, and `Trace` subviews.
 - Add Cost and Calls answer panels so the user sees the likely driver before reading detailed tables.
+- Added a compact request-payload evidence section in Cost for source-backed system prompt size, tool schema size, MCP tool count, and largest tool payloads.
 - Keep `Normal input`, `Cached input`, `Cache write`, and `Output` visibly separate in cost views and comparisons.
 - Added regression tests for the shared cache-aware pricing buckets, including normal input, cached input, cache write, and output.
 - Added scanner fixture tests for raw Agent Debug Log `cachedTokens`, invalid cached-token splits, cache-write pricing, and merged cache audits.
@@ -295,7 +297,7 @@ Build:
   - nested `runSubagent-*.jsonl` presence
 - Keep `cachedTokens` import covered in debug-log ingestion and add any future explicit numeric cache fields as they appear. Treat `cache_control` hints or prompt-cache metadata as evidence about cache behavior, but not as billable cached-token counts unless the event exposes numeric cached-token totals.
 - Keep the observed Agent Debug Log schema documented in [debug-log-schema.md](debug-log-schema.md) and add fixture coverage before building new cost claims from newly discovered fields.
-- Add a compact request-payload evidence section in Cost first, then promote it into a deeper `Input attribution` panel only after the scanner preserves enough structured request sections.
+- Promote the compact Cost request-payload evidence into a deeper `Input attribution` panel only after the scanner preserves enough structured request sections.
 - Break the request payload into visible buckets when the debug log exposes them: user prompt, environment/workspace context, custom instructions, tool references, tool results, MCP tool calls/results, prior conversation, and system/developer material.
 - For instructions, tools, MCP schemas, and skills, start with source-backed counts: presence, character count, approximate token estimate, and the model calls where the payload appeared.
 - Group tool and MCP activity by server/tool name, with counts and nearby model-call cost.
