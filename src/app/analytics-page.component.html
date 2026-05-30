@@ -79,24 +79,15 @@
       </section>
     } @else {
       <section class="analytics-panel summary-panel analytics-summary-strip" aria-label="Analytics summary">
-        <div class="panel-heading">
-          <div>
-            <h3>Cohort totals</h3>
-            <p>
-              {{ stats.creditWindowLabel }} · {{ stats.workspaceLabel }} · {{ stats.modelLabel }}.
-              Imported local estimate, not a GitHub invoice.
-            </p>
-          </div>
-        </div>
         <aside class="credit-window-card" aria-label="Monthly AI credit allowance estimate">
-          <span>Monthly credit view</span>
+          <span>{{ stats.creditWindowLabel }} · {{ stats.selectedPlan.label }}</span>
           <strong>{{ stats.totalCredits | number: '1.0-1' }} / {{ stats.monthlyAllowance | number: '1.0-0' }} credits</strong>
           <em>
-            {{ stats.allowanceShare | number: '1.0-1' }}% of one {{ stats.selectedPlan.label }} monthly allowance.
+            {{ stats.allowanceShare | number: '1.0-1' }}% of one monthly allowance.
           </em>
           <i><b [style.width.%]="stats.allowanceShare > 100 ? 100 : stats.allowanceShare"></b></i>
           <small>
-            {{ stats.allowanceStatus }} · {{ stats.remainingCredits | number: '1.0-1' }} included credits left in this local estimate.
+            {{ stats.allowanceStatus }} · local estimate only.
           </small>
         </aside>
         <section class="analytics-metrics" aria-label="Analytics summary metrics">
@@ -171,8 +162,10 @@
 
         <aside class="analytics-side">
           <div class="analytics-panel">
-            <h3>Run size mix</h3>
-            <p class="panel-note">Where the selected cohort concentrates estimated credits.</p>
+            <div class="panel-heading compact-heading">
+              <h3>Run size mix</h3>
+              <p>Where credits concentrate.</p>
+            </div>
             <div class="stat-list compact">
               @for (bucket of stats.distribution; track bucket.size) {
                 <button type="button" (click)="emitOpenSession(bucket.topSession)" [disabled]="!bucket.topSession">
@@ -192,8 +185,10 @@
           </div>
 
           <div class="analytics-panel">
-            <h3>Credit trend</h3>
-            <p class="panel-note">Grouped {{ stats.groupingLabel.toLowerCase() }}. Open the largest run in any bucket.</p>
+            <div class="panel-heading compact-heading">
+              <h3>Credit trend</h3>
+              <p>{{ stats.groupingLabel }}.</p>
+            </div>
             <div class="stat-list compact">
               @for (row of stats.trendRows; track row.key) {
                 <button type="button" (click)="emitOpenSession(row.topSession)" [disabled]="!row.topSession">
@@ -218,7 +213,10 @@
 
       <section class="analytics-split">
         <div class="analytics-panel">
-          <h3>Runs to inspect</h3>
+          <div class="panel-heading compact-heading">
+            <h3>Runs to inspect</h3>
+            <p>Open the biggest suspects.</p>
+          </div>
           <div class="highlight-list">
             @for (highlight of stats.highlights; track highlight.label) {
               <button type="button" (click)="emitOpenSession(highlight.session)" [disabled]="!highlight.session">
@@ -241,7 +239,10 @@
         </div>
 
         <div class="analytics-panel">
-          <h3>Outlier signals</h3>
+          <div class="panel-heading compact-heading">
+            <h3>Outlier signals</h3>
+            <p>High compared with this cohort.</p>
+          </div>
           <div class="highlight-list">
             @for (outlier of stats.outliers; track outlier.session.id) {
               <button type="button" (click)="emitOpenSession(outlier.session)">

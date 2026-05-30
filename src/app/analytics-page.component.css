@@ -1,6 +1,6 @@
 .analytics-page {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .pricing-header {
@@ -52,10 +52,10 @@
 .analytics-controls {
   display: grid;
   grid-template-columns: repeat(5, minmax(140px, 1fr));
-  gap: 8px;
+  gap: 7px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 9px;
+  padding: 8px;
   background:
     linear-gradient(135deg, rgba(12, 159, 131, 0.055), rgba(111, 92, 255, 0.035)),
     var(--surface);
@@ -117,14 +117,14 @@
 .analytics-metrics {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 8px;
+  gap: 7px;
 }
 
 .metric {
   display: grid;
-  gap: 5px;
+  gap: 3px;
   min-width: 0;
-  padding: 10px 11px;
+  padding: 8px 9px;
   background: rgba(255, 255, 255, 0.54);
 }
 
@@ -141,7 +141,7 @@
 
 .metric strong {
   color: var(--text-strong);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 760;
   line-height: 1.05;
   overflow-wrap: anywhere;
@@ -149,28 +149,29 @@
 
 .analytics-primary {
   display: grid;
-  grid-template-columns: minmax(620px, 1fr) minmax(260px, 0.32fr);
-  gap: 12px;
+  grid-template-columns: 1fr;
+  gap: 10px;
   align-items: start;
 }
 
 .analytics-side {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
 .analytics-split {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
   align-items: start;
 }
 
 .analytics-panel {
   display: grid;
-  gap: 9px;
+  gap: 8px;
   min-width: 0;
-  padding: 13px;
+  padding: 11px;
 }
 
 .analytics-panel h3,
@@ -188,10 +189,19 @@
   gap: 12px;
 }
 
+.compact-heading {
+  align-items: baseline;
+}
+
 .panel-heading p {
   margin: 3px 0 0;
   color: var(--muted);
   font-size: 12px;
+}
+
+.compact-heading p {
+  margin: 0;
+  text-align: right;
 }
 
 .panel-note {
@@ -218,25 +228,17 @@
 }
 
 .analytics-summary-strip {
-  grid-template-columns: minmax(170px, 0.2fr) minmax(240px, 0.32fr) minmax(0, 1fr);
+  grid-template-columns: minmax(250px, 0.32fr) minmax(0, 1fr);
   align-items: center;
-}
-
-.analytics-summary-strip .panel-heading {
-  align-items: center;
-}
-
-.analytics-summary-strip .panel-heading p {
-  max-width: 210px;
 }
 
 .credit-window-card {
   display: grid;
-  gap: 5px;
+  gap: 4px;
   min-width: 0;
   border: 1px solid rgba(12, 159, 131, 0.18);
   border-radius: 12px;
-  padding: 11px;
+  padding: 9px 10px;
   background:
     linear-gradient(135deg, rgba(12, 159, 131, 0.09), rgba(111, 92, 255, 0.045)),
     rgba(255, 255, 255, 0.56);
@@ -261,7 +263,7 @@
 
 .credit-window-card strong {
   color: var(--text-strong);
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 760;
   line-height: 1.1;
 }
@@ -285,7 +287,7 @@
 .highlight-list,
 .stat-list {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .highlight-list button,
@@ -296,8 +298,8 @@
   width: 100%;
   min-width: 0;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 10px 11px;
+  border-radius: 9px;
+  padding: 8px 9px;
   background: var(--surface-soft);
   color: var(--text);
   text-align: left;
@@ -375,7 +377,15 @@
 
 .stat-list.compact div,
 .stat-list.compact button {
-  padding: 10px;
+  grid-template-columns: minmax(110px, 0.35fr) minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  align-items: center;
+  padding: 8px 9px;
+}
+
+.stat-list.compact small,
+.stat-list.compact .open-cue {
+  grid-column: 2 / -1;
 }
 
 .cost-table {
@@ -391,7 +401,7 @@
   gap: 8px;
   min-width: 650px;
   border-bottom: 1px solid var(--line);
-  padding: 9px 11px;
+  padding: 8px 10px;
 }
 
 .cost-row:last-child {
@@ -410,11 +420,11 @@
 .analytics-model-row {
   grid-template-columns:
     minmax(170px, 1.25fr)
-    minmax(62px, 0.4fr)
-    minmax(145px, 0.95fr)
-    minmax(78px, 0.5fr)
-    minmax(78px, 0.5fr)
-    minmax(72px, 0.45fr);
+    minmax(62px, 0.36fr)
+    minmax(180px, 1fr)
+    minmax(86px, 0.48fr)
+    minmax(84px, 0.46fr)
+    minmax(80px, 0.45fr);
 }
 
 .analytics-model-row strong {
@@ -446,6 +456,7 @@
 }
 
 @media (max-width: 1200px) {
+  .analytics-side,
   .analytics-split {
     grid-template-columns: 1fr;
   }
