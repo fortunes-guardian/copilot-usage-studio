@@ -155,7 +155,7 @@ export class AnalyticsPageComponent {
           ? 'High for one license'
           : allowanceShare >= 40
             ? 'Worth watching'
-            : 'Comfortable';
+            : 'Low usage';
     const highestTokens = maxBy(sessions, (session) => sessionTotalTokens(session));
     const highestCost = maxBy(sessions, (session) => session.cost.usd);
     const modelRows = analyticsModelRows(sessions, totalCost);

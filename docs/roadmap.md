@@ -30,13 +30,14 @@ Done:
 - Preserved raw VS Code `llm_request.attrs.estimatedCost` separately on trace events when present, without mixing it into the app-calculated estimate.
 - Recorded optional matching Chat Debug transcript availability for debug-log sessions without using transcripts for pricing.
 - After the 2026-05-30 VS Code/Copilot update, preserved debug-log runtime metadata (`vscodeVersion`, `copilotVersion`) plus request-shape and text-verbosity metadata from new Agent Debug Log fields.
+- Added a compact selected-run Context Load card that compares largest raw input with `models.json` prompt/context limits and distinguishes near-limit runs from repeated-context runs without showing noisy model capability metadata.
 
 Next:
 
 - Keep user-facing source language minimal. Show debug-log/source details in docs or ingest diagnostics, not as primary selected-run chips.
 - Remove low-value banners and technical caveats from the main Cost view unless they change a decision.
 - Compare raw VS Code `estimatedCost` with the app-calculated estimate only after enough real sessions show this field consistently.
-- Use `models.json` capability metadata for a future source-backed context-window/prompt-limit view. This is now more grounded than the earlier weak context-pressure signal, but it should still be introduced carefully.
+- Continue tuning Context Load copy against larger real sessions. Keep it as capacity context, not billing prediction.
 
 Why: the core workflow is “I ran an agent, why was this expensive?” The selected run has to be readable before comparison gets deeper.
 

@@ -26,6 +26,7 @@ Then open one session and read the Cost debugger.
 
 - **Run Triage**: quick labels for size and cost signals before reading the details.
 - **Overview evidence**: model calls, tool calls, errors, raw events, and reasoning effort when VS Code logged the request setting.
+- **Context load**: compares the largest raw model input with VS Code model metadata. This answers whether a run was close to the model prompt/context limit or repeatedly sent a lot of context across model calls.
 - **Cost drivers**: quick diagnosis of what pushed the cost up.
 - **Setup payload clues**: character sizes for instructions, tool schemas, MCP tool counts, and tool argument/result text. These are optimization clues, not exact per-item billing splits.
 - **Token categories**: normal input, cached input, cache write, and output. These are separate because GitHub prices them separately.

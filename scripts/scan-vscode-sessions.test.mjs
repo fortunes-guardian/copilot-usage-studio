@@ -155,6 +155,33 @@ test('imports exact debug-log token totals from a session fixture', () => {
 test('preserves current VS Code Copilot runtime and request-shape metadata', () => {
   const { root, sessionDir, workspaceDir } = tempSessionFixture('runtime-and-request-shape');
   try {
+    writeFileSync(
+      join(sessionDir, 'models.json'),
+      JSON.stringify([
+        {
+          id: 'gpt-5-mini',
+          name: 'GPT-5 mini',
+          version: 'gpt-5-mini',
+          vendor: 'Azure OpenAI',
+          model_picker_enabled: true,
+          is_chat_default: true,
+          is_chat_fallback: false,
+          supported_endpoints: ['/chat/completions', '/responses', 'ws:/responses'],
+          capabilities: {
+            tokenizer: 'o200k_base',
+            limits: {
+              max_context_window_tokens: 264_000,
+              max_prompt_tokens: 127_997,
+              max_output_tokens: 64_000,
+            },
+            supports: {
+              reasoning_effort: ['low', 'medium', 'high'],
+            },
+          },
+        },
+      ]),
+      'utf8',
+    );
     writeJsonl(join(sessionDir, 'main.jsonl'), [
       event(1, 'session_start', 'session_start', {
         v: 1,
@@ -189,6 +216,12 @@ test('preserves current VS Code Copilot runtime and request-shape metadata', () 
       copilotVersion: '0.50.1',
     });
     assert.equal(session.model, 'GPT-5 mini');
+    assert.equal(session.modelLimits[0].promptLimitTokens, 127_997);
+    assert.equal(session.modelLimits[0].contextWindowTokens, 264_000);
+    assert.equal(session.modelLimits[0].largestRawInputTokens, 22_421);
+    assert.equal(session.modelLimits[0].totalRawInputTokens, 22_421);
+    assert.equal(session.modelLimits[0].supportedEndpoints.includes('/responses'), true);
+    assert.deepEqual(session.modelLimits[0].supportedReasoningEfforts, ['low', 'medium', 'high']);
     assert.equal(modelEvent.reasoningEffort, 'medium');
     assert.deepEqual(
       modelEvent.attributes.filter((field) => ['textVerbosity', 'requestShape'].includes(field.label)),

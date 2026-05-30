@@ -268,11 +268,14 @@ Session fields:
 | `cacheTokenAudit` | Local audit of raw input, normal input, cached input, and invalid cache splits for `llm_request` rows |
 | `transcript` | Optional matching Chat Debug transcript availability: `available`, `sourcePath`, and `eventCount` |
 | `debugLogRuntime` | Optional log runtime metadata: `logVersion`, `vscodeVersion`, and `copilotVersion` |
+| `modelLimits` | Optional per-model limits from `models.json`: context window, prompt limit, output limit, and observed largest raw input |
 | `requestPayload` | Bounded setup/tool payload evidence |
 | `traceEvents` | Capped normalized trace rows |
 | `vscodeState` | Optional `state.vscdb` metadata enrichment |
 
 Token-bearing trace events preserve raw `inputTokens`, optional `cachedInputTokens`, optional `cacheWriteTokens`, `outputTokens`, `model`, `rawModel`, `pricingModel`, `totalTokens`, app-calculated `estimatedCost`, and optional source-provided `sourceEstimatedCost`.
+
+`modelLimits` answers a capacity question, not a billing question: did the run get expensive because a request was close to the model's prompt/context limit, or because many model calls repeatedly sent context? It compares observed raw `inputTokens` with `models.json` limits and keeps pricing separate. The app deliberately does not show model capability noise such as supported API endpoints in the main UI.
 
 ## Feature Boundaries
 

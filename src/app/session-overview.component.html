@@ -34,25 +34,74 @@
   </section>
 
   @if (triage; as runTriage) {
-    <section class="overview-panel session-triage">
-      <div class="panel-title">
-        <span>Attention</span>
-        <h3>
-          Triage
-          <app-help-popover [text]="triageHelp" label="Explain triage labels"></app-help-popover>
-        </h3>
-      </div>
-      <div class="badge-row">
-        @for (warning of runTriage.warnings; track warning.label) {
-          <span class="triage-badge" [ngClass]="warning.tone">
-            {{ warning.label }}
-            <app-help-popover [text]="warning.help" [label]="'Explain ' + warning.label"></app-help-popover>
-          </span>
-        }
-      </div>
-    </section>
+    @if (runTriage.warnings.length) {
+      <section class="overview-panel session-triage">
+        <div class="panel-title">
+          <span>Attention</span>
+          <h3>
+            Triage
+            <app-help-popover [text]="triageHelp" label="Explain triage labels"></app-help-popover>
+          </h3>
+        </div>
+        <div class="badge-row">
+          @for (warning of runTriage.warnings; track warning.label) {
+            <span class="triage-badge" [ngClass]="warning.tone">
+              {{ warning.label }}
+              <app-help-popover [text]="warning.help" [label]="'Explain ' + warning.label"></app-help-popover>
+            </span>
+          }
+        </div>
+      </section>
+    }
   }
 </section>
+
+@if (limitRead(); as limit) {
+  <section class="overview-panel limit-panel">
+    <div class="panel-title">
+      <span>Context load</span>
+      <h3>
+        Peak vs repeated context
+        <app-help-popover
+          text="Uses VS Code model metadata to compare the largest request with the model limit. This is a capacity signal, separate from billing."
+          label="Explain model limits"
+        ></app-help-popover>
+      </h3>
+    </div>
+
+    <div class="limit-hero">
+      <div>
+        <span>{{ limit.model }}</span>
+        <strong>{{ limitAnswer(limit) }}</strong>
+        <p>{{ limitDetail(limit) }}</p>
+      </div>
+      <strong class="limit-percent">{{ limitPercent(limit) }}%</strong>
+    </div>
+
+    <div class="limit-meter" aria-label="Largest request as a share of the model prompt limit">
+      <i [style.width.%]="limitMeterPercent(limit)"></i>
+    </div>
+
+    <div class="limit-facts">
+      <div>
+        <span>Peak raw input</span>
+        <strong>{{ limit.largestRawInputTokens | number }}</strong>
+      </div>
+      <div>
+        <span>Prompt limit</span>
+        <strong>{{ limit.promptLimitTokens ? (limit.promptLimitTokens | number) : 'n/a' }}</strong>
+      </div>
+      <div>
+        <span>Model calls</span>
+        <strong>{{ limit.modelCalls | number }}</strong>
+      </div>
+      <div>
+        <span>Repeated input</span>
+        <strong>{{ limit.repeatedInputFactor | number: '1.1-1' }}x</strong>
+      </div>
+    </div>
+  </section>
+}
 
 <section class="overview-panel session-details">
   <div class="panel-title">

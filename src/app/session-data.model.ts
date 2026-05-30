@@ -147,6 +147,29 @@ export interface RequestPayloadSummary {
   subagentLogCount: number;
 }
 
+export interface ModelLimitSummary {
+  model: string;
+  rawModels: string[];
+  modelId: string;
+  vendor: string;
+  tokenizer: string;
+  contextWindowTokens: number;
+  promptLimitTokens: number;
+  outputLimitTokens: number;
+  supportedReasoningEfforts: string[];
+  supportedEndpoints: string[];
+  modelPickerEnabled: boolean;
+  isChatDefault: boolean;
+  isChatFallback: boolean;
+  modelCalls: number;
+  largestRawInputTokens: number;
+  totalRawInputTokens: number;
+  largestOutputTokens: number;
+  promptLimitShare: number | null;
+  contextWindowShare: number | null;
+  repeatedInputFactor: number;
+}
+
 export interface CopilotSession {
   id: string;
   sourceKind: string;
@@ -173,6 +196,7 @@ export interface CopilotSession {
   debugLogRuntime?: DebugLogRuntime;
   advancedSignals?: AdvancedSignals;
   requestPayload?: RequestPayloadSummary;
+  modelLimits?: ModelLimitSummary[];
   traceEvents: TraceEvent[];
   vscodeState?: VscodeStateEnrichment;
   turns: SessionTurn[];

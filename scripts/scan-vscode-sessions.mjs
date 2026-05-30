@@ -4,6 +4,7 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
   costUsdForTokens,
+  modelKey,
   normalizeModel,
   pricingModelForModel,
 } from './pricing-utils.mjs';
@@ -416,6 +417,98 @@ function parseContentFile(file) {
     content,
     chars: charLength(content),
   };
+}
+
+function modelCapabilityIndex(sessionDir) {
+  const file = join(sessionDir, 'models.json');
+  if (!existsSync(file)) {
+    return new Map();
+  }
+
+  const parsed = safeJson(readFileSync(file, 'utf8'));
+  const models = Array.isArray(parsed) ? parsed : [];
+  const index = new Map();
+
+  for (const model of models) {
+    const keys = [
+      model?.id,
+      model?.name,
+      model?.version,
+      model?.capabilities?.family,
+    ]
+      .filter(Boolean)
+      .map(modelKey);
+
+    for (const key of keys) {
+      if (key) {
+        index.set(key, model);
+      }
+    }
+  }
+
+  return index;
+}
+
+function modelCapabilityFor(rawModel, capabilityIndex) {
+  const key = modelKey(rawModel);
+
+  return capabilityIndex.get(key) ?? [...capabilityIndex.entries()].find(([candidate]) => key.includes(candidate))?.[1] ?? null;
+}
+
+function modelLimitSummaries(sessionDir, llmRequests) {
+  const capabilityIndex = modelCapabilityIndex(sessionDir);
+  if (!capabilityIndex.size || !llmRequests.length) {
+    return [];
+  }
+
+  const byModel = new Map();
+
+  for (const event of llmRequests) {
+    const rawModel = String(event.attrs?.model ?? '').replace(/^copilot\//i, '').trim();
+    const displayModel = normalizeModel(rawModel, pricing);
+    const capability = modelCapabilityFor(rawModel || displayModel, capabilityIndex);
+    const limits = capability?.capabilities?.limits ?? {};
+    const supports = capability?.capabilities?.supports ?? {};
+    const current =
+      byModel.get(displayModel) ??
+      {
+        model: displayModel,
+        rawModels: new Set(),
+        modelId: capability?.id ?? rawModel,
+        vendor: capability?.vendor ?? '',
+        tokenizer: capability?.capabilities?.tokenizer ?? '',
+        contextWindowTokens: Number(limits.max_context_window_tokens ?? 0) || 0,
+        promptLimitTokens: Number(limits.max_prompt_tokens ?? 0) || 0,
+        outputLimitTokens: Number(limits.max_output_tokens ?? 0) || 0,
+        supportedReasoningEfforts: Array.isArray(supports.reasoning_effort) ? supports.reasoning_effort : [],
+        supportedEndpoints: Array.isArray(capability?.supported_endpoints) ? capability.supported_endpoints : [],
+        modelPickerEnabled: Boolean(capability?.model_picker_enabled),
+        isChatDefault: Boolean(capability?.is_chat_default),
+        isChatFallback: Boolean(capability?.is_chat_fallback),
+        modelCalls: 0,
+        largestRawInputTokens: 0,
+        totalRawInputTokens: 0,
+        largestOutputTokens: 0,
+      };
+
+    current.rawModels.add(rawModel || 'unknown');
+    current.modelCalls += 1;
+    current.largestRawInputTokens = Math.max(current.largestRawInputTokens, Number(event.attrs?.inputTokens ?? 0));
+    current.totalRawInputTokens += Number(event.attrs?.inputTokens ?? 0);
+    current.largestOutputTokens = Math.max(current.largestOutputTokens, Number(event.attrs?.outputTokens ?? 0));
+    byModel.set(displayModel, current);
+  }
+
+  return [...byModel.values()].map((summary) => ({
+    ...summary,
+    rawModels: [...summary.rawModels],
+    promptLimitShare:
+      summary.promptLimitTokens > 0 ? summary.largestRawInputTokens / summary.promptLimitTokens : null,
+    contextWindowShare:
+      summary.contextWindowTokens > 0 ? summary.largestRawInputTokens / summary.contextWindowTokens : null,
+    repeatedInputFactor:
+      summary.largestRawInputTokens > 0 ? summary.totalRawInputTokens / summary.largestRawInputTokens : 0,
+  }));
 }
 
 function toolName(tool) {
@@ -868,6 +961,7 @@ export function sessionFromDebugLog(sessionDir, workspaceDir) {
     ).toISOString();
   const evidence = debugEvidence(llmRequests, assistantEvents, main);
   const payload = requestPayloadSummary(sessionDir, llmRequests, toolEvents);
+  const modelLimits = modelLimitSummaries(sessionDir, llmRequests);
   const cacheTokenAudit = cacheTokenAuditFromLlmRequests(llmRequests);
   const transcript = transcriptAvailability(workspaceDir, sid);
 
@@ -943,6 +1037,7 @@ export function sessionFromDebugLog(sessionDir, workspaceDir) {
     transcript,
     advancedSignals: evidence,
     requestPayload: payload,
+    modelLimits,
     traceEvents: capTraceEvents(
       main.map((event, index) => {
         const tokenFields =

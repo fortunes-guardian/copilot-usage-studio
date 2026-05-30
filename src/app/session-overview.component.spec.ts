@@ -39,6 +39,45 @@ describe('SessionOverviewComponent', () => {
 
     expect(fixture.nativeElement.textContent).not.toContain('Reasoning');
   });
+
+  it('explains whether cost came from limit pressure or repeated context', () => {
+    fixture.componentRef.setInput('session', sessionFixture({
+      modelLimits: [
+        {
+          model: 'GPT-5 mini',
+          rawModels: ['gpt-5-mini'],
+          modelId: 'gpt-5-mini',
+          vendor: 'Azure OpenAI',
+          tokenizer: 'o200k_base',
+          contextWindowTokens: 264_000,
+          promptLimitTokens: 127_997,
+          outputLimitTokens: 64_000,
+          supportedReasoningEfforts: ['low', 'medium', 'high'],
+          supportedEndpoints: ['/responses'],
+          modelPickerEnabled: true,
+          isChatDefault: true,
+          isChatFallback: false,
+          modelCalls: 5,
+          largestRawInputTokens: 22_421,
+          totalRawInputTokens: 120_000,
+          largestOutputTokens: 308,
+          promptLimitShare: 22_421 / 127_997,
+          contextWindowShare: 22_421 / 264_000,
+          repeatedInputFactor: 5.4,
+        },
+      ],
+    }));
+
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Peak vs repeated context');
+    expect(fixture.nativeElement.textContent).toContain('Repeated context');
+    expect(fixture.nativeElement.textContent).toContain('22,421');
+    expect(fixture.nativeElement.textContent).toContain('127,997');
+    expect(fixture.nativeElement.textContent).toContain('5.4x');
+    expect(fixture.nativeElement.textContent).not.toContain('Reasoning: low, medium, high');
+    expect(fixture.nativeElement.textContent).not.toContain('API: /responses');
+  });
 });
 
 function sessionFixture(overrides: Partial<CopilotSession> = {}): CopilotSession {
