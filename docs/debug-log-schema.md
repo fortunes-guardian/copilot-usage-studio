@@ -8,6 +8,14 @@ Reference sample used for this pass:
 C:\Users\admin\AppData\Roaming\Code\User\workspaceStorage\6f54e795da760515cec9d7a9687568d8\GitHub.copilot-chat\debug-logs\29fa1393-f3da-41b0-80a6-f867d7a56a67
 ```
 
+Latest schema drift check:
+
+```text
+2026-05-30
+C:\Users\admin\AppData\Roaming\Code\User\workspaceStorage\6f54e795da760515cec9d7a9687568d8\GitHub.copilot-chat\debug-logs\01a0ce83-61cc-4ca8-838c-301994a14971
+VS Code 1.122.1, GitHub Copilot Chat 0.50.1
+```
+
 The schema is observed, not guaranteed by a published VS Code API. Treat it as a local data contract that must be verified with fixtures as VS Code Copilot changes.
 
 ## Files In A Debug-Log Session
@@ -21,7 +29,7 @@ Observed files:
 | `title-*.jsonl` | Title-generation model call | Ignored for main run cost unless explicitly imported as a child/session metadata source |
 | `system_prompt_*.json` | Request side file referenced by model calls | Used for system/developer payload character totals |
 | `tools_*.json` | Request side file referenced by model calls | Used for tool schema size, tool count, MCP tool count, and largest tool schemas |
-| `models.json` | Model metadata and capabilities | Future enrichment source for context windows/model capabilities |
+| `models.json` | Model metadata and capabilities | Grounded enrichment source for model picker state, endpoints, context-window limits, prompt limits, output limits, tokenizer, and supported reasoning effort values |
 
 Related optional file:
 
@@ -44,6 +52,14 @@ JSONL events use a common envelope:
 | `parentSpanId` | Parent trace span id | Future graph linkage |
 | `status` | Event status | Usually `ok`; non-ok feeds error counts |
 | `attrs` | Event-specific payload | Main source of useful fields |
+| `v` | Log envelope version | Observed as `1` on current `session_start` rows |
+
+Current `session_start.attrs` can also expose:
+
+| Field | Meaning | App use |
+| --- | --- | --- |
+| `vscodeVersion` | VS Code build that produced the log | Preserved as `session.debugLogRuntime.vscodeVersion` |
+| `copilotVersion` | GitHub Copilot Chat extension version that produced the log | Preserved as `session.debugLogRuntime.copilotVersion` |
 
 Observed event types in the reference session:
 
@@ -79,6 +95,7 @@ Observed `attrs` fields:
 | `inputMessages` | Request message payload, often JSON string | Observed but sometimes empty/redacted-like; do not rely on completeness |
 | `maxTokens` | Request output cap | Preserved as request cap evidence |
 | `requestOptions` | JSON string containing request options | Parsed for reasoning/thinking fields |
+| `requestShape` | JSON string describing request API shape, for example `{"api":"responses","inputItemCount":3}` | Preserved as bounded trace metadata |
 | `systemPromptFile` | Side-file name such as `system_prompt_0.json` | Used to measure setup payload size |
 | `toolsFile` | Side-file name such as `tools_0.json` | Used to measure tool/MCP schema payload size |
 | `temperature` | Sampling temperature | Observed on title calls |
@@ -133,6 +150,24 @@ Observed `requestOptions` shapes include:
 }
 ```
 
+The 2026-05-30 sample also included:
+
+```json
+{
+  "reasoning": {
+    "effort": "medium",
+    "summary": "detailed"
+  },
+  "text": {
+    "verbosity": "low"
+  },
+  "truncation": "disabled",
+  "store": false,
+  "stream": true,
+  "include": ["reasoning.encrypted_content"]
+}
+```
+
 Other observed model calls used:
 
 ```json
@@ -149,7 +184,27 @@ App boundary:
 
 - Reasoning effort is source-backed when `requestOptions.reasoning.effort` exists.
 - Thinking budget is source-backed when `requestOptions.thinking.budget_tokens` exists, but it is not yet promoted to primary UI.
+- Text verbosity is source-backed when `requestOptions.text.verbosity` exists. It is request configuration, not a cost bucket.
+- `requestShape` helps explain which request API shape VS Code used, but it is not a billing field.
 - These fields are request configuration, not direct cost totals.
+
+## Model Capability Metadata
+
+The 2026-05-30 sample includes a rich `models.json` file. It is an array of model metadata objects. Useful observed fields include:
+
+| Field | Meaning | Potential app use |
+| --- | --- | --- |
+| `id`, `name`, `version`, `vendor` | Model identity | Stronger model display and raw-id normalization |
+| `billing.is_premium`, `billing.multiplier`, `billing.restricted_to` | GitHub Copilot product metadata | Useful context, but not a replacement for the GitHub pricing table |
+| `capabilities.limits.max_context_window_tokens` | Context-window size exposed by VS Code model metadata | Future source-backed context-window usage signal |
+| `capabilities.limits.max_prompt_tokens` | Prompt/input limit exposed by VS Code model metadata | Future source-backed prompt pressure signal |
+| `capabilities.limits.max_output_tokens` | Output-token limit exposed by VS Code model metadata | Future source-backed output cap signal |
+| `capabilities.supports.reasoning_effort` | Allowed reasoning effort values | Explain why a run could use `low`, `medium`, or `high` |
+| `capabilities.tokenizer` | Tokenizer name such as `o200k_base` | Metadata only unless the app later adds tokenizer-specific local estimates |
+| `supported_endpoints` | Endpoint/API shapes such as `/chat/completions`, `/responses`, or `ws:/responses` | Helps interpret `requestShape.api` |
+| `model_picker_enabled`, `is_chat_default`, `is_chat_fallback` | VS Code picker/default state | Useful for explaining which model is currently available/default locally |
+
+Boundary: `models.json` is VS Code/Copilot model metadata, not the authoritative GitHub billing table. It can improve context-window and capability explanations, but pricing should continue to come from the app's imported GitHub pricing table.
 
 ## Tool And MCP Evidence
 
@@ -212,6 +267,7 @@ Session fields:
 | `traceSummary` | Counts and headline trace signals |
 | `cacheTokenAudit` | Local audit of raw input, normal input, cached input, and invalid cache splits for `llm_request` rows |
 | `transcript` | Optional matching Chat Debug transcript availability: `available`, `sourcePath`, and `eventCount` |
+| `debugLogRuntime` | Optional log runtime metadata: `logVersion`, `vscodeVersion`, and `copilotVersion` |
 | `requestPayload` | Bounded setup/tool payload evidence |
 | `traceEvents` | Capped normalized trace rows |
 | `vscodeState` | Optional `state.vscdb` metadata enrichment |
@@ -227,6 +283,11 @@ Build confidently from:
 - `llm_request.attrs.outputTokens`
 - `llm_request.attrs.model`
 - `llm_request.attrs.requestOptions.reasoning.effort`
+- `llm_request.attrs.requestOptions.text.verbosity`
+- `llm_request.attrs.requestShape`
+- `session_start.attrs.vscodeVersion`
+- `session_start.attrs.copilotVersion`
+- `models.json` capability metadata for context-window, prompt-limit, output-limit, endpoint, tokenizer, and supported reasoning-effort enrichment
 - `llm_request.attrs.systemPromptFile`
 - `llm_request.attrs.toolsFile`
 - `system_prompt_*.json` character size

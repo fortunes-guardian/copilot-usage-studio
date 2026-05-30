@@ -449,6 +449,29 @@ function reasoningEffort(event) {
   return String(requestOptions(event)?.reasoning?.effort ?? '').trim();
 }
 
+function textVerbosity(event) {
+  return String(requestOptions(event)?.text?.verbosity ?? '').trim();
+}
+
+function requestShapeSummary(event) {
+  const shape = parseMaybeJson(event.attrs?.requestShape);
+
+  if (!shape || typeof shape !== 'object') {
+    return '';
+  }
+
+  const api = shape.api ? String(shape.api) : '';
+  const inputItemCount = Number(shape.inputItemCount ?? 0);
+  const inputItemTypes = Array.isArray(shape.inputItemTypes) ? shape.inputItemTypes.filter(Boolean).join(', ') : '';
+  const parts = [
+    api ? `api: ${api}` : '',
+    inputItemCount ? `${inputItemCount.toLocaleString()} input item${inputItemCount === 1 ? '' : 's'}` : '',
+    inputItemTypes ? `types: ${inputItemTypes}` : '',
+  ].filter(Boolean);
+
+  return parts.join(' · ');
+}
+
 function countedValues(values) {
   const counts = new Map();
 
@@ -720,11 +743,16 @@ function eventAttributeSummary(event) {
     ['cacheWriteTokens', attrs.cacheWriteTokens ?? attrs.cachedWriteTokens],
     ['outputTokens', attrs.outputTokens],
     ['sourceEstimatedCost', attrs.estimatedCost],
+    ['reasoningEffort', event.type === 'llm_request' ? reasoningEffort(event) : undefined],
+    ['textVerbosity', event.type === 'llm_request' ? textVerbosity(event) : undefined],
+    ['requestShape', event.type === 'llm_request' ? requestShapeSummary(event) : undefined],
     ['maxTokens', attrs.maxTokens],
     ['ttft', attrs.ttft],
-    ['reasoningEffort', event.type === 'llm_request' ? reasoningEffort(event) : undefined],
     ['systemPromptFile', attrs.systemPromptFile],
     ['toolsFile', attrs.toolsFile],
+    ['vscodeVersion', attrs.vscodeVersion],
+    ['copilotVersion', attrs.copilotVersion],
+    ['logVersion', event.v],
     ['toolName', data.toolName ?? attrs.toolName],
     ['details', attrs.details],
     ['content', attrs.content],
@@ -745,7 +773,7 @@ function eventAttributeSummary(event) {
     fields.push({ label, value: summarized });
     seen.add(label);
 
-    if (fields.length >= 6) {
+    if (fields.length >= 8) {
       break;
     }
   }
@@ -822,6 +850,11 @@ export function sessionFromDebugLog(sessionDir, workspaceDir) {
     ? modelBreakdown.reduce((sum, entry) => sum + entry.cost.usd, 0)
     : costUsd(model, tokens);
   const startEvent = main.find((event) => event.type === 'session_start') ?? main[0];
+  const debugLogRuntime = {
+    logVersion: Number(startEvent?.v ?? 0) || 0,
+    vscodeVersion: String(startEvent?.attrs?.vscodeVersion ?? '').trim(),
+    copilotVersion: String(startEvent?.attrs?.copilotVersion ?? '').trim(),
+  };
   const lastEvent = main[main.length - 1];
   const startedAt =
     startEvent?.timestamp ??
@@ -877,6 +910,9 @@ export function sessionFromDebugLog(sessionDir, workspaceDir) {
     firstPrompt: firstUserMessage.slice(0, 240),
     workspace: workspaceName(workspaceDir),
     sourcePath: sessionDir,
+    ...(debugLogRuntime.logVersion || debugLogRuntime.vscodeVersion || debugLogRuntime.copilotVersion
+      ? { debugLogRuntime }
+      : {}),
     model,
     modelBreakdown,
     startedAt,

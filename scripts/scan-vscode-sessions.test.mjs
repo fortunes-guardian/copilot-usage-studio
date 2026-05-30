@@ -152,6 +152,56 @@ test('imports exact debug-log token totals from a session fixture', () => {
   }
 });
 
+test('preserves current VS Code Copilot runtime and request-shape metadata', () => {
+  const { root, sessionDir, workspaceDir } = tempSessionFixture('runtime-and-request-shape');
+  try {
+    writeJsonl(join(sessionDir, 'main.jsonl'), [
+      event(1, 'session_start', 'session_start', {
+        v: 1,
+        attrs: { vscodeVersion: '1.122.1', copilotVersion: '0.50.1' },
+      }),
+      event(2, 'user_message', 'user message', { attrs: { content: 'Test' } }),
+      event(3, 'llm_request', 'chat:gpt-5-mini', {
+        attrs: {
+          model: 'gpt-5-mini',
+          inputTokens: 22_421,
+          cachedTokens: 5_632,
+          outputTokens: 308,
+          requestOptions: JSON.stringify({
+            reasoning: { effort: 'medium', summary: 'detailed' },
+            text: { verbosity: 'low' },
+          }),
+          requestShape: JSON.stringify({
+            api: 'responses',
+            inputItemCount: 3,
+            inputItemTypes: ['unknown', 'unknown', 'unknown'],
+          }),
+        },
+      }),
+    ]);
+
+    const session = sessionFromDebugLog(sessionDir, workspaceDir);
+    const modelEvent = session.traceEvents[2];
+
+    assert.deepEqual(session.debugLogRuntime, {
+      logVersion: 1,
+      vscodeVersion: '1.122.1',
+      copilotVersion: '0.50.1',
+    });
+    assert.equal(session.model, 'GPT-5 mini');
+    assert.equal(modelEvent.reasoningEffort, 'medium');
+    assert.deepEqual(
+      modelEvent.attributes.filter((field) => ['textVerbosity', 'requestShape'].includes(field.label)),
+      [
+        { label: 'textVerbosity', value: 'low' },
+        { label: 'requestShape', value: 'api: responses · 3 input items · types: unknown, unknown, unknown' },
+      ],
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('records optional transcript availability without using it for pricing', () => {
   const { root, sessionDir, workspaceDir } = tempSessionFixture('debug-log-with-transcript');
   const transcriptDir = join(workspaceDir, 'GitHub.copilot-chat', 'transcripts');

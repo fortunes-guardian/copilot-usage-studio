@@ -73,6 +73,12 @@ export interface TranscriptAvailability {
   eventCount: number;
 }
 
+export interface DebugLogRuntime {
+  logVersion: number;
+  vscodeVersion: string;
+  copilotVersion: string;
+}
+
 export interface TraceEvent {
   index: number;
   timestamp: string;
@@ -164,6 +170,7 @@ export interface CopilotSession {
   traceSummary: TraceSummary;
   cacheTokenAudit?: CacheTokenAudit;
   transcript?: TranscriptAvailability;
+  debugLogRuntime?: DebugLogRuntime;
   advancedSignals?: AdvancedSignals;
   requestPayload?: RequestPayloadSummary;
   traceEvents: TraceEvent[];

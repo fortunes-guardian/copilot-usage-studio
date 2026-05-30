@@ -29,12 +29,14 @@ Done:
 - Added Trace inspector coverage for cached model-call details, fallback pricing labels, and tool events that are not directly priced.
 - Preserved raw VS Code `llm_request.attrs.estimatedCost` separately on trace events when present, without mixing it into the app-calculated estimate.
 - Recorded optional matching Chat Debug transcript availability for debug-log sessions without using transcripts for pricing.
+- After the 2026-05-30 VS Code/Copilot update, preserved debug-log runtime metadata (`vscodeVersion`, `copilotVersion`) plus request-shape and text-verbosity metadata from new Agent Debug Log fields.
 
 Next:
 
 - Keep user-facing source language minimal. Show debug-log/source details in docs or ingest diagnostics, not as primary selected-run chips.
 - Remove low-value banners and technical caveats from the main Cost view unless they change a decision.
 - Compare raw VS Code `estimatedCost` with the app-calculated estimate only after enough real sessions show this field consistently.
+- Use `models.json` capability metadata for a future source-backed context-window/prompt-limit view. This is now more grounded than the earlier weak context-pressure signal, but it should still be introduced carefully.
 
 Why: the core workflow is “I ran an agent, why was this expensive?” The selected run has to be readable before comparison gets deeper.
 

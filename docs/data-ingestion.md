@@ -76,6 +76,7 @@ For debug logs with `llm_request` events:
 - `modelBreakdown` groups `llm_request` rows by normalized model id and stores raw model ids, turn count, token totals, estimated cost, and the pricing model used.
 - each token-bearing `traceEvents` row stores structured `model`, `rawModel`, `pricingModel`, `totalTokens`, and `estimatedCost` fields.
 - each `llm_request` trace row also preserves `ttftMs`, `maxTokens`, and request `reasoningEffort` when VS Code logged them.
+- current VS Code Agent Debug Logs can also expose `session_start.attrs.vscodeVersion`, `session_start.attrs.copilotVersion`, `llm_request.attrs.requestShape`, and `requestOptions.text.verbosity`; these are preserved as runtime/request metadata rather than cost fields.
 - each `agent_response` trace row records whether a reasoning text field was present.
 - future scans preserve a small bounded `attributes` summary for common fields such as model, token counts, tool name, details, user content preview, or response preview. This is for the Trace inspector only; it is not a raw JSONL dump.
 
