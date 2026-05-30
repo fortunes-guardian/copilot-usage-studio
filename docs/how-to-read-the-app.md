@@ -46,7 +46,7 @@ Read it in this order:
 - **Headline delta**: how run B changed versus run A.
 - **Metric cards**: cost, input tokens, output tokens, model turns, and tool calls.
 - **What changed**: the app's best explanation of the movement.
-- **Model and price-row movement**: whether cost changed because the model/pricing mix changed.
+- **Model movement**: whether cost changed because the model/pricing mix, turns, or token buckets changed.
 
 Cheaper is not automatically better. A cheaper run that failed, skipped work, or produced a worse answer is not a win.
 

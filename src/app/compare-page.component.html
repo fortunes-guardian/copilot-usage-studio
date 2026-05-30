@@ -155,13 +155,14 @@
     <section class="comparison-section comparison-drivers">
       <div class="section-heading">
         <h3>What changed</h3>
-        <p>Start here before reading the detailed model table.</p>
       </div>
-      <div class="driver-grid">
+      <div class="driver-list">
         @for (driver of diff.drivers; track driver.title) {
           <article [ngClass]="driver.tone">
-            <span>{{ driver.title }}</span>
-            <strong>{{ driver.value }}</strong>
+            <div>
+              <span>{{ driver.title }}</span>
+              <strong>{{ driver.value }}</strong>
+            </div>
             <p>{{ driver.detail }}</p>
           </article>
         }
@@ -170,8 +171,8 @@
 
     <section class="comparison-section comparison-models">
       <div class="section-heading">
-        <h3>Model and price-row movement</h3>
-        <p>Shows whether the estimate changed because of model mix, pricing fallback, turns, or token volume.</p>
+        <h3>Model movement</h3>
+        <p>Pricing row, token buckets, turns, and cost movement.</p>
       </div>
       <div class="cost-table compact-table">
         <div class="cost-row cost-row-heading">
@@ -210,7 +211,7 @@
             </span>
             <span>{{ model.aTurns | number }} / {{ model.bTurns | number }}</span>
             <span [class.saving]="model.costDelta < 0">
-              {{ model.costDelta < 0 ? '-' : '+' }}${{ abs(model.costDelta) | number: '1.4-6' }}
+              {{ model.costDelta < 0 ? '-' : '+' }}${{ abs(model.costDelta) | number: '1.4-4' }}
             </span>
           </div>
         }
