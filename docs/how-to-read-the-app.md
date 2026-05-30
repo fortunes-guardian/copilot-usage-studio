@@ -37,12 +37,9 @@ Then open one session and read the Cost debugger.
 
 Use **Compare runs** when you made a change and want to know whether it helped.
 
-The **Prompt testing** panel is the guardrail for clean A/B comparisons:
+Pick one Baseline A and one Candidate B. If a run shares the same normalized first prompt as the other selected side, the picker marks it with a small `Same prompt` cue. That is the cleanest mode for testing workflow, model, instruction, or MCP changes around the same task.
 
-- **Same prompt selected** means both runs share the same normalized first prompt. This is the best mode for testing workflow, model, instruction, or MCP changes around the same task.
-- **Manual comparison** means the first prompts differ. The cost and token deltas are still useful, but the app should not imply this is a clean prompt A/B test.
-- When repeated prompt groups exist, Compare can quickly choose oldest-to-newest or cheapest-to-highest pairs for the same prompt.
-- When enough repeated-prompt runs exist, Compare shows a same-prompt spread explanation: which priced bucket or activity signal moved most between cheapest and most expensive matching runs.
+If the first prompts differ, the cost and token deltas are still useful, but the page labels it as a manual run comparison rather than a clean prompt A/B test.
 
 Read it in this order:
 

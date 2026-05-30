@@ -14,7 +14,7 @@ describe('ComparePageComponent', () => {
     fixture = TestBed.createComponent(ComparePageComponent);
   });
 
-  it('explains the spread inside a repeated-prompt group', () => {
+  it('keeps repeated-prompt detection inside the normal run pickers', () => {
     fixture.componentRef.setInput('sessions', [
       sessionFixture('run-a', 'Repeated prompt', 0.01, 1_000, 500, 0, 100, 1, 1),
       sessionFixture('run-b', 'Repeated prompt', 0.04, 10_000, 500, 0, 100, 3, 4),
@@ -26,12 +26,12 @@ describe('ComparePageComponent', () => {
 
     const text = fixture.nativeElement.textContent as string;
 
-    expect(text).toContain('Same prompt selected');
-    expect(text).toContain('Same-prompt spread');
-    expect(text).toContain('Normal input moved cost most');
+    expect(text).toContain('Same-prompt read');
+    expect(text).not.toContain('Prompt testing');
+    expect(text).not.toContain('Same-prompt spread');
   });
 
-  it('keeps baseline and candidate distinct when selecting the other side from a prompt group', () => {
+  it('marks picker options that share the other selected prompt', () => {
     const emissions: Array<string | null> = [];
     fixture.componentRef.setInput('sessions', [
       sessionFixture('run-a', 'Repeated prompt', 0.01, 1_000, 0, 0, 100, 1, 1),
@@ -44,16 +44,20 @@ describe('ComparePageComponent', () => {
     fixture.componentInstance.compareBChange.subscribe((value) => emissions.push(value));
     fixture.detectChanges();
 
-    const setAForRunB = [...fixture.nativeElement.querySelectorAll('.prompt-run-list article')]
-      .find((row) => row.textContent.includes('Run 2'))
-      ?.querySelector('button');
-    setAForRunB?.click();
+    const baselinePicker = fixture.nativeElement.querySelector('.run-picker') as HTMLElement;
+    baselinePicker.querySelector('.selected-run')?.dispatchEvent(new Event('click'));
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Same prompt as B');
+
+    const runBOption = [...fixture.nativeElement.querySelectorAll('.selector-results button')]
+      .find((row) => row.textContent.includes('run-b')) as HTMLButtonElement | undefined;
+    runBOption?.click();
     fixture.detectChanges();
 
     expect(emissions).toContain('run-b');
     expect(emissions).toContain('run-a');
-    expect(fixture.nativeElement.textContent).toContain('A is Run 2');
-    expect(fixture.nativeElement.textContent).toContain('B is Run 1');
+    expect(fixture.nativeElement.textContent).toContain('Same-prompt read');
   });
 
   it('shows cached-token movement separately in the model movement table', () => {

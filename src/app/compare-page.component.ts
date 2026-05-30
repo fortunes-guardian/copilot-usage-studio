@@ -51,21 +51,8 @@ interface SessionComparisonAnalysis {
 
 interface PromptMatchGroup {
   key: string;
-  prompt: string;
   sessions: CopilotSession[];
-  cheapest: CopilotSession;
-  mostExpensive: CopilotSession;
-  newest: CopilotSession;
-  oldest: CopilotSession;
   costRangeUsd: number;
-  tokenRange: number;
-}
-
-interface PromptGroupInsight {
-  title: string;
-  detail: string;
-  costDelta: number;
-  tokenDelta: number;
 }
 
 @Component({
@@ -112,23 +99,6 @@ export class ComparePageComponent {
   protected readonly abs = Math.abs;
   protected readonly pricingFallbackReason = pricingFallbackReason;
   protected readonly promptGroups = computed(() => this.samePromptGroups(this.sessionOptions()));
-  protected readonly selectedPromptMatch = computed(() => {
-    const a = this.sessionOptions().find((session) => session.id === this.selectedAId());
-    const b = this.sessionOptions().find((session) => session.id === this.selectedBId());
-
-    if (!a || !b) {
-      return null;
-    }
-
-    return normalizePrompt(a.firstPrompt) && normalizePrompt(a.firstPrompt) === normalizePrompt(b.firstPrompt)
-      ? this.promptGroups().find((group) => group.key === normalizePrompt(a.firstPrompt)) ?? null
-      : null;
-  });
-  protected readonly selectedPromptInsight = computed(() => {
-    const match = this.selectedPromptMatch();
-
-    return match ? this.promptGroupInsight(match) : null;
-  });
 
   protected readonly comparison = computed(() => {
     const a = this.sessionOptions().find((session) => session.id === this.selectedAId());
@@ -153,8 +123,6 @@ export class ComparePageComponent {
       aAnalysis,
       bAnalysis,
       promptMatch: normalizePrompt(a.firstPrompt) === normalizePrompt(b.firstPrompt),
-      promptMatchCount:
-        this.promptGroups().find((group) => group.key === normalizePrompt(a.firstPrompt))?.sessions.length ?? 0,
       costDelta,
       totalTokenDelta,
       percent: percentDelta(a.cost.usd, b.cost.usd),
@@ -301,21 +269,6 @@ export class ComparePageComponent {
     this.candidatePickerOpen.set(false);
   }
 
-  protected applyPromptGroup(group: PromptMatchGroup): void {
-    this.setCompareA(group.oldest.id);
-    this.setCompareB(group.newest.id);
-  }
-
-  protected compareCheapestToMostExpensive(group: PromptMatchGroup): void {
-    this.setCompareA(group.cheapest.id);
-    this.setCompareB(group.mostExpensive.id);
-  }
-
-  protected compactPrompt(prompt: string): string {
-    const compact = prompt.replace(/\s+/g, ' ').trim();
-    return compact.length > 140 ? `${compact.slice(0, 139)}…` : compact;
-  }
-
   protected compactDate(value: string): string {
     return new Intl.DateTimeFormat(undefined, {
       month: 'short',
@@ -329,64 +282,21 @@ export class ComparePageComponent {
     return sessionTotalTokens(session);
   }
 
-  protected selectedRunNumber(group: PromptMatchGroup, sessionId: string | null): number | null {
-    const index = group.sessions.findIndex((session) => session.id === sessionId);
-    return index >= 0 ? index + 1 : null;
+  protected promptRepeatCount(session: CopilotSession): number {
+    const key = normalizePrompt(session.firstPrompt);
+
+    return key ? (this.promptGroups().find((group) => group.key === key)?.sessions.length ?? 1) : 1;
+  }
+
+  protected isSamePromptAsOther(session: CopilotSession, side: 'baseline' | 'candidate'): boolean {
+    const other = side === 'baseline' ? this.selectedBSession() : this.selectedASession();
+    const sessionPrompt = normalizePrompt(session.firstPrompt);
+
+    return Boolean(other && sessionPrompt && sessionPrompt === normalizePrompt(other.firstPrompt));
   }
 
   protected tokenDeltaLabel(value: number): string {
     return `${value >= 0 ? '+' : ''}${value.toLocaleString()}`;
-  }
-
-  protected promptGroupInsight(group: PromptMatchGroup): PromptGroupInsight {
-    const cheaper = this.sessionComparisonAnalysis(group.cheapest);
-    const expensive = this.sessionComparisonAnalysis(group.mostExpensive);
-    const costDelta = expensive.session.cost.usd - cheaper.session.cost.usd;
-    const tokenDelta = expensive.totalTokens - cheaper.totalTokens;
-    const drivers = [
-      {
-        label: 'normal input',
-        costDelta: expensive.inputUsd - cheaper.inputUsd,
-        detail:
-          'The higher-cost run sent more non-cached prompt, repo, chat, or tool-result context to the model.',
-      },
-      {
-        label: 'cached input',
-        costDelta: expensive.cachedInputUsd - cheaper.cachedInputUsd,
-        detail:
-          'The higher-cost run had more cached input. Cached tokens are discounted, but they still count toward local estimate and AI credits.',
-      },
-      {
-        label: 'cache write',
-        costDelta: expensive.cacheWriteUsd - cheaper.cacheWriteUsd,
-        detail: 'The higher-cost run wrote more prompt/context into provider cache, which has its own pricing row when exposed.',
-      },
-      {
-        label: 'output',
-        costDelta: expensive.outputUsd - cheaper.outputUsd,
-        detail: 'The higher-cost run generated more response text.',
-      },
-    ].sort((a, b) => Math.abs(b.costDelta) - Math.abs(a.costDelta));
-    const topDriver = drivers[0];
-    const turnDelta = expensive.session.traceSummary.modelTurns - cheaper.session.traceSummary.modelTurns;
-    const toolDelta = expensive.session.traceSummary.toolCalls - cheaper.session.traceSummary.toolCalls;
-    const activity =
-      Math.abs(turnDelta) >= Math.abs(toolDelta)
-        ? `${Math.abs(turnDelta).toLocaleString()} ${turnDelta >= 0 ? 'more' : 'fewer'} model turns`
-        : `${Math.abs(toolDelta).toLocaleString()} ${toolDelta >= 0 ? 'more' : 'fewer'} tool calls`;
-
-    return {
-      title:
-        costDelta === 0
-          ? 'No cost spread'
-          : `${topDriver.label[0].toUpperCase()}${topDriver.label.slice(1)} moved cost most`,
-      detail:
-        costDelta === 0
-          ? 'These same-prompt runs have the same imported estimate. Compare output quality or raw trace details if behavior differed.'
-          : `${topDriver.detail} Cheapest to highest moved by $${costDelta.toFixed(4)}, ${Math.abs(tokenDelta).toLocaleString()} tokens, and ${activity}.`,
-      costDelta,
-      tokenDelta,
-    };
   }
 
   private filteredSessionOptions(query: string, selectedId: string | null): CopilotSession[] {
@@ -442,20 +352,12 @@ export class ComparePageComponent {
     return [...byPrompt.entries()]
       .filter(([, groupSessions]) => groupSessions.length > 1)
       .map(([key, groupSessions]) => {
-        const sortedByDate = [...groupSessions].sort((a, b) => a.startedAt.localeCompare(b.startedAt));
         const sortedByCost = [...groupSessions].sort((a, b) => a.cost.usd - b.cost.usd);
-        const tokenTotals = groupSessions.map(sessionTotalTokens);
 
         return {
           key,
-          prompt: groupSessions[0].firstPrompt,
-          sessions: sortedByDate,
-          cheapest: sortedByCost[0],
-          mostExpensive: sortedByCost[sortedByCost.length - 1],
-          oldest: sortedByDate[0],
-          newest: sortedByDate[sortedByDate.length - 1],
+          sessions: [...groupSessions].sort((a, b) => a.startedAt.localeCompare(b.startedAt)),
           costRangeUsd: sortedByCost[sortedByCost.length - 1].cost.usd - sortedByCost[0].cost.usd,
-          tokenRange: Math.max(...tokenTotals) - Math.min(...tokenTotals),
         };
       })
       .sort((a, b) => b.sessions.length - a.sessions.length || b.costRangeUsd - a.costRangeUsd);

@@ -72,17 +72,17 @@ Done:
 - Show “winner/loser” language carefully: cheaper is not always better if the run failed.
 - Extracted Compare into its own top-level Angular component so it is no longer embedded in the root shell template.
 - Detect repeated normalized first prompts and label whether the current comparison is same-prompt or manual.
-- Add a `Prompt testing` panel with same-prompt empty state and quick pair actions when repeated prompts exist.
+- Removed the separate `Prompt testing` panel because it made Compare harder to understand. Same-prompt detection now appears inside the normal A/B run pickers.
 - Improve A/B selector labels with timestamp and estimated USD cost.
 - Replaced native Compare dropdowns with app-owned searchable run pickers.
-- Added same-prompt spread explanations for repeated prompt groups.
-- Added Compare component tests for repeated-prompt spread explanation and A/B swap behavior.
+- Removed same-prompt spread explanations for repeated prompt groups; the page now stays focused on one baseline and one candidate.
+- Added Compare component tests for same-prompt picker cues and A/B swap behavior.
 - Added Compare fixture coverage for cached-token movement rows.
 - Added Compare headline delta/caveat test coverage.
 
 Next:
 
-- Add an explicit same-prompt group drawer once there are enough repeated-prompt sessions to validate the flow.
+- Keep Compare simple: one baseline picker, one candidate picker. Do not add a same-prompt group drawer unless real usage proves the picker cues are insufficient.
 - Add side-by-side output/detail comparison only after the app has a reliable readable output source for both runs. Do not imply quality comparison when only cost/debug facts are available.
 
 Why: comparison is useful when testing prompts, models, MCP setup, or workflow changes.

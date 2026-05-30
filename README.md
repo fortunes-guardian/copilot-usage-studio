@@ -35,7 +35,7 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
   - `Trace` for filterable raw logs, clickable event inspection, and agent flow
 - Shows the GitHub pricing table used by the app and a toggleable Copilot Business/Enterprise AI-credit allowance view.
 - Shows trace logs, a clickable event inspector, and an agent flow chart.
-- Compares two runs with cost/token deltas, driver explanations, repeated-prompt spread, and model/pricing-row changes.
+- Compares two runs with cost/token deltas, driver explanations, same-prompt cues, and model/pricing-row changes.
 - Shows a multi-session Analytics view for filtered sessions:
   - visible cohort controls for time range, workspace, model, and day/week/month grouping
   - Analytics-only reset and no-data messaging when controls exclude every session

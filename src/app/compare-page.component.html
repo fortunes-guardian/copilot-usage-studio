@@ -28,6 +28,7 @@
               <button
                 type="button"
                 [class.active]="session.id === selectedAId()"
+                [class.same-prompt]="isSamePromptAsOther(session, 'baseline')"
                 role="option"
                 [attr.aria-selected]="session.id === selectedAId()"
                 (click)="setCompareA(session.id)"
@@ -37,6 +38,11 @@
                   {{ compactDate(session.startedAt) }} · ${{ session.cost.usd | number: '1.2-4' }} ·
                   {{ runTokenTotal(session) | number }} tokens
                 </span>
+                @if (isSamePromptAsOther(session, 'baseline')) {
+                  <em class="match-chip">Same prompt as B</em>
+                } @else if (promptRepeatCount(session) > 1) {
+                  <em class="match-chip muted-chip">{{ promptRepeatCount(session) | number }} matching prompts</em>
+                }
               </button>
             } @empty {
               <em>No matching runs</em>
@@ -66,6 +72,7 @@
               <button
                 type="button"
                 [class.active]="session.id === selectedBId()"
+                [class.same-prompt]="isSamePromptAsOther(session, 'candidate')"
                 role="option"
                 [attr.aria-selected]="session.id === selectedBId()"
                 (click)="setCompareB(session.id)"
@@ -75,6 +82,11 @@
                   {{ compactDate(session.startedAt) }} · ${{ session.cost.usd | number: '1.2-4' }} ·
                   {{ runTokenTotal(session) | number }} tokens
                 </span>
+                @if (isSamePromptAsOther(session, 'candidate')) {
+                  <em class="match-chip">Same prompt as A</em>
+                } @else if (promptRepeatCount(session) > 1) {
+                  <em class="match-chip muted-chip">{{ promptRepeatCount(session) | number }} matching prompts</em>
+                }
               </button>
             } @empty {
               <em>No matching runs</em>
@@ -84,98 +96,6 @@
       </div>
     </div>
   </div>
-
-  <section class="prompt-lab" aria-label="Same prompt comparison">
-    <div>
-      <span>Prompt testing</span>
-      <strong>
-        @if (selectedPromptMatch(); as match) {
-          Same prompt selected
-        } @else {
-          Manual comparison
-        }
-      </strong>
-      <p>
-        @if (selectedPromptMatch(); as match) {
-          Comparing two of {{ match.sessions.length | number }} runs that share the same normalized first prompt.
-        } @else if (promptGroups().length) {
-          {{ promptGroups().length | number }} repeated prompt group{{ promptGroups().length === 1 ? '' : 's' }} found. Use one to compare like-for-like runs.
-        } @else {
-          No repeated first prompts found in imported sessions yet.
-        }
-      </p>
-    </div>
-
-    @if (promptGroups().length) {
-      <div class="prompt-group-list">
-        @for (group of promptGroups().slice(0, 3); track group.key) {
-          <article [class.active]="selectedPromptMatch()?.key === group.key">
-            <div>
-              <strong>{{ compactPrompt(group.prompt) }}</strong>
-              <em>
-                {{ group.sessions.length | number }} runs · ${{ group.costRangeUsd | number: '1.2-4' }} cost range ·
-                {{ group.tokenRange | number }} token range
-              </em>
-            </div>
-            <div class="prompt-actions">
-              <button type="button" (click)="applyPromptGroup(group)">Oldest → newest</button>
-              <button type="button" (click)="compareCheapestToMostExpensive(group)">Cheapest → highest</button>
-            </div>
-          </article>
-        }
-      </div>
-    }
-
-    @if (selectedPromptMatch(); as match) {
-      <div class="prompt-run-picker" aria-label="Runs sharing selected prompt">
-        <div class="prompt-run-heading">
-          <strong>{{ match.sessions.length | number }} matching runs</strong>
-          <span>
-            Choose one Baseline A and one Candidate B.
-            @if (selectedRunNumber(match, selectedAId()); as baselineRun) {
-              A is Run {{ baselineRun }}.
-            }
-            @if (selectedRunNumber(match, selectedBId()); as candidateRun) {
-              B is Run {{ candidateRun }}.
-            }
-          </span>
-        </div>
-        @if (selectedPromptInsight(); as insight) {
-          <div class="prompt-insight">
-            <span>Same-prompt spread</span>
-            <strong>{{ insight.title }}</strong>
-            <p>{{ insight.detail }}</p>
-            <em>
-              Cheapest → highest: +${{ insight.costDelta | number: '1.2-4' }} ·
-              {{ insight.tokenDelta >= 0 ? '+' : '' }}{{ insight.tokenDelta | number }} tokens
-            </em>
-          </div>
-        }
-        <div class="prompt-run-list">
-          @for (session of match.sessions; track session.id; let index = $index) {
-            <article
-              [class.baseline]="session.id === selectedAId()"
-              [class.candidate]="session.id === selectedBId()"
-            >
-              <div>
-                <strong>Run {{ index + 1 }} · {{ compactDate(session.startedAt) }}</strong>
-                <span>${{ session.cost.usd | number: '1.2-4' }} · {{ runTokenTotal(session) | number }} tokens</span>
-                <em>{{ session.traceSummary.modelTurns | number }} turns · {{ session.traceSummary.toolCalls | number }} tools</em>
-              </div>
-              <div class="prompt-run-actions">
-                <button type="button" [class.active]="session.id === selectedAId()" (click)="setCompareA(session.id)">
-                  {{ session.id === selectedAId() ? 'A selected' : 'Set A' }}
-                </button>
-                <button type="button" [class.active]="session.id === selectedBId()" (click)="setCompareB(session.id)">
-                  {{ session.id === selectedBId() ? 'B selected' : 'Set B' }}
-                </button>
-              </div>
-            </article>
-          }
-        </div>
-      </div>
-    }
-  </section>
 
   @if (comparison(); as diff) {
     <div class="compare-readout">
