@@ -29,7 +29,7 @@ Then open one session and read the Cost debugger.
 - **Context load**: compares the largest raw model input with VS Code model metadata. This answers whether a run was close to the model prompt/context limit or repeatedly sent a lot of context across model calls.
 - **Cost drivers**: quick diagnosis of what pushed the cost up.
 - **Setup payload clues**: character sizes for instructions, tool schemas, MCP tool counts, and tool argument/result text. These are optimization clues, not exact per-item billing splits.
-- **Token categories**: normal input, cached input, cache write, and output. These are separate because GitHub prices them separately.
+- **Priced buckets**: normal input, cached input, cache write, and output. These are separate because GitHub prices them separately.
 - **Model table**: which models were used and which GitHub price row applied.
 - **Calls**: every token-bearing model call, either in timeline order or sorted by the biggest cost.
 

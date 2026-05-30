@@ -2,8 +2,8 @@
   <div class="cost-explainer-header">
     <div>
       <p class="eyebrow">Cost diagnosis</p>
-      <h3>Where the estimate comes from</h3>
-      <p class="panel-lede">Priced local token totals, model rows, and cache visibility for this run.</p>
+      <h3>Cost answer</h3>
+      <p class="panel-lede">Local priced buckets from the imported VS Code debug log.</p>
     </div>
     <div class="cost-header-actions">
       <a class="price-link" [href]="pricingSourceUrl" target="_blank" rel="noreferrer">GitHub price source</a>
@@ -18,7 +18,7 @@
     </article>
     <div class="diagnostic-facts">
       <div>
-        <span>Driver share</span>
+        <span>Share</span>
         <strong>{{ cost.costAnswer.categoryShare | number: '1.0-0' }}%</strong>
         <em>{{ cost.costAnswer.inputShare | number: '1.0-0' }}% input / {{ cost.costAnswer.outputShare | number: '1.0-0' }}% output</em>
       </div>
@@ -40,90 +40,8 @@
     </div>
   </section>
 
-  <section class="cost-drivers">
-    <div class="section-label">
-      <h4>Cost drivers</h4>
-    </div>
-    <div class="driver-grid">
-      @for (driver of cost.costDrivers; track driver.title) {
-        <article [ngClass]="driver.tone">
-          <span>{{ driver.title }}</span>
-          <strong>{{ driver.value }}</strong>
-          <p>{{ driver.detail }}</p>
-        </article>
-      }
-    </div>
-  </section>
-
-  @if (hasPayloadEvidence(session.requestPayload)) {
-    @if (session.requestPayload; as payload) {
-      <section class="payload-evidence" aria-label="Setup payload clues">
-        <div class="section-label">
-          <div>
-            <h4>Setup payload clues</h4>
-            <p>Character sizes for instructions, tool schemas, and tool text that may inflate later model input.</p>
-          </div>
-        </div>
-        <div class="payload-grid">
-          <article>
-            <span>System prompt</span>
-            <strong>{{ payloadSizeLabel(payload.systemPromptChars) }}</strong>
-            <em>{{ payload.modelCallsWithSystemPromptFile | number }} model calls referenced {{ payload.systemPromptFiles | number }} file(s)</em>
-          </article>
-          <article>
-            <span>Tool schemas</span>
-            <strong>{{ payloadSizeLabel(payload.toolSchemaChars) }}</strong>
-            <em>{{ payload.toolCount | number }} tools from {{ payload.toolSchemaFiles | number }} file(s)</em>
-          </article>
-          <article>
-            <span>MCP tools</span>
-            <strong>{{ payload.mcpToolCount | number }}</strong>
-            <em>{{ mcpToolSummary(payload) }}</em>
-          </article>
-          <article>
-            <span>Tool text groups</span>
-            <strong>{{ topToolResults(payload).length | number }}</strong>
-            <em>largest tool argument/result text groups imported for this run</em>
-          </article>
-        </div>
-        <div class="payload-lists">
-          <article>
-            <span>Largest tool schemas</span>
-            @if (topToolSchemas(payload).length) {
-              <ol>
-                @for (tool of topToolSchemas(payload); track tool.name) {
-                  <li>
-                    <strong>{{ tool.name }}</strong>
-                    <em>{{ payloadSizeLabel(tool.totalChars) }}</em>
-                  </li>
-                }
-              </ol>
-            } @else {
-              <p>No tool schema side-file details were imported for this run.</p>
-            }
-          </article>
-          <article>
-            <span>Largest tool argument/result text</span>
-            @if (topToolResults(payload).length) {
-              <ol>
-                @for (tool of topToolResults(payload); track tool.name) {
-                  <li>
-                    <strong>{{ tool.name }} · {{ tool.calls | number }} calls</strong>
-                    <em>{{ payloadSizeLabel(tool.argsChars + tool.resultChars) }}</em>
-                  </li>
-                }
-              </ol>
-            } @else {
-              <p>No tool argument/result payload sizes were imported for this run.</p>
-            }
-          </article>
-        </div>
-      </section>
-    }
-  }
-
   <div class="section-label">
-    <h4>Token categories</h4>
+    <h4>Priced buckets</h4>
   </div>
   <div class="cost-categories">
     @for (category of cost.categoryRows; track category.label) {
@@ -147,7 +65,7 @@
   </div>
 
   <div class="section-label">
-    <h4>Model price rows</h4>
+    <h4>Model pricing</h4>
   </div>
   <div class="cost-table" role="table" aria-label="Model price rows">
     <div class="cost-row cost-row-heading" role="row">
@@ -209,6 +127,89 @@
       </div>
     }
   </div>
+
+  <section class="cost-detail-stack" aria-label="Cost details">
+    <details class="cost-detail-panel">
+      <summary>
+        <span>Cost drivers</span>
+        <em>Secondary signals behind the estimate</em>
+      </summary>
+      <div class="driver-grid">
+        @for (driver of cost.costDrivers; track driver.title) {
+          <article [ngClass]="driver.tone">
+            <span>{{ driver.title }}</span>
+            <strong>{{ driver.value }}</strong>
+            <p>{{ driver.detail }}</p>
+          </article>
+        }
+      </div>
+    </details>
+
+    @if (hasPayloadEvidence(session.requestPayload)) {
+      @if (session.requestPayload; as payload) {
+        <details class="cost-detail-panel payload-evidence">
+          <summary>
+            <span>Setup payload clues</span>
+            <em>Instruction, tool schema, and tool text sizes</em>
+          </summary>
+          <div class="payload-grid">
+            <article>
+              <span>System prompt</span>
+              <strong>{{ payloadSizeLabel(payload.systemPromptChars) }}</strong>
+              <em>{{ payload.modelCallsWithSystemPromptFile | number }} model calls referenced {{ payload.systemPromptFiles | number }} file(s)</em>
+            </article>
+            <article>
+              <span>Tool schemas</span>
+              <strong>{{ payloadSizeLabel(payload.toolSchemaChars) }}</strong>
+              <em>{{ payload.toolCount | number }} tools from {{ payload.toolSchemaFiles | number }} file(s)</em>
+            </article>
+            <article>
+              <span>MCP tools</span>
+              <strong>{{ payload.mcpToolCount | number }}</strong>
+              <em>{{ mcpToolSummary(payload) }}</em>
+            </article>
+            <article>
+              <span>Tool text groups</span>
+              <strong>{{ topToolResults(payload).length | number }}</strong>
+              <em>largest imported argument/result groups</em>
+            </article>
+          </div>
+          <div class="payload-lists">
+            <article>
+              <span>Largest tool schemas</span>
+              @if (topToolSchemas(payload).length) {
+                <ol>
+                  @for (tool of topToolSchemas(payload); track tool.name) {
+                    <li>
+                      <strong>{{ tool.name }}</strong>
+                      <em>{{ payloadSizeLabel(tool.totalChars) }}</em>
+                    </li>
+                  }
+                </ol>
+              } @else {
+                <p>No tool schema side-file details were imported for this run.</p>
+              }
+            </article>
+            <article>
+              <span>Largest tool argument/result text</span>
+              @if (topToolResults(payload).length) {
+                <ol>
+                  @for (tool of topToolResults(payload); track tool.name) {
+                    <li>
+                      <strong>{{ tool.name }} · {{ tool.calls | number }} calls</strong>
+                      <em>{{ payloadSizeLabel(tool.argsChars + tool.resultChars) }}</em>
+                    </li>
+                  }
+                </ol>
+              } @else {
+                <p>No tool argument/result payload sizes were imported for this run.</p>
+              }
+            </article>
+          </div>
+        </details>
+      }
+    }
+  </section>
 </section>
 
 

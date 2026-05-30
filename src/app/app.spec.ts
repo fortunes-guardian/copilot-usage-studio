@@ -143,7 +143,8 @@ describe('App', () => {
 
     clickButtonContaining(fixture.nativeElement, 'Cost');
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Where the estimate comes from');
+    expect(fixture.nativeElement.textContent).toContain('Cost answer');
+    expect(fixture.nativeElement.textContent).toContain('Priced buckets');
 
     clickButtonContaining(fixture.nativeElement, 'Calls');
     fixture.detectChanges();
