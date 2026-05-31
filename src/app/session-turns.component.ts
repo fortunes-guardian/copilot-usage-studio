@@ -41,6 +41,15 @@ interface ModelCallRowViewModel {
   contextWindowShare?: number | null;
   cumulativeRawInputTokens?: number;
   repeatedInputFactorAtCall?: number;
+  setupPayload?: {
+    systemPromptFile: string;
+    systemPromptChars: number;
+    toolsFile: string;
+    toolSchemaChars: number;
+    toolCount: number;
+    mcpToolCount: number;
+    mcpToolNames: string[];
+  };
 }
 
 export interface SessionTurnsViewModel {
@@ -146,17 +155,97 @@ export class SessionTurnsComponent {
       return 'No token-bearing model calls were imported for this run.';
     }
 
-    return `Biggest request was call #${peakCall.callNumber}: ${peakCall.inputTokens.toLocaleString()} input tokens, ${this.contextLimitPercentLabel(
+    return `Call #${peakCall.callNumber} sent the most context: ${peakCall.inputTokens.toLocaleString()} input tokens, using ${this.contextLimitPercentLabel(
       peakCall,
-    )} of the model prompt limit. Across the run, repeated input added up to ${this.contextRepeatedFactor().toFixed(
+    )} of the model prompt limit. The run kept sending context repeatedly: ${this.contextRepeatedFactor().toFixed(
       1,
-    )}x that biggest request.`;
+    )}x the biggest request in total.`;
   }
 
   protected userRequestMarkerLabel(event: ModelCallRowViewModel): string {
     return event.userRequestDetail
       ? `After user request #${event.userRequestIndex}: ${event.userRequestDetail}`
       : 'After a user request';
+  }
+
+  protected setupPayloadBadges(event: ModelCallRowViewModel): Array<{ label: string; detail: string }> {
+    const payload = event.setupPayload;
+    if (!payload) {
+      return [];
+    }
+
+    const badges: Array<{ label: string; detail: string }> = [];
+
+    if (payload.systemPromptChars > 0) {
+      badges.push({
+        label: 'Inst',
+        detail: `${payload.systemPromptChars.toLocaleString()} chars from ${payload.systemPromptFile}`,
+      });
+    }
+
+    if (payload.toolSchemaChars > 0 || payload.toolCount > 0) {
+      badges.push({
+        label: 'Tools',
+        detail: `${payload.toolCount.toLocaleString()} tools, ${payload.toolSchemaChars.toLocaleString()} schema chars`,
+      });
+    }
+
+    if (payload.mcpToolCount > 0) {
+      badges.push({
+        label: 'MCP',
+        detail: `${payload.mcpToolCount.toLocaleString()} MCP tools referenced`,
+      });
+    }
+
+    return badges;
+  }
+
+  protected setupPayloadSummary(event: ModelCallRowViewModel): string {
+    const badges = this.setupPayloadBadges(event);
+    if (!badges.length) {
+      return '';
+    }
+
+    return `Setup payload: ${badges.map((badge) => badge.detail).join(' · ')}`;
+  }
+
+  protected setupPayloadChanged(event: ModelCallRowViewModel): boolean {
+    const currentSignature = this.setupPayloadSignature(event);
+    if (!currentSignature) {
+      return false;
+    }
+
+    const previous = this.contextTimelineRows()
+      .filter((candidate) => candidate.callNumber < event.callNumber)
+      .reverse()
+      .find((candidate) => this.setupPayloadSignature(candidate));
+
+    return !previous || this.setupPayloadSignature(previous) !== currentSignature;
+  }
+
+  protected setupPayloadChangeSummary(event: ModelCallRowViewModel): string {
+    if (!this.setupPayloadChanged(event)) {
+      return '';
+    }
+
+    return this.setupPayloadSummary(event).replace('Setup payload: ', 'Setup changed: ');
+  }
+
+  private setupPayloadSignature(event: ModelCallRowViewModel): string {
+    const payload = event.setupPayload;
+    if (!payload) {
+      return '';
+    }
+
+    return [
+      payload.systemPromptFile,
+      payload.systemPromptChars,
+      payload.toolsFile,
+      payload.toolSchemaChars,
+      payload.toolCount,
+      payload.mcpToolCount,
+      payload.mcpToolNames.join(','),
+    ].join('|');
   }
 
   protected impactClass(event: ModelCallRowViewModel): string {

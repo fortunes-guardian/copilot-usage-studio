@@ -59,45 +59,39 @@
 @if (limitRead(); as limit) {
   <section class="overview-panel limit-panel">
     <div class="panel-title">
-      <span>Context load</span>
+      <span>Context snapshot</span>
       <h3>
-        Peak vs repeated context
+        Context movement
         <app-help-popover
-          text="Uses VS Code model metadata to compare the largest request with the model limit. This is a capacity signal, separate from billing."
-          label="Explain model limits"
+          text="This is a quick snapshot. The full Calls timeline shows every model request, user-prompt markers, rises, drops, and links back to Trace."
+          label="Explain context snapshot"
         ></app-help-popover>
       </h3>
     </div>
 
-    <div class="limit-hero">
+    <div class="limit-snapshot">
       <div>
         <span>{{ limit.model }}</span>
         <strong>{{ limitAnswer(limit) }}</strong>
         <p>{{ limitDetail(limit) }}</p>
       </div>
-      <strong class="limit-percent">{{ limitPercent(limit) }}%</strong>
-    </div>
-
-    <div class="limit-meter" aria-label="Largest request as a share of the model prompt limit">
-      <i [style.width.%]="limitMeterPercent(limit)"></i>
+      <button type="button" class="open-calls-timeline" (click)="openCallsTimeline.emit()">
+        Open Calls timeline
+      </button>
     </div>
 
     <div class="limit-facts">
       <div>
-        <span>Peak raw input</span>
+        <span>Biggest request</span>
         <strong>{{ limit.largestRawInputTokens | number }}</strong>
       </div>
       <div>
-        <span>Prompt limit</span>
-        <strong>{{ limit.promptLimitTokens ? (limit.promptLimitTokens | number) : 'n/a' }}</strong>
-      </div>
-      <div>
-        <span>Model calls</span>
-        <strong>{{ limit.modelCalls | number }}</strong>
-      </div>
-      <div>
-        <span>Repeated input</span>
+        <span>Repeated load</span>
         <strong>{{ limit.repeatedInputFactor | number: '1.1-1' }}x</strong>
+      </div>
+      <div>
+        <span>Model requests</span>
+        <strong>{{ limit.modelCalls | number }}</strong>
       </div>
     </div>
   </section>

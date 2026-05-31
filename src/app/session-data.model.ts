@@ -101,6 +101,7 @@ export interface TraceEvent {
   pricingModel?: string;
   estimatedCost?: CostBreakdown;
   sourceEstimatedCost?: string;
+  setupPayload?: ModelCallSetupPayload;
 }
 
 export interface AdvancedSignals {
@@ -145,6 +146,22 @@ export interface RequestPayloadSummary {
     resultChars: number;
   }>;
   subagentLogCount: number;
+}
+
+export interface ModelCallSetupPayload {
+  systemPromptFile: string;
+  systemPromptChars: number;
+  toolsFile: string;
+  toolSchemaChars: number;
+  toolCount: number;
+  mcpToolCount: number;
+  mcpToolNames: string[];
+  largestToolSchemas: Array<{
+    name: string;
+    descriptionChars: number;
+    parameterChars: number;
+    totalChars: number;
+  }>;
 }
 
 export interface ModelLimitSummary {

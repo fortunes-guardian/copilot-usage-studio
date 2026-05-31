@@ -1,5 +1,5 @@
 import { DatePipe, DecimalPipe, NgClass } from '@angular/common';
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 import { HelpPopoverComponent } from './help-popover.component';
 import { CopilotSession, ModelLimitSummary } from './session-data.model';
@@ -30,6 +30,7 @@ export class SessionOverviewComponent {
   @Input({ required: true }) session!: CopilotSession;
   @Input() triage: SessionTriageViewModel | null = null;
   @Input() triageHelp = '';
+  @Output() openCallsTimeline = new EventEmitter<void>();
 
   protected reasoningLabel(): string {
     const efforts = this.session.traceSummary.reasoningEfforts ?? [];
@@ -108,14 +109,13 @@ export class SessionOverviewComponent {
 
   protected limitDetail(limit: ModelLimitSummary): string {
     const peak = limit.largestRawInputTokens.toLocaleString();
-    const denominator = this.limitDenominatorLabel(limit);
     const share = this.limitPercent(limit);
 
     if (limit.modelCalls > 1) {
-      return `${peak} / ${denominator} (${share}%). Total raw input was ${limit.repeatedInputFactor.toFixed(1)}x the largest request across ${limit.modelCalls.toLocaleString()} calls.`;
+      return `Biggest request: ${peak} input tokens, ${share}% of the model prompt limit.`;
     }
 
-    return `${peak} / ${denominator} (${share}%). Single model call in this run.`;
+    return `Single model request: ${peak} input tokens, ${share}% of the model prompt limit.`;
   }
 }
 

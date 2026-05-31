@@ -275,6 +275,8 @@ Session fields:
 
 Token-bearing trace events preserve raw `inputTokens`, optional `cachedInputTokens`, optional `cacheWriteTokens`, `outputTokens`, `model`, `rawModel`, `pricingModel`, `totalTokens`, app-calculated `estimatedCost`, and optional source-provided `sourceEstimatedCost`.
 
+When a model call references `systemPromptFile` or `toolsFile`, the scanner also preserves `traceEvents[].setupPayload`: system prompt side-file name and character count, tools side-file name and character count, total tool count, MCP tool count, MCP tool names, and the largest tool schemas by character size. This is setup-payload evidence for debugging. It is not a section-level token bill.
+
 `modelLimits` answers a capacity question, not a billing question: did the run get expensive because a request was close to the model's prompt/context limit, or because many model calls repeatedly sent context? It compares observed raw `inputTokens` with `models.json` limits and keeps pricing separate. The app deliberately does not show model capability noise such as supported API endpoints in the main UI.
 
 ## Feature Boundaries

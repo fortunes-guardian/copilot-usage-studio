@@ -40,6 +40,7 @@ Next:
 - Compare raw VS Code `estimatedCost` with the app-calculated estimate only after enough real sessions show this field consistently.
 - Continue tuning Context Load copy against larger real sessions. Keep it as capacity context, not billing prediction.
 - Use the Context Load timeline with more real sessions to decide whether a deeper per-turn chart is useful, while keeping the current version grounded in `models.json` limits and observed `inputTokens`.
+- Augment the Calls timeline with setup-payload markers only when the Agent Debug Log exposes side-file evidence. Candidate markers: user prompt boundary, system/custom instructions, tool schema payload, MCP tool schemas, and large tool results.
 
 Why: the core workflow is “I ran an agent, why was this expensive?” The selected run has to be readable before comparison gets deeper.
 
@@ -307,8 +308,11 @@ Build:
 - Keep `cachedTokens` import covered in debug-log ingestion and add any future explicit numeric cache fields as they appear. Treat `cache_control` hints or prompt-cache metadata as evidence about cache behavior, but not as billable cached-token counts unless the event exposes numeric cached-token totals.
 - Keep the observed Agent Debug Log schema documented in [debug-log-schema.md](debug-log-schema.md) and add fixture coverage before building new cost claims from newly discovered fields.
 - Promote the compact Cost request-payload evidence into a deeper `Input attribution` panel only after the scanner preserves enough structured request sections.
+- Add per-model-call setup payload summaries from `systemPromptFile` and `toolsFile` references: system/custom instruction file size, tool schema file size, total tool count, MCP tool count, and largest schema descriptions. Show these as payload size evidence, not exact token bills.
+- Add user-request grouped call summaries: for each user prompt boundary, show the following model calls, biggest input request, repeated input load, setup payload files referenced, tool/MCP schema size, and large tool results observed after the prompt.
+- Add lightweight badges to the Calls timeline/table when reliable: `You` for a preceding user prompt and setup markers only when the referenced instructions/tools/MCP payload first appears or changes. Do not mark every call when the same setup payload is attached repeatedly.
 - Break the request payload into visible buckets when the debug log exposes them: user prompt, environment/workspace context, custom instructions, tool references, tool results, MCP tool calls/results, prior conversation, and system/developer material.
-- For instructions, tools, MCP schemas, and skills, start with source-backed counts: presence, character count, approximate token estimate, and the model calls where the payload appeared.
+- For instructions, tools, MCP schemas, and skills, start with source-backed counts: presence, character count, file references, and the model calls where the payload appeared. Avoid approximate token estimates in the primary UI unless the source exposes section token counts.
 - Group tool and MCP activity by server/tool name, with counts and nearby model-call cost.
 - Show "affected nearby cost" first, then only show token/cost allocation for a bucket when the app can calculate it from source-backed request payload sections.
 - Add comparison support for MCP/tool setup changes: which servers/tools appeared, which disappeared, and how model-call input moved afterward.
@@ -323,6 +327,7 @@ Evidence boundary:
 - `systemPromptFile` and `toolsFile` side files can show setup payload size, tool count, MCP tool names, and large schema payloads.
 - Tool/MCP/discovery events can be counted and placed near model calls.
 - Character counts and approximate section sizes are useful for optimization, but they are not provider token bills.
+- The app can say "this model request referenced this large instructions/tools payload" when the side-file reference is present. It should not say "this instruction cost $X" unless the log exposes section-level token totals or billing fields.
 - Per-section input attribution may be derived from raw request payload fields when available, but it is not the same as provider billing unless segment token counts are logged directly.
 
 ## Phase 11: App-Owned SQLite

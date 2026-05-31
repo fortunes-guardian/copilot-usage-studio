@@ -649,6 +649,55 @@ function requestPayloadSummary(sessionDir, llmRequests, toolEvents) {
   };
 }
 
+function contentSummaryFromCache(sessionDir, cache, file) {
+  if (!file) {
+    return null;
+  }
+
+  if (cache.has(file)) {
+    return cache.get(file);
+  }
+
+  const path = join(sessionDir, file);
+  const summary = existsSync(path) ? parseContentFile(path) : null;
+  cache.set(file, summary);
+  return summary;
+}
+
+function modelCallSetupPayloadFactory(sessionDir) {
+  const cache = new Map();
+
+  return (event) => {
+    if (event.type !== 'llm_request') {
+      return null;
+    }
+
+    const systemPromptFile = String(event.attrs?.systemPromptFile ?? '').trim();
+    const toolsFile = String(event.attrs?.toolsFile ?? '').trim();
+
+    if (!systemPromptFile && !toolsFile) {
+      return null;
+    }
+
+    const systemPrompt = contentSummaryFromCache(sessionDir, cache, systemPromptFile);
+    const toolsSummary = contentSummaryFromCache(sessionDir, cache, toolsFile);
+    const tools = Array.isArray(toolsSummary?.content) ? toolsSummary.content : [];
+    const toolSchemas = tools.map(toolSchemaSize);
+    const mcpToolNames = toolSchemas.map((tool) => tool.name).filter((name) => name.startsWith('mcp_'));
+
+    return {
+      systemPromptFile,
+      systemPromptChars: systemPrompt?.chars ?? 0,
+      toolsFile,
+      toolSchemaChars: toolsSummary?.chars ?? 0,
+      toolCount: toolSchemas.length,
+      mcpToolCount: mcpToolNames.length,
+      mcpToolNames: [...new Set(mcpToolNames)].sort(),
+      largestToolSchemas: toolSchemas.sort((a, b) => b.totalChars - a.totalChars).slice(0, 5),
+    };
+  };
+}
+
 function debugEvidence(llmRequests, agentResponses) {
   const inputSeries = llmRequests.map((event) => Number(event.attrs?.inputTokens ?? 0));
   const outputCaps = [
@@ -963,6 +1012,7 @@ export function sessionFromDebugLog(sessionDir, workspaceDir) {
   const payload = requestPayloadSummary(sessionDir, llmRequests, toolEvents);
   const modelLimits = modelLimitSummaries(sessionDir, llmRequests);
   const cacheTokenAudit = cacheTokenAuditFromLlmRequests(llmRequests);
+  const setupPayloadForEvent = modelCallSetupPayloadFactory(sessionDir);
   const transcript = transcriptAvailability(workspaceDir, sid);
 
   if (transcript.available) {
@@ -1051,6 +1101,8 @@ export function sessionFromDebugLog(sessionDir, workspaceDir) {
                 outputTokens: 0,
               };
 
+        const setupPayload = setupPayloadForEvent(event);
+
         return {
           index,
           timestamp: timestampForEvent(event),
@@ -1073,6 +1125,7 @@ export function sessionFromDebugLog(sessionDir, workspaceDir) {
           ...(event.type === 'llm_request' && sourceEstimatedCost(event)
             ? { sourceEstimatedCost: sourceEstimatedCost(event) }
             : {}),
+          ...(setupPayload ? { setupPayload } : {}),
         };
       }),
     ),

@@ -106,6 +106,33 @@ test('merges cache token audits without losing max cached share', () => {
 test('imports exact debug-log token totals from a session fixture', () => {
   const { root, sessionDir, workspaceDir } = tempSessionFixture('exact-debug-log');
   try {
+    writeFileSync(
+      join(sessionDir, 'system_prompt_0.json'),
+      JSON.stringify({ content: JSON.stringify([{ role: 'system', content: 'Follow repo instructions.' }]) }),
+      'utf8',
+    );
+    writeFileSync(
+      join(sessionDir, 'tools_0.json'),
+      JSON.stringify({
+        content: JSON.stringify([
+          {
+            function: {
+              name: 'mcp_files_read',
+              description: 'Read a file from the workspace.',
+              parameters: { type: 'object', properties: { path: { type: 'string' } } },
+            },
+          },
+          {
+            function: {
+              name: 'local_list_dir',
+              description: 'List a directory.',
+              parameters: { type: 'object', properties: { path: { type: 'string' } } },
+            },
+          },
+        ]),
+      }),
+      'utf8',
+    );
     writeJsonl(join(sessionDir, 'main.jsonl'), [
       event(1, 'session_start', 'session_start'),
       event(2, 'user_message', 'user message', {
@@ -120,6 +147,8 @@ test('imports exact debug-log token totals from a session fixture', () => {
           estimatedCost: { currency: 'USD', total: 0.02 },
           ttft: 398,
           requestOptions: JSON.stringify({ reasoning: { effort: 'high' } }),
+          systemPromptFile: 'system_prompt_0.json',
+          toolsFile: 'tools_0.json',
         },
       }),
     ]);
@@ -142,6 +171,12 @@ test('imports exact debug-log token totals from a session fixture', () => {
     assert.equal(session.traceEvents[2].cachedInputTokens, 21_632);
     assert.equal(session.traceEvents[2].reasoningEffort, 'high');
     assert.equal(session.traceEvents[2].sourceEstimatedCost, '{"currency":"USD","total":"0.02"}');
+    assert.equal(session.traceEvents[2].setupPayload.systemPromptFile, 'system_prompt_0.json');
+    assert.equal(session.traceEvents[2].setupPayload.systemPromptChars > 0, true);
+    assert.equal(session.traceEvents[2].setupPayload.toolsFile, 'tools_0.json');
+    assert.equal(session.traceEvents[2].setupPayload.toolCount, 2);
+    assert.equal(session.traceEvents[2].setupPayload.mcpToolCount, 1);
+    assert.deepEqual(session.traceEvents[2].setupPayload.mcpToolNames, ['mcp_files_read']);
     assert.deepEqual(session.transcript, {
       available: false,
       sourcePath: '',

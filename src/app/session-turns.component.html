@@ -125,9 +125,14 @@
             >
               <span class="context-call-index">
                 #{{ event.callNumber }}
-                @if (event.startsAfterUserRequest) {
-                  <small class="user-request-marker" [attr.aria-label]="userRequestMarkerLabel(event)">You</small>
-                }
+                <span class="context-marker-stack">
+                  @if (event.startsAfterUserRequest) {
+                    <small class="user-request-marker" [attr.aria-label]="userRequestMarkerLabel(event)">You</small>
+                  }
+                  @if (setupPayloadChanged(event)) {
+                    <small class="setup-payload-marker" [attr.aria-label]="setupPayloadSummary(event)">Setup</small>
+                  }
+                </span>
               </span>
               <i aria-hidden="true"><b [style.height.%]="contextBarHeight(event)"></b></i>
               <strong>{{ event.inputTokens | number }}</strong>
@@ -220,6 +225,9 @@
           <span role="cell" data-label="Nearby context">
             {{ event.contextLabel }}
             <em>{{ event.contextDetail }}</em>
+            @if (setupPayloadChangeSummary(event)) {
+              <em class="setup-payload-line">{{ setupPayloadChangeSummary(event) }}</em>
+            }
           </span>
         </div>
       }

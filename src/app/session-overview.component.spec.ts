@@ -40,7 +40,7 @@ describe('SessionOverviewComponent', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Reasoning');
   });
 
-  it('explains whether cost came from limit pressure or repeated context', () => {
+  it('shows a compact context snapshot and points to Calls', () => {
     fixture.componentRef.setInput('session', sessionFixture({
       modelLimits: [
         {
@@ -70,13 +70,50 @@ describe('SessionOverviewComponent', () => {
 
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Peak vs repeated context');
+    expect(fixture.nativeElement.textContent).toContain('Context movement');
     expect(fixture.nativeElement.textContent).toContain('Repeated context');
     expect(fixture.nativeElement.textContent).toContain('22,421');
-    expect(fixture.nativeElement.textContent).toContain('127,997');
+    expect(fixture.nativeElement.textContent).not.toContain('127,997');
     expect(fixture.nativeElement.textContent).toContain('5.4x');
+    expect(fixture.nativeElement.textContent).toContain('Open Calls timeline');
     expect(fixture.nativeElement.textContent).not.toContain('Reasoning: low, medium, high');
     expect(fixture.nativeElement.textContent).not.toContain('API: /responses');
+  });
+
+  it('emits when the Calls timeline button is clicked', () => {
+    const openSpy = vi.fn();
+    fixture.componentInstance.openCallsTimeline.subscribe(openSpy);
+    fixture.componentRef.setInput('session', sessionFixture({
+      modelLimits: [
+        {
+          model: 'GPT-5 mini',
+          rawModels: ['gpt-5-mini'],
+          modelId: 'gpt-5-mini',
+          vendor: 'Azure OpenAI',
+          tokenizer: 'o200k_base',
+          contextWindowTokens: 264_000,
+          promptLimitTokens: 127_997,
+          outputLimitTokens: 64_000,
+          supportedReasoningEfforts: [],
+          supportedEndpoints: [],
+          modelPickerEnabled: true,
+          isChatDefault: true,
+          isChatFallback: false,
+          modelCalls: 3,
+          largestRawInputTokens: 50_000,
+          totalRawInputTokens: 120_000,
+          largestOutputTokens: 308,
+          promptLimitShare: 50_000 / 127_997,
+          contextWindowShare: 50_000 / 264_000,
+          repeatedInputFactor: 2.4,
+        },
+      ],
+    }));
+
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('.open-calls-timeline') as HTMLButtonElement).click();
+
+    expect(openSpy).toHaveBeenCalledOnce();
   });
 });
 

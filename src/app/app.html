@@ -182,6 +182,7 @@
             [session]="session"
             [triage]="selectedTriage()"
             [triageHelp]="sessionTriageHelp"
+            (openCallsTimeline)="selectedRunView.set('turns')"
           ></app-session-overview>
         }
 

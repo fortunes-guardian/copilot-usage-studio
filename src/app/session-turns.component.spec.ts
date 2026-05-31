@@ -32,6 +32,8 @@ describe('SessionTurnsComponent', () => {
     expect(text).toContain('7%');
     expect(text).toContain('Repeated load');
     expect(text).toContain('You');
+    expect(text).toContain('Setup changed');
+    expect(text).toContain('MCP');
   });
 });
 
@@ -69,6 +71,15 @@ function turnsFixture(): SessionTurnsViewModel {
         contextWindowShare: 9_000 / 200_000,
         cumulativeRawInputTokens: 9_000,
         repeatedInputFactorAtCall: 1,
+        setupPayload: {
+          systemPromptFile: 'system_prompt_0.json',
+          systemPromptChars: 12_000,
+          toolsFile: 'tools_0.json',
+          toolSchemaChars: 24_000,
+          toolCount: 8,
+          mcpToolCount: 2,
+          mcpToolNames: ['mcp_files_read', 'mcp_search_query'],
+        },
       },
       {
         index: 11,
