@@ -22,6 +22,16 @@ describe('SessionTurnsComponent', () => {
     expect(text).toContain('High share');
     expect(text).toContain('Medium share');
   });
+
+  it('shows context load timeline from raw input tokens and model limits', () => {
+    const text = fixture.nativeElement.textContent as string;
+
+    expect(text).toContain('Raw input over calls');
+    expect(text).toContain('Peak request');
+    expect(text).toContain('9,000');
+    expect(text).toContain('7%');
+    expect(text).toContain('Repeated input');
+  });
 });
 
 function turnsFixture(): SessionTurnsViewModel {
@@ -49,6 +59,12 @@ function turnsFixture(): SessionTurnsViewModel {
         share: 42,
         contextLabel: 'user_message',
         contextDetail: 'test prompt',
+        promptLimitTokens: 128_000,
+        contextWindowTokens: 200_000,
+        promptLimitShare: 9_000 / 128_000,
+        contextWindowShare: 9_000 / 200_000,
+        cumulativeRawInputTokens: 9_000,
+        repeatedInputFactorAtCall: 1,
       },
       {
         index: 11,
@@ -71,6 +87,12 @@ function turnsFixture(): SessionTurnsViewModel {
         share: 15,
         contextLabel: 'tool_call',
         contextDetail: 'read_file',
+        promptLimitTokens: 128_000,
+        contextWindowTokens: 200_000,
+        promptLimitShare: 3_500 / 128_000,
+        contextWindowShare: 3_500 / 200_000,
+        cumulativeRawInputTokens: 12_500,
+        repeatedInputFactorAtCall: 12_500 / 3_500,
       },
     ],
   };

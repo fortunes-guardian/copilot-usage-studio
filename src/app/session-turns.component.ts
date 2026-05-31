@@ -30,6 +30,12 @@ interface ModelCallRowViewModel {
   share: number;
   contextLabel: string;
   contextDetail: string;
+  promptLimitTokens?: number | null;
+  contextWindowTokens?: number | null;
+  promptLimitShare?: number | null;
+  contextWindowShare?: number | null;
+  cumulativeRawInputTokens?: number;
+  repeatedInputFactorAtCall?: number;
 }
 
 export interface SessionTurnsViewModel {
@@ -52,6 +58,68 @@ export class SessionTurnsComponent {
 
   protected topModelCall(): ModelCallRowViewModel | null {
     return [...this.cost.modelCallRows].sort((a, b) => b.estimatedUsd - a.estimatedUsd)[0] ?? null;
+  }
+
+  protected contextTimelineRows(): ModelCallRowViewModel[] {
+    return [...this.cost.modelCallRows].sort((a, b) => a.callNumber - b.callNumber);
+  }
+
+  protected hasContextTimeline(): boolean {
+    return this.contextTimelineRows().some((event) => event.inputTokens > 0);
+  }
+
+  protected contextPeakCall(): ModelCallRowViewModel | null {
+    return [...this.cost.modelCallRows].sort((a, b) => b.inputTokens - a.inputTokens)[0] ?? null;
+  }
+
+  protected contextBarHeight(event: ModelCallRowViewModel): number {
+    const peak = this.contextPeakCall()?.inputTokens ?? 0;
+    return peak > 0 && event.inputTokens > 0 ? Math.max(6, (event.inputTokens / peak) * 100) : 0;
+  }
+
+  protected contextLimitShare(event: ModelCallRowViewModel): number | null {
+    return event.promptLimitShare ?? event.contextWindowShare ?? null;
+  }
+
+  protected contextLimitLabel(event: ModelCallRowViewModel): string {
+    if (event.promptLimitTokens) {
+      return `${event.promptLimitTokens.toLocaleString()} prompt limit`;
+    }
+
+    if (event.contextWindowTokens) {
+      return `${event.contextWindowTokens.toLocaleString()} context window`;
+    }
+
+    return 'limit unavailable';
+  }
+
+  protected contextLimitPercentLabel(event: ModelCallRowViewModel): string {
+    const share = this.contextLimitShare(event);
+    return share === null ? 'limit n/a' : `${Math.round(share * 100)}%`;
+  }
+
+  protected contextPressureClass(event: ModelCallRowViewModel): string {
+    const share = this.contextLimitShare(event);
+    if (share === null) {
+      return '';
+    }
+
+    if (share >= 0.8) {
+      return 'near-limit';
+    }
+
+    if (share >= 0.6) {
+      return 'elevated-limit';
+    }
+
+    return '';
+  }
+
+  protected contextRepeatedFactor(): number {
+    const rows = this.contextTimelineRows();
+    const peakInput = Math.max(...rows.map((event) => event.inputTokens), 0);
+    const totalRawInput = rows.reduce((sum, event) => sum + event.inputTokens, 0);
+    return peakInput > 0 ? totalRawInput / peakInput : 0;
   }
 
   protected impactClass(event: ModelCallRowViewModel): string {

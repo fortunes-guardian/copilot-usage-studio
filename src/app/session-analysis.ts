@@ -1,4 +1,4 @@
-import { CopilotSession, ModelBreakdown, TokenBreakdown, TraceEvent } from './session-data.model';
+import { CopilotSession, ModelBreakdown, ModelLimitSummary, TokenBreakdown, TraceEvent } from './session-data.model';
 import {
   modelKey,
   modelUsesPricingFallback,
@@ -35,6 +35,7 @@ export function buildCostExplanation(session: CopilotSession, sort: ModelCallSor
   const modelCallRowList = modelCallRows(
     session.traceEvents,
     session.modelBreakdown,
+    session.modelLimits ?? [],
     session.cost.usd,
     sort,
   );
@@ -422,11 +423,19 @@ function topTokenEvents(events: TraceEvent[], modelBreakdown: ModelBreakdown[]) 
 function modelCallRows(
   events: TraceEvent[],
   modelBreakdown: ModelBreakdown[],
+  modelLimits: ModelLimitSummary[],
   sessionCostUsd: number,
   sort: ModelCallSort,
 ) {
+  const cumulativeRawInputByModel = new Map<string, number>();
   const rows = pricedModelCallEvents(events, modelBreakdown).map((event, index) => {
     const context = nearbyContextForEvent(event, events);
+    const modelLimit = modelLimitForEvent(event, modelLimits);
+    const cumulativeKey = modelLimitKey(modelLimit, event);
+    const cumulativeRawInputTokens = (cumulativeRawInputByModel.get(cumulativeKey) ?? 0) + event.inputTokens;
+    cumulativeRawInputByModel.set(cumulativeKey, cumulativeRawInputTokens);
+    const promptLimitTokens = positiveNumber(modelLimit?.promptLimitTokens);
+    const contextWindowTokens = positiveNumber(modelLimit?.contextWindowTokens);
 
     return {
       ...event,
@@ -434,12 +443,52 @@ function modelCallRows(
       share: sessionCostUsd > 0 ? (event.estimatedUsd / sessionCostUsd) * 100 : 0,
       contextLabel: context.label,
       contextDetail: context.detail,
+      promptLimitTokens,
+      contextWindowTokens,
+      promptLimitShare: promptLimitTokens ? event.inputTokens / promptLimitTokens : null,
+      contextWindowShare: contextWindowTokens ? event.inputTokens / contextWindowTokens : null,
+      cumulativeRawInputTokens,
+      repeatedInputFactorAtCall: event.inputTokens > 0 ? cumulativeRawInputTokens / event.inputTokens : 0,
     };
   });
 
   return sort === 'largest'
     ? [...rows].sort((a, b) => b.estimatedUsd - a.estimatedUsd || b.totalTokens - a.totalTokens)
     : rows;
+}
+
+function modelLimitForEvent(event: TraceEvent, modelLimits: ModelLimitSummary[]): ModelLimitSummary | null {
+  if (!modelLimits.length) {
+    return null;
+  }
+
+  const rawModel = event.rawModel || event.model || modelFromEventDetail(event.detail);
+  const rawKey = modelKey(rawModel);
+  if (!rawKey) {
+    return modelLimits.length === 1 ? modelLimits[0] : null;
+  }
+
+  return (
+    modelLimits.find((limit) => {
+      const candidates = [limit.model, limit.modelId, ...limit.rawModels].map((name) => modelKey(name)).filter(Boolean);
+      return candidates.some((candidate) => candidate === rawKey || rawKey.includes(candidate) || candidate.includes(rawKey));
+    }) ?? (modelLimits.length === 1 ? modelLimits[0] : null)
+  );
+}
+
+function modelLimitKey(modelLimit: ModelLimitSummary | null, event: TraceEvent): string {
+  return (
+    modelKey(modelLimit?.modelId ?? '') ||
+    modelKey(modelLimit?.model ?? '') ||
+    modelKey(event.rawModel ?? '') ||
+    modelKey(event.model ?? '') ||
+    modelKey(event.pricingModel ?? '') ||
+    'unknown'
+  );
+}
+
+function positiveNumber(value: number | null | undefined): number | null {
+  return typeof value === 'number' && value > 0 ? value : null;
 }
 
 function pricedModelCallEvents(events: TraceEvent[], modelBreakdown: ModelBreakdown[]) {

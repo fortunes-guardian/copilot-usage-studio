@@ -31,7 +31,7 @@ Then open one session and read the Cost debugger.
 - **Setup payload clues**: character sizes for instructions, tool schemas, MCP tool counts, and tool argument/result text. These are optimization clues, not exact per-item billing splits.
 - **Priced buckets**: normal input, cached input, cache write, and output. These are separate because GitHub prices them separately.
 - **Model table**: which models were used and which GitHub price row applied.
-- **Calls**: every token-bearing model call, either in timeline order or sorted by the biggest cost.
+- **Calls**: every token-bearing model call, either in timeline order or sorted by the biggest cost. The Context Load timeline shows raw `inputTokens` over the run and prompt-limit percentages when VS Code model metadata is available.
 
 ## Comparing Two Runs
 
@@ -165,6 +165,8 @@ The **Calls** view shows every token-bearing model call imported from the VS Cod
 Use **Timeline** when you want causality: what happened first, and where the cost started to climb.
 
 Use **Largest first** when you want the fastest answer to "what burned the most money?"
+
+The **Context Load** strip stays chronological even when the table is sorted largest-first. It shows raw VS Code `inputTokens` per model call, compares each call with the imported model prompt limit when available, and links each spike back to Trace. This is a capacity/debugging signal, not a separate billing formula.
 
 Each row shows:
 

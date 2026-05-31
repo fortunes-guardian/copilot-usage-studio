@@ -49,6 +49,60 @@
       </section>
     }
 
+    @if (hasContextTimeline()) {
+      <section class="context-load-timeline" aria-label="Context load timeline">
+        <div class="context-load-header">
+          <div>
+            <span class="mini-label">Context load</span>
+            <h4>Raw input over calls</h4>
+            <p>Observed VS Code <code>inputTokens</code> per model call. Limit percentages use imported model metadata and are separate from billing.</p>
+          </div>
+          @if (contextPeakCall(); as peakCall) {
+            <div class="context-load-summary" aria-label="Context load summary">
+              <span>
+                <em>Peak request</em>
+                <strong>{{ peakCall.inputTokens | number }}</strong>
+              </span>
+              <span>
+                <em>Limit</em>
+                <strong>{{ contextLimitPercentLabel(peakCall) }}</strong>
+              </span>
+              <span>
+                <em>Repeated input</em>
+                <strong>{{ contextRepeatedFactor() | number: '1.1-1' }}x</strong>
+              </span>
+              <span>
+                <em>Calls</em>
+                <strong>{{ cost.modelCallRows.length | number }}</strong>
+              </span>
+            </div>
+          }
+        </div>
+        <div class="context-call-bars" aria-label="Raw input timeline">
+          @for (event of contextTimelineRows(); track event.index) {
+            <button
+              type="button"
+              class="context-call-bar"
+              [ngClass]="contextPressureClass(event)"
+              (click)="openTraceEvent.emit(event.index)"
+              [attr.aria-label]="'Open trace event ' + event.index + ' for model call ' + event.callNumber"
+            >
+              <span>#{{ event.callNumber }}</span>
+              <i aria-hidden="true"><b [style.height.%]="contextBarHeight(event)"></b></i>
+              <strong>{{ event.inputTokens | number }}</strong>
+              <em>{{ contextLimitPercentLabel(event) }}</em>
+            </button>
+          }
+        </div>
+        @if (contextPeakCall(); as peakCall) {
+          <p class="context-load-note">
+            Peak call #{{ peakCall.callNumber }} used {{ peakCall.inputTokens | number }} raw input tokens against {{ contextLimitLabel(peakCall) }}.
+            Total raw input across calls was {{ contextRepeatedFactor() | number: '1.1-1' }}x the largest single request.
+          </p>
+        }
+      </section>
+    }
+
     <details class="turn-insights-disclosure">
       <summary>
         <span>Call stats</span>

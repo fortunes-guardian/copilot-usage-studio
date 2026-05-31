@@ -1,4 +1,4 @@
-<span class="help-popover">
+<span class="help-popover" (mouseenter)="positionPanel()" (focusin)="positionPanel()">
   @if (interactive) {
     <button type="button" [attr.aria-label]="label">
       <span aria-hidden="true">i</span>
@@ -8,7 +8,16 @@
       <span>i</span>
     </span>
   }
-  <span class="help-panel" role="tooltip">{{ text }}</span>
+  <span
+    #panel
+    class="help-panel"
+    role="tooltip"
+    [style.left.px]="panelLeft"
+    [style.top.px]="panelTop"
+    [style.width.px]="panelWidth"
+  >
+    {{ text }}
+  </span>
 </span>
 
 
