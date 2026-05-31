@@ -129,9 +129,6 @@
                   @if (event.startsAfterUserRequest) {
                     <small class="user-request-marker" [attr.aria-label]="userRequestMarkerLabel(event)">You</small>
                   }
-                  @if (setupPayloadChanged(event)) {
-                    <small class="setup-payload-marker" [attr.aria-label]="setupPayloadSummary(event)">Setup</small>
-                  }
                 </span>
               </span>
               <i aria-hidden="true"><b [style.height.%]="contextBarHeight(event)"></b></i>
@@ -144,6 +141,73 @@
           <p class="context-load-note">{{ contextTimelineSummary() }}</p>
         }
       </section>
+    }
+
+    @if (setupFootprint(); as footprint) {
+      <details class="setup-footprint-panel">
+        <summary>
+          <span>
+            <strong>Setup footprint</strong>
+            <em>{{ footprint.summary }}</em>
+          </span>
+          <b>{{ footprint.changeLabel }}</b>
+        </summary>
+        <div class="setup-footprint-body">
+          <div class="setup-footprint-metrics" aria-label="Setup footprint metrics">
+            <article>
+              <span>Instructions</span>
+              <strong>{{ footprint.instructionChars | number }}</strong>
+              <p>chars in the referenced system/custom prompt side file.</p>
+            </article>
+            <article>
+              <span>Tool schemas</span>
+              <strong>{{ footprint.toolSchemaChars | number }}</strong>
+              <p>{{ footprint.toolCount | number }} tools described to the model.</p>
+            </article>
+            <article>
+              <span>MCP tools</span>
+              <strong>{{ footprint.mcpToolCount | number }}</strong>
+              <p>{{ footprint.mcpPreview }}</p>
+            </article>
+            <article>
+              <span>Setup versions</span>
+              <strong>{{ footprint.profiles.length | number }}</strong>
+              <p>Different instruction/tool payloads observed across model calls.</p>
+            </article>
+          </div>
+          <div class="setup-profile-table" role="table" aria-label="Setup footprint profiles">
+            <div class="setup-profile-row setup-profile-heading" role="row">
+              <span role="columnheader">Where</span>
+              <span role="columnheader">Payload</span>
+              <span role="columnheader">Tools</span>
+              <span role="columnheader">Model input</span>
+            </div>
+            @for (profile of footprint.profiles; track profile.signature) {
+              <div class="setup-profile-row" role="row">
+                <span role="cell" data-label="Where">
+                  Calls #{{ profile.firstCall }}-#{{ profile.lastCall }}
+                  <em>{{ profile.callCount | number }} model calls</em>
+                </span>
+                <span role="cell" data-label="Payload">
+                  {{ profile.totalChars | number }} chars
+                  <em>{{ profile.systemPromptChars | number }} instructions / {{ profile.toolSchemaChars | number }} tools</em>
+                </span>
+                <span role="cell" data-label="Tools">
+                  {{ profile.toolCount | number }} tools
+                  <em>{{ profile.mcpToolCount | number }} MCP tools</em>
+                </span>
+                <span role="cell" data-label="Model input">
+                  {{ profile.averageInputTokens | number: '1.0-0' }} avg input
+                  <em>{{ profile.maxInputTokens | number }} biggest request</em>
+                </span>
+              </div>
+            }
+          </div>
+          <p class="setup-footprint-note">
+            This is efficiency evidence: it shows what setup payload was referenced near model calls. It does not assign exact dollars to instructions, tools, or MCP.
+          </p>
+        </div>
+      </details>
     }
 
     <details class="turn-insights-disclosure">
@@ -225,13 +289,11 @@
           <span role="cell" data-label="Nearby context">
             {{ event.contextLabel }}
             <em>{{ event.contextDetail }}</em>
-            @if (setupPayloadChangeSummary(event)) {
-              <em class="setup-payload-line">{{ setupPayloadChangeSummary(event) }}</em>
-            }
           </span>
         </div>
       }
     </div>
+
   } @else {
     <p class="empty">This imported session has no token-bearing model call rows.</p>
   }

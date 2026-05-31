@@ -32,6 +32,7 @@ Done:
 - After the 2026-05-30 VS Code/Copilot update, preserved debug-log runtime metadata (`vscodeVersion`, `copilotVersion`) plus request-shape and text-verbosity metadata from new Agent Debug Log fields.
 - Added a compact selected-run Context Load card that compares largest raw input with `models.json` prompt/context limits and distinguishes near-limit runs from repeated-context runs without showing noisy model capability metadata.
 - Added a Context Load timeline inside Calls: raw `inputTokens` per model call, prompt-limit percentage when model metadata is available, repeated-input summary, and click-through from each bar to Trace.
+- Added a compact Setup Footprint panel in Calls that summarizes referenced instruction/tool/MCP side-file payload size and shows whether that setup changed across model calls.
 
 Next:
 
@@ -40,7 +41,7 @@ Next:
 - Compare raw VS Code `estimatedCost` with the app-calculated estimate only after enough real sessions show this field consistently.
 - Continue tuning Context Load copy against larger real sessions. Keep it as capacity context, not billing prediction.
 - Use the Context Load timeline with more real sessions to decide whether a deeper per-turn chart is useful, while keeping the current version grounded in `models.json` limits and observed `inputTokens`.
-- Augment the Calls timeline with setup-payload markers only when the Agent Debug Log exposes side-file evidence. Candidate markers: user prompt boundary, system/custom instructions, tool schema payload, MCP tool schemas, and large tool results.
+- Keep the Calls timeline focused on model input over time. Use the separate Setup Footprint panel for instruction/tool/MCP payload evidence so repeated setup payloads do not bloat the timeline.
 
 Why: the core workflow is “I ran an agent, why was this expensive?” The selected run has to be readable before comparison gets deeper.
 

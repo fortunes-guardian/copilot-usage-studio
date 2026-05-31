@@ -52,6 +52,32 @@ interface ModelCallRowViewModel {
   };
 }
 
+interface SetupFootprintProfile {
+  signature: string;
+  firstCall: number;
+  lastCall: number;
+  callCount: number;
+  systemPromptChars: number;
+  toolSchemaChars: number;
+  totalChars: number;
+  toolCount: number;
+  mcpToolCount: number;
+  totalInputTokens: number;
+  averageInputTokens: number;
+  maxInputTokens: number;
+}
+
+interface SetupFootprintViewModel {
+  summary: string;
+  changeLabel: string;
+  instructionChars: number;
+  toolSchemaChars: number;
+  toolCount: number;
+  mcpToolCount: number;
+  mcpPreview: string;
+  profiles: SetupFootprintProfile[];
+}
+
 export interface SessionTurnsViewModel {
   turnInsights: TurnInsightViewModel[];
   modelCallRows: ModelCallRowViewModel[];
@@ -207,6 +233,72 @@ export class SessionTurnsComponent {
     }
 
     return `Setup payload: ${badges.map((badge) => badge.detail).join(' · ')}`;
+  }
+
+  protected setupFootprint(): SetupFootprintViewModel | null {
+    const rows = this.contextTimelineRows().filter((event) => this.setupPayloadSignature(event));
+    if (!rows.length) {
+      return null;
+    }
+
+    const profileMap = new Map<string, SetupFootprintProfile>();
+
+    for (const row of rows) {
+      const payload = row.setupPayload;
+      const signature = this.setupPayloadSignature(row);
+      if (!payload || !signature) {
+        continue;
+      }
+
+      const existing = profileMap.get(signature);
+      if (existing) {
+        existing.lastCall = row.callNumber;
+        existing.callCount += 1;
+        existing.totalInputTokens += row.inputTokens;
+        existing.averageInputTokens = existing.totalInputTokens / existing.callCount;
+        existing.maxInputTokens = Math.max(existing.maxInputTokens, row.inputTokens);
+        continue;
+      }
+
+      profileMap.set(signature, {
+        signature,
+        firstCall: row.callNumber,
+        lastCall: row.callNumber,
+        callCount: 1,
+        systemPromptChars: payload.systemPromptChars,
+        toolSchemaChars: payload.toolSchemaChars,
+        totalChars: payload.systemPromptChars + payload.toolSchemaChars,
+        toolCount: payload.toolCount,
+        mcpToolCount: payload.mcpToolCount,
+        totalInputTokens: row.inputTokens,
+        averageInputTokens: row.inputTokens,
+        maxInputTokens: row.inputTokens,
+      });
+    }
+
+    const profiles = [...profileMap.values()].sort((a, b) => a.firstCall - b.firstCall);
+    const active = profiles[profiles.length - 1];
+    const mcpNames = rows[rows.length - 1]?.setupPayload?.mcpToolNames ?? [];
+    const mcpPreview =
+      mcpNames.length > 3
+        ? `${mcpNames.slice(0, 3).join(', ')} +${mcpNames.length - 3} more`
+        : mcpNames.length
+          ? mcpNames.join(', ')
+          : 'No MCP tools in setup payload.';
+
+    return {
+      summary:
+        profiles.length === 1
+          ? `Same setup payload across ${rows.length.toLocaleString()} model calls`
+          : `${profiles.length.toLocaleString()} setup payload versions across ${rows.length.toLocaleString()} model calls`,
+      changeLabel: profiles.length === 1 ? 'No setup changes' : `${profiles.length - 1} change${profiles.length === 2 ? '' : 's'}`,
+      instructionChars: active.systemPromptChars,
+      toolSchemaChars: active.toolSchemaChars,
+      toolCount: active.toolCount,
+      mcpToolCount: active.mcpToolCount,
+      mcpPreview,
+      profiles,
+    };
   }
 
   protected setupPayloadChanged(event: ModelCallRowViewModel): boolean {

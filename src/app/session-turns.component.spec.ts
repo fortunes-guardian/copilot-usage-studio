@@ -32,7 +32,8 @@ describe('SessionTurnsComponent', () => {
     expect(text).toContain('7%');
     expect(text).toContain('Repeated load');
     expect(text).toContain('You');
-    expect(text).toContain('Setup changed');
+    expect(text).toContain('Setup footprint');
+    expect(text).toContain('No setup changes');
     expect(text).toContain('MCP');
   });
 });
