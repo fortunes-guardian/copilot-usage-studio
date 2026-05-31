@@ -1,6 +1,8 @@
 import { DatePipe, DecimalPipe, NgClass } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
+import { HelpPopoverComponent } from './help-popover.component';
+
 type ModelCallSort = 'timeline' | 'largest';
 
 interface TurnInsightViewModel {
@@ -30,6 +32,9 @@ interface ModelCallRowViewModel {
   share: number;
   contextLabel: string;
   contextDetail: string;
+  startsAfterUserRequest?: boolean;
+  userRequestIndex?: number | null;
+  userRequestDetail?: string | null;
   promptLimitTokens?: number | null;
   contextWindowTokens?: number | null;
   promptLimitShare?: number | null;
@@ -45,7 +50,7 @@ export interface SessionTurnsViewModel {
 
 @Component({
   selector: 'app-session-turns',
-  imports: [DatePipe, DecimalPipe, NgClass],
+  imports: [DatePipe, DecimalPipe, NgClass, HelpPopoverComponent],
   templateUrl: './session-turns.component.html',
   styleUrl: './session-turns.component.css',
 })
@@ -55,6 +60,19 @@ export class SessionTurnsComponent {
 
   @Output() sortChange = new EventEmitter<ModelCallSort>();
   @Output() openTraceEvent = new EventEmitter<number>();
+
+  protected readonly contextHelp = {
+    timeline:
+      'Each bar is one model request from the VS Code Agent Debug Log. Taller means more input was sent into the model for that request. A sharp drop means the next request sent less context. A You marker means a user prompt happened before that model request.',
+    biggestRequest:
+      'The single model request with the most input tokens recorded by VS Code. This helps spot the largest one-time context load.',
+    limitUsed:
+      'How much of the model prompt limit the biggest request used. This comes from VS Code model metadata, not billing. Lower is more room left in that one request.',
+    repeatedInput:
+      'Total raw input across all model calls divided by the biggest single request. High means the run repeatedly sent a lot of context, even if no one request was near the model limit.',
+    calls:
+      'Token-bearing model requests imported from the VS Code Agent Debug Log. Tool calls and UI events are not counted here unless they include model tokens.',
+  };
 
   protected topModelCall(): ModelCallRowViewModel | null {
     return [...this.cost.modelCallRows].sort((a, b) => b.estimatedUsd - a.estimatedUsd)[0] ?? null;
@@ -120,6 +138,25 @@ export class SessionTurnsComponent {
     const peakInput = Math.max(...rows.map((event) => event.inputTokens), 0);
     const totalRawInput = rows.reduce((sum, event) => sum + event.inputTokens, 0);
     return peakInput > 0 ? totalRawInput / peakInput : 0;
+  }
+
+  protected contextTimelineSummary(): string {
+    const peakCall = this.contextPeakCall();
+    if (!peakCall) {
+      return 'No token-bearing model calls were imported for this run.';
+    }
+
+    return `Biggest request was call #${peakCall.callNumber}: ${peakCall.inputTokens.toLocaleString()} input tokens, ${this.contextLimitPercentLabel(
+      peakCall,
+    )} of the model prompt limit. Across the run, repeated input added up to ${this.contextRepeatedFactor().toFixed(
+      1,
+    )}x that biggest request.`;
+  }
+
+  protected userRequestMarkerLabel(event: ModelCallRowViewModel): string {
+    return event.userRequestDetail
+      ? `After user request #${event.userRequestIndex}: ${event.userRequestDetail}`
+      : 'After a user request';
   }
 
   protected impactClass(event: ModelCallRowViewModel): string {

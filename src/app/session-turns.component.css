@@ -236,6 +236,9 @@
 }
 
 .context-load-header h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin: 3px 0 0;
   color: var(--text-strong);
   font-size: 16px;
@@ -249,6 +252,13 @@
   color: var(--muted);
   font-size: 12px;
   line-height: 1.45;
+}
+
+.context-load-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px !important;
 }
 
 .context-load-header code {
@@ -273,6 +283,9 @@
 }
 
 .context-load-summary em {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   color: var(--muted-2);
   font-size: 10px;
   font-style: normal;
@@ -312,6 +325,11 @@
   cursor: pointer;
 }
 
+.context-call-bar.after-user-request {
+  border-color: rgba(31, 209, 165, 0.34);
+  box-shadow: inset 0 2px 0 rgba(31, 209, 165, 0.52);
+}
+
 .context-call-bar:hover,
 .context-call-bar:focus-visible {
   border-color: rgba(31, 209, 165, 0.5);
@@ -325,6 +343,31 @@
   font-size: 10px;
   font-style: normal;
   font-weight: 760;
+}
+
+.context-call-index {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.user-request-marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-width: 22px;
+  height: 15px;
+  border: 1px solid rgba(31, 209, 165, 0.34);
+  border-radius: 999px;
+  padding: 0 5px;
+  background: rgba(31, 209, 165, 0.1);
+  color: var(--success-text, #bbfff0);
+  font-size: 9px;
+  font-weight: 860;
+  line-height: 1;
+  text-transform: none;
 }
 
 .context-call-bar i {
@@ -717,6 +760,12 @@
 
 :host-context(.theme-light) .context-call-bar i {
   background: rgba(97, 112, 133, 0.13);
+}
+
+:host-context(.theme-light) .user-request-marker {
+  border-color: rgba(12, 159, 131, 0.24);
+  background: rgba(12, 159, 131, 0.09);
+  color: #087763;
 }
 
 :host-context(.theme-light) .model-call-table {

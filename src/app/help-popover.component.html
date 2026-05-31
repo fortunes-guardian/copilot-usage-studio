@@ -1,20 +1,29 @@
-<span class="help-popover" (mouseenter)="positionPanel()" (focusin)="positionPanel()">
+<span
+  class="help-popover"
+  [class.open]="open"
+  (mouseenter)="openPanel()"
+  (mouseleave)="closePanel()"
+  (focusin)="openPanel()"
+  (focusout)="closePanel()"
+>
   @if (interactive) {
-    <button type="button" [attr.aria-label]="label">
-      <span aria-hidden="true">i</span>
+    <button type="button" [attr.aria-label]="label" (click)="openPanel()">
+      <span aria-hidden="true">?</span>
     </button>
   } @else {
     <span class="help-trigger" aria-hidden="true">
-      <span>i</span>
+      <span>?</span>
     </span>
   }
   <span
     #panel
     class="help-panel"
+    [class.above]="placement === 'above'"
     role="tooltip"
     [style.left.px]="panelLeft"
     [style.top.px]="panelTop"
     [style.width.px]="panelWidth"
+    [style.--arrow-left.px]="arrowLeft"
   >
     {{ text }}
   </span>

@@ -1,50 +1,67 @@
 :host {
-  display: inline-grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   position: relative;
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   vertical-align: middle;
+  text-transform: none !important;
 }
 
 .help-popover {
   position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  text-transform: none !important;
 }
 
 button,
 .help-trigger {
-  display: grid;
-  place-items: center;
-  width: 16px;
-  height: 16px;
-  border: 1px solid rgba(198, 214, 224, 0.38);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  border: 1px solid rgba(39, 214, 176, 0.3);
   border-radius: 50%;
   padding: 0;
-  background: transparent;
-  color: var(--muted-2);
-  font-family: Arial, "Segoe UI", sans-serif;
-  font-size: 10px;
-  font-weight: 700;
+  background:
+    linear-gradient(135deg, rgba(124, 92, 255, 0.16), rgba(31, 209, 165, 0.12)),
+    rgba(255, 255, 255, 0.035);
+  color: var(--accent-2);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 9px;
+  font-weight: 850;
   line-height: 1;
   cursor: help;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+  text-transform: none !important;
 }
 
 button span,
 .help-trigger span {
-  display: block;
-  width: 1em;
-  height: 1em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
   line-height: 1;
-  transform: translateY(-0.25px);
+  transform: translateY(-0.35px);
+  text-transform: none !important;
 }
 
 button:hover,
 .help-popover:hover .help-trigger {
-  border-color: rgba(39, 214, 176, 0.64);
-  color: var(--success-text, #bbfff0);
-  background: rgba(39, 214, 176, 0.1);
+  border-color: rgba(111, 92, 255, 0.56);
+  color: var(--text-strong);
+  background:
+    linear-gradient(135deg, rgba(124, 92, 255, 0.28), rgba(31, 209, 165, 0.2)),
+    rgba(255, 255, 255, 0.05);
 }
 
 button:focus-visible {
@@ -54,14 +71,19 @@ button:focus-visible {
 
 .help-panel {
   position: fixed;
-  z-index: 50;
+  z-index: 1000;
   max-width: calc(100vw - 24px);
-  border: 1px solid var(--line-strong);
-  border-radius: 10px;
-  padding: 10px 11px;
-  background: var(--surface-raised, #0d1520);
+  border: 1px solid rgba(39, 214, 176, 0.26);
+  border-radius: 12px;
+  padding: 11px 12px 11px 13px;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(124, 92, 255, 0.22), transparent 44%),
+    linear-gradient(135deg, rgba(31, 209, 165, 0.13), rgba(124, 92, 255, 0.08)),
+    var(--surface-raised, #0d1520);
   color: var(--text);
-  box-shadow: var(--shadow, 0 16px 40px rgba(0, 0, 0, 0.35));
+  box-shadow:
+    0 18px 46px rgba(0, 0, 0, 0.36),
+    0 0 0 1px rgba(255, 255, 255, 0.035);
   font-size: 12px;
   font-weight: 520;
   line-height: 1.45;
@@ -72,10 +94,33 @@ button:focus-visible {
   transition: opacity 120ms ease, transform 120ms ease;
   text-transform: none;
   text-align: left;
+  backdrop-filter: blur(14px);
 }
 
-.help-popover:hover .help-panel,
-.help-popover:focus-within .help-panel {
+.help-panel::before {
+  content: "";
+  position: absolute;
+  left: var(--arrow-left, 18px);
+  top: -6px;
+  width: 10px;
+  height: 10px;
+  border-left: 1px solid rgba(39, 214, 176, 0.26);
+  border-top: 1px solid rgba(39, 214, 176, 0.26);
+  background:
+    linear-gradient(135deg, rgba(31, 209, 165, 0.16), rgba(124, 92, 255, 0.14)),
+    var(--surface-raised, #0d1520);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.help-panel.above::before {
+  top: auto;
+  bottom: -6px;
+  border: 0;
+  border-right: 1px solid rgba(39, 214, 176, 0.26);
+  border-bottom: 1px solid rgba(39, 214, 176, 0.26);
+}
+
+.help-popover.open .help-panel {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
@@ -83,14 +128,29 @@ button:focus-visible {
 
 :host-context(.theme-light) button,
 :host-context(.theme-light) .help-trigger {
-  border-color: rgba(129, 145, 165, 0.34);
-  background: rgba(255, 255, 255, 0.55);
+  border-color: rgba(12, 159, 131, 0.22);
+  background:
+    linear-gradient(135deg, rgba(111, 92, 255, 0.12), rgba(12, 159, 131, 0.1)),
+    rgba(255, 255, 255, 0.76);
+  color: #0c8f76;
 }
 
 :host-context(.theme-light) .help-panel {
-  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(12, 159, 131, 0.2);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(111, 92, 255, 0.12), transparent 44%),
+    linear-gradient(135deg, rgba(12, 159, 131, 0.08), rgba(111, 92, 255, 0.045)),
+    rgba(255, 255, 255, 0.96);
+  color: var(--text);
   box-shadow: 0 18px 42px rgba(31, 45, 64, 0.16);
   backdrop-filter: blur(14px);
+}
+
+:host-context(.theme-light) .help-panel::before {
+  border-color: rgba(12, 159, 131, 0.2);
+  background:
+    linear-gradient(135deg, rgba(12, 159, 131, 0.09), rgba(111, 92, 255, 0.06)),
+    rgba(255, 255, 255, 0.96);
 }
 
 

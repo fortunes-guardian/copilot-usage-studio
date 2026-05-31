@@ -428,14 +428,17 @@ function modelCallRows(
   sort: ModelCallSort,
 ) {
   const cumulativeRawInputByModel = new Map<string, number>();
+  let previousModelEventIndex = -1;
   const rows = pricedModelCallEvents(events, modelBreakdown).map((event, index) => {
     const context = nearbyContextForEvent(event, events);
+    const userRequest = userRequestBeforeModelCall(event, events, previousModelEventIndex);
     const modelLimit = modelLimitForEvent(event, modelLimits);
     const cumulativeKey = modelLimitKey(modelLimit, event);
     const cumulativeRawInputTokens = (cumulativeRawInputByModel.get(cumulativeKey) ?? 0) + event.inputTokens;
     cumulativeRawInputByModel.set(cumulativeKey, cumulativeRawInputTokens);
     const promptLimitTokens = positiveNumber(modelLimit?.promptLimitTokens);
     const contextWindowTokens = positiveNumber(modelLimit?.contextWindowTokens);
+    previousModelEventIndex = event.index;
 
     return {
       ...event,
@@ -443,6 +446,9 @@ function modelCallRows(
       share: sessionCostUsd > 0 ? (event.estimatedUsd / sessionCostUsd) * 100 : 0,
       contextLabel: context.label,
       contextDetail: context.detail,
+      startsAfterUserRequest: Boolean(userRequest),
+      userRequestIndex: userRequest?.index ?? null,
+      userRequestDetail: userRequest ? compactText(userRequest.detail, 110) : null,
       promptLimitTokens,
       contextWindowTokens,
       promptLimitShare: promptLimitTokens ? event.inputTokens / promptLimitTokens : null,
@@ -455,6 +461,23 @@ function modelCallRows(
   return sort === 'largest'
     ? [...rows].sort((a, b) => b.estimatedUsd - a.estimatedUsd || b.totalTokens - a.totalTokens)
     : rows;
+}
+
+function userRequestBeforeModelCall(
+  event: TraceEvent,
+  events: TraceEvent[],
+  previousModelEventIndex: number,
+): TraceEvent | null {
+  return (
+    [...events]
+      .reverse()
+      .find(
+        (candidate) =>
+          candidate.type === 'user_message' &&
+          candidate.index > previousModelEventIndex &&
+          candidate.index < event.index,
+      ) ?? null
+  );
 }
 
 function modelLimitForEvent(event: TraceEvent, modelLimits: ModelLimitSummary[]): ModelLimitSummary | null {

@@ -26,11 +26,12 @@ describe('SessionTurnsComponent', () => {
   it('shows context load timeline from raw input tokens and model limits', () => {
     const text = fixture.nativeElement.textContent as string;
 
-    expect(text).toContain('Raw input over calls');
-    expect(text).toContain('Peak request');
+    expect(text).toContain('Input sent to the model');
+    expect(text).toContain('Biggest request');
     expect(text).toContain('9,000');
     expect(text).toContain('7%');
-    expect(text).toContain('Repeated input');
+    expect(text).toContain('Repeated load');
+    expect(text).toContain('You');
   });
 });
 
@@ -59,6 +60,9 @@ function turnsFixture(): SessionTurnsViewModel {
         share: 42,
         contextLabel: 'user_message',
         contextDetail: 'test prompt',
+        startsAfterUserRequest: true,
+        userRequestIndex: 9,
+        userRequestDetail: 'test prompt',
         promptLimitTokens: 128_000,
         contextWindowTokens: 200_000,
         promptLimitShare: 9_000 / 128_000,
