@@ -144,6 +144,7 @@ test('imports exact debug-log token totals from a session fixture', () => {
           inputTokens: 23_911,
           cachedTokens: 21_632,
           outputTokens: 285,
+          copilotUsageNanoAiu: 1_538_050_000,
           estimatedCost: { currency: 'USD', total: 0.02 },
           ttft: 398,
           requestOptions: JSON.stringify({ reasoning: { effort: 'high' } }),
@@ -171,6 +172,18 @@ test('imports exact debug-log token totals from a session fixture', () => {
     assert.equal(session.traceEvents[2].cachedInputTokens, 21_632);
     assert.equal(session.traceEvents[2].reasoningEffort, 'high');
     assert.equal(session.traceEvents[2].sourceEstimatedCost, '{"currency":"USD","total":"0.02"}');
+    assert.deepEqual(session.traceEvents[2].sourceUsage, {
+      nanoAiu: 1_538_050_000,
+      credits: 1.53805,
+      usd: 0.0153805,
+      modelCalls: 1,
+    });
+    assert.deepEqual(session.sourceUsage, {
+      nanoAiu: 1_538_050_000,
+      credits: 1.53805,
+      usd: 0.0153805,
+      modelCalls: 1,
+    });
     assert.equal(session.traceEvents[2].setupPayload.systemPromptFile, 'system_prompt_0.json');
     assert.equal(session.traceEvents[2].setupPayload.systemPromptChars > 0, true);
     assert.equal(session.traceEvents[2].setupPayload.toolsFile, 'tools_0.json');

@@ -845,6 +845,35 @@ function sourceEstimatedCost(event) {
   return summaryValue(event.attrs?.estimatedCost);
 }
 
+function sourceUsageFromNanoAiu(event) {
+  const nanoAiu = Number(event.attrs?.copilotUsageNanoAiu ?? 0);
+  if (!Number.isFinite(nanoAiu) || nanoAiu <= 0) {
+    return null;
+  }
+
+  const credits = nanoAiu / 1_000_000_000;
+
+  return {
+    nanoAiu,
+    credits,
+    usd: credits * 0.01,
+    modelCalls: 1,
+  };
+}
+
+function sourceUsageSummary(llmRequests) {
+  const usages = llmRequests.map(sourceUsageFromNanoAiu).filter(Boolean);
+  const nanoAiu = usages.reduce((sum, usage) => sum + usage.nanoAiu, 0);
+  const credits = nanoAiu / 1_000_000_000;
+
+  return {
+    nanoAiu,
+    credits,
+    usd: credits * 0.01,
+    modelCalls: usages.length,
+  };
+}
+
 function compactObject(value) {
   if (!value || typeof value !== 'object') {
     return value;
@@ -885,6 +914,7 @@ function eventAttributeSummary(event) {
     ['cacheWriteTokens', attrs.cacheWriteTokens ?? attrs.cachedWriteTokens],
     ['outputTokens', attrs.outputTokens],
     ['sourceEstimatedCost', attrs.estimatedCost],
+    ['copilotUsageNanoAiu', attrs.copilotUsageNanoAiu],
     ['reasoningEffort', event.type === 'llm_request' ? reasoningEffort(event) : undefined],
     ['textVerbosity', event.type === 'llm_request' ? textVerbosity(event) : undefined],
     ['requestShape', event.type === 'llm_request' ? requestShapeSummary(event) : undefined],
@@ -1012,6 +1042,7 @@ export function sessionFromDebugLog(sessionDir, workspaceDir) {
   const payload = requestPayloadSummary(sessionDir, llmRequests, toolEvents);
   const modelLimits = modelLimitSummaries(sessionDir, llmRequests);
   const cacheTokenAudit = cacheTokenAuditFromLlmRequests(llmRequests);
+  const sourceUsage = sourceUsageSummary(llmRequests);
   const setupPayloadForEvent = modelCallSetupPayloadFactory(sessionDir);
   const transcript = transcriptAvailability(workspaceDir, sid);
 
@@ -1084,6 +1115,7 @@ export function sessionFromDebugLog(sessionDir, workspaceDir) {
       reasoningEfforts: payload.reasoningEfforts,
     },
     cacheTokenAudit,
+    ...(sourceUsage.modelCalls > 0 ? { sourceUsage } : {}),
     transcript,
     advancedSignals: evidence,
     requestPayload: payload,
@@ -1102,6 +1134,7 @@ export function sessionFromDebugLog(sessionDir, workspaceDir) {
               };
 
         const setupPayload = setupPayloadForEvent(event);
+        const sourceUsage = sourceUsageFromNanoAiu(event);
 
         return {
           index,
@@ -1125,6 +1158,7 @@ export function sessionFromDebugLog(sessionDir, workspaceDir) {
           ...(event.type === 'llm_request' && sourceEstimatedCost(event)
             ? { sourceEstimatedCost: sourceEstimatedCost(event) }
             : {}),
+          ...(sourceUsage ? { sourceUsage } : {}),
           ...(setupPayload ? { setupPayload } : {}),
         };
       }),

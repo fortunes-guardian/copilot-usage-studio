@@ -79,6 +79,13 @@ export interface DebugLogRuntime {
   copilotVersion: string;
 }
 
+export interface SourceUsage {
+  nanoAiu: number;
+  credits: number;
+  usd: number;
+  modelCalls: number;
+}
+
 export interface TraceEvent {
   index: number;
   timestamp: string;
@@ -101,6 +108,7 @@ export interface TraceEvent {
   pricingModel?: string;
   estimatedCost?: CostBreakdown;
   sourceEstimatedCost?: string;
+  sourceUsage?: SourceUsage;
   setupPayload?: ModelCallSetupPayload;
 }
 
@@ -209,6 +217,7 @@ export interface CopilotSession {
   confidence: EstimateConfidence;
   traceSummary: TraceSummary;
   cacheTokenAudit?: CacheTokenAudit;
+  sourceUsage?: SourceUsage;
   transcript?: TranscriptAvailability;
   debugLogRuntime?: DebugLogRuntime;
   advancedSignals?: AdvancedSignals;

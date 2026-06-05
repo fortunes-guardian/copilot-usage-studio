@@ -28,6 +28,7 @@ Done:
 - Added scanner fixture tests for raw Agent Debug Log `cachedTokens`, invalid cached-token splits, cache-write pricing, and merged cache audits.
 - Added Trace inspector coverage for cached model-call details, fallback pricing labels, and tool events that are not directly priced.
 - Preserved raw VS Code `llm_request.attrs.estimatedCost` separately on trace events when present, without mixing it into the app-calculated estimate.
+- Preserved VS Code `llm_request.attrs.copilotUsageNanoAiu` as source usage evidence and verify that it reconciles with app-calculated token pricing when present.
 - Recorded optional matching Chat Debug transcript availability for debug-log sessions without using transcripts for pricing.
 - After the 2026-05-30 VS Code/Copilot update, preserved debug-log runtime metadata (`vscodeVersion`, `copilotVersion`) plus request-shape and text-verbosity metadata from new Agent Debug Log fields.
 - Added a compact selected-run Context Load card that compares largest raw input with `models.json` prompt/context limits and distinguishes near-limit runs from repeated-context runs without showing noisy model capability metadata.
@@ -38,7 +39,7 @@ Next:
 
 - Keep user-facing source language minimal. Show debug-log/source details in docs or ingest diagnostics, not as primary selected-run chips.
 - Remove low-value banners and technical caveats from the main Cost view unless they change a decision.
-- Compare raw VS Code `estimatedCost` with the app-calculated estimate only after enough real sessions show this field consistently.
+- Compare raw VS Code `estimatedCost` and `copilotUsageNanoAiu` with the app-calculated estimate only after enough real sessions show these fields consistently.
 - Continue tuning Context Load copy against larger real sessions. Keep it as capacity context, not billing prediction.
 - Use the Context Load timeline with more real sessions to decide whether a deeper per-turn chart is useful, while keeping the current version grounded in `models.json` limits and observed `inputTokens`.
 - Keep the Calls timeline focused on model input over time. Use the separate Setup Footprint panel for instruction/tool/MCP payload evidence so repeated setup payloads do not bloat the timeline.

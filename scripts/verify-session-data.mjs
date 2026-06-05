@@ -70,6 +70,37 @@ function auditFromTraceEvents(traceEvents = []) {
     }, emptyCacheTokenAudit());
 }
 
+function sourceUsageFromTraceEvents(traceEvents = []) {
+  const events = traceEvents.filter((event) => event.type === 'llm_request' && event.sourceUsage);
+  const nanoAiu = events.reduce((sum, event) => sum + Number(event.sourceUsage?.nanoAiu ?? 0), 0);
+  const credits = nanoAiu / 1_000_000_000;
+
+  return {
+    nanoAiu,
+    credits,
+    usd: credits * 0.01,
+    modelCalls: events.length,
+  };
+}
+
+function compareSourceUsage(actual, expected, label) {
+  if (!actual) {
+    return;
+  }
+
+  for (const field of ['nanoAiu', 'modelCalls']) {
+    if (Number(actual[field] ?? NaN) !== Number(expected[field] ?? NaN)) {
+      fail(`${label} sourceUsage.${field}=${actual[field] ?? 'missing'} does not match expected ${expected[field]}`);
+    }
+  }
+
+  for (const field of ['credits', 'usd']) {
+    if (Math.abs(Number(actual[field] ?? NaN) - Number(expected[field] ?? NaN)) > 0.000000001) {
+      fail(`${label} sourceUsage.${field}=${actual[field] ?? 'missing'} does not match expected ${expected[field]}`);
+    }
+  }
+}
+
 function mergeCacheTokenAudits(audits) {
   return audits.reduce((total, audit) => {
     for (const field of [
@@ -197,11 +228,20 @@ for (const session of sessionData.sessions ?? []) {
       if (Math.abs(expectedEventUsd * Number(sessionData.usdToEur) - Number(event.estimatedCost?.eur)) > 0.000000001) {
         fail(`${session.id} traceEvents.${event.index ?? 'unknown'} estimatedCost.eur does not match token pricing and usdToEur`);
       }
+      if (event.sourceUsage) {
+        if (Number(event.sourceUsage.nanoAiu ?? 0) <= 0) {
+          fail(`${session.id} traceEvents.${event.index ?? 'unknown'} sourceUsage.nanoAiu must be positive`);
+        }
+        if (Math.abs(Number(event.sourceUsage.usd ?? NaN) - expectedEventUsd) > 0.000000001) {
+          fail(`${session.id} traceEvents.${event.index ?? 'unknown'} sourceUsage.usd does not match token pricing`);
+        }
+      }
     }
   }
 
   const expectedCacheTokenAudit = auditFromTraceEvents(session.traceEvents);
   compareCacheTokenAudit(session.cacheTokenAudit, expectedCacheTokenAudit, session.id);
+  compareSourceUsage(session.sourceUsage, sourceUsageFromTraceEvents(session.traceEvents), session.id);
 
   if (session.vscodeState) {
     if (!session.vscodeState.sourcePath) {

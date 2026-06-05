@@ -89,6 +89,7 @@ Observed `attrs` fields:
 | `cachedTokens` | Cached input tokens reported by VS Code | Imported as `cachedInput`; priced with GitHub cached-input rate |
 | `outputTokens` | Generated output tokens | Imported as `output`; priced with GitHub output rate |
 | `estimatedCost` | Possible VS Code/source estimate object | Preserved separately on trace events as `sourceEstimatedCost` when present. It does not replace the app-calculated estimate. |
+| `copilotUsageNanoAiu` | Source-provided Copilot usage units in billionths of an AI credit | Preserved as `sourceUsage`; `nanoAiu / 1,000,000,000 = AI credits`, and credits are converted at `$0.01` each. Used as a reconciliation signal when present, not as a replacement for token-bucket pricing. |
 | `ttft` | Time to first token in ms | Preserved on trace rows |
 | `responseId` | Provider/VS Code response id | Preserved in bounded attributes |
 | `userRequest` | Current request payload, often JSON string | Used for previews only; may be large |
@@ -275,6 +276,15 @@ Session fields:
 
 Token-bearing trace events preserve raw `inputTokens`, optional `cachedInputTokens`, optional `cacheWriteTokens`, `outputTokens`, `model`, `rawModel`, `pricingModel`, `totalTokens`, app-calculated `estimatedCost`, and optional source-provided `sourceEstimatedCost`.
 
+When `copilotUsageNanoAiu` is present, token-bearing trace events also preserve `sourceUsage`:
+
+```text
+sourceUsage.credits = copilotUsageNanoAiu / 1,000,000,000
+sourceUsage.usd = sourceUsage.credits * 0.01
+```
+
+In the 2026-06-05 sample, the summed source usage exactly matched the app-calculated estimate. This is valuable reconciliation evidence, but the app still prices from visible token buckets so the calculation remains explainable.
+
 When a model call references `systemPromptFile` or `toolsFile`, the scanner also preserves `traceEvents[].setupPayload`: system prompt side-file name and character count, tools side-file name and character count, total tool count, MCP tool count, MCP tool names, and the largest tool schemas by character size. This is setup-payload evidence for debugging. It is not a section-level token bill.
 
 `modelLimits` answers a capacity question, not a billing question: did the run get expensive because a request was close to the model's prompt/context limit, or because many model calls repeatedly sent context? It compares observed raw `inputTokens` with `models.json` limits and keeps pricing separate. The app deliberately does not show model capability noise such as supported API endpoints in the main UI.
@@ -286,6 +296,7 @@ Build confidently from:
 - `llm_request.attrs.inputTokens`
 - `llm_request.attrs.cachedTokens`
 - `llm_request.attrs.outputTokens`
+- `llm_request.attrs.copilotUsageNanoAiu`
 - `llm_request.attrs.model`
 - `llm_request.attrs.requestOptions.reasoning.effort`
 - `llm_request.attrs.requestOptions.text.verbosity`
