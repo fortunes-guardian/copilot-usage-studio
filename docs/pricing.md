@@ -58,13 +58,31 @@ cost_usd =
 
 The app displays this estimate in USD. It does not convert to EUR because GitHub's published rate card, AI-credit conversion, and additional-usage budgets are USD-native.
 
-GitHub AI credits are calculated from the USD estimate:
+When `copilotUsageNanoAiu` is not available, GitHub AI credits are calculated from the USD token estimate:
 
 ```text
 ai_credits = cost_usd / 0.01
 ```
 
 GitHub documents `1 AI credit = $0.01 USD`.
+
+## GitHub Source Usage
+
+Newer VS Code Copilot Agent Debug Logs can expose `llm_request.attrs.copilotUsageNanoAiu`.
+
+When present, the app treats this as the primary source-usage total for the run:
+
+```text
+source_ai_credits = copilotUsageNanoAiu / 1,000,000,000
+source_usd = source_ai_credits * 0.01
+```
+
+The token-bucket calculation remains the explanation layer and fallback. In other words:
+
+- **GitHub source usage** answers "what usage did Copilot report locally?" This is the primary run total when present.
+- **Token buckets** answer "why did that usage happen?"
+
+The verifier compares source usage with the token-bucket estimate when `copilotUsageNanoAiu` is present. The main UI should stay simple: show source usage when it exists, and only call out fallback when source usage is absent. Reconciliation details belong in diagnostics or docs unless a divergence would change a user decision.
 
 ## Included AI Credit Allowances
 
@@ -92,8 +110,8 @@ For example, a 100-seat Copilot Business organization has a shared standard pool
 
 The selected run header shows:
 
-- estimated USD cost
-- estimated AI credits
+- GitHub source usage when available, otherwise estimated USD cost
+- GitHub source credits when available, otherwise estimated AI credits
 - selected allowance plan
 - percent of that plan's per-user monthly allowance
 
@@ -125,6 +143,8 @@ The same view also shows the selected Business/Enterprise AI-credit allowance an
 
 Good for:
 
+- using VS Code's `copilotUsageNanoAiu` source usage as the primary local usage total when that field is present
+- reconciling source usage against app-calculated token pricing so token buckets still explain the total
 - finding which model calls drove a run's local cost estimate
 - comparing two runs under the same local assumptions
 - spotting whether cost came mostly from input/context or output

@@ -5,6 +5,7 @@ import {
   priceForPricingModel,
   pricingModelForModel,
 } from './pricing';
+import { sessionUsageUsd, traceEventUsageUsd } from './session-cost-utils';
 
 export type SessionSize = 'Small' | 'Medium' | 'Large' | 'Very large';
 export type WarningTone = 'low' | 'info' | 'medium' | 'high';
@@ -30,13 +31,14 @@ export type TopTokenEvent = ReturnType<typeof topTokenEvents>[number];
 export type CostAnswer = ReturnType<typeof costAnswer>;
 
 export function buildCostExplanation(session: CopilotSession, sort: ModelCallSort) {
-  const modelRows = session.modelBreakdown.map((entry) => explainModelCost(entry, session.cost.usd));
+  const sessionCostUsd = sessionUsageUsd(session);
+  const modelRows = session.modelBreakdown.map((entry) => explainModelCost(entry, sessionCostUsd));
   const categoryRows = explainCategoryCosts(modelRows);
   const modelCallRowList = modelCallRows(
     session.traceEvents,
     session.modelBreakdown,
     session.modelLimits ?? [],
-    session.cost.usd,
+    sessionCostUsd,
     sort,
   );
   const topTokenEventList = topTokenEvents(session.traceEvents, session.modelBreakdown);
@@ -106,6 +108,7 @@ export function flowTraceEvents(events: TraceEvent[], modelBreakdown: ModelBreak
       const price = priceForPricingModel(pricingModel);
       const normalInputTokens = normalInputTokensForEvent(event);
       const estimatedUsd =
+        traceEventUsageUsd(event) ??
         event.estimatedCost?.usd ??
         tokenCostUsd(normalInputTokens, price.input) +
           tokenCostUsd(event.cachedInputTokens ?? 0, price.cachedInput) +
@@ -158,7 +161,7 @@ export function traceEventDetails(event: TraceEvent, modelBreakdown: ModelBreakd
   const cachedInputUsd = tokenCostUsd(event.cachedInputTokens ?? 0, price.cachedInput);
   const cacheWriteUsd = tokenCostUsd(event.cacheWriteTokens ?? 0, price.cacheWrite ?? 0);
   const outputUsd = tokenCostUsd(event.outputTokens, price.output);
-  const estimatedUsd = event.estimatedCost?.usd ?? inputUsd + cachedInputUsd + cacheWriteUsd + outputUsd;
+  const estimatedUsd = traceEventUsageUsd(event) ?? event.estimatedCost?.usd ?? inputUsd + cachedInputUsd + cacheWriteUsd + outputUsd;
   const totalTokens = eventTotalTokens(event);
   const rawModel = event.rawModel || event.model || modelFromEventDetail(event.detail);
   const normalizedFields = [
@@ -183,12 +186,23 @@ export function traceEventDetails(event: TraceEvent, modelBreakdown: ModelBreakd
           { label: 'Total tokens', value: totalTokens.toLocaleString() },
           { label: 'Pricing row', value: pricingModel },
           {
-            label: 'Estimated cost',
+            label: event.sourceUsage ? 'GitHub usage' : 'Estimated cost',
             value: `$${estimatedUsd.toLocaleString(undefined, {
               minimumFractionDigits: 6,
               maximumFractionDigits: 6,
             })}`,
           },
+          ...(event.sourceUsage
+            ? [
+                {
+                  label: 'Source usage credits',
+                  value: event.sourceUsage.credits.toLocaleString(undefined, {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 6,
+                  }),
+                },
+              ]
+            : []),
           ...(event.sourceEstimatedCost
             ? [{ label: 'Source estimatedCost', value: event.sourceEstimatedCost }]
             : []),
@@ -279,7 +293,7 @@ function explainCategoryCosts(modelRows: ModelCostRow[]) {
 }
 
 function costAnswer(session: CopilotSession, modelRows: ModelCostRow[], modelCallRowList: ModelCallRow[]) {
-  const sessionCost = Math.max(session.cost.usd, 0);
+  const sessionCost = Math.max(sessionUsageUsd(session), 0);
   const totalTokens = sessionTotalTokens(session);
   const inputUsd = modelRows.reduce((sum, row) => sum + row.inputUsd + row.cachedInputUsd + row.cacheWriteUsd, 0);
   const outputUsd = modelRows.reduce((sum, row) => sum + row.outputUsd, 0);
@@ -298,8 +312,8 @@ function costAnswer(session: CopilotSession, modelRows: ModelCostRow[], modelCal
     categoryShare,
     categoryDetail:
       category === 'Input/context'
-        ? 'Most of the estimate comes from tokens sent into the model: normal input, cached input, prior chat, repo context, and tool results.'
-        : 'Most of the estimate comes from generated model output. Inspect long responses or repeated generation.',
+        ? 'Most usage comes from tokens sent into the model: normal input, cached input, prior chat, repo context, and tool results.'
+        : 'Most usage comes from generated model output. Inspect long responses or repeated generation.',
     costPer1k,
     inputShare,
     outputShare,
@@ -358,7 +372,7 @@ function turnInsights(modelCallRowList: ModelCallRow[]) {
 function explainCostDrivers(session: CopilotSession, modelRows: ModelCostRow[], topTokenEventList: TopTokenEvent[]) {
   const inputUsd = modelRows.reduce((sum, row) => sum + row.inputUsd + row.cachedInputUsd + row.cacheWriteUsd, 0);
   const outputUsd = modelRows.reduce((sum, row) => sum + row.outputUsd, 0);
-  const sessionCost = Math.max(session.cost.usd, 0);
+  const sessionCost = Math.max(sessionUsageUsd(session), 0);
   const inputShare = sessionCost > 0 ? (inputUsd / sessionCost) * 100 : 0;
   const outputShare = sessionCost > 0 ? (outputUsd / sessionCost) * 100 : 0;
   const normalInputUsd = modelRows.reduce((sum, row) => sum + row.inputUsd, 0);
@@ -378,12 +392,12 @@ function explainCostDrivers(session: CopilotSession, modelRows: ModelCostRow[], 
       value: `$${inputUsd.toFixed(4)}`,
       detail:
         inputShare >= outputShare
-          ? `${inputShare.toFixed(0)}% of the $${sessionCost.toFixed(4)} run estimate. Split: $${normalInputUsd.toFixed(
+          ? `${inputShare.toFixed(0)}% of the $${sessionCost.toFixed(4)} run usage. Split: $${normalInputUsd.toFixed(
               4,
             )} normal input, $${cachedInputUsd.toFixed(4)} cached input${
               cacheWriteUsd ? `, $${cacheWriteUsd.toFixed(4)} cache write` : ''
             }.`
-          : `Input/cache contributes ${inputShare.toFixed(0)}% of the $${sessionCost.toFixed(4)} run estimate. Output is larger here.`,
+          : `Input/cache contributes ${inputShare.toFixed(0)}% of the $${sessionCost.toFixed(4)} run usage. Output is larger here.`,
       tone: inputShare >= 75 ? 'high' : inputShare >= 50 ? 'medium' : 'low',
     },
     {
@@ -398,7 +412,7 @@ function explainCostDrivers(session: CopilotSession, modelRows: ModelCostRow[], 
       title: 'Model mix',
       value: mixedModelCount === 1 ? topModel?.model ?? session.model : `${mixedModelCount} models`,
       detail: topModel
-        ? `${topModel.model} contributes about ${topModelShare.toFixed(0)}% of estimated cost using the ${topModel.pricingModel} price row.`
+        ? `${topModel.model} contributes about ${topModelShare.toFixed(0)}% of usage using the ${topModel.pricingModel} price row.`
         : 'No model breakdown is available for this session.',
       tone: mixedModelCount > 1 || topModelShare >= 80 ? 'medium' : 'low',
     },
@@ -525,7 +539,7 @@ function pricedModelCallEvents(events: TraceEvent[], modelBreakdown: ModelBreakd
       const cachedInputUsd = tokenCostUsd(event.cachedInputTokens ?? 0, price.cachedInput);
       const cacheWriteUsd = tokenCostUsd(event.cacheWriteTokens ?? 0, price.cacheWrite ?? 0);
       const outputUsd = tokenCostUsd(event.outputTokens, price.output);
-      const estimatedUsd = event.estimatedCost?.usd ?? inputUsd + cachedInputUsd + cacheWriteUsd + outputUsd;
+      const estimatedUsd = traceEventUsageUsd(event) ?? event.estimatedCost?.usd ?? inputUsd + cachedInputUsd + cacheWriteUsd + outputUsd;
 
       return {
         ...event,

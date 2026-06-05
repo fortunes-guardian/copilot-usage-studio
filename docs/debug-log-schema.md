@@ -89,7 +89,7 @@ Observed `attrs` fields:
 | `cachedTokens` | Cached input tokens reported by VS Code | Imported as `cachedInput`; priced with GitHub cached-input rate |
 | `outputTokens` | Generated output tokens | Imported as `output`; priced with GitHub output rate |
 | `estimatedCost` | Possible VS Code/source estimate object | Preserved separately on trace events as `sourceEstimatedCost` when present. It does not replace the app-calculated estimate. |
-| `copilotUsageNanoAiu` | Source-provided Copilot usage units in billionths of an AI credit | Preserved as `sourceUsage`; `nanoAiu / 1,000,000,000 = AI credits`, and credits are converted at `$0.01` each. Used as a reconciliation signal when present, not as a replacement for token-bucket pricing. |
+| `copilotUsageNanoAiu` | Source-provided Copilot usage units in billionths of an AI credit | Preserved as `sourceUsage`; `nanoAiu / 1,000,000,000 = AI credits`, and credits are converted at `$0.01` each. Used as the primary local usage total when present; token-bucket pricing remains the explanation layer and fallback. |
 | `ttft` | Time to first token in ms | Preserved on trace rows |
 | `responseId` | Provider/VS Code response id | Preserved in bounded attributes |
 | `userRequest` | Current request payload, often JSON string | Used for previews only; may be large |
@@ -283,7 +283,7 @@ sourceUsage.credits = copilotUsageNanoAiu / 1,000,000,000
 sourceUsage.usd = sourceUsage.credits * 0.01
 ```
 
-In the 2026-06-05 sample, the summed source usage exactly matched the app-calculated estimate. This is valuable reconciliation evidence, but the app still prices from visible token buckets so the calculation remains explainable.
+In the 2026-06-05 sample, the summed source usage exactly matched the app-calculated token estimate. The app now uses source usage as the primary total when present, while keeping visible token buckets so the calculation remains explainable and usable when source usage is absent.
 
 When a model call references `systemPromptFile` or `toolsFile`, the scanner also preserves `traceEvents[].setupPayload`: system prompt side-file name and character count, tools side-file name and character count, total tool count, MCP tool count, MCP tool names, and the largest tool schemas by character size. This is setup-payload evidence for debugging. It is not a section-level token bill.
 

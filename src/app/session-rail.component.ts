@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 import { CopilotSession } from './session-data.model';
 import { SessionSize, SessionTriage, sessionTriage } from './session-analysis';
+import { sessionUsageUsd } from './session-cost-utils';
 
 type SessionTimeFilter = 'all' | '7d' | '30d' | '90d';
 
@@ -51,6 +52,10 @@ export class SessionRailComponent {
     }
 
     return sourceKind;
+  }
+
+  protected usageUsd(session: CopilotSession): number {
+    return sessionUsageUsd(session);
   }
 
   protected trackBySessionId(_: number, session: CopilotSession): string {

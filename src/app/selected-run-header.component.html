@@ -21,8 +21,11 @@
     </p>
   </div>
   <div class="price">
-    <span>Estimate</span>
-    <strong>${{ session.cost.usd | number: '1.2-2' }}</strong>
+    <span>
+      {{ costLabel(session) }}
+      <app-help-popover [text]="costHelp(session)" label="Explain displayed cost"></app-help-popover>
+    </span>
+    <strong>${{ displayedUsageUsd(session) | number: '1.2-2' }}</strong>
     @if (allowanceUsage; as usage) {
       <div class="credit-meter">
         <label>

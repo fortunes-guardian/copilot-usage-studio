@@ -87,7 +87,7 @@
           </em>
           <i><b [style.width.%]="stats.allowanceShare > 100 ? 100 : stats.allowanceShare"></b></i>
           <small>
-            {{ stats.allowanceStatus }} · local estimate only.
+            {{ stats.allowanceStatus }} · source usage when available.
           </small>
         </aside>
         <section class="analytics-metrics" aria-label="Analytics summary metrics">
@@ -247,8 +247,8 @@
             @for (outlier of stats.outliers; track outlier.session.id) {
               <button type="button" (click)="emitOpenSession(outlier.session)">
                 <span>
-                  {{ outlier.tokens | number }} tokens · ${{ outlier.session.cost.usd | number: '1.2-4' }} ·
-                  {{ aiCredits(outlier.session.cost.usd) | number: '1.0-1' }} credits
+                  {{ outlier.tokens | number }} tokens · ${{ usageUsd(outlier.session) | number: '1.2-4' }} ·
+                  {{ usageCredits(outlier.session) | number: '1.0-1' }} credits
                 </span>
                 <strong>{{ outlier.session.title }}</strong>
                 <em>{{ outlier.reason }}</em>

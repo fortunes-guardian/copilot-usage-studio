@@ -78,7 +78,7 @@
         }
         <span class="session-footer">
           <span>{{ session.startedAt | date: 'MMM d, HH:mm' }}</span>
-          <strong>${{ session.cost.usd | number: '1.2-2' }}</strong>
+          <strong>${{ usageUsd(session) | number: '1.2-2' }}</strong>
         </span>
         <span class="session-scan">
           {{ session.traceSummary.totalTokens | number }} tokens · {{ sourceKindLabel(session.sourceKind) }}

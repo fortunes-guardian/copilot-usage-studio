@@ -6,6 +6,7 @@ import { HelpPopoverComponent } from './help-popover.component';
 import { CopilotSession } from './session-data.model';
 import { CopilotAllowance, CopilotAllowancePlan } from './pricing';
 import { SessionTriage } from './session-analysis';
+import { sessionUsageLabel, sessionUsageUsd } from './session-cost-utils';
 
 interface AllowanceUsage {
   credits: number;
@@ -56,6 +57,20 @@ export class SelectedRunHeaderComponent {
     return label
       ? `Reasoning setting VS Code recorded for this run's model requests. Higher reasoning can improve hard tasks, but it may also use more tokens or take longer. Imported values: ${label}.`
       : 'VS Code did not record a reasoning setting for this run.';
+  }
+
+  protected costLabel(session: CopilotSession): string {
+    return sessionUsageLabel(session);
+  }
+
+  protected costHelp(session: CopilotSession): string {
+    return session.sourceUsage
+      ? 'Usage reported by VS Code Copilot for this run.'
+      : 'Fallback estimate from imported token buckets and GitHub model prices because source usage was not logged.';
+  }
+
+  protected displayedUsageUsd(session: CopilotSession): number {
+    return sessionUsageUsd(session);
   }
 }
 

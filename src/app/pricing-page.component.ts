@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 import { HelpPopoverComponent } from './help-popover.component';
 import { CopilotSession } from './session-data.model';
+import { sessionUsageCredits, sessionUsageUsd } from './session-cost-utils';
 import {
   COPILOT_AI_CREDIT_USD,
   COPILOT_ALLOWANCE_PLANS,
@@ -68,7 +69,7 @@ export class PricingPageComponent {
     allowance:
       'Included AI credits for Copilot Business and Enterprise are monthly per assigned license, but GitHub pools them at the organization or enterprise billing entity level.',
     credit:
-      'GitHub states that 1 AI credit equals $0.01 USD. The app converts the local USD estimate into credits with that fixed rate.',
+      'GitHub states that 1 AI credit equals $0.01 USD. When VS Code logs GitHub source usage, the app uses that first; otherwise it converts the local token estimate into credits.',
     usageWindow:
       'This only filters the imported sessions used by the allowance meter. It does not change the GitHub price table below.',
   };
@@ -86,11 +87,11 @@ export class PricingPageComponent {
   });
 
   protected readonly totalEstimateUsd = computed(() =>
-    this.allowanceSessions().reduce((sum, session) => sum + session.cost.usd, 0),
+    this.allowanceSessions().reduce((sum, session) => sum + sessionUsageUsd(session), 0),
   );
 
   protected readonly totalEstimateCredits = computed(
-    () => this.totalEstimateUsd() / COPILOT_AI_CREDIT_USD,
+    () => this.allowanceSessions().reduce((sum, session) => sum + sessionUsageCredits(session), 0),
   );
 
   protected readonly selectedAllowanceUsage = computed(() => {

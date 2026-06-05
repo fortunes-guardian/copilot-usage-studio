@@ -1,5 +1,10 @@
-import { CopilotSession, ModelBreakdown, TokenBreakdown } from './session-data.model';
-import { modelUsesPricingFallback, priceForPricingModel, pricingFallbackReason } from './pricing';
+import { CopilotSession, ModelBreakdown, TokenBreakdown, TraceEvent } from './session-data.model';
+import {
+  COPILOT_AI_CREDIT_USD,
+  modelUsesPricingFallback,
+  priceForPricingModel,
+  pricingFallbackReason,
+} from './pricing';
 
 export interface PricedModelBreakdown extends ModelBreakdown {
   provider: string;
@@ -83,6 +88,22 @@ export function sessionTotalTokens(session: CopilotSession): number {
   return tokenTotal(session.tokens);
 }
 
+export function sessionUsageUsd(session: CopilotSession): number {
+  return finiteNumber(session.sourceUsage?.usd) ?? session.cost.usd;
+}
+
+export function sessionUsageCredits(session: CopilotSession): number {
+  return finiteNumber(session.sourceUsage?.credits) ?? session.cost.usd / COPILOT_AI_CREDIT_USD;
+}
+
+export function sessionUsageLabel(session: CopilotSession): 'GitHub usage' | 'Estimate fallback' {
+  return session.sourceUsage ? 'GitHub usage' : 'Estimate fallback';
+}
+
+export function traceEventUsageUsd(event: TraceEvent): number | null {
+  return finiteNumber(event.sourceUsage?.usd);
+}
+
 export function percentDelta(a: number, b: number): number | null {
   return a === 0 ? null : ((b - a) / a) * 100;
 }
@@ -100,6 +121,10 @@ export function setsDiffer(a: Set<string>, b: Set<string>): boolean {
 
 function average(values: number[]): number {
   return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+}
+
+function finiteNumber(value: number | null | undefined): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
 

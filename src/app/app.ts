@@ -16,7 +16,6 @@ import { SessionTraceComponent } from './session-trace.component';
 import { SessionTurnsComponent } from './session-turns.component';
 import { SelectedRunHeaderComponent } from './selected-run-header.component';
 import {
-  COPILOT_AI_CREDIT_USD,
   COPILOT_ALLOWANCE_PLANS,
   CopilotAllowancePlan,
   PRICING_SOURCE_URL,
@@ -30,6 +29,7 @@ import {
   sessionTriage,
   TraceFilter,
 } from './session-analysis';
+import { sessionUsageCredits, sessionUsageUsd } from './session-cost-utils';
 
 type ActiveView = 'sessions' | 'compare' | 'analytics' | 'pricing';
 type SelectedRunView = 'overview' | 'cost' | 'turns' | 'trace';
@@ -197,7 +197,7 @@ export class App {
   protected readonly selectedAllowanceUsage = computed(() => {
     const session = this.selectedSession();
     const allowance = this.selectedAllowance();
-    const credits = session ? session.cost.usd / COPILOT_AI_CREDIT_USD : 0;
+    const credits = session ? sessionUsageCredits(session) : 0;
     const share =
       allowance.creditsPerUserMonthly > 0 ? (credits / allowance.creditsPerUserMonthly) * 100 : 0;
 
@@ -224,7 +224,7 @@ export class App {
     const sessions = this.sessions();
     const totals = sessions.reduce(
       (acc, session) => {
-        acc.usd += session.cost.usd;
+        acc.usd += sessionUsageUsd(session);
         acc.input += session.tokens.input;
         acc.output += session.tokens.output;
         acc.cachedInput += session.tokens.cachedInput;

@@ -1,6 +1,11 @@
-import { COPILOT_AI_CREDIT_USD } from './pricing';
 import { CopilotSession } from './session-data.model';
-import { sessionTotalTokens, tokenTotal, usesPricingFallback } from './session-cost-utils';
+import {
+  sessionTotalTokens,
+  sessionUsageCredits,
+  sessionUsageUsd,
+  tokenTotal,
+  usesPricingFallback,
+} from './session-cost-utils';
 
 export type SessionSize = 'Small' | 'Medium' | 'Large' | 'Very large';
 export type AnalyticsTimeRange = 'all' | 'current-month' | 'previous-month' | '7d' | '30d' | '90d';
@@ -150,11 +155,12 @@ export function analyticsTrendRows(sessions: CopilotSession[], grouping: Analyti
 
     current.count += 1;
     current.tokens += sessionTotalTokens(session);
-    current.cost += session.cost.usd;
-    current.credits = current.cost / COPILOT_AI_CREDIT_USD;
-    if (!current.topSession || session.cost.usd > current.topSessionCost) {
+    const usageUsd = sessionUsageUsd(session);
+    current.cost += usageUsd;
+    current.credits += sessionUsageCredits(session);
+    if (!current.topSession || usageUsd > current.topSessionCost) {
       current.topSession = session;
-      current.topSessionCost = session.cost.usd;
+      current.topSessionCost = usageUsd;
     }
     rows.set(group.key, current);
   }
@@ -168,8 +174,9 @@ export function analyticsDistribution(sessions: CopilotSession[], totalCost: num
   return sizeOptions.map((size) => {
     const bucket = sessions.filter((session) => sessionSize(sessionTotalTokens(session)) === size);
     const tokens = bucket.reduce((sum, session) => sum + sessionTotalTokens(session), 0);
-    const cost = bucket.reduce((sum, session) => sum + session.cost.usd, 0);
-    const topSession = maxBy(bucket, (session) => session.cost.usd);
+    const cost = bucket.reduce((sum, session) => sum + sessionUsageUsd(session), 0);
+    const credits = bucket.reduce((sum, session) => sum + sessionUsageCredits(session), 0);
+    const topSession = maxBy(bucket, (session) => sessionUsageUsd(session));
 
     return {
       size,
@@ -177,9 +184,9 @@ export function analyticsDistribution(sessions: CopilotSession[], totalCost: num
       tokens,
       cost,
       share: totalCost > 0 ? (cost / totalCost) * 100 : 0,
-      credits: cost / COPILOT_AI_CREDIT_USD,
+      credits,
       topSession,
-      topSessionCost: topSession?.cost.usd ?? 0,
+      topSessionCost: topSession ? sessionUsageUsd(topSession) : 0,
     };
   });
 }
@@ -193,13 +200,13 @@ export function analyticsOutliers(
     return [];
   }
 
-  const costStd = standardDeviation(sessions.map((session) => session.cost.usd));
+  const costStd = standardDeviation(sessions.map((session) => sessionUsageUsd(session)));
   const tokenStd = standardDeviation(sessions.map((session) => sessionTotalTokens(session)));
 
   return sessions
     .map((session) => {
       const tokens = sessionTotalTokens(session);
-      const costScore = costStd > 0 ? (session.cost.usd - avgCost) / costStd : 0;
+      const costScore = costStd > 0 ? (sessionUsageUsd(session) - avgCost) / costStd : 0;
       const tokenScore = tokenStd > 0 ? (tokens - avgTokens) / tokenStd : 0;
       const score = Math.max(costScore, tokenScore);
       const reason = analyticsOutlierReason(session, costScore, tokenScore);
@@ -207,7 +214,7 @@ export function analyticsOutliers(
       return { session, tokens, score, reason };
     })
     .filter((row) => row.score >= 1 || sessions.length <= 5)
-    .sort((a, b) => b.score - a.score || b.session.cost.usd - a.session.cost.usd)
+    .sort((a, b) => b.score - a.score || sessionUsageUsd(b.session) - sessionUsageUsd(a.session))
     .slice(0, 5);
 }
 
@@ -292,7 +299,8 @@ function analyticsOutlierReason(session: CopilotSession, costScore: number, toke
   const inputTokens = session.tokens.input + session.tokens.cachedInput + session.tokens.cacheWrite;
   const inputShare = totalTokens ? (inputTokens / totalTokens) * 100 : 0;
   const topModel = maxBy(session.modelBreakdown, (row) => row.cost.usd);
-  const topModelShare = topModel && session.cost.usd > 0 ? (topModel.cost.usd / session.cost.usd) * 100 : 0;
+  const usageUsd = sessionUsageUsd(session);
+  const topModelShare = topModel && usageUsd > 0 ? (topModel.cost.usd / usageUsd) * 100 : 0;
   const modelTurns = session.traceSummary.modelTurns;
   const toolCalls = session.traceSummary.toolCalls;
   const traceActivity = modelTurns + toolCalls;

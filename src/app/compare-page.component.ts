@@ -10,6 +10,7 @@ import {
   percentDelta,
   pricingFallbackReason,
   sessionTotalTokens,
+  sessionUsageUsd,
   setsDiffer,
   tokenTotal,
   usesPricingFallback,
@@ -111,7 +112,9 @@ export class ComparePageComponent {
     const aAnalysis = this.sessionComparisonAnalysis(a);
     const bAnalysis = this.sessionComparisonAnalysis(b);
     const totalTokenDelta = bAnalysis.totalTokens - aAnalysis.totalTokens;
-    const costDelta = b.cost.usd - a.cost.usd;
+    const aUsageUsd = sessionUsageUsd(a);
+    const bUsageUsd = sessionUsageUsd(b);
+    const costDelta = bUsageUsd - aUsageUsd;
     const inputCostDelta = bAnalysis.inputContextUsd - aAnalysis.inputContextUsd;
     const outputCostDelta = bAnalysis.outputUsd - aAnalysis.outputUsd;
     const toolDelta = b.traceSummary.toolCalls - a.traceSummary.toolCalls;
@@ -125,18 +128,18 @@ export class ComparePageComponent {
       promptMatch: normalizePrompt(a.firstPrompt) === normalizePrompt(b.firstPrompt),
       costDelta,
       totalTokenDelta,
-      percent: percentDelta(a.cost.usd, b.cost.usd),
+      percent: percentDelta(aUsageUsd, bUsageUsd),
       summary: this.comparisonSummary(costDelta, totalTokenDelta, inputCostDelta, outputCostDelta, toolDelta, turnDelta),
       metrics: [
         {
-          label: 'Estimated cost',
-          a: a.cost.usd,
-          b: b.cost.usd,
+          label: 'Usage',
+          a: aUsageUsd,
+          b: bUsageUsd,
           delta: costDelta,
-          percent: percentDelta(a.cost.usd, b.cost.usd),
+          percent: percentDelta(aUsageUsd, bUsageUsd),
           format: 'currency',
           lowerIsBetter: true,
-          help: 'Local estimate from imported VS Code token totals and GitHub price rows.',
+          help: 'GitHub source usage when VS Code logged it. Falls back to local token pricing when source usage is unavailable.',
         },
         {
           label: 'Normal input tokens',
@@ -282,6 +285,10 @@ export class ComparePageComponent {
     return sessionTotalTokens(session);
   }
 
+  protected usageUsd(session: CopilotSession): number {
+    return sessionUsageUsd(session);
+  }
+
   protected promptRepeatCount(session: CopilotSession): number {
     const key = normalizePrompt(session.firstPrompt);
 
@@ -318,7 +325,7 @@ export class ComparePageComponent {
   }
 
   private sessionComparisonAnalysis(session: CopilotSession): SessionComparisonAnalysis {
-    const modelRows = session.modelBreakdown.map((entry) => explainModelCost(entry, session.cost.usd));
+    const modelRows = session.modelBreakdown.map((entry) => explainModelCost(entry, sessionUsageUsd(session)));
     const topModel = [...modelRows].sort((a, b) => b.totalUsd - a.totalUsd)[0] ?? null;
 
     return {
@@ -352,12 +359,12 @@ export class ComparePageComponent {
     return [...byPrompt.entries()]
       .filter(([, groupSessions]) => groupSessions.length > 1)
       .map(([key, groupSessions]) => {
-        const sortedByCost = [...groupSessions].sort((a, b) => a.cost.usd - b.cost.usd);
+        const sortedByCost = [...groupSessions].sort((a, b) => sessionUsageUsd(a) - sessionUsageUsd(b));
 
         return {
           key,
           sessions: [...groupSessions].sort((a, b) => a.startedAt.localeCompare(b.startedAt)),
-          costRangeUsd: sortedByCost[sortedByCost.length - 1].cost.usd - sortedByCost[0].cost.usd,
+          costRangeUsd: sessionUsageUsd(sortedByCost[sortedByCost.length - 1]) - sessionUsageUsd(sortedByCost[0]),
         };
       })
       .sort((a, b) => b.sessions.length - a.sessions.length || b.costRangeUsd - a.costRangeUsd);

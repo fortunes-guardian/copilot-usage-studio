@@ -16,7 +16,7 @@ import {
   maxBy,
 } from './session-analytics';
 import { CopilotSession } from './session-data.model';
-import { sessionTotalTokens } from './session-cost-utils';
+import { sessionTotalTokens, sessionUsageCredits, sessionUsageUsd } from './session-cost-utils';
 
 interface AnalyticsMetric {
   label: string;
@@ -133,11 +133,11 @@ export class AnalyticsPageComponent {
     const count = sessions.length;
     const sidebarCount = this.sessionsInput().length;
     const totalTokens = sessions.reduce((sum, session) => sum + sessionTotalTokens(session), 0);
-    const totalCost = sessions.reduce((sum, session) => sum + session.cost.usd, 0);
+    const totalCost = sessions.reduce((sum, session) => sum + sessionUsageUsd(session), 0);
     const avgTokens = count ? totalTokens / count : 0;
     const avgCost = count ? totalCost / count : 0;
     const costPer1k = totalTokens ? (totalCost / totalTokens) * 1000 : 0;
-    const totalCredits = this.aiCredits(totalCost);
+    const totalCredits = sessions.reduce((sum, session) => sum + sessionUsageCredits(session), 0);
     const selectedPlan =
       this.creditPlanOptions.find((plan) => plan.id === this.selectedCreditPlan()) ??
       this.creditPlanOptions[0] ?? {
@@ -157,7 +157,7 @@ export class AnalyticsPageComponent {
             ? 'Worth watching'
             : 'Low usage';
     const highestTokens = maxBy(sessions, (session) => sessionTotalTokens(session));
-    const highestCost = maxBy(sessions, (session) => session.cost.usd);
+    const highestCost = maxBy(sessions, (session) => sessionUsageUsd(session));
     const modelRows = analyticsModelRows(sessions, totalCost);
     const trendRows = analyticsTrendRows(sessions, this.analyticsGrouping());
     const distribution = analyticsDistribution(sessions, totalCost);
@@ -198,14 +198,14 @@ export class AnalyticsPageComponent {
         this.analyticsGroupingOptions.find((option) => option.value === this.analyticsGrouping())?.label ?? 'By day',
       metrics: [
         {
-          label: 'Total estimate',
+          label: 'Total usage',
           value: `$${totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-          help: 'Sum of local USD cost estimates for the current Analytics cohort.',
+          help: 'Sum of GitHub source usage when VS Code logged it, with token-priced estimates used as fallback.',
         },
         {
           label: 'AI credits used',
           value: `${totalCredits.toLocaleString(undefined, { maximumFractionDigits: 1 })}`,
-          help: `GitHub documents 1 AI credit = $${COPILOT_AI_CREDIT_USD.toFixed(2)} USD. This converts the same local estimate into credits.`,
+          help: `GitHub documents 1 AI credit = $${COPILOT_AI_CREDIT_USD.toFixed(2)} USD. Source usage credits are used first; token estimates convert with that fixed rate when source usage is absent.`,
         },
         {
           label: 'Total tokens',
@@ -213,9 +213,9 @@ export class AnalyticsPageComponent {
           help: 'Normal input, cached input, cache write, and output token fields combined across included sessions.',
         },
         {
-          label: 'Avg cost / run',
+          label: 'Avg usage / run',
           value: `$${avgCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`,
-          help: 'Mean estimated cost per included session.',
+          help: 'Mean GitHub source usage per included session, falling back to token estimate when needed.',
         },
         {
           label: 'Avg tokens / run',
@@ -223,9 +223,9 @@ export class AnalyticsPageComponent {
           help: 'Mean imported token count per included session.',
         },
         {
-          label: 'Cost / 1k tokens',
+          label: 'Usage / 1k tokens',
           value: `$${costPer1k.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`,
-          help: 'Estimated USD per 1,000 imported tokens. This moves when model mix or input/output mix changes.',
+          help: 'USD usage per 1,000 imported tokens. This moves when model mix, input/output mix, or source usage changes.',
         },
       ] satisfies AnalyticsMetric[],
       highlights: [
@@ -238,8 +238,8 @@ export class AnalyticsPageComponent {
         {
           label: 'Most expensive run',
           session: highestCost,
-          value: highestCost ? `$${highestCost.cost.usd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}` : 'n/a',
-          help: 'The included session with the highest local cost estimate.',
+          value: highestCost ? `$${sessionUsageUsd(highestCost).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}` : 'n/a',
+          help: 'The included session with the highest GitHub source usage, falling back to token estimate when source usage is absent.',
         },
       ] satisfies AnalyticsHighlight[],
       modelRows,
@@ -292,6 +292,13 @@ export class AnalyticsPageComponent {
     return costUsd / COPILOT_AI_CREDIT_USD;
   }
 
+  protected usageUsd(session: CopilotSession): number {
+    return sessionUsageUsd(session);
+  }
+
+  protected usageCredits(session: CopilotSession): number {
+    return sessionUsageCredits(session);
+  }
 }
 
 

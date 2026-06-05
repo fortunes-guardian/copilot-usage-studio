@@ -28,7 +28,8 @@ Done:
 - Added scanner fixture tests for raw Agent Debug Log `cachedTokens`, invalid cached-token splits, cache-write pricing, and merged cache audits.
 - Added Trace inspector coverage for cached model-call details, fallback pricing labels, and tool events that are not directly priced.
 - Preserved raw VS Code `llm_request.attrs.estimatedCost` separately on trace events when present, without mixing it into the app-calculated estimate.
-- Preserved VS Code `llm_request.attrs.copilotUsageNanoAiu` as source usage evidence and verify that it reconciles with app-calculated token pricing when present.
+- Preserved VS Code `llm_request.attrs.copilotUsageNanoAiu` as source usage evidence, use it as the primary local usage total when present, and verify that it reconciles with app-calculated token pricing.
+- Centralized source-first usage helpers so selected-run header, allowance meters, Analytics totals, Compare deltas, sidebar costs, and model-call displays use GitHub source usage before token-estimate fallback.
 - Recorded optional matching Chat Debug transcript availability for debug-log sessions without using transcripts for pricing.
 - After the 2026-05-30 VS Code/Copilot update, preserved debug-log runtime metadata (`vscodeVersion`, `copilotVersion`) plus request-shape and text-verbosity metadata from new Agent Debug Log fields.
 - Added a compact selected-run Context Load card that compares largest raw input with `models.json` prompt/context limits and distinguishes near-limit runs from repeated-context runs without showing noisy model capability metadata.
@@ -39,7 +40,7 @@ Next:
 
 - Keep user-facing source language minimal. Show debug-log/source details in docs or ingest diagnostics, not as primary selected-run chips.
 - Remove low-value banners and technical caveats from the main Cost view unless they change a decision.
-- Compare raw VS Code `estimatedCost` and `copilotUsageNanoAiu` with the app-calculated estimate only after enough real sessions show these fields consistently.
+- Keep source usage visually primary. Use token-bucket pricing as explanation and fallback; keep reconciliation differences in diagnostics unless they materially change the displayed usage story.
 - Continue tuning Context Load copy against larger real sessions. Keep it as capacity context, not billing prediction.
 - Use the Context Load timeline with more real sessions to decide whether a deeper per-turn chart is useful, while keeping the current version grounded in `models.json` limits and observed `inputTokens`.
 - Keep the Calls timeline focused on model input over time. Use the separate Setup Footprint panel for instruction/tool/MCP payload evidence so repeated setup payloads do not bloat the timeline.
@@ -78,7 +79,7 @@ Done:
 - Extracted Compare into its own top-level Angular component so it is no longer embedded in the root shell template.
 - Detect repeated normalized first prompts and label whether the current comparison is same-prompt or manual.
 - Removed the separate `Prompt testing` panel because it made Compare harder to understand. Same-prompt detection now appears inside the normal A/B run pickers.
-- Improve A/B selector labels with timestamp and estimated USD cost.
+- Improve A/B selector labels with timestamp and source-first USD usage.
 - Replaced native Compare dropdowns with app-owned searchable run pickers.
 - Removed same-prompt spread explanations for repeated prompt groups; the page now stays focused on one baseline and one candidate.
 - Added Compare component tests for same-prompt picker cues and A/B swap behavior.
@@ -101,7 +102,7 @@ Done:
 - Added a separate `Analytics` top-level view between `Sessions` and `Prices`.
 - Starts from the current sidebar filters as the analytics universe.
 - Adds Analytics-specific controls for time range, workspace, model, and day/week/month grouping.
-- Shows session count, total tokens, total estimated cost, average tokens, average cost, and cost per 1k tokens.
+- Shows session count, total tokens, total source-first usage, average tokens, average usage, and usage per 1k tokens.
 - Shows AI credits used for the current Analytics cohort and converts key cost displays into USD plus credits.
 - Added Analytics credit windows for current month, previous month, and rolling ranges, anchored to the latest imported session date.
 - Added a plan selector so the current Analytics cohort can be compared against one Copilot Business/Enterprise monthly included-credit allowance.

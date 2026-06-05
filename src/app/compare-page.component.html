@@ -11,7 +11,7 @@
         @if (selectedASession(); as selected) {
           <button type="button" class="selected-run" (click)="openBaselinePicker()" aria-label="Open baseline run picker">
             <strong>{{ selected.title }}</strong>
-            <em>{{ compactDate(selected.startedAt) }} · ${{ selected.cost.usd | number: '1.2-4' }}</em>
+            <em>{{ compactDate(selected.startedAt) }} · ${{ usageUsd(selected) | number: '1.2-4' }}</em>
           </button>
         }
         <input
@@ -35,7 +35,7 @@
               >
                 <strong>{{ session.title }}</strong>
                 <span>
-                  {{ compactDate(session.startedAt) }} · ${{ session.cost.usd | number: '1.2-4' }} ·
+                  {{ compactDate(session.startedAt) }} · ${{ usageUsd(session) | number: '1.2-4' }} ·
                   {{ runTokenTotal(session) | number }} tokens
                 </span>
                 @if (isSamePromptAsOther(session, 'baseline')) {
@@ -55,7 +55,7 @@
         @if (selectedBSession(); as selected) {
           <button type="button" class="selected-run" (click)="openCandidatePicker()" aria-label="Open candidate run picker">
             <strong>{{ selected.title }}</strong>
-            <em>{{ compactDate(selected.startedAt) }} · ${{ selected.cost.usd | number: '1.2-4' }}</em>
+            <em>{{ compactDate(selected.startedAt) }} · ${{ usageUsd(selected) | number: '1.2-4' }}</em>
           </button>
         }
         <input
@@ -79,7 +79,7 @@
               >
                 <strong>{{ session.title }}</strong>
                 <span>
-                  {{ compactDate(session.startedAt) }} · ${{ session.cost.usd | number: '1.2-4' }} ·
+                  {{ compactDate(session.startedAt) }} · ${{ usageUsd(session) | number: '1.2-4' }} ·
                   {{ runTokenTotal(session) | number }} tokens
                 </span>
                 @if (isSamePromptAsOther(session, 'candidate')) {
@@ -112,11 +112,11 @@
       <dl>
         <div>
           <dt>A</dt>
-          <dd>{{ diff.a.cost.usd | number: '1.2-2' }} USD</dd>
+          <dd>{{ usageUsd(diff.a) | number: '1.2-2' }} USD</dd>
         </div>
         <div>
           <dt>B</dt>
-          <dd>{{ diff.b.cost.usd | number: '1.2-2' }} USD</dd>
+          <dd>{{ usageUsd(diff.b) | number: '1.2-2' }} USD</dd>
         </div>
         <div>
           <dt>Tokens</dt>

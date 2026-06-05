@@ -3,7 +3,7 @@
     <div>
       <p class="eyebrow">Cost inputs</p>
       <h2>GitHub Copilot prices used by this app</h2>
-      <p>Evidence page for the rate card, AI-credit conversion, and model rows used by local estimates.</p>
+      <p>Evidence page for the rate card, AI-credit conversion, source usage, and token-estimate fallback.</p>
     </div>
     <a [href]="pricingSourceUrl" target="_blank" rel="noreferrer">Open GitHub source</a>
   </div>
@@ -33,7 +33,7 @@
       <h3>AI credits context</h3>
       <p>
         GitHub converts model usage into AI credits at <strong>1 credit = ${{ creditUsd | number: '1.2-2' }} USD</strong>.
-        The meter below compares imported local estimates with the selected per-license allowance.
+        The meter below compares imported source usage, with token estimates as fallback, against the selected per-license allowance.
       </p>
       <a [href]="allowanceSourceUrl" target="_blank" rel="noreferrer">Open allowance source</a>
     </div>

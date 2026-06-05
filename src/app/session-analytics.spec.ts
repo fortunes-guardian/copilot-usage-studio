@@ -9,6 +9,7 @@ import {
   sessionSize,
 } from './session-analytics';
 import { CopilotSession, TokenBreakdown } from './session-data.model';
+import { sessionUsageUsd } from './session-cost-utils';
 
 describe('session analytics helpers', () => {
   it('filters by relative time window, workspace, and model row', () => {
@@ -123,6 +124,37 @@ describe('session analytics helpers', () => {
     expect(sessionSize(1_500_000)).toBe('Very large');
   });
 
+  it('uses GitHub source usage before token estimates in trend and distribution totals', () => {
+    const sourcePriced = sessionFixture(
+      'source-priced',
+      'Source priced',
+      'repo',
+      'GPT-5.4',
+      'GPT-5.4',
+      '2026-05-01T12:00:00.000Z',
+      0.1,
+      {
+        input: 50_000,
+        cachedInput: 0,
+        cacheWrite: 0,
+        output: 1_000,
+      },
+      0.42,
+    );
+    const fallback = sessionFixture('fallback', 'Fallback', 'repo', 'GPT-5.4', 'GPT-5.4', '2026-05-01T13:00:00.000Z', 0.2, {
+      input: 50_000,
+      cachedInput: 0,
+      cacheWrite: 0,
+      output: 1_000,
+    });
+
+    expect(sessionUsageUsd(sourcePriced)).toBe(0.42);
+    expect(analyticsTrendRows([sourcePriced, fallback], 'day')[0].cost).toBeCloseTo(0.62);
+    expect(analyticsDistribution([sourcePriced, fallback], 0.62).find((row) => row.size === 'Small')?.topSession?.id).toBe(
+      'source-priced',
+    );
+  });
+
   it('explains input-heavy outliers from imported token mix', () => {
     const normal = sessionFixture('normal', 'Normal', 'repo', 'GPT-5.4', 'GPT-5.4', '2026-05-01T12:00:00.000Z', 0.05, {
       input: 10_000,
@@ -162,6 +194,7 @@ function sessionFixture(
   startedAt: string,
   usd: number,
   tokens: TokenBreakdown,
+  sourceUsageUsd?: number,
 ): CopilotSession {
   const totalTokens = tokens.input + tokens.cachedInput + tokens.cacheWrite + tokens.output;
 
@@ -193,6 +226,15 @@ function sessionFixture(
     toolsUsed: [],
     tokens,
     cost: { usd, eur: usd },
+    sourceUsage:
+      sourceUsageUsd === undefined
+        ? undefined
+        : {
+            nanoAiu: sourceUsageUsd * 100_000_000_000,
+            credits: sourceUsageUsd / 0.01,
+            usd: sourceUsageUsd,
+            modelCalls: 1,
+          },
     confidence: 'exact',
     traceSummary: {
       modelTurns: 1,
