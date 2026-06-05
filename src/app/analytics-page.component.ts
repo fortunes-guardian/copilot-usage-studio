@@ -12,6 +12,7 @@ import {
   analyticsModelRows,
   analyticsOutliers,
   analyticsTrendRows,
+  analyticsUsageWindows,
   filterAnalyticsSessions,
   maxBy,
 } from './session-analytics';
@@ -146,6 +147,7 @@ export class AnalyticsPageComponent {
         creditsPerUserMonthly: 1900,
       };
     const monthlyAllowance = selectedPlan ? selectedPlan.creditsPerUserMonthly : 0;
+    const usageWindows = analyticsUsageWindows(this.sessionsInput(), monthlyAllowance);
     const allowanceShare = monthlyAllowance > 0 ? (totalCredits / monthlyAllowance) * 100 : 0;
     const remainingCredits = monthlyAllowance > 0 ? Math.max(0, monthlyAllowance - totalCredits) : 0;
     const allowanceStatus =
@@ -246,6 +248,7 @@ export class AnalyticsPageComponent {
       trendRows,
       distribution,
       outliers,
+      usageWindows,
       totalCredits,
       selectedPlan,
       monthlyAllowance,

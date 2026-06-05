@@ -17,6 +17,38 @@
       }
     </div>
 
+    <section class="usage-now-panel" aria-label="Usage windows">
+      <div class="usage-now-heading">
+        <div>
+          <p class="eyebrow">Usage now</p>
+          <h3>Credits at a glance</h3>
+        </div>
+        <span>{{ stats.selectedPlan.label }} · {{ stats.monthlyAllowance | number: '1.0-0' }} credits/month</span>
+      </div>
+      <div class="usage-window-grid">
+        @for (window of stats.usageWindows; track window.id) {
+          <button
+            type="button"
+            class="usage-window-card"
+            [class.primary]="window.id === 'last-session'"
+            [disabled]="!window.session"
+            (click)="emitOpenSession(window.session)"
+          >
+            <span>{{ window.label }}</span>
+            <strong>{{ window.credits | number: '1.0-2' }} credits</strong>
+            <em>${{ window.usd | number: '1.2-4' }} · {{ window.detail }}</em>
+            <i aria-hidden="true"><b [style.width.%]="window.allowanceShare > 100 ? 100 : window.allowanceShare"></b></i>
+            <small>
+              {{ window.allowanceShare | number: '1.0-1' }}% of selected plan
+              @if (window.fallbackCount) {
+                · {{ window.fallbackCount | number }} estimate fallback{{ window.fallbackCount === 1 ? '' : 's' }}
+              }
+            </small>
+          </button>
+        }
+      </div>
+    </section>
+
     <section class="analytics-controls" aria-label="Analytics cohort controls">
       <label>
         <span>

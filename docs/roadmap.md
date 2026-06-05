@@ -106,6 +106,7 @@ Done:
 - Shows AI credits used for the current Analytics cohort and converts key cost displays into USD plus credits.
 - Added Analytics credit windows for current month, previous month, and rolling ranges, anchored to the latest imported session date.
 - Added a plan selector so the current Analytics cohort can be compared against one Copilot Business/Enterprise monthly included-credit allowance.
+- Added a top `Usage now` panel that answers the practical developer questions directly: last session credits, today, this week, current calendar month, and current visible total.
 - Highlights highest-token and most expensive sessions.
 - Shows model/pricing-row breakdowns.
 - Shows grouped credit trend rows, run size mix, and outlier signals.
@@ -121,6 +122,10 @@ Done:
 Next:
 
 - Keep clarifying the difference between `Credit window` as the included-session filter and `Group trend by` as the trend bucket display.
+- Treat "How much did I use?" as a central workflow. Keep the headline answers in credits first, USD second, source usage primary, and fallback estimates clearly marked only when needed.
+- Consider a dedicated Usage page if Analytics keeps growing. It should answer: today, this week, calendar month, last session, visible total, daily history, and month-to-date allowance burn.
+- Add a small daily/monthly usage chart or calendar strip only if it helps answer the usage question faster than the current trend cards.
+- Consider local budget thresholds later: "warn me when my month-to-date local usage crosses X credits" without requiring SaaS billing import.
 - Improve outlier explanation with more real imported sessions.
 - Add saved comparison/cohort concepts later if app-owned SQLite becomes the right durable state layer.
 - Consider org/team license-pool modelling later only if the app imports team-wide data. A local VS Code import should stay focused on one developer's runs.

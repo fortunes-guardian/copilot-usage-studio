@@ -33,6 +33,24 @@ describe('AnalyticsPageComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Open run');
   });
 
+  it('shows the usage-now credit windows', () => {
+    fixture.componentRef.setInput('sessions', [
+      sessionFixture('small-run', 'Small run', 0.01, 10_000),
+      sessionFixture('expensive-run', 'Expensive run', 1.25, 900_000),
+    ]);
+    fixture.componentRef.setInput('totalSessionCount', 2);
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent;
+
+    expect(text).toContain('Usage now');
+    expect(text).toContain('Last session');
+    expect(text).toContain('Today');
+    expect(text).toContain('This week');
+    expect(text).toContain('Calendar month');
+    expect(text).toContain('Visible total');
+  });
+
   it('shows a resettable empty state when analytics controls exclude visible sessions', () => {
     fixture.componentRef.setInput('sessions', [sessionFixture('small-run', 'Small run', 0.01, 10_000)]);
     fixture.componentRef.setInput('totalSessionCount', 1);

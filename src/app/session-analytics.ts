@@ -56,6 +56,18 @@ export interface AnalyticsOutlier {
   reason: string;
 }
 
+export interface AnalyticsUsageWindow {
+  id: 'last-session' | 'today' | 'week' | 'month' | 'visible';
+  label: string;
+  credits: number;
+  usd: number;
+  count: number;
+  allowanceShare: number;
+  fallbackCount: number;
+  session: CopilotSession | null;
+  detail: string;
+}
+
 export function filterAnalyticsSessions(
   sessions: CopilotSession[],
   timeRange: AnalyticsTimeRange,
@@ -218,6 +230,32 @@ export function analyticsOutliers(
     .slice(0, 5);
 }
 
+export function analyticsUsageWindows(
+  sessions: CopilotSession[],
+  monthlyAllowanceCredits: number,
+  now = new Date(),
+): AnalyticsUsageWindow[] {
+  const validNow = Number.isFinite(now.getTime()) ? now : new Date();
+  const lastSession = maxBy(sessions, (session) => Date.parse(session.startedAt) || 0);
+  const today = sessionsInRange(sessions, startOfLocalDay(validNow), addDays(startOfLocalDay(validNow), 1));
+  const week = sessionsInRange(sessions, startOfLocalWeek(validNow), addDays(startOfLocalDay(validNow), 1));
+  const month = sessionsInRange(sessions, startOfLocalMonth(validNow), startOfNextLocalMonth(validNow));
+
+  return [
+    usageWindow(
+      'last-session',
+      'Last session',
+      lastSession ? [lastSession] : [],
+      monthlyAllowanceCredits,
+      lastSession?.title ?? 'No imported sessions',
+    ),
+    usageWindow('today', 'Today', today, monthlyAllowanceCredits, 'Imported sessions from today'),
+    usageWindow('week', 'This week', week, monthlyAllowanceCredits, 'Week so far, Monday to today'),
+    usageWindow('month', 'Calendar month', month, monthlyAllowanceCredits, 'Current calendar month'),
+    usageWindow('visible', 'Visible total', sessions, monthlyAllowanceCredits, 'Current sidebar-filtered set'),
+  ];
+}
+
 export function analyticsCutoff(sessions: CopilotSession[], timeRange: AnalyticsTimeRange): number | null {
   return analyticsDateWindow(sessions, timeRange).start;
 }
@@ -329,6 +367,72 @@ function analyticsOutlierReason(session: CopilotSession, costScore: number, toke
   return costScore >= tokenScore
     ? `Cost is ${costScore.toFixed(1)} standard deviations above this cohort. Check model price rows and output mix.`
     : `Tokens are ${tokenScore.toFixed(1)} standard deviations above this cohort. Check input context and model-turn count.`;
+}
+
+function usageWindow(
+  id: AnalyticsUsageWindow['id'],
+  label: string,
+  sessions: CopilotSession[],
+  monthlyAllowanceCredits: number,
+  emptyDetail: string,
+): AnalyticsUsageWindow {
+  const credits = sessions.reduce((sum, session) => sum + sessionUsageCredits(session), 0);
+  const usd = sessions.reduce((sum, session) => sum + sessionUsageUsd(session), 0);
+  const topSession = maxBy(sessions, (session) => sessionUsageUsd(session));
+  const fallbackCount = sessions.filter((session) => !session.sourceUsage).length;
+  const allowanceShare = monthlyAllowanceCredits > 0 ? (credits / monthlyAllowanceCredits) * 100 : 0;
+
+  return {
+    id,
+    label,
+    credits,
+    usd,
+    count: sessions.length,
+    allowanceShare,
+    fallbackCount,
+    session: topSession,
+    detail: sessions.length
+      ? `${sessions.length.toLocaleString()} session${sessions.length === 1 ? '' : 's'}`
+      : emptyDetail,
+  };
+}
+
+function sessionsInRange(sessions: CopilotSession[], start: Date, end: Date): CopilotSession[] {
+  const startTime = start.getTime();
+  const endTime = end.getTime();
+
+  return sessions.filter((session) => {
+    const timestamp = Date.parse(session.startedAt);
+
+    return Number.isFinite(timestamp) && timestamp >= startTime && timestamp < endTime;
+  });
+}
+
+function startOfLocalDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function startOfLocalWeek(date: Date): Date {
+  const day = date.getDay() || 7;
+  const start = startOfLocalDay(date);
+  start.setDate(start.getDate() - day + 1);
+
+  return start;
+}
+
+function startOfLocalMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function startOfNextLocalMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 1);
+}
+
+function addDays(date: Date, days: number): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+
+  return next;
 }
 
 function standardDeviation(values: number[]): number {

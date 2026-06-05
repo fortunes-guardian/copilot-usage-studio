@@ -73,6 +73,7 @@ The Analytics reset button resets only the Analytics controls. It does not clear
 
 Read it in this order:
 
+- **Usage now**: answers the direct credit questions first: last session, today, this week, calendar month, and visible total. Credits are primary; USD is secondary. If a card includes fallback estimates, it says so.
 - **Monthly credit view**: estimated credits used versus one selected-plan monthly allowance.
 - **Top metrics**: total cost/tokens, average cost/tokens, AI credits, and cost per 1k tokens.
 - **Model breakdown**: which model/pricing rows are contributing the cost.

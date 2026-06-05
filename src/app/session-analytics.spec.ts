@@ -5,6 +5,7 @@ import {
   analyticsModelRows,
   analyticsOutliers,
   analyticsTrendRows,
+  analyticsUsageWindows,
   filterAnalyticsSessions,
   sessionSize,
 } from './session-analytics';
@@ -153,6 +154,37 @@ describe('session analytics helpers', () => {
     expect(analyticsDistribution([sourcePriced, fallback], 0.62).find((row) => row.size === 'Small')?.topSession?.id).toBe(
       'source-priced',
     );
+  });
+
+  it('answers last session, today, week, and calendar month usage windows', () => {
+    const sessions = [
+      sessionFixture('last-month', 'Last month', 'repo', 'GPT-5.4', 'GPT-5.4', '2026-05-25T12:00:00.000Z', 0.01, {
+        input: 10_000,
+        cachedInput: 0,
+        cacheWrite: 0,
+        output: 1_000,
+      }),
+      sessionFixture('today-a', 'Today A', 'repo', 'GPT-5.4', 'GPT-5.4', '2026-06-05T08:00:00.000Z', 0.02, {
+        input: 20_000,
+        cachedInput: 0,
+        cacheWrite: 0,
+        output: 1_000,
+      }, 0.2),
+      sessionFixture('today-b', 'Today B', 'repo', 'GPT-5.4', 'GPT-5.4', '2026-06-05T09:00:00.000Z', 0.03, {
+        input: 30_000,
+        cachedInput: 0,
+        cacheWrite: 0,
+        output: 1_000,
+      }, 0.3),
+    ];
+
+    const windows = analyticsUsageWindows(sessions, 1_900, new Date('2026-06-05T12:00:00.000Z'));
+
+    expect(windows.find((row) => row.id === 'last-session')?.credits).toBeCloseTo(30);
+    expect(windows.find((row) => row.id === 'today')?.credits).toBeCloseTo(50);
+    expect(windows.find((row) => row.id === 'week')?.count).toBe(2);
+    expect(windows.find((row) => row.id === 'month')?.count).toBe(2);
+    expect(windows.find((row) => row.id === 'visible')?.fallbackCount).toBe(1);
   });
 
   it('explains input-heavy outliers from imported token mix', () => {
