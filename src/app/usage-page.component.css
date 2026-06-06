@@ -96,7 +96,7 @@
   display: grid;
   gap: 6px;
   min-width: 0;
-  padding: 12px;
+  padding: 13px;
   color: var(--text);
   text-align: left;
   cursor: pointer;
@@ -134,7 +134,7 @@
   line-height: 1.35;
 }
 
-.usage-answer-card span {
+.usage-answer-card .usage-card-label {
   color: var(--muted-2);
   font-size: 10px;
   font-weight: 820;
@@ -148,6 +148,12 @@
   font-weight: 820;
   line-height: 1.05;
   overflow-wrap: anywhere;
+}
+
+.usage-card-period {
+  color: var(--text) !important;
+  font-size: 12px !important;
+  font-weight: 760;
 }
 
 .usage-answer-card i {
@@ -164,6 +170,28 @@
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+
+.usage-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.usage-card-footer span {
+  min-width: 0;
+}
+
+.usage-card-action {
+  flex: 0 0 auto;
+  color: var(--accent-strong, var(--accent)) !important;
+  font-size: 11px !important;
+  font-weight: 820;
+}
+
+.usage-answer-card:disabled .usage-card-action {
+  color: var(--muted-2) !important;
 }
 
 .usage-panels {

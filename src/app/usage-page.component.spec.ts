@@ -30,6 +30,17 @@ describe('UsagePageComponent', () => {
     expect(text).toContain('Calendar month');
     expect(text).toContain('Visible total');
     expect(text).toContain('50 credits');
+    expect(text).toContain('Open top run');
+    expect(text).toContain('Open run');
+  });
+
+  it('shows when a usage card has no run to open', () => {
+    fixture.componentRef.setInput('sessions', []);
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent;
+
+    expect(text).toContain('No run to open');
   });
 
   it('opens the most relevant run from a usage card', () => {

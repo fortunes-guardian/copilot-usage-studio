@@ -59,6 +59,7 @@ export interface AnalyticsOutlier {
 export interface AnalyticsUsageWindow {
   id: 'last-session' | 'today' | 'week' | 'month' | 'visible';
   label: string;
+  period: string;
   credits: number;
   usd: number;
   count: number;
@@ -66,6 +67,7 @@ export interface AnalyticsUsageWindow {
   fallbackCount: number;
   session: CopilotSession | null;
   detail: string;
+  actionLabel: string;
 }
 
 export function filterAnalyticsSessions(
@@ -237,9 +239,16 @@ export function analyticsUsageWindows(
 ): AnalyticsUsageWindow[] {
   const validNow = Number.isFinite(now.getTime()) ? now : new Date();
   const lastSession = maxBy(sessions, (session) => Date.parse(session.startedAt) || 0);
-  const today = sessionsInRange(sessions, startOfLocalDay(validNow), addDays(startOfLocalDay(validNow), 1));
-  const week = sessionsInRange(sessions, startOfLocalWeek(validNow), addDays(startOfLocalDay(validNow), 1));
-  const month = sessionsInRange(sessions, startOfLocalMonth(validNow), startOfNextLocalMonth(validNow));
+  const todayStart = startOfLocalDay(validNow);
+  const todayEnd = addDays(todayStart, 1);
+  const weekStart = startOfLocalWeek(validNow);
+  const weekEnd = addDays(todayStart, 1);
+  const monthStart = startOfLocalMonth(validNow);
+  const monthEnd = startOfNextLocalMonth(validNow);
+  const today = sessionsInRange(sessions, todayStart, todayEnd);
+  const week = sessionsInRange(sessions, weekStart, weekEnd);
+  const month = sessionsInRange(sessions, monthStart, monthEnd);
+  const lastSessionDate = lastSession ? parsedLocalDate(lastSession.startedAt) : null;
 
   return [
     usageWindow(
@@ -248,11 +257,33 @@ export function analyticsUsageWindows(
       lastSession ? [lastSession] : [],
       monthlyAllowanceCredits,
       lastSession?.title ?? 'No imported sessions',
+      lastSessionDate ? formatDateLabel(lastSessionDate) : 'No imported sessions',
     ),
-    usageWindow('today', 'Today', today, monthlyAllowanceCredits, 'Imported sessions from today'),
-    usageWindow('week', 'This week', week, monthlyAllowanceCredits, 'Week so far, Monday to today'),
-    usageWindow('month', 'Calendar month', month, monthlyAllowanceCredits, 'Current calendar month'),
-    usageWindow('visible', 'Visible total', sessions, monthlyAllowanceCredits, 'Current sidebar-filtered set'),
+    usageWindow('today', 'Today', today, monthlyAllowanceCredits, 'Imported sessions from today', formatDateLabel(todayStart)),
+    usageWindow(
+      'week',
+      'This week',
+      week,
+      monthlyAllowanceCredits,
+      'Week so far',
+      formatDateRangeLabel(weekStart, addDays(weekEnd, -1)),
+    ),
+    usageWindow(
+      'month',
+      'Calendar month',
+      month,
+      monthlyAllowanceCredits,
+      'Current calendar month',
+      formatDateRangeLabel(monthStart, addDays(monthEnd, -1)),
+    ),
+    usageWindow(
+      'visible',
+      'Visible total',
+      sessions,
+      monthlyAllowanceCredits,
+      'Current sidebar-filtered set',
+      'All sessions currently shown in the sidebar',
+    ),
   ];
 }
 
@@ -375,6 +406,7 @@ function usageWindow(
   sessions: CopilotSession[],
   monthlyAllowanceCredits: number,
   emptyDetail: string,
+  period: string,
 ): AnalyticsUsageWindow {
   const credits = sessions.reduce((sum, session) => sum + sessionUsageCredits(session), 0);
   const usd = sessions.reduce((sum, session) => sum + sessionUsageUsd(session), 0);
@@ -385,6 +417,7 @@ function usageWindow(
   return {
     id,
     label,
+    period,
     credits,
     usd,
     count: sessions.length,
@@ -394,6 +427,7 @@ function usageWindow(
     detail: sessions.length
       ? `${sessions.length.toLocaleString()} session${sessions.length === 1 ? '' : 's'}`
       : emptyDetail,
+    actionLabel: topSession ? (id === 'last-session' ? 'Open run' : 'Open top run') : 'No run to open',
   };
 }
 
@@ -433,6 +467,30 @@ function addDays(date: Date, days: number): Date {
   next.setDate(next.getDate() + days);
 
   return next;
+}
+
+function parsedLocalDate(value: string): Date | null {
+  const timestamp = Date.parse(value);
+
+  return Number.isFinite(timestamp) ? new Date(timestamp) : null;
+}
+
+function formatDateLabel(date: Date): string {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
+}
+
+function formatDateRangeLabel(start: Date, end: Date): string {
+  if (start.getFullYear() === end.getFullYear() && start.getMonth() === end.getMonth()) {
+    const month = new Intl.DateTimeFormat('en-US', { month: 'short' }).format(start);
+
+    return `${month} ${start.getDate()}-${end.getDate()}, ${start.getFullYear()}`;
+  }
+
+  return `${formatDateLabel(start)} - ${formatDateLabel(end)}`;
 }
 
 function standardDeviation(values: number[]): number {

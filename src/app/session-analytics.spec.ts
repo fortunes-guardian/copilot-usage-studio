@@ -185,6 +185,9 @@ describe('session analytics helpers', () => {
     expect(windows.find((row) => row.id === 'week')?.count).toBe(2);
     expect(windows.find((row) => row.id === 'month')?.count).toBe(2);
     expect(windows.find((row) => row.id === 'visible')?.fallbackCount).toBe(1);
+    expect(windows.find((row) => row.id === 'week')?.period).toBe('Jun 1-5, 2026');
+    expect(windows.find((row) => row.id === 'month')?.period).toBe('Jun 1-30, 2026');
+    expect(windows.find((row) => row.id === 'visible')?.actionLabel).toBe('Open top run');
   });
 
   it('explains input-heavy outliers from imported token mix', () => {

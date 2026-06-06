@@ -79,7 +79,7 @@ export class App {
   protected readonly selectedTraceEventIndex = signal<number | null>(null);
   protected readonly traceOpenedFromTurns = signal(false);
   protected readonly modelCallSort = signal<ModelCallSort>('timeline');
-  protected readonly activeView = signal<ActiveView>('sessions');
+  protected readonly activeView = signal<ActiveView>(this.readInitialView());
   protected readonly selectedRunView = signal<SelectedRunView>('overview');
   protected readonly theme = signal<ThemeMode>(this.readStoredTheme());
   protected readonly allowancePlan = signal<CopilotAllowancePlan>('business-standard');
@@ -416,6 +416,18 @@ export class App {
         : 'light';
     } catch {
       return 'light';
+    }
+  }
+
+  private readInitialView(): ActiveView {
+    try {
+      const view = new URL(globalThis.location?.href ?? '').searchParams.get('view');
+
+      return view === 'usage' || view === 'compare' || view === 'analytics' || view === 'pricing'
+        ? view
+        : 'sessions';
+    } catch {
+      return 'sessions';
     }
   }
 

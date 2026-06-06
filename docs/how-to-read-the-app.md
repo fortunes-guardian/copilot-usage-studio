@@ -70,9 +70,11 @@ Credits are primary because GitHub Copilot allowances are credit-based. USD is s
 Read it in this order:
 
 - **Last session**: the newest imported run. Click it to open the selected-run debugger.
-- **Today / This week / Calendar month**: calendar windows from your local machine date.
+- **Today / This week / Calendar month**: calendar windows from your local machine date. Each card shows the exact date span.
 - **Visible total**: the sessions currently available after the app's sidebar filters.
 - **Recent days**: a compact local history so you can spot busy days.
+
+Cards that contain more than one session open the top-usage run in that window. They do not open a separate report page yet; they are shortcuts into the selected-run debugger.
 
 When VS Code logs source usage, the app uses that first. If a card contains fallback estimates, it says so. The page is a local developer usage view, not an enterprise invoice or org-wide license pool.
 

@@ -113,6 +113,7 @@ describe('App', () => {
 
   afterEach(() => {
     TestBed.inject(HttpTestingController).verify();
+    globalThis.history.pushState(null, '', '/');
   });
 
   it('should create the app', () => {
@@ -144,6 +145,21 @@ describe('App', () => {
 
     clickButtonContaining(fixture.nativeElement, 'Usage');
     fixture.detectChanges();
+    const activeButton = [...fixture.nativeElement.querySelectorAll('.view-nav button')].find(
+      (candidate: HTMLButtonElement) => candidate.textContent?.includes('Usage'),
+    );
+
+    expect(activeButton?.classList.contains('active')).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('Loading usage');
+  });
+
+  it('opens Usage from the view query parameter', async () => {
+    globalThis.history.pushState(null, '', '/?view=usage');
+    const fixture = TestBed.createComponent(App);
+    TestBed.inject(HttpTestingController).expectOne('/data/sessions.json').flush(sessionDataFixture);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
     const activeButton = [...fixture.nativeElement.querySelectorAll('.view-nav button')].find(
       (candidate: HTMLButtonElement) => candidate.textContent?.includes('Usage'),
     );
