@@ -42,9 +42,9 @@ export class UsagePageComponent {
   protected readonly allowancePlans = COPILOT_ALLOWANCE_PLANS;
   protected readonly help = {
     scope:
-      'Usage is calculated from imported local sessions. GitHub source usage is used first; token pricing is used only as fallback when a run does not expose source usage.',
+      'Usage is calculated from imported local VS Code sessions. When VS Code reports Copilot usage units, the app uses those. Otherwise it estimates from token buckets and GitHub model prices.',
     allowance:
-      'Compares local imported usage with one selected Copilot monthly allowance. This is a developer view, not an organization billing console.',
+      'Compares your local imported usage with the included monthly AI credits for the selected Copilot plan.',
   };
 
   protected readonly selectedAllowance = computed(

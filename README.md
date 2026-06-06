@@ -2,7 +2,7 @@
 
 Local-first cost debugger for VS Code GitHub Copilot chat and agent sessions.
 
-Status: early local developer preview. It is useful now, but it is not polished enterprise software and it is not a GitHub invoice replacement.
+Status: early local developer preview. It is useful today for local VS Code sessions; the first release path is clone-and-run.
 
 Supported scope today: VS Code GitHub Copilot Chat and Agent sessions on the local machine. This does not currently support Visual Studio, JetBrains IDEs, Copilot CLI, GitHub.com chat, or GitHub billing exports.
 
@@ -69,12 +69,11 @@ npm run build
 
 See [docs/local-deployment.md](docs/local-deployment.md) for packaging options and why the app stays local-first.
 
-## What This Is Not
+## Current Boundaries
 
-- Not a SaaS product.
-- Not an enterprise billing-console replacement.
-- Not a GitHub invoice.
-- Not a Visual Studio, JetBrains, Copilot CLI, or GitHub.com usage importer.
+- Local app, not SaaS.
+- Developer usage visibility, not enterprise billing-console access.
+- Local VS Code sessions, not Visual Studio, JetBrains, Copilot CLI, GitHub.com chat, or billing exports.
 
 The app is a local developer visibility tool. It shows what can be understood from local VS Code Copilot data.
 
@@ -111,7 +110,7 @@ https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing
 
 Rates are USD per 1 million tokens. The app also converts USD into GitHub AI credits using GitHub's fixed conversion of `1 AI credit = $0.01 USD`.
 
-Important: this app shows local usage and estimates, not a GitHub invoice. See [docs/pricing.md](docs/pricing.md) for the exact calculation rules and caveats.
+See [docs/pricing.md](docs/pricing.md) for the exact calculation rules, source usage behavior, and known limits.
 
 ## Useful Commands
 

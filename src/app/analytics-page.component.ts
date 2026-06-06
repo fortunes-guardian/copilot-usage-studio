@@ -68,9 +68,9 @@ export class AnalyticsPageComponent {
     trendGrouping:
       'Time range chooses which sessions are included. Trend grouping only changes how the included sessions are bucketed in the Recent trend panel.',
     creditWindow:
-      'Credit windows are based on imported local sessions, anchored to the latest imported session date. They estimate AI credit usage; they are not a GitHub invoice.',
+      'Credit windows are based on imported local sessions, anchored to the latest imported session date.',
     creditAllowance:
-      'Compares this imported local cohort with the monthly included AI credits for one Copilot license. It is a developer planning view, not an org invoice.',
+      'Compares this imported local cohort with the monthly included AI credits for one Copilot license.',
   };
   protected readonly sizeOptions: SessionSize[] = ['Small', 'Medium', 'Large', 'Very large'];
   protected readonly analyticsTimeOptions: Array<{ value: AnalyticsTimeRange; label: string }> = [

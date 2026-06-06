@@ -2,7 +2,7 @@
 
 The app is intended to run locally, near the VS Code data it reads. It should not require a hosted SaaS backend for the core workflow.
 
-Current release posture: early local developer preview. The recommended public path is clone-and-run, not an installer, hosted service, or enterprise rollout.
+Current release posture: early local developer preview. The recommended public path is clone-and-run while the scanner and UI contract settle.
 
 Supported source today: VS Code GitHub Copilot Chat and Agent local storage. Visual Studio, JetBrains IDEs, Copilot CLI, GitHub.com chat, and GitHub billing exports are outside the current importer scope.
 
@@ -57,7 +57,7 @@ npm run test:scripts
 npm run build
 ```
 
-Release copy should describe the app as a local Copilot usage debugger, not an invoice replacement or polished enterprise product. The strongest promise is: "VS Code already logs useful usage data locally; this app makes it understandable for developers who do not have billing-console access."
+Release copy should describe the app as a local Copilot usage debugger for VS Code. The strongest promise is: "VS Code already logs useful usage data locally; this app makes it understandable for developers who do not have billing-console access."
 
 If the browser shows updated markup with stale component styles, stop the dev server and restart it with a cache reset:
 
@@ -107,7 +107,7 @@ copilot-cost-debugger serve
 
 Why: this keeps the project local and scriptable without committing to a desktop shell too early.
 
-## Not The Current Direction
+## Later, Not First Release
 
 Do not optimize for a hosted SaaS version yet.
 

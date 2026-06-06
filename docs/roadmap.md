@@ -160,7 +160,7 @@ Done:
 - Adds nearby prior-event context so a developer can tell what kind of activity preceded the expensive call.
 - Moved the model-call table into the selected-run `Calls` subview so Cost explains the estimate and Calls explains where it happened.
 - Added a Turn insights strip: model-call count, most expensive call, largest input, largest output, and average cost per call.
-- Made row highlighting explicit with `High share` and `Medium share` labels.
+- Simplified call-share display to a neutral percentage and meter, removing warning-style row edges and share labels.
 
 Next:
 
