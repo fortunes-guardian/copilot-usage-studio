@@ -4,6 +4,8 @@ Local-first cost debugger for VS Code GitHub Copilot chat and agent sessions.
 
 Status: early local developer preview. It is useful now, but it is not polished enterprise software and it is not a GitHub invoice replacement.
 
+Supported scope today: VS Code GitHub Copilot Chat and Agent sessions on the local machine. This does not currently support Visual Studio, JetBrains IDEs, Copilot CLI, GitHub.com chat, or GitHub billing exports.
+
 The app helps answer two practical questions:
 
 > How much GitHub Copilot usage did I burn today, this week, and this month?
@@ -64,6 +66,7 @@ See [docs/local-deployment.md](docs/local-deployment.md) for packaging options a
 - Not a SaaS product.
 - Not an enterprise billing-console replacement.
 - Not a GitHub invoice.
+- Not a Visual Studio, JetBrains, Copilot CLI, or GitHub.com usage importer.
 
 The app is a local developer visibility tool. It shows what can be understood from local VS Code Copilot data.
 
@@ -75,6 +78,10 @@ The app is a local developer visibility tool. It shows what can be understood fr
 - [docs/data-ingestion.md](docs/data-ingestion.md): where the data comes from and what it means.
 - [docs/debug-log-schema.md](docs/debug-log-schema.md): observed VS Code Agent Debug Log schema and generated app data contract.
 - [docs/roadmap.md](docs/roadmap.md): current state, completed work, and planned build order.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
 
 ## Refresh Local Session Data
 
@@ -111,6 +118,6 @@ npm run build
 You can scan a custom VS Code user directory or workspace storage folder:
 
 ```bash
-node scripts/scan-vscode-sessions.mjs public/data/sessions.json "C:\Users\you\AppData\Roaming\Code\User"
-node scripts/scan-vscode-sessions.mjs public/data/sessions.json "C:\Users\you\AppData\Roaming\Code\User\workspaceStorage\<workspace-id>"
+node scripts/scan-vscode-sessions.mjs public/data/sessions.json "%APPDATA%\Code\User"
+node scripts/scan-vscode-sessions.mjs public/data/sessions.json "%APPDATA%\Code\User\workspaceStorage\<workspace-id>"
 ```

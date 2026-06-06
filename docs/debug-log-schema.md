@@ -5,14 +5,14 @@ This document captures the observed data model from VS Code GitHub Copilot Agent
 Reference sample used for this pass:
 
 ```text
-C:\Users\admin\AppData\Roaming\Code\User\workspaceStorage\6f54e795da760515cec9d7a9687568d8\GitHub.copilot-chat\debug-logs\29fa1393-f3da-41b0-80a6-f867d7a56a67
+%APPDATA%\Code\User\workspaceStorage\<workspace-id>\GitHub.copilot-chat\debug-logs\<session-id>
 ```
 
 Latest schema drift check:
 
 ```text
 2026-05-30
-C:\Users\admin\AppData\Roaming\Code\User\workspaceStorage\6f54e795da760515cec9d7a9687568d8\GitHub.copilot-chat\debug-logs\01a0ce83-61cc-4ca8-838c-301994a14971
+%APPDATA%\Code\User\workspaceStorage\<workspace-id>\GitHub.copilot-chat\debug-logs\<session-id>
 VS Code 1.122.1, GitHub Copilot Chat 0.50.1
 ```
 

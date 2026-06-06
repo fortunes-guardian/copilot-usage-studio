@@ -4,7 +4,9 @@ This is the plain-English guide for using the app.
 
 ## The Main Idea
 
-The app estimates the cost of a local Copilot session by combining:
+The app is scoped to VS Code GitHub Copilot Chat and Agent sessions on the local machine. It does not currently import Visual Studio, JetBrains IDE, Copilot CLI, GitHub.com chat, or GitHub billing-export data.
+
+The app estimates the cost of a local VS Code Copilot session by combining:
 
 - what VS Code logged locally
 - which model was used

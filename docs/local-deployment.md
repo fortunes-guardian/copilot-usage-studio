@@ -4,6 +4,8 @@ The app is intended to run locally, near the VS Code data it reads. It should no
 
 Current release posture: early local developer preview. The recommended public path is clone-and-run, not an installer, hosted service, or enterprise rollout.
 
+Supported source today: VS Code GitHub Copilot Chat and Agent local storage. Visual Studio, JetBrains IDEs, Copilot CLI, GitHub.com chat, and GitHub billing exports are outside the current importer scope.
+
 ## Recommended For Development
 
 Use the Angular dev server:

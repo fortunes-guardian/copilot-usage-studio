@@ -15,6 +15,7 @@
     "verify:data": "node scripts/verify-session-data.mjs"
   },
   "private": true,
+  "license": "MIT",
   "packageManager": "npm@11.11.0",
   "dependencies": {
     "@angular/common": "^21.2.0",
