@@ -20,6 +20,33 @@ http://127.0.0.1:4200/
 
 Why: this is the fastest loop while the UI and scanner are changing. It keeps scans explicit, uses local files only, and makes errors easy to see in the terminal.
 
+## First Public Release Path
+
+For the first public release, use a simple clone-and-run flow:
+
+```bash
+git clone <repo-url>
+cd copilot-cost-debugger
+npm install
+npm run refresh:data
+npm start
+```
+
+Then open the local Angular URL printed by the dev server.
+
+This is acceptable for an early developer tool because the audience is technical, the product is changing quickly, and the scanner needs local VS Code storage access anyway. The release page should be explicit that generated data stays local and may contain prompts, file paths, repository context, and tool results.
+
+Before publishing a release post, run:
+
+```bash
+npm run refresh:data
+npm test -- --watch=false
+npm run test:scripts
+npm run build
+```
+
+Release copy should describe the app as a local Copilot usage debugger, not an invoice replacement. The strongest promise is: "VS Code already logs useful usage data locally; this app makes it understandable for developers who do not have billing-console access."
+
 If the browser shows updated markup with stale component styles, stop the dev server and restart it with a cache reset:
 
 ```bash

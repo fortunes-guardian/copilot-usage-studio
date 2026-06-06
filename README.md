@@ -2,11 +2,13 @@
 
 Local-first cost debugger for VS Code GitHub Copilot chat and agent sessions.
 
-The app helps answer one practical question:
+The app helps answer two practical questions:
 
+> How much GitHub Copilot usage did I burn today, this week, and this month?
+>
 > Why did this Copilot run cost what it cost?
 
-It scans local VS Code data, estimates cost from GitHub published model prices, and shows which models, token categories, and model calls drove the estimate.
+It scans local VS Code data, uses GitHub source usage when VS Code logs it, falls back to GitHub published model prices when it has to, and shows which models, token categories, and model calls drove the usage.
 
 ## Start Here
 
@@ -22,6 +24,13 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
 - Imports VS Code Copilot debug-log sessions.
 - Enriches titles and metadata from VS Code `state.vscdb`.
 - Filters sessions by search, time window, workspace, model, size, and cost signal.
+- Shows a top-level Usage page for the questions developers actually ask:
+  - last session usage
+  - today
+  - this week
+  - current calendar month
+  - visible filtered total
+  - recent daily usage
 - Shows a selected-run Cost debugger:
   - run size and cost-signal labels
   - a primary-driver answer for the current estimate
@@ -44,7 +53,7 @@ It scans local VS Code data, estimates cost from GitHub published model prices, 
   - model breakdowns
   - trend rows, size distribution, and clearer outlier signals
 - Started the Midnight debugger UI overhaul:
-  - top-level navigation for Sessions, Compare, Analytics, and Prices
+  - top-level navigation for Sessions, Usage, Compare, Analytics, and Prices
   - Compare separated from the selected-run stack and no longer rendered inside Sessions
   - selected-run pages now use Overview, Cost, Calls, and Trace subviews instead of one stacked report
   - Cost and Calls now lead with debugger-style answer panels before the detailed tables
@@ -61,6 +70,8 @@ npm start
 Then open the Angular dev server URL.
 
 This is the recommended mode while the project is still changing quickly.
+
+For a first public release, cloning the repo and running these npm commands is the simplest honest distribution path. The app is still local-first because the useful data lives on the developer machine and can contain prompts, file paths, repo context, and tool results.
 
 If the dev server ever shows new markup with old component styles, stop it and restart with a cache reset:
 

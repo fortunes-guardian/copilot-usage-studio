@@ -132,7 +132,24 @@ describe('App', () => {
     expect(compiled.textContent).toContain('1 sessions');
     expect(compiled.textContent).not.toContain('Triage');
     expect(compiled.textContent).not.toContain('Token totals');
+    expect(compiled.textContent).toContain('Usage');
     expect(compiled.textContent).toContain('Light');
+  });
+
+  it('opens the Usage page route from top navigation', async () => {
+    const fixture = TestBed.createComponent(App);
+    TestBed.inject(HttpTestingController).expectOne('/data/sessions.json').flush(sessionDataFixture);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    clickButtonContaining(fixture.nativeElement, 'Usage');
+    fixture.detectChanges();
+    const activeButton = [...fixture.nativeElement.querySelectorAll('.view-nav button')].find(
+      (candidate: HTMLButtonElement) => candidate.textContent?.includes('Usage'),
+    );
+
+    expect(activeButton?.classList.contains('active')).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('Loading usage');
   });
 
   it('navigates the selected-run debugger tabs', async () => {

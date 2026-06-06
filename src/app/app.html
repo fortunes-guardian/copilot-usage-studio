@@ -12,6 +12,9 @@
       <button type="button" [class.active]="activeView() === 'sessions'" (click)="activeView.set('sessions')">
         Sessions
       </button>
+      <button type="button" [class.active]="activeView() === 'usage'" (click)="activeView.set('usage')">
+        Usage
+      </button>
       <button type="button" [class.active]="activeView() === 'compare'" (click)="activeView.set('compare')">
         Compare
       </button>
@@ -70,7 +73,18 @@
   <section class="content">
     <app-session-data-state-panel [state]="sessionDataLoadState()" [error]="sessionDataLoadError()"></app-session-data-state-panel>
 
-    @if (activeView() === 'pricing') {
+    @if (activeView() === 'usage') {
+      @defer {
+        <app-usage-page
+          [sessions]="sessions()"
+          [allowancePlan]="allowancePlan()"
+          (allowancePlanChange)="setAllowancePlan($event)"
+          (openSession)="openSession($event)"
+        ></app-usage-page>
+      } @placeholder {
+        <p class="deferred-panel">Loading usage…</p>
+      }
+    } @else if (activeView() === 'pricing') {
       @defer {
         <app-pricing-page
           [sessions]="sessions()"

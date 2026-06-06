@@ -15,6 +15,7 @@ import { SessionRailComponent } from './session-rail.component';
 import { SessionTraceComponent } from './session-trace.component';
 import { SessionTurnsComponent } from './session-turns.component';
 import { SelectedRunHeaderComponent } from './selected-run-header.component';
+import { UsagePageComponent } from './usage-page.component';
 import {
   COPILOT_ALLOWANCE_PLANS,
   CopilotAllowancePlan,
@@ -31,7 +32,7 @@ import {
 } from './session-analysis';
 import { sessionUsageCredits, sessionUsageUsd } from './session-cost-utils';
 
-type ActiveView = 'sessions' | 'compare' | 'analytics' | 'pricing';
+type ActiveView = 'sessions' | 'usage' | 'compare' | 'analytics' | 'pricing';
 type SelectedRunView = 'overview' | 'cost' | 'turns' | 'trace';
 type ThemeMode = 'light' | 'dark';
 type SessionTimeFilter = 'all' | '7d' | '30d' | '90d';
@@ -51,6 +52,7 @@ type SessionTimeFilter = 'all' | '7d' | '30d' | '90d';
     SessionTraceComponent,
     SessionTurnsComponent,
     SelectedRunHeaderComponent,
+    UsagePageComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',

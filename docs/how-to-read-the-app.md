@@ -53,6 +53,27 @@ Cheaper is not automatically better. A cheaper run that failed, skipped work, or
 
 Compare currently explains cost/debug facts. It does not judge output quality unless a future source provides reliable comparable output detail.
 
+## Reading Usage
+
+Use **Usage** when the question is simply:
+
+- how much did my last session use?
+- how much did I use today?
+- how much did I use this week?
+- how much did I use this calendar month?
+- how much is in the current filtered set?
+
+Credits are primary because GitHub Copilot allowances are credit-based. USD is shown beside credits because GitHub prices and additional-usage budgets are USD-native.
+
+Read it in this order:
+
+- **Last session**: the newest imported run. Click it to open the selected-run debugger.
+- **Today / This week / Calendar month**: calendar windows from your local machine date.
+- **Visible total**: the sessions currently available after the app's sidebar filters.
+- **Recent days**: a compact local history so you can spot busy days.
+
+When VS Code logs source usage, the app uses that first. If a card contains fallback estimates, it says so. The page is a local developer usage view, not an enterprise invoice or org-wide license pool.
+
 ## Reading Analytics
 
 Use **Analytics** for questions about more than one session.
@@ -62,6 +83,7 @@ The Analytics view is intentionally separate from the selected-run debugger:
 - **Sessions** explains one selected run.
 - **Compare runs** explains how run B differs from run A.
 - **Analytics** explains the current group of sessions.
+- **Usage** answers direct calendar usage questions.
 
 The sidebar filters define the starting group. Analytics only summarizes the sessions currently visible after sidebar search, size, and signal filters. The Analytics controls then narrow that group by credit window, workspace, and model, and choose whether the trend is grouped by day, week, or month.
 
@@ -73,7 +95,6 @@ The Analytics reset button resets only the Analytics controls. It does not clear
 
 Read it in this order:
 
-- **Usage now**: answers the direct credit questions first: last session, today, this week, calendar month, and visible total. Credits are primary; USD is secondary. If a card includes fallback estimates, it says so.
 - **Monthly credit view**: estimated credits used versus one selected-plan monthly allowance.
 - **Top metrics**: total cost/tokens, average cost/tokens, AI credits, and cost per 1k tokens.
 - **Model breakdown**: which model/pricing rows are contributing the cost.

@@ -1,0 +1,87 @@
+<section class="usage-page">
+  <header class="usage-header">
+    <div>
+      <p class="eyebrow">Usage</p>
+      <h2>How much did I use?</h2>
+      <p>
+        Credits first, USD second. Source usage when VS Code logs it; estimate fallback only when needed.
+        <app-help-popover [text]="help.scope" label="Explain usage scope"></app-help-popover>
+      </p>
+    </div>
+    <label class="plan-picker">
+      <span>
+        Monthly allowance
+        <app-help-popover [text]="help.allowance" label="Explain allowance"></app-help-popover>
+      </span>
+      <select [ngModel]="currentAllowancePlan()" (ngModelChange)="setAllowancePlan($event)">
+        @for (plan of allowancePlans; track plan.id) {
+          <option [value]="plan.id">{{ plan.label }}</option>
+        }
+      </select>
+    </label>
+  </header>
+
+  <section class="usage-answer-grid" aria-label="Usage answer cards">
+    @for (window of usageWindows(); track window.id) {
+      <button
+        type="button"
+        class="usage-answer-card"
+        [class.primary]="window.id === 'last-session'"
+        [disabled]="!window.session"
+        (click)="emitOpenSession(window.session)"
+      >
+        <span>{{ window.label }}</span>
+        <strong>{{ window.credits | number: '1.0-2' }} credits</strong>
+        <em>${{ window.usd | number: '1.2-4' }} · {{ window.detail }}</em>
+        <i aria-hidden="true"><b [style.width.%]="window.allowanceShare > 100 ? 100 : window.allowanceShare"></b></i>
+        <small>
+          {{ window.allowanceShare | number: '1.0-1' }}% of {{ selectedAllowance().shortLabel }}
+          @if (window.fallbackCount) {
+            · {{ window.fallbackCount | number }} fallback{{ window.fallbackCount === 1 ? '' : 's' }}
+          }
+        </small>
+      </button>
+    }
+  </section>
+
+  <section class="usage-panels">
+    <article class="usage-panel">
+      <div class="panel-heading">
+        <div>
+          <h3>Recent days</h3>
+          <p>Local imported usage by calendar day.</p>
+        </div>
+        @if (sourceCoverage(); as coverage) {
+          <span>{{ coverage.sourceCount | number }} source · {{ coverage.fallbackCount | number }} fallback</span>
+        }
+      </div>
+      <div class="daily-usage-list">
+        @for (day of dailyRows(); track day.key) {
+          <button type="button" [disabled]="!day.topSession" (click)="emitOpenSession(day.topSession)">
+            <span>{{ day.date | date: 'EEE, MMM d' }}</span>
+            <strong>{{ day.credits | number: '1.0-2' }} credits</strong>
+            <em>
+              {{ day.count | number }} session{{ day.count === 1 ? '' : 's' }} · ${{ day.usd | number: '1.2-4' }}
+              @if (day.fallbackCount) {
+                · {{ day.fallbackCount | number }} fallback{{ day.fallbackCount === 1 ? '' : 's' }}
+              }
+            </em>
+          </button>
+        }
+      </div>
+    </article>
+
+    <article class="usage-panel usage-note">
+      <h3>Release-safe promise</h3>
+      <p>
+        This page answers local developer usage questions from VS Code data. It does not require GitHub billing-console
+        access, and it does not claim to be an enterprise invoice.
+      </p>
+      <ul>
+        <li>Use source usage when VS Code provides it.</li>
+        <li>Call out fallback estimates only when source usage is absent.</li>
+        <li>Keep credits visible because GitHub allowances are credit-based.</li>
+      </ul>
+    </article>
+  </section>
+</section>
