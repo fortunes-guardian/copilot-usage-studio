@@ -602,9 +602,7 @@
   min-width: 1000px;
   padding: 11px 12px;
   border-bottom: 1px solid var(--line);
-  background:
-    linear-gradient(90deg, rgba(31, 209, 165, 0.08) 0 var(--share, 0%), transparent var(--share, 0%) 100%),
-    transparent;
+  background: transparent;
 }
 
 .model-call-row:last-child {
@@ -616,14 +614,6 @@
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
-}
-
-.model-call-row.high-impact {
-  box-shadow: inset 3px 0 0 var(--danger);
-}
-
-.model-call-row.medium-impact {
-  box-shadow: inset 3px 0 0 var(--warning);
 }
 
 .model-call-row strong,
@@ -695,31 +685,6 @@
   height: 100%;
   border-radius: inherit;
   background: var(--accent);
-}
-
-.high-impact .share-meter i {
-  background: var(--danger);
-}
-
-.medium-impact .share-meter i {
-  background: var(--warning);
-}
-
-.impact-label {
-  width: fit-content;
-  border: 1px solid rgba(244, 160, 65, 0.28);
-  border-radius: 999px;
-  padding: 2px 7px;
-  background: rgba(244, 160, 65, 0.12);
-  color: var(--warning-text, #ffe0a0) !important;
-  font-size: 11px !important;
-  font-weight: 760;
-}
-
-.high-impact .impact-label {
-  border-color: rgba(255, 91, 110, 0.3);
-  background: rgba(255, 91, 110, 0.12);
-  color: var(--danger-text, #ffd0d7) !important;
 }
 
 .warning-text {
@@ -962,9 +927,7 @@
 }
 
 :host-context(.theme-light) .model-call-row {
-  background:
-    linear-gradient(90deg, rgba(12, 159, 131, 0.075) 0 var(--share, 0%), transparent var(--share, 0%) 100%),
-    rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.72);
 }
 
 :host-context(.theme-light) .share-meter,

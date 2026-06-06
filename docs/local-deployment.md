@@ -6,6 +6,14 @@ Current release posture: early local developer preview. The recommended public p
 
 Supported source today: VS Code GitHub Copilot Chat and Agent local storage. Visual Studio, JetBrains IDEs, Copilot CLI, GitHub.com chat, and GitHub billing exports are outside the current importer scope.
 
+Default scan paths:
+
+- Windows: `%APPDATA%\Code\User` and `%APPDATA%\Code - Insiders\User`
+- macOS: `~/Library/Application Support/Code/User` and `~/Library/Application Support/Code - Insiders/User`
+- Linux: `~/.config/Code/User` and `~/.config/Code - Insiders/User`
+
+SQLite title/metadata enrichment uses Node's `node:sqlite` support. If that is unavailable on a user's local Node version, the scanner should still import debug-log sessions and report enrichment as skipped.
+
 ## Recommended For Development
 
 Use the Angular dev server:

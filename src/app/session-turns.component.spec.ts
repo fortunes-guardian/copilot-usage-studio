@@ -16,11 +16,13 @@ describe('SessionTurnsComponent', () => {
     fixture.detectChanges();
   });
 
-  it('labels accented model-call rows by cost share', () => {
+  it('shows model-call share without severity labels', () => {
     const text = fixture.nativeElement.textContent as string;
 
-    expect(text).toContain('High share');
-    expect(text).toContain('Medium share');
+    expect(text).toContain('42%');
+    expect(text).toContain('15%');
+    expect(text).not.toContain('High share');
+    expect(text).not.toContain('Medium share');
   });
 
   it('shows context load timeline from raw input tokens and model limits', () => {

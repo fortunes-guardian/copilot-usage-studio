@@ -6,6 +6,14 @@ Status: early local developer preview. It is useful now, but it is not polished 
 
 Supported scope today: VS Code GitHub Copilot Chat and Agent sessions on the local machine. This does not currently support Visual Studio, JetBrains IDEs, Copilot CLI, GitHub.com chat, or GitHub billing exports.
 
+Supported local VS Code storage locations:
+
+- Windows: `%APPDATA%\Code\User`
+- macOS: `~/Library/Application Support/Code/User`
+- Linux: `~/.config/Code/User`
+
+VS Code Insiders paths are scanned too.
+
 The app helps answer two practical questions:
 
 > How much GitHub Copilot usage did I burn today, this week, and this month?
@@ -119,5 +127,6 @@ You can scan a custom VS Code user directory or workspace storage folder:
 
 ```bash
 node scripts/scan-vscode-sessions.mjs public/data/sessions.json "%APPDATA%\Code\User"
+node scripts/scan-vscode-sessions.mjs public/data/sessions.json "$HOME/Library/Application Support/Code/User"
 node scripts/scan-vscode-sessions.mjs public/data/sessions.json "%APPDATA%\Code\User\workspaceStorage\<workspace-id>"
 ```

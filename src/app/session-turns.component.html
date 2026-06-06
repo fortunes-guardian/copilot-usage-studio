@@ -3,7 +3,7 @@
     <div>
       <p class="eyebrow">Step 2 · Review</p>
       <h3>Model call timeline</h3>
-      <p>Scan the priced model calls as a sequence. Colored row edges mean the call contributed at least 10% of the run estimate.</p>
+      <p>Scan priced model calls as a sequence. The share column shows how much each call contributed to this run.</p>
     </div>
     <div class="segmented-control" aria-label="Model call sort">
       <button type="button" [class.active]="sort === 'timeline'" (click)="sortChange.emit('timeline')">
@@ -239,7 +239,6 @@
       @for (event of cost.modelCallRows; track event.index) {
         <div
           class="model-call-row"
-          [ngClass]="impactClass(event)"
           [style.--share.%]="event.share"
           role="row"
         >
@@ -282,9 +281,6 @@
           <span role="cell" data-label="Share">
             <span class="share-meter" aria-hidden="true"><i></i></span>
             {{ event.share | number: '1.0-0' }}%
-            @if (impactLabel(event)) {
-              <em class="impact-label">{{ impactLabel(event) }}</em>
-            }
           </span>
           <span role="cell" data-label="Nearby context">
             {{ event.contextLabel }}

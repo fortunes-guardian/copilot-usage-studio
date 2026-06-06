@@ -152,9 +152,9 @@ export class AnalyticsPageComponent {
       allowanceShare >= 100
         ? 'Above one-license monthly allowance'
         : allowanceShare >= 75
-          ? 'High for one license'
+          ? 'High share of one monthly allowance'
           : allowanceShare >= 40
-            ? 'Worth watching'
+            ? 'Within one monthly allowance'
             : 'Low usage';
     const highestTokens = maxBy(sessions, (session) => sessionTotalTokens(session));
     const highestCost = maxBy(sessions, (session) => sessionUsageUsd(session));

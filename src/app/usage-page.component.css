@@ -168,7 +168,7 @@
 
 .usage-panels {
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(260px, 0.55fr);
+  grid-template-columns: 1fr;
   gap: 12px;
   align-items: start;
 }
@@ -241,26 +241,9 @@
   font-weight: 800;
 }
 
-.usage-note {
-  background:
-    linear-gradient(135deg, rgba(111, 92, 255, 0.055), rgba(12, 159, 131, 0.04)),
-    var(--surface);
-}
-
-.usage-note ul {
-  display: grid;
-  gap: 6px;
-  margin: 0;
-  padding-left: 18px;
-}
-
 @media (max-width: 1200px) {
   .usage-answer-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .usage-panels {
-    grid-template-columns: 1fr;
   }
 }
 
