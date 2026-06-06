@@ -2,6 +2,8 @@
 
 The app is intended to run locally, near the VS Code data it reads. It should not require a hosted SaaS backend for the core workflow.
 
+Current release posture: early local developer preview. The recommended public path is clone-and-run, not an installer, hosted service, or enterprise rollout.
+
 ## Recommended For Development
 
 Use the Angular dev server:
@@ -34,7 +36,7 @@ npm start
 
 Then open the local Angular URL printed by the dev server.
 
-This is acceptable for an early developer tool because the audience is technical, the product is changing quickly, and the scanner needs local VS Code storage access anyway. The release page should be explicit that generated data stays local and may contain prompts, file paths, repository context, and tool results.
+This is acceptable for an early developer preview because the audience is technical, the product is changing quickly, and the scanner needs local VS Code storage access anyway. The release page should be explicit that generated data stays local and may contain prompts, file paths, repository context, and tool results.
 
 Before publishing a release post, run:
 
@@ -45,7 +47,7 @@ npm run test:scripts
 npm run build
 ```
 
-Release copy should describe the app as a local Copilot usage debugger, not an invoice replacement. The strongest promise is: "VS Code already logs useful usage data locally; this app makes it understandable for developers who do not have billing-console access."
+Release copy should describe the app as a local Copilot usage debugger, not an invoice replacement or polished enterprise product. The strongest promise is: "VS Code already logs useful usage data locally; this app makes it understandable for developers who do not have billing-console access."
 
 If the browser shows updated markup with stale component styles, stop the dev server and restart it with a cache reset:
 
@@ -69,7 +71,7 @@ Then serve the generated `dist/` output with a small local static server.
 
 Why: Angular production output is just static assets plus the generated `public/data/sessions.json` copy. This is a good first packaging target because it avoids an app server and keeps the data model simple.
 
-Current build status: `npm run build` passes without a component style budget warning after the Prices, loading/error, and Compare component extraction passes.
+Current build status: `npm run build` passes. There is still an initial bundle budget warning to clean up later; it does not block the local preview release.
 
 For day-to-day local use, `npm run refresh:data` is the intended one-command data refresh. It regenerates `public/data/sessions.json` from local VS Code data and immediately verifies the generated file.
 
@@ -79,7 +81,7 @@ A desktop wrapper, likely Tauri or Electron, could bundle:
 
 - the static Angular UI
 - the scanner command
-- local settings for VS Code paths and exchange rate
+- local settings for VS Code paths
 - optional app-owned SQLite later
 
 Why: a desktop app would make the project easier for non-frontend developers to run. It also gives a natural place for “refresh data” buttons and local file permissions. It is heavier than static hosting, so it should wait until the scanner and UI contract settle.

@@ -2,6 +2,8 @@
 
 Local-first cost debugger for VS Code GitHub Copilot chat and agent sessions.
 
+Status: early local developer preview. It is useful now, but it is not polished enterprise software and it is not a GitHub invoice replacement.
+
 The app helps answer two practical questions:
 
 > How much GitHub Copilot usage did I burn today, this week, and this month?
@@ -12,54 +14,7 @@ It scans local VS Code data, uses GitHub source usage when VS Code logs it, fall
 
 ## Start Here
 
-- [docs/roadmap.md](docs/roadmap.md): current state, completed work, and planned build order.
-- [docs/how-to-read-the-app.md](docs/how-to-read-the-app.md): plain-English guide to the UI.
-- [docs/data-ingestion.md](docs/data-ingestion.md): where the data comes from and what it means.
-- [docs/debug-log-schema.md](docs/debug-log-schema.md): observed VS Code Agent Debug Log schema and generated app data contract.
-- [docs/pricing.md](docs/pricing.md): GitHub price source, calculation rules, AI-credit allowances, and real-world estimate caveats.
-- [docs/local-deployment.md](docs/local-deployment.md): local run, build, and future packaging options.
-
-## What Works Now
-
-- Imports VS Code Copilot debug-log sessions.
-- Enriches titles and metadata from VS Code `state.vscdb`.
-- Filters sessions by search, time window, workspace, model, size, and cost signal.
-- Shows a top-level Usage page for the questions developers actually ask:
-  - last session usage
-  - today
-  - this week
-  - current calendar month
-  - visible filtered total
-  - recent daily usage
-- Shows a selected-run Cost debugger:
-  - run size and cost-signal labels
-  - a primary-driver answer for the current estimate
-  - cost drivers
-  - normal input, cached input, cache write, and output token categories
-  - per-model pricing rows
-- Splits each selected run into debugger subviews:
-  - `Overview` for summary, metadata, and triage
-  - `Cost` for estimate explanation, drivers, and price rows
-  - `Calls` for model-call insights and the detailed model-call table
-  - `Trace` for filterable raw logs, clickable event inspection, and agent flow
-- Shows the GitHub pricing table used by the app and a toggleable Copilot Business/Enterprise AI-credit allowance view.
-- Shows trace logs, a clickable event inspector, and an agent flow chart.
-- Compares two runs with cost/token deltas, driver explanations, same-prompt cues, and model/pricing-row changes.
-- Shows a multi-session Analytics view for filtered sessions:
-  - visible cohort controls for time range, workspace, model, and day/week/month grouping
-  - Analytics-only reset and no-data messaging when controls exclude every session
-  - total and average cost/tokens
-  - highest-token and most expensive runs
-  - model breakdowns
-  - trend rows, size distribution, and clearer outlier signals
-- Started the Midnight debugger UI overhaul:
-  - top-level navigation for Sessions, Usage, Compare, Analytics, and Prices
-  - Compare separated from the selected-run stack and no longer rendered inside Sessions
-  - selected-run pages now use Overview, Cost, Calls, and Trace subviews instead of one stacked report
-  - Cost and Calls now lead with debugger-style answer panels before the detailed tables
-  - narrow screens keep selected content primary while the session rail moves below it
-
-## Run The App
+1. Run the app locally:
 
 ```bash
 npm install
@@ -67,11 +22,26 @@ npm run refresh:data
 npm start
 ```
 
-Then open the Angular dev server URL.
+2. Open the local Angular URL printed by the dev server, usually:
 
-This is the recommended mode while the project is still changing quickly.
+```text
+http://127.0.0.1:4200/
+```
 
-For a first public release, cloning the repo and running these npm commands is the simplest honest distribution path. The app is still local-first because the useful data lives on the developer machine and can contain prompts, file paths, repo context, and tool results.
+3. Read [docs/how-to-read-the-app.md](docs/how-to-read-the-app.md) if the UI terms are not obvious yet.
+
+That is the release path for now: clone the repo, refresh local VS Code data, run the local dev server. The app stays local because the useful source data can contain prompts, file paths, repository context, and tool results.
+
+## What Works Now
+
+- **Usage**: last session, today, this week, current calendar month, visible filtered total, and recent daily usage in GitHub AI credits.
+- **Sessions**: selected-run debugging with Overview, Cost, Calls, and Trace views.
+- **Cost**: source usage when VS Code logs it, fallback pricing when it does not, and separate normal input, cached input, cache write, and output buckets.
+- **Calls**: model-call timeline, context-load timeline, setup-footprint clues, and links back to the raw Trace event.
+- **Trace**: filterable raw log timeline with clickable event inspection.
+- **Compare**: baseline/candidate run comparison with cost, token, model, and same-prompt cues.
+- **Analytics**: multi-session cohort totals, model breakdowns, trends, distribution, and outlier signals.
+- **Prices**: GitHub pricing rows used by the app plus Copilot Business/Enterprise AI-credit allowance context.
 
 If the dev server ever shows new markup with old component styles, stop it and restart with a cache reset:
 
@@ -89,16 +59,28 @@ npm run build
 
 See [docs/local-deployment.md](docs/local-deployment.md) for packaging options and why the app stays local-first.
 
-## Refresh Local Session Data
+## What This Is Not
 
-```bash
-npm run scan
-npm run verify:data
-```
+- Not a SaaS product.
+- Not an enterprise billing-console replacement.
+- Not a GitHub invoice.
+
+The app is a local developer visibility tool. It shows what can be understood from local VS Code Copilot data.
+
+## Docs
+
+- [docs/how-to-read-the-app.md](docs/how-to-read-the-app.md): plain-English guide to the UI.
+- [docs/pricing.md](docs/pricing.md): GitHub price source, calculation rules, AI-credit allowances, and real-world caveats.
+- [docs/local-deployment.md](docs/local-deployment.md): local run, build, and future packaging options.
+- [docs/data-ingestion.md](docs/data-ingestion.md): where the data comes from and what it means.
+- [docs/debug-log-schema.md](docs/debug-log-schema.md): observed VS Code Agent Debug Log schema and generated app data contract.
+- [docs/roadmap.md](docs/roadmap.md): current state, completed work, and planned build order.
+
+## Refresh Local Session Data
 
 The app reads `public/data/sessions.json`. Running `npm run scan` regenerates that file from local VS Code data.
 
-For the normal refresh path, use:
+Normal refresh:
 
 ```bash
 npm run refresh:data
@@ -106,51 +88,15 @@ npm run refresh:data
 
 That runs the scan and verifier together.
 
-## Preferred Data Source
-
-Best source:
-
-```text
-%APPDATA%\Code\User\workspaceStorage\<workspace-id>\GitHub.copilot-chat\debug-logs\<session-id>\main.jsonl
-```
-
-Why: these debug logs include model ids plus input, output, and sometimes cached-input token counts for each model call. That is the strongest local signal for estimating a run.
-
-Secondary source:
-
-```text
-%APPDATA%\Code\User\workspaceStorage\<workspace-id>\chatSessions\<session-id>.jsonl
-```
-
-These chat snapshots can explain conversation context, but they are weaker for cost because they do not reliably include the full request token count.
-
-Observed but not trusted for core cost:
-
-```text
-%APPDATA%\Code\User\workspaceStorage\<workspace-id>\GitHub.copilot-chat\transcripts\<session-id>.jsonl
-```
-
-These Chat Debug transcript files can contain richer tool/chat timeline details, but they are inconsistent across sessions and may not match what VS Code shows after restart. They should only be optional inspection enrichment, not the pricing or token source.
-
 ## Pricing
 
 Prices are copied from GitHub's published Copilot usage-based pricing table:
 
 https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing
 
-Current pricing version:
+Rates are USD per 1 million tokens. The app also converts USD into GitHub AI credits using GitHub's fixed conversion of `1 AI credit = $0.01 USD`.
 
-```text
-github-copilot-usage-pricing-2026-06-01
-```
-
-Rates are USD per 1 million tokens. The app keeps estimates in USD because GitHub's rate card and AI credit budgets are USD-native.
-
-The versioned pricing data lives in `data/github-copilot-pricing.json`. The scanner, verifier, and UI all read from that same file.
-
-The UI also converts local USD estimates into GitHub AI credits using GitHub's fixed conversion of `1 AI credit = $0.01 USD`. The Prices page and selected-run header can compare estimates against Copilot Business and Enterprise included monthly AI-credit allowances.
-
-Important: this app shows a local estimate, not a GitHub invoice. VS Code Agent Debug Logs can expose `cachedTokens`; the scanner treats that as cached input and prices it separately from normal input. Cache-write is only priced when a clear numeric cache-write field is present. Output-heavy runs remain useful to debug because output is still billed as output.
+Important: this app shows local usage and estimates, not a GitHub invoice. See [docs/pricing.md](docs/pricing.md) for the exact calculation rules and caveats.
 
 ## Useful Commands
 
