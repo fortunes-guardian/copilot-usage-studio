@@ -23,7 +23,8 @@
                 "glob": "**/*",
                 "input": "public",
                 "ignore": [
-                  "data/sessions.json"
+                  "data/sessions.json",
+                  "favicon.ico"
                 ]
               }
             ],

@@ -281,6 +281,8 @@ Done:
 - Excluded `public/data/sessions.json` from production assets and the npm package privacy boundary.
 - Added npm publish metadata, explicit package file allowlisting, Node engine requirements, and a full `release:check` gate.
 - Added CLI tests covering Windows/macOS/Linux paths, argument parsing, scanner output, runtime wiring, and status output.
+- Renamed the product and distributable package to Copilot Usage Studio before the first public release.
+- Replaced the Angular starter favicon and added the initial release changelog.
 
 Build:
 

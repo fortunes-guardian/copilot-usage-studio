@@ -7,6 +7,7 @@
     "copilot-usage-studio": "bin/copilot-usage-studio.mjs"
   },
   "files": [
+    "CHANGELOG.md",
     "bin/",
     "data/github-copilot-pricing.json",
     "dist/copilot-usage-studio/browser/",
