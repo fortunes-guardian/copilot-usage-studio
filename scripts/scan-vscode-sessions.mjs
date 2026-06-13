@@ -9,9 +9,6 @@ import {
   pricingModelForModel,
 } from './pricing-utils.mjs';
 
-const usdToEur = Number(process.env.USD_TO_EUR ?? '1');
-const outFile = resolve(process.argv[2] ?? 'public/data/sessions.json');
-const explicitRoots = process.argv.length > 3 ? process.argv.slice(3) : [];
 const sessionDataSchemaVersion = 1;
 const pricingData = JSON.parse(readFileSync(new URL('../data/github-copilot-pricing.json', import.meta.url), 'utf8'));
 const pricingVersion = pricingData.version;
@@ -21,24 +18,29 @@ const traceEventLimit = 1000;
 
 const pricing = pricingData.models;
 
-const diagnostics = {
-  scannedRoots: [],
-  scannedWorkspaces: 0,
-  scannedStateDbs: 0,
-  enrichedFromStateDbs: 0,
-  importedDebugLogSessions: 0,
-  importedChatSnapshotSessions: 0,
-  debugLogSessionsWithTranscripts: 0,
-  transcriptEventsAvailable: 0,
-  skippedEmptyDebugLogs: 0,
-  skippedChatSnapshotsWithoutRequests: 0,
-  skippedDuplicateChatSnapshots: 0,
-  warnings: [],
-};
-
+let usdToEur = 1;
+let diagnostics = createDiagnostics();
 let DatabaseSync = null;
+let scanInProgress = false;
 
-function defaultCodeUserDirs() {
+function createDiagnostics() {
+  return {
+    scannedRoots: [],
+    scannedWorkspaces: 0,
+    scannedStateDbs: 0,
+    enrichedFromStateDbs: 0,
+    importedDebugLogSessions: 0,
+    importedChatSnapshotSessions: 0,
+    debugLogSessionsWithTranscripts: 0,
+    transcriptEventsAvailable: 0,
+    skippedEmptyDebugLogs: 0,
+    skippedChatSnapshotsWithoutRequests: 0,
+    skippedDuplicateChatSnapshots: 0,
+    warnings: [],
+  };
+}
+
+export function defaultCodeUserDirs() {
   const home = homedir();
 
   if (platform() === 'win32') {
@@ -1438,53 +1440,98 @@ function workspaceDirsFromUserDir(userDir) {
   return listDirs(workspaceStorage);
 }
 
-async function main() {
-  const userDirs = explicitRoots.length ? explicitRoots : defaultCodeUserDirs();
-  DatabaseSync = await loadSqliteSupport();
-  diagnostics.scannedRoots = userDirs;
-  const workspaceDirs = userDirs.flatMap((root) => {
-    if (basename(dirname(root)) === 'workspaceStorage' || existsSync(join(root, 'workspace.json'))) {
-      return [root];
-    }
-    return workspaceDirsFromUserDir(root);
-  });
-
-  const sessions = workspaceDirs
-    .flatMap(parseWorkspace)
-    .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
-  const seenIds = new Set();
-  for (const session of sessions) {
-    if (seenIds.has(session.id)) {
-      diagnostics.warnings.push(`Duplicate session id imported: ${session.id}`);
-    }
-    seenIds.add(session.id);
+/**
+ * Scan local VS Code Copilot storage and return the normalized app data model.
+ * This function does not write files, which lets CLI, desktop, extension, and
+ * local-server hosts decide how and where the result should be persisted.
+ */
+export async function scanVsCodeSessions(options = {}) {
+  if (scanInProgress) {
+    throw new Error('A VS Code session scan is already in progress in this process.');
   }
 
-  mkdirSync(dirname(outFile), { recursive: true });
-  writeFileSync(
-    outFile,
-    JSON.stringify(
-      {
-        schemaVersion: sessionDataSchemaVersion,
-        generatedAt: new Date().toISOString(),
-        pricingVersion,
-        pricingSourceUrl,
-        usdToEur,
-        ingestion: {
-          ...diagnostics,
-          importedSessions: sessions.length,
-          cacheTokenAudit: mergeCacheTokenAudits(sessions.map((session) => session.cacheTokenAudit).filter(Boolean)),
-        },
-        sessions,
-      },
-      null,
-      2,
-    ),
-  );
+  const configuredRoots = options.roots === undefined ? defaultCodeUserDirs() : options.roots;
+  if (!Array.isArray(configuredRoots)) {
+    throw new TypeError('roots must be an array of VS Code user-data or workspace-storage paths.');
+  }
+  const roots = [...new Set(configuredRoots.map((root) => resolve(String(root))))];
+  const conversionRate = Number(options.usdToEur ?? process.env.USD_TO_EUR ?? 1);
+  if (!Number.isFinite(conversionRate) || conversionRate <= 0) {
+    throw new TypeError('usdToEur must be a positive number.');
+  }
 
-  console.log(`Wrote ${sessions.length} sessions to ${outFile}`);
+  const generatedAt = options.generatedAt
+    ? new Date(options.generatedAt).toISOString()
+    : new Date().toISOString();
+  const previousDiagnostics = diagnostics;
+  const previousDatabaseSync = DatabaseSync;
+  const previousUsdToEur = usdToEur;
+
+  scanInProgress = true;
+  diagnostics = createDiagnostics();
+  diagnostics.scannedRoots = roots;
+  usdToEur = conversionRate;
+
+  try {
+    DatabaseSync = options.sqlite === false ? null : await loadSqliteSupport();
+    const workspaceDirs = roots.flatMap((root) => {
+      if (basename(dirname(root)) === 'workspaceStorage' || existsSync(join(root, 'workspace.json'))) {
+        return [root];
+      }
+      return workspaceDirsFromUserDir(root);
+    });
+
+    const sessions = workspaceDirs
+      .flatMap(parseWorkspace)
+      .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+    const seenIds = new Set();
+    for (const session of sessions) {
+      if (seenIds.has(session.id)) {
+        diagnostics.warnings.push(`Duplicate session id imported: ${session.id}`);
+      }
+      seenIds.add(session.id);
+    }
+
+    return {
+      schemaVersion: sessionDataSchemaVersion,
+      generatedAt,
+      pricingVersion,
+      pricingSourceUrl,
+      usdToEur,
+      ingestion: {
+        ...diagnostics,
+        importedSessions: sessions.length,
+        cacheTokenAudit: mergeCacheTokenAudits(
+          sessions.map((session) => session.cacheTokenAudit).filter(Boolean),
+        ),
+      },
+      sessions,
+    };
+  } finally {
+    diagnostics = previousDiagnostics;
+    DatabaseSync = previousDatabaseSync;
+    usdToEur = previousUsdToEur;
+    scanInProgress = false;
+  }
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  await main();
+export function writeSessionData(sessionData, outputFile = 'public/data/sessions.json') {
+  const resolvedOutputFile = resolve(outputFile);
+  mkdirSync(dirname(resolvedOutputFile), { recursive: true });
+  writeFileSync(resolvedOutputFile, JSON.stringify(sessionData, null, 2));
+  return resolvedOutputFile;
+}
+
+export async function runScannerCli(args = process.argv.slice(2), logger = console) {
+  const outputFile = args[0] ?? 'public/data/sessions.json';
+  const roots = args.slice(1);
+  const sessionData = await scanVsCodeSessions(roots.length ? { roots } : {});
+  const resolvedOutputFile = writeSessionData(sessionData, outputFile);
+
+  logger.log(`Wrote ${sessionData.sessions.length} sessions to ${resolvedOutputFile}`);
+  return sessionData;
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await runScannerCli();
 }

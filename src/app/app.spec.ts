@@ -168,6 +168,33 @@ describe('App', () => {
     expect(fixture.nativeElement.textContent).toContain('Loading usage');
   });
 
+  it('refreshes local VS Code session data through the runtime', async () => {
+    const fixture = TestBed.createComponent(App);
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/data/sessions.json').flush(sessionDataFixture);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    clickButtonContaining(fixture.nativeElement, 'Refresh');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Scanning');
+
+    const refreshedData = {
+      ...sessionDataFixture,
+      generatedAt: '2026-06-13T09:30:00.000Z',
+      sessions: [
+        ...sessionDataFixture.sessions,
+        { ...sessionDataFixture.sessions[0], id: 'session-2', title: 'new session' },
+      ],
+    };
+    const request = http.expectOne('/api/scan');
+    expect(request.request.method).toBe('POST');
+    request.flush({ sessionData: refreshedData });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('2 sessions imported');
+  });
+
   it('opens Sessions from the view query parameter', async () => {
     globalThis.history.pushState(null, '', '/?view=sessions');
     const fixture = TestBed.createComponent(App);

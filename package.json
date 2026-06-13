@@ -3,8 +3,11 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
-    "start:clean": "npm run clean:ng-cache && ng serve",
+    "start": "node scripts/start-local-dev.mjs",
+    "start:angular": "ng serve --proxy-config proxy.conf.json",
+    "start:clean": "npm run clean:ng-cache && node scripts/start-local-dev.mjs",
+    "runtime": "node scripts/local-runtime.mjs",
+    "preview:local": "npm run build && node scripts/local-runtime.mjs",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
@@ -17,6 +20,10 @@
     "schema:accept": "node scripts/audit-vscode-schema.mjs --accept"
   },
   "private": true,
+  "exports": {
+    "./scanner": "./lib/scanner-api.mjs",
+    "./local-runtime": "./lib/local-runtime.mjs"
+  },
   "license": "MIT",
   "packageManager": "npm@11.11.0",
   "dependencies": {

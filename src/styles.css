@@ -33,3 +33,84 @@ input,
 select {
   font: inherit;
 }
+
+.data-refresh {
+  display: grid;
+  justify-items: end;
+  min-width: 0;
+}
+
+.data-refresh-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 5px 10px;
+  background: var(--control-bg);
+  color: var(--text-strong);
+  font-size: 12px;
+  font-weight: 760;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+}
+
+.data-refresh-button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.data-refresh-button:disabled {
+  cursor: progress;
+  opacity: 0.72;
+}
+
+.refresh-icon {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  font-size: 17px;
+  line-height: 1;
+  transform-origin: 50% 50%;
+}
+
+.refresh-icon.spinning {
+  animation: refresh-spin 800ms linear infinite;
+}
+
+.data-refresh-status {
+  max-width: 190px;
+  overflow: hidden;
+  color: var(--muted-2);
+  font-size: 10px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.data-refresh.error .data-refresh-status {
+  color: var(--danger-text);
+}
+
+@keyframes refresh-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 760px) {
+  .data-refresh-status {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .data-refresh-button > span:last-child {
+    display: none;
+  }
+
+  .data-refresh-button {
+    padding-inline: 5px;
+  }
+}

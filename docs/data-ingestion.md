@@ -6,10 +6,13 @@ This generated session-data contract is intentionally local-first. The scanner r
 
 - Runtime app data lives at `public/data/sessions.json`.
 - The scanner is `scripts/scan-vscode-sessions.mjs`.
+- The stable host API is `lib/scanner-api.mjs`.
 - The repeatable verifier is `scripts/verify-session-data.mjs`.
 - The UI types are in `src/app/session-data.model.ts`.
 
 `public/data/sessions.json` is the boundary between ingestion and display. The UI should not parse VS Code JSONL directly because those files are editor internals and can change independently from the app.
+
+The normalized `SessionData` object is the deeper boundary. `scanVsCodeSessions()` returns that object without writing to disk. The CLI, a local HTTP host, a desktop shell, or an editor extension can then decide whether to persist it, cache it, or return it directly to the UI. See [scanner-api.md](scanner-api.md).
 
 ## Preferred source
 

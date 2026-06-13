@@ -65,6 +65,8 @@ export class App {
   protected readonly sessionData = this.sessionDataService.sessionData;
   protected readonly sessionDataLoadState = this.sessionDataService.loadState;
   protected readonly sessionDataLoadError = this.sessionDataService.loadError;
+  protected readonly sessionDataRefreshState = this.sessionDataService.refreshState;
+  protected readonly sessionDataRefreshMessage = this.sessionDataService.refreshMessage;
   protected readonly selectedId = signal<string | null>(null);
   protected readonly compareA = signal<string | null>(null);
   protected readonly compareB = signal<string | null>(null);
@@ -250,6 +252,29 @@ export class App {
 
   protected themeLabel(): string {
     return this.theme() === 'light' ? 'Light' : 'Dark';
+  }
+
+  protected refreshSessionData(): void {
+    this.sessionDataService.refresh();
+  }
+
+  protected dataUpdatedLabel(): string {
+    const generatedAt = this.sessionData()?.generatedAt;
+    if (!generatedAt) {
+      return 'No imported data';
+    }
+
+    const date = new Date(generatedAt);
+    if (Number.isNaN(date.getTime())) {
+      return 'Imported data ready';
+    }
+
+    return `Updated ${date.toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })}`;
   }
 
   protected selectSession(session: CopilotSession): void {

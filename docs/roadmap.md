@@ -259,16 +259,30 @@ Why: the app is now past prototype shape. The risky parts are no longer just "ca
 
 ## Phase 8.5: Local Packaging
 
-Status: documented.
+Status: started.
 
 Done:
 
 - Added [local deployment notes](local-deployment.md) covering dev mode, static local builds, future desktop wrapper, and future CLI.
 - Added `npm run refresh:data` as the one-command local scan plus verify flow.
+- Extracted a reusable, in-memory Node scanner API in `lib/scanner-api.mjs`.
+- Kept the current scan command as a thin backward-compatible CLI host over the shared API.
+- Added API contract tests for in-memory results, repeat-scan diagnostic isolation, explicit persistence, invalid options, and the positional CLI contract.
+- Documented the API contract and host boundaries in [scanner-api.md](scanner-api.md).
+- Added a local runtime with cached-first startup plus scan, status, normalized-session, and compatibility data endpoints.
+- Kept the last valid snapshot available during scans and after failed refresh attempts.
+- Changed `npm start` to launch the runtime and Angular dev server together through a local proxy.
+- Added a compact global refresh action with scan progress, imported-session count, and last-generated timestamp.
+- Added `npm run preview:local` to build and serve the production UI and scanner runtime together.
+- Added runtime tests for refresh, status, persistence, failure retention, static SPA delivery, and CLI options.
 
 Build:
 
-- Decide whether the next practical distribution target is a static local build with a small serve command or a desktop wrapper.
+- Add debounced background rescans of relevant debug-log directories after observing the manual/startup workflow in real use.
+- Package the local runtime as an `npx` command before adding an installer.
+- Use Electron as the first desktop wrapper unless scanner constraints materially change.
+- Add a thin VS Code companion extension only after the local runtime/import workflow is stable.
+- Investigate Visual Studio as a separate source adapter. Do not promise support until equivalent durable token and usage evidence is found.
 
 Why: this project should stay local-first because the useful source data lives on the developer machine and may contain prompts, file paths, repo context, and tool results.
 

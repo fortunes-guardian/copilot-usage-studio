@@ -28,7 +28,6 @@ It scans local VS Code data, uses GitHub source usage when VS Code logs it, fall
 
 ```bash
 npm install
-npm run refresh:data
 npm start
 ```
 
@@ -40,7 +39,7 @@ http://127.0.0.1:4200/
 
 3. Read [docs/how-to-read-the-app.md](docs/how-to-read-the-app.md) if the UI terms are not obvious yet.
 
-That is the release path for now: clone the repo, refresh local VS Code data, run the local dev server. The app stays local because the useful source data can contain prompts, file paths, repository context, and tool results.
+`npm start` now launches both the Angular development UI and the local scanner runtime. It serves cached data immediately, refreshes from VS Code in the background, and enables the **Refresh** action in the app. The app stays local because the useful source data can contain prompts, file paths, repository context, and tool results.
 
 ## What Works Now
 
@@ -82,6 +81,7 @@ The app is a local developer visibility tool. It shows what can be understood fr
 - [docs/how-to-read-the-app.md](docs/how-to-read-the-app.md): plain-English guide to the UI.
 - [docs/pricing.md](docs/pricing.md): GitHub price source, calculation rules, AI-credit allowances, and real-world caveats.
 - [docs/local-deployment.md](docs/local-deployment.md): local run, build, and future packaging options.
+- [docs/scanner-api.md](docs/scanner-api.md): reusable Node scanner contract for local hosts, desktop packaging, and extensions.
 - [docs/data-ingestion.md](docs/data-ingestion.md): where the data comes from and what it means.
 - [docs/debug-log-schema.md](docs/debug-log-schema.md): observed VS Code Agent Debug Log schema and generated app data contract.
 - [docs/schema-change-workflow.md](docs/schema-change-workflow.md): weekly VS Code/Copilot update audit, compatibility gates, and baseline procedure.
@@ -103,6 +103,8 @@ npm run refresh:data
 
 That runs the scan and verifier together.
 
+The scanner also has an in-memory Node API for future local-server, desktop, and extension hosts. See [docs/scanner-api.md](docs/scanner-api.md). The existing `npm run scan` command is now a thin CLI host over the same API.
+
 ## Pricing
 
 Prices are copied from GitHub's published Copilot usage-based pricing table:
@@ -118,6 +120,8 @@ See [docs/pricing.md](docs/pricing.md) for the exact calculation rules, source u
 ```bash
 npm run scan
 npm run refresh:data
+npm run runtime
+npm run preview:local
 npm run verify:data
 npm run schema:audit
 npm test -- --watch=false

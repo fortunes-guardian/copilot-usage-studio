@@ -4,6 +4,8 @@ The app is intended to run locally, near the VS Code data it reads. It should no
 
 Current release posture: early local developer preview. The recommended public path is clone-and-run while the scanner and UI contract settle.
 
+Packaging foundation now available: the scanner exposes an in-memory Node API through `lib/scanner-api.mjs`. The existing scan command uses that same API and only adds argument parsing plus JSON persistence. This is the common core for the next local host, an `npx` command, Electron packaging, and a future thin VS Code extension.
+
 Supported source today: VS Code GitHub Copilot Chat and Agent local storage. Visual Studio, JetBrains IDEs, Copilot CLI, GitHub.com chat, and GitHub billing exports are outside the current importer scope.
 
 Default scan paths:
@@ -20,7 +22,6 @@ Use the Angular dev server:
 
 ```bash
 npm install
-npm run refresh:data
 npm start
 ```
 
@@ -30,7 +31,7 @@ Then open the local Angular URL, usually:
 http://127.0.0.1:4200/
 ```
 
-Why: this is the fastest loop while the UI and scanner are changing. It keeps scans explicit, uses local files only, and makes errors easy to see in the terminal.
+Why: this is the fastest loop while the UI and scanner are changing. `npm start` launches the Angular dev server and the local runtime together. The runtime serves the last valid snapshot immediately, performs a background startup scan, and powers the in-app refresh action.
 
 ## First Public Release Path
 
@@ -40,7 +41,6 @@ For the first public release, use a simple clone-and-run flow:
 git clone <repo-url>
 cd copilot-cost-debugger
 npm install
-npm run refresh:data
 npm start
 ```
 
@@ -83,18 +83,45 @@ Why: Angular production output is just static assets plus the generated `public/
 
 Current build status: `npm run build` passes. There is still an initial bundle budget warning to clean up later; it does not block the local preview release.
 
-For day-to-day local use, `npm run refresh:data` is the intended one-command data refresh. It regenerates `public/data/sessions.json` from local VS Code data and immediately verifies the generated file.
+For day-to-day development, use the in-app **Refresh** action. `npm run refresh:data` remains the explicit command-line scan plus verification path.
+
+## Local Runtime
+
+The local runtime is available separately:
+
+```bash
+npm run runtime
+```
+
+It listens on `http://127.0.0.1:4312/` by default and exposes:
+
+- `GET /api/status`: scan state, timestamps, last error, and session count
+- `GET /api/sessions`: the current normalized in-memory `SessionData`
+- `POST /api/scan`: run a scan, persist the new snapshot, and return it
+- `GET /data/sessions.json`: compatibility route backed by the current in-memory snapshot
+
+The runtime seeds itself from `public/data/sessions.json` when needed, then keeps its live cache under `tmp/local-runtime/`. This avoids triggering an Angular development rebuild every time the user refreshes data. It serves cached data while a scan is running, and a failed scan does not replace the last valid snapshot.
+
+To build the production UI and serve the complete local app with one command:
+
+```bash
+npm run preview:local
+```
+
+Then open `http://127.0.0.1:4312/`.
 
 ## Future Option: Desktop App
 
-A desktop wrapper, likely Tauri or Electron, could bundle:
+A desktop wrapper can bundle:
 
 - the static Angular UI
 - the scanner command
 - local settings for VS Code paths
 - optional app-owned SQLite later
 
-Why: a desktop app would make the project easier for non-frontend developers to run. It also gives a natural place for “refresh data” buttons and local file permissions. It is heavier than static hosting, so it should wait until the scanner and UI contract settle.
+Why: a desktop app would make the project easier for non-frontend developers to run. It also gives a natural place for refresh controls, background scanning, and local file permissions.
+
+Recommended first implementation: Electron. The current scanner is Node ESM and uses `node:sqlite`, so Electron can reuse it directly. Tauri remains possible later, but it would require a Node sidecar or a scanner rewrite before it offers a meaningful simplicity advantage.
 
 ## Future Option: Installer Or Single Command
 
@@ -106,6 +133,14 @@ copilot-cost-debugger serve
 ```
 
 Why: this keeps the project local and scriptable without committing to a desktop shell too early.
+
+The shared scanner API and local runtime are now complete. The runtime can power a one-command `npx` experience first and be embedded by Electron later.
+
+## Future Option: VS Code Companion Extension
+
+A thin VS Code extension can call the shared scanner from the local extension host and show the existing UI in a webview. It should remain a host, not a fork of the pricing and parsing logic.
+
+Why not move the whole product into an extension: keeping the scanner and analysis core editor-independent preserves a path to a desktop app and possible Visual Studio support if Visual Studio exposes equivalent local evidence later.
 
 ## Later, Not First Release
 

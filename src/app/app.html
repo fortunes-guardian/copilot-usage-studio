@@ -27,6 +27,21 @@
     </nav>
 
     <div class="topbar-actions">
+      <div class="data-refresh" [class.error]="sessionDataRefreshState() === 'error'">
+        <button
+          type="button"
+          class="data-refresh-button"
+          [disabled]="sessionDataRefreshState() === 'refreshing'"
+          [attr.aria-busy]="sessionDataRefreshState() === 'refreshing'"
+          (click)="refreshSessionData()"
+        >
+          <span class="refresh-icon" [class.spinning]="sessionDataRefreshState() === 'refreshing'" aria-hidden="true">↻</span>
+          <span>{{ sessionDataRefreshState() === 'refreshing' ? 'Scanning' : 'Refresh' }}</span>
+        </button>
+        <span class="data-refresh-status" aria-live="polite">
+          {{ sessionDataRefreshMessage() || dataUpdatedLabel() }}
+        </span>
+      </div>
       <button
         type="button"
         class="theme-toggle"

@@ -1681,7 +1681,10 @@
 
 .topbar-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
 }
 
 .theme-toggle {
@@ -1866,6 +1869,7 @@
   .topbar-actions {
     justify-content: end;
   }
+
 }
 
 @media (max-width: 520px) {
@@ -1874,7 +1878,7 @@
   }
 
   .theme-toggle {
-    padding-right: 5px;
+    padding-inline: 5px;
   }
 }
 
@@ -1959,12 +1963,20 @@
   }
 
   .brand {
+    grid-column: 1;
+    grid-row: 1;
     min-width: 0;
+  }
+
+  .topbar-actions {
+    grid-column: 2;
+    grid-row: 1;
   }
 
   .view-nav {
     display: grid;
     grid-column: 1 / -1;
+    grid-row: 2;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     justify-self: stretch;
     width: 100%;
