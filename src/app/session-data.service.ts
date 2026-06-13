@@ -79,7 +79,7 @@ export class SessionDataService {
       return error.message;
     }
 
-    return 'The generated session data could not be loaded. Run npm run scan and npm run verify:data.';
+    return 'The local session data could not be loaded.';
   }
 
   private isMissingRuntime(error: unknown): boolean {

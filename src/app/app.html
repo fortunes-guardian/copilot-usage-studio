@@ -97,7 +97,12 @@
     }
 
   <section class="content">
-    <app-session-data-state-panel [state]="sessionDataLoadState()" [error]="sessionDataLoadError()"></app-session-data-state-panel>
+    <app-session-data-state-panel
+      [state]="sessionDataLoadState()"
+      [error]="sessionDataLoadError()"
+      [refreshState]="sessionDataRefreshState()"
+      (refresh)="refreshSessionData()"
+    ></app-session-data-state-panel>
 
     @if (activeView() === 'usage') {
       @defer {

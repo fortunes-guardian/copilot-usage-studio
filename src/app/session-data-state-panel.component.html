@@ -1,15 +1,27 @@
 @if (state === 'loading') {
   <section class="state-panel">
     <p class="eyebrow">Loading</p>
-    <h2>Reading local session data</h2>
-    <p>The app is loading <code>/data/sessions.json</code>.</p>
+    <h2>Reading local sessions</h2>
+    <p>Checking the local Copilot data already imported by the runtime.</p>
   </section>
 } @else if (state === 'error') {
-  <section class="state-panel danger">
-    <p class="eyebrow">Data issue</p>
-    <h2>Could not load generated session data</h2>
-    <p>{{ error }}</p>
-    <p>Run <code>npm run scan</code>, then <code>npm run verify:data</code>.</p>
+  <section class="state-panel" [class.danger]="!isEmptyState">
+    <p class="eyebrow">{{ isEmptyState ? 'Get started' : 'Data issue' }}</p>
+    <h2>{{ isEmptyState ? 'Import your first sessions' : 'Could not load local session data' }}</h2>
+    @if (isEmptyState) {
+      <p>Scan this computer for local VS Code Copilot Chat and Agent sessions.</p>
+    } @else {
+      <p>{{ error || 'The local session data could not be loaded.' }}</p>
+    }
+    <button
+      type="button"
+      class="scan-button"
+      [disabled]="refreshState === 'refreshing'"
+      [attr.aria-busy]="refreshState === 'refreshing'"
+      (click)="refresh.emit()"
+    >
+      {{ refreshState === 'refreshing' ? 'Scanning VS Code...' : (isEmptyState ? 'Scan VS Code' : 'Try again') }}
+    </button>
   </section>
 }
 

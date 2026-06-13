@@ -1,6 +1,6 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 
-import { SessionDataLoadState } from './session-data.service';
+import { SessionDataLoadState, SessionDataRefreshState } from './session-data.service';
 
 @Component({
   selector: 'app-session-data-state-panel',
@@ -10,6 +10,12 @@ import { SessionDataLoadState } from './session-data.service';
 export class SessionDataStatePanelComponent {
   @Input({ required: true }) state!: SessionDataLoadState;
   @Input() error: string | null = null;
+  @Input() refreshState: SessionDataRefreshState = 'idle';
+  @Output() refresh = new EventEmitter<void>();
+
+  protected get isEmptyState(): boolean {
+    return this.error?.toLowerCase().includes('no session data is available') ?? false;
+  }
 }
 
 
