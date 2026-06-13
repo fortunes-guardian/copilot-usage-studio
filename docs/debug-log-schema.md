@@ -11,9 +11,9 @@ Reference sample used for this pass:
 Latest schema drift check:
 
 ```text
-2026-05-30
+2026-06-13
 %APPDATA%\Code\User\workspaceStorage\<workspace-id>\GitHub.copilot-chat\debug-logs\<session-id>
-VS Code 1.122.1, GitHub Copilot Chat 0.50.1
+VS Code 1.124.2, GitHub Copilot Chat 0.52.0
 ```
 
 The schema is observed, not guaranteed by a published VS Code API. Treat it as a local data contract that must be verified with fixtures as VS Code Copilot changes.
@@ -75,6 +75,24 @@ Observed event types in the reference session:
 - `subagent`
 - `child_session_ref`
 
+### June 2026 customization event change
+
+The 2026-06-13 sample no longer emitted the earlier set of `discovery` rows. It emitted one event with this shape instead:
+
+```json
+{
+  "type": "generic",
+  "name": "Resolve Customizations",
+  "attrs": {
+    "category": "customization",
+    "source": "core",
+    "details": "Resolved 1 customizations ..."
+  }
+}
+```
+
+The scanner now preserves `category` and `source`, and Trace treats this as setup/discovery evidence despite the generic envelope type. This is a compatibility rule based on explicit event semantics, not on the assumption that all generic events are setup events.
+
 ## Model Call Fields
 
 `llm_request` is the cost-critical event type.
@@ -96,7 +114,7 @@ Observed `attrs` fields:
 | `inputMessages` | Request message payload, often JSON string | Observed but sometimes empty/redacted-like; do not rely on completeness |
 | `maxTokens` | Request output cap | Preserved as request cap evidence |
 | `requestOptions` | JSON string containing request options | Parsed for reasoning/thinking fields |
-| `requestShape` | JSON string describing request API shape, for example `{"api":"responses","inputItemCount":3}` | Preserved as bounded trace metadata |
+| `requestShape` | JSON string describing request API shape, item types, and whether the call continues a previous response | Preserved as structured trace metadata plus a bounded readable summary |
 | `systemPromptFile` | Side-file name such as `system_prompt_0.json` | Used to measure setup payload size |
 | `toolsFile` | Side-file name such as `tools_0.json` | Used to measure tool/MCP schema payload size |
 | `temperature` | Sampling temperature | Observed on title calls |
@@ -189,6 +207,13 @@ App boundary:
 - `requestShape` helps explain which request API shape VS Code used, but it is not a billing field.
 - These fields are request configuration, not direct cost totals.
 
+The 2026-06-13 sample makes the request chain clearer:
+
+- the first model call used three initial input items and did not set `hasPreviousResponseId`
+- the next ten calls used one `function_call_output` item and set `hasPreviousResponseId: true`
+
+This can reliably distinguish an initial request from a tool-result continuation when the field is present. It does not assign the later request's tokens to one tool or prove section-level cost attribution.
+
 ## Model Capability Metadata
 
 The 2026-05-30 sample includes a rich `models.json` file. It is an array of model metadata objects. Useful observed fields include:
@@ -197,6 +222,7 @@ The 2026-05-30 sample includes a rich `models.json` file. It is an array of mode
 | --- | --- | --- |
 | `id`, `name`, `version`, `vendor` | Model identity | Stronger model display and raw-id normalization |
 | `billing.is_premium`, `billing.multiplier`, `billing.restricted_to` | GitHub Copilot product metadata | Useful context, but not a replacement for the GitHub pricing table |
+| `billing.token_prices` | Volatile model-catalog token price metadata observed in current VS Code builds | Audit/debug evidence only; do not replace the app's published GitHub price table or source AI usage |
 | `capabilities.limits.max_context_window_tokens` | Context-window size exposed by VS Code model metadata | Future source-backed context-window usage signal |
 | `capabilities.limits.max_prompt_tokens` | Prompt/input limit exposed by VS Code model metadata | Future source-backed prompt pressure signal |
 | `capabilities.limits.max_output_tokens` | Output-token limit exposed by VS Code model metadata | Future source-backed output cap signal |
@@ -205,7 +231,9 @@ The 2026-05-30 sample includes a rich `models.json` file. It is an array of mode
 | `supported_endpoints` | Endpoint/API shapes such as `/chat/completions`, `/responses`, or `ws:/responses` | Helps interpret `requestShape.api` |
 | `model_picker_enabled`, `is_chat_default`, `is_chat_fallback` | VS Code picker/default state | Useful for explaining which model is currently available/default locally |
 
-Boundary: `models.json` is VS Code/Copilot model metadata, not the authoritative GitHub billing table. It can improve context-window and capability explanations, but pricing should continue to come from the app's imported GitHub pricing table.
+Boundary: `models.json` is VS Code/Copilot model metadata, not the authoritative GitHub billing table. It can improve context-window and capability explanations, but pricing should continue to come from source `copilotUsageNanoAiu` when available and the app's imported GitHub pricing table as the explanation/fallback layer.
+
+The model catalogue is volatile. Between the 2026-06-05 and 2026-06-13 samples it added `gpt-5.4-mini-free-auto` and `mai-code-1-flash-picker`, removed `gpt-5.2-codex`, changed fallback flags, and zeroed several legacy/internal token-price rows. Those changes are useful for compatibility audits, but they are not evidence that a model was used in a session or that a zero row means free user billing.
 
 ## Tool And MCP Evidence
 
@@ -274,7 +302,7 @@ Session fields:
 | `traceEvents` | Capped normalized trace rows |
 | `vscodeState` | Optional `state.vscdb` metadata enrichment |
 
-Token-bearing trace events preserve raw `inputTokens`, optional `cachedInputTokens`, optional `cacheWriteTokens`, `outputTokens`, `model`, `rawModel`, `pricingModel`, `totalTokens`, app-calculated `estimatedCost`, and optional source-provided `sourceEstimatedCost`.
+Token-bearing trace events preserve raw `inputTokens`, optional `cachedInputTokens`, optional `cacheWriteTokens`, `outputTokens`, `model`, `rawModel`, `pricingModel`, `totalTokens`, app-calculated `estimatedCost`, optional source-provided `sourceEstimatedCost`, and structured `requestShape` metadata when present.
 
 When `copilotUsageNanoAiu` is present, token-bearing trace events also preserve `sourceUsage`:
 
@@ -301,6 +329,7 @@ Build confidently from:
 - `llm_request.attrs.requestOptions.reasoning.effort`
 - `llm_request.attrs.requestOptions.text.verbosity`
 - `llm_request.attrs.requestShape`
+- `generic` customization events with explicit `attrs.category`, `attrs.source`, and `attrs.details`
 - `session_start.attrs.vscodeVersion`
 - `session_start.attrs.copilotVersion`
 - `models.json` capability metadata for context-window, prompt-limit, output-limit, endpoint, tokenizer, and supported reasoning-effort enrichment
@@ -317,3 +346,4 @@ Do not overclaim:
 - Tool/MCP character counts are optimization evidence, not exact cost allocation.
 - Chat Debug transcripts can be useful, but they are not the pricing source and can disappear or differ after restart.
 - Transcript availability is recorded so future inspector features can be honest about source coverage. Missing transcripts do not weaken a debug-log session estimate.
+- `models.json.billing.token_prices` is volatile local catalogue metadata. Do not silently use it as the user-facing GitHub rate card.

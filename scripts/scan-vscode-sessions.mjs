@@ -546,20 +546,34 @@ function textVerbosity(event) {
   return String(requestOptions(event)?.text?.verbosity ?? '').trim();
 }
 
-function requestShapeSummary(event) {
+function requestShapeMetadata(event) {
   const shape = parseMaybeJson(event.attrs?.requestShape);
 
   if (!shape || typeof shape !== 'object') {
+    return null;
+  }
+
+  return {
+    api: shape.api ? String(shape.api) : '',
+    inputItemCount: Number(shape.inputItemCount ?? 0),
+    inputItemTypes: Array.isArray(shape.inputItemTypes) ? shape.inputItemTypes.filter(Boolean).map(String) : [],
+    hasPreviousResponseId: Boolean(shape.hasPreviousResponseId),
+  };
+}
+
+function requestShapeSummary(event) {
+  const shape = requestShapeMetadata(event);
+  if (!shape) {
     return '';
   }
 
-  const api = shape.api ? String(shape.api) : '';
-  const inputItemCount = Number(shape.inputItemCount ?? 0);
-  const inputItemTypes = Array.isArray(shape.inputItemTypes) ? shape.inputItemTypes.filter(Boolean).join(', ') : '';
   const parts = [
-    api ? `api: ${api}` : '',
-    inputItemCount ? `${inputItemCount.toLocaleString()} input item${inputItemCount === 1 ? '' : 's'}` : '',
-    inputItemTypes ? `types: ${inputItemTypes}` : '',
+    shape.api ? `api: ${shape.api}` : '',
+    shape.inputItemCount
+      ? `${shape.inputItemCount.toLocaleString()} input item${shape.inputItemCount === 1 ? '' : 's'}`
+      : '',
+    shape.inputItemTypes.length ? `types: ${shape.inputItemTypes.join(', ')}` : '',
+    shape.hasPreviousResponseId ? 'continues previous response' : '',
   ].filter(Boolean);
 
   return parts.join(' · ');
@@ -908,7 +922,10 @@ function eventAttributeSummary(event) {
   const attrs = event.attrs ?? {};
   const data = event.data ?? {};
   const candidates = [
+    ['category', attrs.category],
+    ['source', attrs.source],
     ['model', attrs.model],
+    ['debugName', attrs.debugName],
     ['inputTokens', attrs.inputTokens],
     ['cachedTokens', attrs.cachedTokens ?? attrs.cachedInputTokens ?? attrs.cacheReadTokens],
     ['cacheWriteTokens', attrs.cacheWriteTokens ?? attrs.cachedWriteTokens],
@@ -924,6 +941,7 @@ function eventAttributeSummary(event) {
     ['toolsFile', attrs.toolsFile],
     ['vscodeVersion', attrs.vscodeVersion],
     ['copilotVersion', attrs.copilotVersion],
+    ['responseId', attrs.responseId],
     ['logVersion', event.v],
     ['toolName', data.toolName ?? attrs.toolName],
     ['details', attrs.details],
@@ -1135,6 +1153,7 @@ export function sessionFromDebugLog(sessionDir, workspaceDir) {
 
         const setupPayload = setupPayloadForEvent(event);
         const sourceUsage = sourceUsageFromNanoAiu(event);
+        const requestShape = event.type === 'llm_request' ? requestShapeMetadata(event) : null;
 
         return {
           index,
@@ -1152,6 +1171,7 @@ export function sessionFromDebugLog(sessionDir, workspaceDir) {
           maxTokens: event.type === 'llm_request' ? Number(event.attrs?.maxTokens ?? 0) : 0,
           hasReasoning: event.type === 'agent_response' && Boolean(String(event.attrs?.reasoning ?? '').trim()),
           reasoningEffort: event.type === 'llm_request' ? reasoningEffort(event) : '',
+          ...(requestShape ? { requestShape } : {}),
           ...(event.type === 'llm_request'
             ? eventModelCostFields(event.attrs?.model, tokenFields)
             : {}),

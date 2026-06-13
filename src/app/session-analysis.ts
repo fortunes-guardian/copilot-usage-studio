@@ -139,7 +139,7 @@ export function matchesTraceFilter(event: TraceEvent, filter: TraceFilter): bool
   }
 
   if (filter === 'discovery') {
-    return event.type === 'discovery' || event.name.toLowerCase().includes('discovery') || event.detail.toLowerCase().includes('resolved ');
+    return isSetupEvent(event);
   }
 
   if (filter === 'message') {
@@ -475,6 +475,20 @@ function modelCallRows(
   return sort === 'largest'
     ? [...rows].sort((a, b) => b.estimatedUsd - a.estimatedUsd || b.totalTokens - a.totalTokens)
     : rows;
+}
+
+export function isSetupEvent(event: TraceEvent): boolean {
+  const category = event.attributes?.find((field) => field.label === 'category')?.value.toLowerCase() ?? '';
+  const name = event.name.toLowerCase();
+  const detail = event.detail.toLowerCase();
+
+  return (
+    event.type === 'discovery' ||
+    name.includes('discovery') ||
+    name.includes('customization') ||
+    category === 'customization' ||
+    detail.startsWith('resolved ')
+  );
 }
 
 function userRequestBeforeModelCall(

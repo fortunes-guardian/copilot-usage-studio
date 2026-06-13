@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 
 import { TraceEvent } from './session-data.model';
+import { isSetupEvent } from './session-analysis';
 
 type TraceView = 'logs' | 'flow';
 type TraceFilter = 'all' | 'model' | 'tool' | 'discovery' | 'message' | 'response' | 'error';
@@ -136,7 +137,7 @@ export class SessionTraceComponent implements OnChanges, AfterViewChecked {
       return 'agent-response';
     }
 
-    if (event.type === 'discovery' || event.name.toLowerCase().includes('discovery')) {
+    if (isSetupEvent(event)) {
       return 'discovery';
     }
 

@@ -76,7 +76,8 @@ For debug logs with `llm_request` events:
 - `modelBreakdown` groups `llm_request` rows by normalized model id and stores raw model ids, turn count, token totals, estimated cost, and the pricing model used.
 - each token-bearing `traceEvents` row stores structured `model`, `rawModel`, `pricingModel`, `totalTokens`, and `estimatedCost` fields.
 - each `llm_request` trace row also preserves `ttftMs`, `maxTokens`, and request `reasoningEffort` when VS Code logged them.
-- current VS Code Agent Debug Logs can also expose `session_start.attrs.vscodeVersion`, `session_start.attrs.copilotVersion`, `llm_request.attrs.requestShape`, and `requestOptions.text.verbosity`; these are preserved as runtime/request metadata rather than cost fields.
+- current VS Code Agent Debug Logs can also expose `session_start.attrs.vscodeVersion`, `session_start.attrs.copilotVersion`, structured `llm_request.attrs.requestShape`, and `requestOptions.text.verbosity`; these are preserved as runtime/request metadata rather than cost fields.
+- current VS Code builds may emit customization resolution as `type: generic`, `name: Resolve Customizations`, with `attrs.category: customization`; the scanner preserves those explicit fields and Trace still groups the event as setup/discovery evidence.
 - each `agent_response` trace row records whether a reasoning text field was present.
 - future scans preserve a small bounded `attributes` summary for common fields such as model, token counts, tool name, details, user content preview, or response preview. This is for the Trace inspector only; it is not a raw JSONL dump.
 
@@ -103,6 +104,8 @@ Agent Debug Logs can include more than token totals. The scanner now preserves b
 - nested `runSubagent-*.jsonl` file count
 
 Why: this explains what kind of setup payload was available to the model request. Large instruction payloads, large tool schemas, many MCP tools, and large tool results can all be practical optimization targets.
+
+When `requestShape.hasPreviousResponseId` and `inputItemTypes: ["function_call_output"]` are present, the app can also identify a model request as a continuation after tool output rather than the initial request. This is request-flow evidence, not exact per-tool token attribution.
 
 Important boundary: these are source-backed size and presence signals. They are not exact per-section billing rows. Exact local cost is still calculated at the `llm_request` model-call level from logged token totals. Only show exact instruction/MCP cost if a future source exposes token counts for those specific sections.
 

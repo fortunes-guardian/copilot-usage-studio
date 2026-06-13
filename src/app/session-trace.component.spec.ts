@@ -45,6 +45,21 @@ describe('SessionTraceComponent', () => {
     outputTokens: 0,
   };
 
+  const customizationEvent: TraceEvent = {
+    index: 9,
+    timestamp: '2026-06-13T09:22:46.478Z',
+    type: 'generic',
+    name: 'Resolve Customizations',
+    status: 'ok',
+    detail: 'Resolved 1 customizations (1 listed) in 356.6ms',
+    attributes: [
+      { label: 'category', value: 'customization' },
+      { label: 'source', value: 'core' },
+    ],
+    inputTokens: 0,
+    outputTokens: 0,
+  };
+
   async function render(selectedTraceEvent: TraceEvent): Promise<ComponentFixture<SessionTraceComponent>> {
     const fixture = TestBed.createComponent(SessionTraceComponent);
     const component = fixture.componentInstance;
@@ -55,7 +70,7 @@ describe('SessionTraceComponent', () => {
       { value: 'model', label: 'Model' },
       { value: 'tool', label: 'Tool' },
     ];
-    component.filteredTraceEvents = [cachedModelEvent, toolEvent];
+    component.filteredTraceEvents = [cachedModelEvent, toolEvent, customizationEvent];
     component.selectedTraceEvent = selectedTraceEvent;
     component.selectedTraceEventDetails = traceEventDetails(selectedTraceEvent, modelBreakdown);
     component.openedFromTurns = selectedTraceEvent.index === cachedModelEvent.index;
@@ -96,5 +111,15 @@ describe('SessionTraceComponent', () => {
     expect(text).toContain('None');
     expect(text).toContain('filePath');
     expect(text).toContain('package.json');
+  });
+
+  it('recognizes the current generic customization event as setup discovery', async () => {
+    const fixture = await render(customizationEvent);
+    const text = fixture.nativeElement.textContent;
+
+    expect(text).toContain('Discovery or setup event');
+    expect(text).toContain('Discovery · generic');
+    expect(text).toContain('customization');
+    expect(text).toContain('core');
   });
 });

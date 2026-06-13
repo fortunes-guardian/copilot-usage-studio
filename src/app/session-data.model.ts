@@ -102,6 +102,7 @@ export interface TraceEvent {
   maxTokens?: number;
   hasReasoning?: boolean;
   reasoningEffort?: string;
+  requestShape?: ModelCallRequestShape;
   totalTokens?: number;
   model?: string;
   rawModel?: string;
@@ -110,6 +111,13 @@ export interface TraceEvent {
   sourceEstimatedCost?: string;
   sourceUsage?: SourceUsage;
   setupPayload?: ModelCallSetupPayload;
+}
+
+export interface ModelCallRequestShape {
+  api: string;
+  inputItemCount: number;
+  inputItemTypes: string[];
+  hasPreviousResponseId: boolean;
 }
 
 export interface AdvancedSignals {

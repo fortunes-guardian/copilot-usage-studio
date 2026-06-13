@@ -248,9 +248,17 @@ test('preserves current VS Code Copilot runtime and request-shape metadata', () 
           }),
           requestShape: JSON.stringify({
             api: 'responses',
-            inputItemCount: 3,
-            inputItemTypes: ['unknown', 'unknown', 'unknown'],
+            inputItemCount: 1,
+            inputItemTypes: ['function_call_output'],
+            hasPreviousResponseId: true,
           }),
+        },
+      }),
+      event(4, 'generic', 'Resolve Customizations', {
+        attrs: {
+          category: 'customization',
+          source: 'core',
+          details: 'Resolved 1 customizations (1 listed) in 356.6ms',
         },
       }),
     ]);
@@ -271,11 +279,27 @@ test('preserves current VS Code Copilot runtime and request-shape metadata', () 
     assert.equal(session.modelLimits[0].supportedEndpoints.includes('/responses'), true);
     assert.deepEqual(session.modelLimits[0].supportedReasoningEfforts, ['low', 'medium', 'high']);
     assert.equal(modelEvent.reasoningEffort, 'medium');
+    assert.deepEqual(modelEvent.requestShape, {
+      api: 'responses',
+      inputItemCount: 1,
+      inputItemTypes: ['function_call_output'],
+      hasPreviousResponseId: true,
+    });
     assert.deepEqual(
       modelEvent.attributes.filter((field) => ['textVerbosity', 'requestShape'].includes(field.label)),
       [
         { label: 'textVerbosity', value: 'low' },
-        { label: 'requestShape', value: 'api: responses · 3 input items · types: unknown, unknown, unknown' },
+        {
+          label: 'requestShape',
+          value: 'api: responses · 1 input item · types: function_call_output · continues previous response',
+        },
+      ],
+    );
+    assert.deepEqual(
+      session.traceEvents[3].attributes.filter((field) => ['category', 'source'].includes(field.label)),
+      [
+        { label: 'category', value: 'customization' },
+        { label: 'source', value: 'core' },
       ],
     );
   } finally {

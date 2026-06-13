@@ -35,10 +35,12 @@ Done:
 - Added a compact selected-run Context Load card that compares largest raw input with `models.json` prompt/context limits and distinguishes near-limit runs from repeated-context runs without showing noisy model capability metadata.
 - Added a Context Load timeline inside Calls: raw `inputTokens` per model call, prompt-limit percentage when model metadata is available, repeated-input summary, and click-through from each bar to Trace.
 - Added a compact Setup Footprint panel in Calls that summarizes referenced instruction/tool/MCP side-file payload size and shows whether that setup changed across model calls.
+- Audited VS Code 1.124.2 / Copilot Chat 0.52.0 Agent Debug Logs: preserved structured request-chain metadata and kept new generic `Resolve Customizations` events inside setup/discovery Trace grouping.
 
 Next:
 
 - Keep user-facing source language minimal. Show debug-log/source details in docs or ingest diagnostics, not as primary selected-run chips.
+- Add a compact Calls cue for `Initial request` versus `Tool-result continuation` using structured `requestShape` evidence. Keep it secondary to tokens and usage, and do not present it as exact per-tool cost attribution.
 - Remove low-value banners and technical caveats from the main Cost view unless they change a decision.
 - Keep source usage visually primary. Use token-bucket pricing as explanation and fallback; keep reconciliation differences in diagnostics unless they materially change the displayed usage story.
 - Continue tuning Context Load copy against larger real sessions. Keep it as capacity context, not billing prediction.
