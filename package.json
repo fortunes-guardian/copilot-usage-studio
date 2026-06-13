@@ -12,7 +12,9 @@
     "clean:ng-cache": "ng cache clean",
     "refresh:data": "npm run scan && npm run verify:data",
     "scan": "node scripts/scan-vscode-sessions.mjs",
-    "verify:data": "node scripts/verify-session-data.mjs"
+    "verify:data": "node scripts/verify-session-data.mjs",
+    "schema:audit": "node scripts/audit-vscode-schema.mjs",
+    "schema:accept": "node scripts/audit-vscode-schema.mjs --accept"
   },
   "private": true,
   "license": "MIT",

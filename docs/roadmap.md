@@ -36,6 +36,7 @@ Done:
 - Added a Context Load timeline inside Calls: raw `inputTokens` per model call, prompt-limit percentage when model metadata is available, repeated-input summary, and click-through from each bar to Trace.
 - Added a compact Setup Footprint panel in Calls that summarizes referenced instruction/tool/MCP side-file payload size and shows whether that setup changed across model calls.
 - Audited VS Code 1.124.2 / Copilot Chat 0.52.0 Agent Debug Logs: preserved structured request-chain metadata and kept new generic `Resolve Customizations` events inside setup/discovery Trace grouping.
+- Added a versioned, privacy-safe raw schema audit with newest-runtime cohort comparison, breaking/warning/info classification, regression tests, and an explicit weekly baseline acceptance workflow.
 
 Next:
 

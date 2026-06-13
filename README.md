@@ -44,13 +44,13 @@ That is the release path for now: clone the repo, refresh local VS Code data, ru
 
 ## What Works Now
 
-- **Usage**: last session, today, this week, current calendar month, visible filtered total, and recent daily usage in GitHub AI credits.
+- **Usage**: the default home for last session, today, this week, current calendar month, selected workspace/model scope, and recent daily usage in GitHub AI credits.
 - **Sessions**: selected-run debugging with Overview, Cost, Calls, and Trace views.
 - **Cost**: source usage when VS Code logs it, fallback pricing when it does not, and separate normal input, cached input, cache write, and output buckets.
 - **Calls**: model-call timeline, context-load timeline, setup-footprint clues, and links back to the raw Trace event.
 - **Trace**: filterable raw log timeline with clickable event inspection.
 - **Compare**: baseline/candidate run comparison with cost, token, model, and same-prompt cues.
-- **Analytics**: multi-session cohort totals, model breakdowns, trends, distribution, and outlier signals.
+- **Insights**: multi-session model mix, trends, run-size distribution, and outlier signals without repeating the Usage dashboard.
 - **Prices**: GitHub pricing rows used by the app plus Copilot Business/Enterprise AI-credit allowance context.
 
 If the dev server ever shows new markup with old component styles, stop it and restart with a cache reset:
@@ -84,6 +84,7 @@ The app is a local developer visibility tool. It shows what can be understood fr
 - [docs/local-deployment.md](docs/local-deployment.md): local run, build, and future packaging options.
 - [docs/data-ingestion.md](docs/data-ingestion.md): where the data comes from and what it means.
 - [docs/debug-log-schema.md](docs/debug-log-schema.md): observed VS Code Agent Debug Log schema and generated app data contract.
+- [docs/schema-change-workflow.md](docs/schema-change-workflow.md): weekly VS Code/Copilot update audit, compatibility gates, and baseline procedure.
 - [docs/roadmap.md](docs/roadmap.md): current state, completed work, and planned build order.
 
 ## License
@@ -118,6 +119,7 @@ See [docs/pricing.md](docs/pricing.md) for the exact calculation rules, source u
 npm run scan
 npm run refresh:data
 npm run verify:data
+npm run schema:audit
 npm test -- --watch=false
 npm run build
 ```

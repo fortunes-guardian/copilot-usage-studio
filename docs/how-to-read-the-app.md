@@ -15,12 +15,19 @@ The app estimates the cost of a local VS Code Copilot session by combining:
 
 When VS Code also logs `copilotUsageNanoAiu`, the app uses that as the primary local GitHub usage total. The token buckets still explain where the usage came from and act as the fallback when source usage is absent. The app is still not a GitHub invoice.
 
-## The Most Important Screen
+## Start With Usage
 
-Open one session and read the Cost debugger.
+**Usage** is the default home. Start there when you want to know how much you used in the last run, today, this week, or this calendar month.
+
+Use its **Workspace** and **Model** controls to define the sessions included in the page. These controls belong to Usage; they do not silently depend on the Sessions browser.
+
+Open a usage card to jump into the most relevant selected run.
+
+## Debug One Session
 
 Start with the session list:
 
+- On a narrow screen, use **Browse sessions**. The session browser opens as a drawer so it does not squeeze the selected run.
 - Filter by size when you want only large runs.
 - Filter by signal when you want runs with a particular cost pattern.
 
@@ -63,7 +70,7 @@ Use **Usage** when the question is simply:
 - how much did I use today?
 - how much did I use this week?
 - how much did I use this calendar month?
-- how much is in the current filtered set?
+- how much is in a selected workspace/model scope?
 
 Credits are primary because GitHub Copilot allowances are credit-based. USD is shown beside credits because GitHub prices and additional-usage budgets are USD-native.
 
@@ -71,40 +78,32 @@ Read it in this order:
 
 - **Last session**: the newest imported run. Click it to open the selected-run debugger.
 - **Today / This week / Calendar month**: calendar windows from your local machine date. Each card shows the exact date span.
-- **Visible total**: the sessions currently available after the app's sidebar filters.
+- **Selected scope**: all imported sessions matching the Workspace and Model controls on Usage.
 - **Recent days**: a compact local history so you can spot busy days.
 
 Cards that contain more than one session open the top-usage run in that window. They do not open a separate report page yet; they are shortcuts into the selected-run debugger.
 
 When VS Code logs source usage, the app uses that first. If a card contains fallback estimates, it says so. The page is a local developer usage view, not an enterprise invoice or org-wide license pool.
 
-## Reading Analytics
+## Reading Insights
 
-Use **Analytics** for questions about more than one session.
+Use **Insights** when you want to understand patterns across more than one session.
 
-The Analytics view is intentionally separate from the selected-run debugger:
+Each top-level page has one job:
 
+- **Usage** answers calendar usage and allowance questions.
 - **Sessions** explains one selected run.
 - **Compare runs** explains how run B differs from run A.
-- **Analytics** explains the current group of sessions.
-- **Usage** answers direct calendar usage questions.
+- **Insights** explains model mix, run-size distribution, trends, and outliers across a cohort.
 
-The sidebar filters define the starting group. Analytics only summarizes the sessions currently visible after sidebar search, size, and signal filters. The Analytics controls then narrow that group by credit window, workspace, and model, and choose whether the trend is grouped by day, week, or month.
-
-The credit window is an estimate window for imported local sessions. `Current month` and `Previous month` are anchored to the latest imported session date, so historical imported data still makes sense. It is not GitHub billing reconciliation.
-
-The plan selector compares local GitHub usage credits, falling back to estimated AI credits, with the monthly included-credit allowance for one Copilot Business or Enterprise license. This is useful for “does this usage matter for my own workflow?” thinking, but it still only covers sessions imported into the app. Org-wide seat pools are intentionally not modelled while the app is reading one developer's local VS Code data.
-
-The Analytics reset button resets only the Analytics controls. It does not clear sidebar filters. This is intentional: sidebar filters define the global working set, while Analytics controls define the dashboard cohort inside that working set.
+Insights starts from all imported sessions. Its own Time range, Workspace, and Model controls define the cohort; Sessions sidebar filters do not change it.
 
 Read it in this order:
 
-- **Monthly credit view**: estimated credits used versus one selected-plan monthly allowance.
-- **Top metrics**: total cost/tokens, average cost/tokens, AI credits, and cost per 1k tokens.
 - **Model breakdown**: which model/pricing rows are contributing the cost.
 - **Runs to inspect**: the highest-token and most expensive runs; click one to open the selected-run debugger.
 - **Outlier signals**: sessions that are unusually high compared with the current cohort, with a first-pass explanation of the likely driver. Current explanations can call out input/context dominance, model price rows, tool activity, plausible long agent work, or suspicious low-activity spikes.
-- **Run size mix and credit trend**: whether cost is spread across many runs or concentrated in a few periods. Each row can open the largest run in that bucket.
+- **Run size mix and usage trend**: whether usage is spread across many runs or concentrated in a few periods. Each row can open the largest run in that bucket.
 
 ## Run Triage Labels
 
@@ -145,7 +144,7 @@ Where fallback pricing appears:
 
 - the selected-run header shows a `Fallback pricing` chip
 - the selected run shows a `Pricing assumption` callout
-- Cost, Calls, Compare, Analytics, and Prices mark the fallback row directly
+- Cost, Calls, Compare, Insights, and Prices mark the fallback row directly
 
 Real-life meaning: the token totals can still be exact local debug-log totals, but the price applied to those tokens is an assumption until the local GitHub pricing table includes the logged model id.
 
@@ -155,7 +154,7 @@ When VS Code Agent Debug Logs expose `cachedTokens`, the app imports it as cache
 
 Cached tokens are not subtracted from output tokens. They are normally a cheaper input/context billing bucket. Generated output remains generated output.
 
-If a run has no numeric cached-token fields, the app does not infer them. It prices the buckets that were imported and keeps cached input/cache write visibly separate in Cost, Calls, Compare, Analytics, and Prices.
+If a run has no numeric cached-token fields, the app does not infer them. It prices the buckets that were imported and keeps cached input/cache write visibly separate in Cost, Calls, Compare, Insights, and Prices.
 
 ## Request Payload Evidence
 

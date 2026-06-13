@@ -1,0 +1,1300 @@
+{
+  "fingerprintVersion": 1,
+  "capturedAt": "2026-06-13T10:01:51.320Z",
+  "runtime": {
+    "logVersion": 1,
+    "vscodeVersion": "1.124.2",
+    "copilotVersion": "0.52.0"
+  },
+  "cohort": {
+    "sessionCount": 1,
+    "newestSessionAt": "2026-06-13T09:23:38.975Z"
+  },
+  "main": {
+    "records": 59,
+    "parseErrors": 0,
+    "envelopeShape": {
+      "attrs": [
+        "object"
+      ],
+      "attrs.args": [
+        "string"
+      ],
+      "attrs.cachedTokens": [
+        "number"
+      ],
+      "attrs.category": [
+        "string"
+      ],
+      "attrs.childLogFile": [
+        "string"
+      ],
+      "attrs.childSessionId": [
+        "string"
+      ],
+      "attrs.content": [
+        "string"
+      ],
+      "attrs.copilotUsageNanoAiu": [
+        "number"
+      ],
+      "attrs.copilotVersion": [
+        "string"
+      ],
+      "attrs.debugName": [
+        "string"
+      ],
+      "attrs.details": [
+        "string"
+      ],
+      "attrs.inputMessages": [
+        "string"
+      ],
+      "attrs.inputTokens": [
+        "number"
+      ],
+      "attrs.label": [
+        "string"
+      ],
+      "attrs.maxTokens": [
+        "number"
+      ],
+      "attrs.model": [
+        "string"
+      ],
+      "attrs.outputTokens": [
+        "number"
+      ],
+      "attrs.reasoning": [
+        "string"
+      ],
+      "attrs.requestOptions": [
+        "string"
+      ],
+      "attrs.requestShape": [
+        "string"
+      ],
+      "attrs.response": [
+        "string"
+      ],
+      "attrs.responseId": [
+        "string"
+      ],
+      "attrs.result": [
+        "string"
+      ],
+      "attrs.source": [
+        "string"
+      ],
+      "attrs.systemPromptFile": [
+        "string"
+      ],
+      "attrs.toolsFile": [
+        "string"
+      ],
+      "attrs.ttft": [
+        "number"
+      ],
+      "attrs.turnId": [
+        "string"
+      ],
+      "attrs.userRequest": [
+        "string"
+      ],
+      "attrs.vscodeVersion": [
+        "string"
+      ],
+      "dur": [
+        "number"
+      ],
+      "name": [
+        "string"
+      ],
+      "parentSpanId": [
+        "string"
+      ],
+      "sid": [
+        "string"
+      ],
+      "spanId": [
+        "string"
+      ],
+      "status": [
+        "string"
+      ],
+      "ts": [
+        "number"
+      ],
+      "type": [
+        "string"
+      ],
+      "v": [
+        "number"
+      ]
+    },
+    "eventTypes": {
+      "agent_response": {
+        "count": 11,
+        "eventFields": {
+          "dur": [
+            "number"
+          ],
+          "name": [
+            "string"
+          ],
+          "parentSpanId": [
+            "string"
+          ],
+          "sid": [
+            "string"
+          ],
+          "spanId": [
+            "string"
+          ],
+          "status": [
+            "string"
+          ],
+          "ts": [
+            "number"
+          ],
+          "type": [
+            "string"
+          ]
+        },
+        "attrFields": {
+          "reasoning": [
+            "string"
+          ],
+          "response": [
+            "string"
+          ]
+        },
+        "dataFields": {}
+      },
+      "child_session_ref": {
+        "count": 1,
+        "eventFields": {
+          "dur": [
+            "number"
+          ],
+          "name": [
+            "string"
+          ],
+          "sid": [
+            "string"
+          ],
+          "spanId": [
+            "string"
+          ],
+          "status": [
+            "string"
+          ],
+          "ts": [
+            "number"
+          ],
+          "type": [
+            "string"
+          ]
+        },
+        "attrFields": {
+          "childLogFile": [
+            "string"
+          ],
+          "childSessionId": [
+            "string"
+          ],
+          "label": [
+            "string"
+          ]
+        },
+        "dataFields": {}
+      },
+      "generic": {
+        "count": 1,
+        "eventFields": {
+          "dur": [
+            "number"
+          ],
+          "name": [
+            "string"
+          ],
+          "sid": [
+            "string"
+          ],
+          "spanId": [
+            "string"
+          ],
+          "status": [
+            "string"
+          ],
+          "ts": [
+            "number"
+          ],
+          "type": [
+            "string"
+          ]
+        },
+        "attrFields": {
+          "category": [
+            "string"
+          ],
+          "details": [
+            "string"
+          ],
+          "source": [
+            "string"
+          ]
+        },
+        "dataFields": {}
+      },
+      "llm_request": {
+        "count": 11,
+        "eventFields": {
+          "dur": [
+            "number"
+          ],
+          "name": [
+            "string"
+          ],
+          "parentSpanId": [
+            "string"
+          ],
+          "sid": [
+            "string"
+          ],
+          "spanId": [
+            "string"
+          ],
+          "status": [
+            "string"
+          ],
+          "ts": [
+            "number"
+          ],
+          "type": [
+            "string"
+          ]
+        },
+        "attrFields": {
+          "cachedTokens": [
+            "number"
+          ],
+          "copilotUsageNanoAiu": [
+            "number"
+          ],
+          "debugName": [
+            "string"
+          ],
+          "inputMessages": [
+            "string"
+          ],
+          "inputTokens": [
+            "number"
+          ],
+          "maxTokens": [
+            "number"
+          ],
+          "model": [
+            "string"
+          ],
+          "outputTokens": [
+            "number"
+          ],
+          "requestOptions": [
+            "string"
+          ],
+          "requestShape": [
+            "string"
+          ],
+          "responseId": [
+            "string"
+          ],
+          "systemPromptFile": [
+            "string"
+          ],
+          "toolsFile": [
+            "string"
+          ],
+          "ttft": [
+            "number"
+          ],
+          "userRequest": [
+            "string"
+          ]
+        },
+        "dataFields": {}
+      },
+      "session_start": {
+        "count": 1,
+        "eventFields": {
+          "dur": [
+            "number"
+          ],
+          "name": [
+            "string"
+          ],
+          "sid": [
+            "string"
+          ],
+          "spanId": [
+            "string"
+          ],
+          "status": [
+            "string"
+          ],
+          "ts": [
+            "number"
+          ],
+          "type": [
+            "string"
+          ],
+          "v": [
+            "number"
+          ]
+        },
+        "attrFields": {
+          "copilotVersion": [
+            "string"
+          ],
+          "vscodeVersion": [
+            "string"
+          ]
+        },
+        "dataFields": {}
+      },
+      "tool_call": {
+        "count": 11,
+        "eventFields": {
+          "dur": [
+            "number"
+          ],
+          "name": [
+            "string"
+          ],
+          "parentSpanId": [
+            "string"
+          ],
+          "sid": [
+            "string"
+          ],
+          "spanId": [
+            "string"
+          ],
+          "status": [
+            "string"
+          ],
+          "ts": [
+            "number"
+          ],
+          "type": [
+            "string"
+          ]
+        },
+        "attrFields": {
+          "args": [
+            "string"
+          ],
+          "result": [
+            "string"
+          ]
+        },
+        "dataFields": {}
+      },
+      "turn_end": {
+        "count": 11,
+        "eventFields": {
+          "dur": [
+            "number"
+          ],
+          "name": [
+            "string"
+          ],
+          "sid": [
+            "string"
+          ],
+          "spanId": [
+            "string"
+          ],
+          "status": [
+            "string"
+          ],
+          "ts": [
+            "number"
+          ],
+          "type": [
+            "string"
+          ]
+        },
+        "attrFields": {
+          "turnId": [
+            "string"
+          ]
+        },
+        "dataFields": {}
+      },
+      "turn_start": {
+        "count": 11,
+        "eventFields": {
+          "dur": [
+            "number"
+          ],
+          "name": [
+            "string"
+          ],
+          "sid": [
+            "string"
+          ],
+          "spanId": [
+            "string"
+          ],
+          "status": [
+            "string"
+          ],
+          "ts": [
+            "number"
+          ],
+          "type": [
+            "string"
+          ]
+        },
+        "attrFields": {
+          "turnId": [
+            "string"
+          ]
+        },
+        "dataFields": {}
+      },
+      "user_message": {
+        "count": 1,
+        "eventFields": {
+          "dur": [
+            "number"
+          ],
+          "name": [
+            "string"
+          ],
+          "sid": [
+            "string"
+          ],
+          "spanId": [
+            "string"
+          ],
+          "status": [
+            "string"
+          ],
+          "ts": [
+            "number"
+          ],
+          "type": [
+            "string"
+          ]
+        },
+        "attrFields": {
+          "content": [
+            "string"
+          ]
+        },
+        "dataFields": {}
+      }
+    },
+    "semanticEventNames": [
+      "generic:Resolve Customizations"
+    ]
+  },
+  "llmRequest": {
+    "count": 11,
+    "fieldCoverage": {
+      "model": "all",
+      "inputTokens": "all",
+      "outputTokens": "all",
+      "cachedTokens": "all",
+      "copilotUsageNanoAiu": "all",
+      "requestOptions": "all",
+      "requestShape": "all"
+    },
+    "requestOptionsShape": {
+      "include": [
+        "array"
+      ],
+      "include[]": [
+        "string"
+      ],
+      "reasoning": [
+        "object"
+      ],
+      "reasoning.effort": [
+        "string"
+      ],
+      "reasoning.summary": [
+        "string"
+      ],
+      "store": [
+        "boolean"
+      ],
+      "stream": [
+        "boolean"
+      ],
+      "text": [
+        "object"
+      ],
+      "text.verbosity": [
+        "string"
+      ],
+      "truncation": [
+        "string"
+      ]
+    },
+    "requestShape": {
+      "api": [
+        "string"
+      ],
+      "hasPreviousResponseId": [
+        "boolean"
+      ],
+      "inputItemCount": [
+        "number"
+      ],
+      "inputItemTypes": [
+        "array"
+      ],
+      "inputItemTypes[]": [
+        "string"
+      ]
+    },
+    "observed": {
+      "requestApis": [
+        "responses"
+      ],
+      "requestItemTypes": [
+        "function_call_output",
+        "unknown"
+      ],
+      "reasoningEfforts": [
+        "medium"
+      ],
+      "textVerbosities": [
+        "low"
+      ]
+    },
+    "invariants": {
+      "invalidNumericTokenFields": 0,
+      "invalidCachedTokenSplits": 0
+    }
+  },
+  "sideFiles": {
+    "models": {
+      "files": 1,
+      "shape": {
+        "billing": [
+          "object"
+        ],
+        "billing.restricted_to": [
+          "array"
+        ],
+        "billing.restricted_to[]": [
+          "string"
+        ],
+        "billing.token_prices": [
+          "object"
+        ],
+        "billing.token_prices.batch_size": [
+          "number"
+        ],
+        "billing.token_prices.default": [
+          "object"
+        ],
+        "billing.token_prices.default.cache_price": [
+          "number"
+        ],
+        "billing.token_prices.default.context_max": [
+          "number"
+        ],
+        "billing.token_prices.default.input_price": [
+          "number"
+        ],
+        "billing.token_prices.default.output_price": [
+          "number"
+        ],
+        "billing.token_prices.long_context": [
+          "object"
+        ],
+        "billing.token_prices.long_context.cache_price": [
+          "number"
+        ],
+        "billing.token_prices.long_context.context_max": [
+          "number"
+        ],
+        "billing.token_prices.long_context.input_price": [
+          "number"
+        ],
+        "billing.token_prices.long_context.output_price": [
+          "number"
+        ],
+        "capabilities": [
+          "object"
+        ],
+        "capabilities.family": [
+          "string"
+        ],
+        "capabilities.limits": [
+          "object"
+        ],
+        "capabilities.limits.max_context_window_tokens": [
+          "number"
+        ],
+        "capabilities.limits.max_inputs": [
+          "number"
+        ],
+        "capabilities.limits.max_non_streaming_output_tokens": [
+          "number"
+        ],
+        "capabilities.limits.max_output_tokens": [
+          "number"
+        ],
+        "capabilities.limits.max_prompt_tokens": [
+          "number"
+        ],
+        "capabilities.limits.vision": [
+          "object"
+        ],
+        "capabilities.limits.vision.max_prompt_image_size": [
+          "number"
+        ],
+        "capabilities.limits.vision.max_prompt_images": [
+          "number"
+        ],
+        "capabilities.limits.vision.supported_media_types": [
+          "array"
+        ],
+        "capabilities.limits.vision.supported_media_types[]": [
+          "string"
+        ],
+        "capabilities.object": [
+          "string"
+        ],
+        "capabilities.supports": [
+          "object"
+        ],
+        "capabilities.supports.adaptive_thinking": [
+          "boolean"
+        ],
+        "capabilities.supports.dimensions": [
+          "boolean"
+        ],
+        "capabilities.supports.max_thinking_budget": [
+          "number"
+        ],
+        "capabilities.supports.min_thinking_budget": [
+          "number"
+        ],
+        "capabilities.supports.parallel_tool_calls": [
+          "boolean"
+        ],
+        "capabilities.supports.reasoning_effort": [
+          "array"
+        ],
+        "capabilities.supports.reasoning_effort[]": [
+          "string"
+        ],
+        "capabilities.supports.streaming": [
+          "boolean"
+        ],
+        "capabilities.supports.structured_outputs": [
+          "boolean"
+        ],
+        "capabilities.supports.tool_calls": [
+          "boolean"
+        ],
+        "capabilities.supports.vision": [
+          "boolean"
+        ],
+        "capabilities.tokenizer": [
+          "string"
+        ],
+        "capabilities.type": [
+          "string"
+        ],
+        "id": [
+          "string"
+        ],
+        "info_messages": [
+          "array"
+        ],
+        "info_messages[]": [
+          "object"
+        ],
+        "info_messages[].code": [
+          "string"
+        ],
+        "info_messages[].message": [
+          "string"
+        ],
+        "is_chat_default": [
+          "boolean"
+        ],
+        "is_chat_fallback": [
+          "boolean"
+        ],
+        "model_picker_category": [
+          "string"
+        ],
+        "model_picker_enabled": [
+          "boolean"
+        ],
+        "model_picker_price_category": [
+          "string"
+        ],
+        "name": [
+          "string"
+        ],
+        "object": [
+          "string"
+        ],
+        "policy": [
+          "object"
+        ],
+        "policy.state": [
+          "string"
+        ],
+        "policy.terms": [
+          "string"
+        ],
+        "preview": [
+          "boolean"
+        ],
+        "supported_endpoints": [
+          "array"
+        ],
+        "supported_endpoints[]": [
+          "string"
+        ],
+        "vendor": [
+          "string"
+        ],
+        "version": [
+          "string"
+        ]
+      },
+      "modelIds": [
+        "claude-haiku-4.5",
+        "claude-opus-4.7",
+        "claude-opus-4.8",
+        "claude-sonnet-4.6",
+        "gemini-3.1-pro-preview",
+        "gemini-3.5-flash",
+        "gpt-3.5-turbo",
+        "gpt-3.5-turbo-0613",
+        "gpt-4",
+        "gpt-4-0125-preview",
+        "gpt-4-0613",
+        "gpt-4-o-preview",
+        "gpt-4.1",
+        "gpt-4.1-2025-04-14",
+        "gpt-41-copilot",
+        "gpt-4o",
+        "gpt-4o-2024-05-13",
+        "gpt-4o-2024-08-06",
+        "gpt-4o-2024-11-20",
+        "gpt-4o-mini",
+        "gpt-4o-mini-2024-07-18",
+        "gpt-5-mini",
+        "gpt-5.4",
+        "gpt-5.4-mini",
+        "gpt-5.4-mini-free-auto",
+        "gpt-5.5",
+        "mai-code-1-flash",
+        "mai-code-1-flash-picker",
+        "mai-code-1-flash-secondary",
+        "mai-code-1-flash-tertiary",
+        "oswe-vscode-prime",
+        "text-embedding-3-small",
+        "text-embedding-3-small-inference",
+        "text-embedding-ada-002",
+        "trajectory-compaction"
+      ]
+    },
+    "systemPrompts": {
+      "files": 1,
+      "envelopeShape": {
+        "content": [
+          "string"
+        ]
+      },
+      "contentShape": {
+        "[]": [
+          "array",
+          "object"
+        ],
+        "[].content": [
+          "string"
+        ],
+        "[].type": [
+          "string"
+        ]
+      }
+    },
+    "tools": {
+      "files": 1,
+      "definitions": 78,
+      "envelopeShape": {
+        "content": [
+          "string"
+        ]
+      },
+      "contentShape": {
+        "[]": [
+          "array",
+          "object"
+        ],
+        "[].description": [
+          "string"
+        ],
+        "[].name": [
+          "string"
+        ],
+        "[].parameters": [
+          "object"
+        ],
+        "[].parameters.properties": [
+          "object"
+        ],
+        "[].parameters.properties.cellId": [
+          "object"
+        ],
+        "[].parameters.properties.cellId.description": [
+          "string"
+        ],
+        "[].parameters.properties.cellId.type": [
+          "string"
+        ],
+        "[].parameters.properties.command": [
+          "object"
+        ],
+        "[].parameters.properties.command.description": [
+          "string"
+        ],
+        "[].parameters.properties.command.enum": [
+          "array"
+        ],
+        "[].parameters.properties.command.enum[]": [
+          "string"
+        ],
+        "[].parameters.properties.command.type": [
+          "string"
+        ],
+        "[].parameters.properties.content": [
+          "object"
+        ],
+        "[].parameters.properties.content.description": [
+          "string"
+        ],
+        "[].parameters.properties.content.type": [
+          "string"
+        ],
+        "[].parameters.properties.dirPath": [
+          "object"
+        ],
+        "[].parameters.properties.dirPath.description": [
+          "string"
+        ],
+        "[].parameters.properties.dirPath.type": [
+          "string"
+        ],
+        "[].parameters.properties.editType": [
+          "object"
+        ],
+        "[].parameters.properties.editType.description": [
+          "string"
+        ],
+        "[].parameters.properties.editType.enum": [
+          "array"
+        ],
+        "[].parameters.properties.editType.enum[]": [
+          "string"
+        ],
+        "[].parameters.properties.editType.type": [
+          "string"
+        ],
+        "[].parameters.properties.endLine": [
+          "object"
+        ],
+        "[].parameters.properties.endLine.description": [
+          "string"
+        ],
+        "[].parameters.properties.endLine.type": [
+          "string"
+        ],
+        "[].parameters.properties.explanation": [
+          "object"
+        ],
+        "[].parameters.properties.explanation.description": [
+          "string"
+        ],
+        "[].parameters.properties.explanation.type": [
+          "string"
+        ],
+        "[].parameters.properties.file_text": [
+          "object"
+        ],
+        "[].parameters.properties.file_text.description": [
+          "string"
+        ],
+        "[].parameters.properties.file_text.type": [
+          "string"
+        ],
+        "[].parameters.properties.filePath": [
+          "object"
+        ],
+        "[].parameters.properties.filePath.description": [
+          "string"
+        ],
+        "[].parameters.properties.filePath.type": [
+          "string"
+        ],
+        "[].parameters.properties.filePaths": [
+          "object"
+        ],
+        "[].parameters.properties.filePaths.description": [
+          "string"
+        ],
+        "[].parameters.properties.filePaths.items": [
+          "object"
+        ],
+        "[].parameters.properties.filePaths.items.type": [
+          "string"
+        ],
+        "[].parameters.properties.filePaths.type": [
+          "string"
+        ],
+        "[].parameters.properties.id": [
+          "object"
+        ],
+        "[].parameters.properties.id.description": [
+          "string"
+        ],
+        "[].parameters.properties.id.type": [
+          "string"
+        ],
+        "[].parameters.properties.includeIgnoredFiles": [
+          "object"
+        ],
+        "[].parameters.properties.includeIgnoredFiles.description": [
+          "string"
+        ],
+        "[].parameters.properties.includeIgnoredFiles.type": [
+          "string"
+        ],
+        "[].parameters.properties.includePattern": [
+          "object"
+        ],
+        "[].parameters.properties.includePattern.description": [
+          "string"
+        ],
+        "[].parameters.properties.includePattern.type": [
+          "string"
+        ],
+        "[].parameters.properties.input": [
+          "object"
+        ],
+        "[].parameters.properties.input.description": [
+          "string"
+        ],
+        "[].parameters.properties.input.type": [
+          "string"
+        ],
+        "[].parameters.properties.insert_line": [
+          "object"
+        ],
+        "[].parameters.properties.insert_line.description": [
+          "string"
+        ],
+        "[].parameters.properties.insert_line.type": [
+          "string"
+        ],
+        "[].parameters.properties.insert_text": [
+          "object"
+        ],
+        "[].parameters.properties.insert_text.description": [
+          "string"
+        ],
+        "[].parameters.properties.insert_text.type": [
+          "string"
+        ],
+        "[].parameters.properties.isRegexp": [
+          "object"
+        ],
+        "[].parameters.properties.isRegexp.description": [
+          "string"
+        ],
+        "[].parameters.properties.isRegexp.type": [
+          "string"
+        ],
+        "[].parameters.properties.language": [
+          "object"
+        ],
+        "[].parameters.properties.language.description": [
+          "string"
+        ],
+        "[].parameters.properties.language.type": [
+          "string"
+        ],
+        "[].parameters.properties.maxResults": [
+          "object"
+        ],
+        "[].parameters.properties.maxResults.description": [
+          "string"
+        ],
+        "[].parameters.properties.maxResults.type": [
+          "string"
+        ],
+        "[].parameters.properties.name": [
+          "object"
+        ],
+        "[].parameters.properties.name.description": [
+          "string"
+        ],
+        "[].parameters.properties.name.type": [
+          "string"
+        ],
+        "[].parameters.properties.new_path": [
+          "object"
+        ],
+        "[].parameters.properties.new_path.description": [
+          "string"
+        ],
+        "[].parameters.properties.new_path.type": [
+          "string"
+        ],
+        "[].parameters.properties.new_str": [
+          "object"
+        ],
+        "[].parameters.properties.new_str.description": [
+          "string"
+        ],
+        "[].parameters.properties.new_str.type": [
+          "string"
+        ],
+        "[].parameters.properties.newCode": [
+          "object"
+        ],
+        "[].parameters.properties.newCode.anyOf": [
+          "array"
+        ],
+        "[].parameters.properties.newCode.anyOf[]": [
+          "object"
+        ],
+        "[].parameters.properties.newCode.anyOf[].description": [
+          "string"
+        ],
+        "[].parameters.properties.newCode.anyOf[].items": [
+          "object"
+        ],
+        "[].parameters.properties.newCode.anyOf[].type": [
+          "string"
+        ],
+        "[].parameters.properties.old_path": [
+          "object"
+        ],
+        "[].parameters.properties.old_path.description": [
+          "string"
+        ],
+        "[].parameters.properties.old_path.type": [
+          "string"
+        ],
+        "[].parameters.properties.old_str": [
+          "object"
+        ],
+        "[].parameters.properties.old_str.description": [
+          "string"
+        ],
+        "[].parameters.properties.old_str.type": [
+          "string"
+        ],
+        "[].parameters.properties.path": [
+          "object"
+        ],
+        "[].parameters.properties.path.description": [
+          "string"
+        ],
+        "[].parameters.properties.path.type": [
+          "string"
+        ],
+        "[].parameters.properties.query": [
+          "object"
+        ],
+        "[].parameters.properties.query.description": [
+          "string"
+        ],
+        "[].parameters.properties.query.type": [
+          "string"
+        ],
+        "[].parameters.properties.repo": [
+          "object"
+        ],
+        "[].parameters.properties.repo.description": [
+          "string"
+        ],
+        "[].parameters.properties.repo.type": [
+          "string"
+        ],
+        "[].parameters.properties.scope": [
+          "object"
+        ],
+        "[].parameters.properties.scope.description": [
+          "string"
+        ],
+        "[].parameters.properties.scope.type": [
+          "string"
+        ],
+        "[].parameters.properties.startLine": [
+          "object"
+        ],
+        "[].parameters.properties.startLine.description": [
+          "string"
+        ],
+        "[].parameters.properties.startLine.type": [
+          "string"
+        ],
+        "[].parameters.properties.urls": [
+          "object"
+        ],
+        "[].parameters.properties.urls.description": [
+          "string"
+        ],
+        "[].parameters.properties.urls.items": [
+          "object"
+        ],
+        "[].parameters.properties.urls.items.type": [
+          "string"
+        ],
+        "[].parameters.properties.urls.type": [
+          "string"
+        ],
+        "[].parameters.properties.view_range": [
+          "object"
+        ],
+        "[].parameters.properties.view_range.description": [
+          "string"
+        ],
+        "[].parameters.properties.view_range.items": [
+          "object"
+        ],
+        "[].parameters.properties.view_range.items.type": [
+          "string"
+        ],
+        "[].parameters.properties.view_range.maxItems": [
+          "number"
+        ],
+        "[].parameters.properties.view_range.minItems": [
+          "number"
+        ],
+        "[].parameters.properties.view_range.type": [
+          "string"
+        ],
+        "[].parameters.required": [
+          "array"
+        ],
+        "[].parameters.required[]": [
+          "string"
+        ],
+        "[].parameters.type": [
+          "string"
+        ],
+        "[].type": [
+          "string"
+        ]
+      }
+    },
+    "childLogs": {
+      "kinds": [
+        "title"
+      ],
+      "eventShape": {
+        "attrs": [
+          "object"
+        ],
+        "attrs.copilotUsageNanoAiu": [
+          "number"
+        ],
+        "attrs.copilotVersion": [
+          "string"
+        ],
+        "attrs.debugName": [
+          "string"
+        ],
+        "attrs.inputMessages": [
+          "string"
+        ],
+        "attrs.inputTokens": [
+          "number"
+        ],
+        "attrs.label": [
+          "string"
+        ],
+        "attrs.maxTokens": [
+          "number"
+        ],
+        "attrs.model": [
+          "string"
+        ],
+        "attrs.outputTokens": [
+          "number"
+        ],
+        "attrs.parentSessionId": [
+          "string"
+        ],
+        "attrs.requestOptions": [
+          "string"
+        ],
+        "attrs.requestShape": [
+          "string"
+        ],
+        "attrs.response": [
+          "string"
+        ],
+        "attrs.responseId": [
+          "string"
+        ],
+        "attrs.temperature": [
+          "number"
+        ],
+        "attrs.topP": [
+          "number"
+        ],
+        "attrs.ttft": [
+          "number"
+        ],
+        "attrs.userRequest": [
+          "string"
+        ],
+        "attrs.vscodeVersion": [
+          "string"
+        ],
+        "dur": [
+          "number"
+        ],
+        "name": [
+          "string"
+        ],
+        "sid": [
+          "string"
+        ],
+        "spanId": [
+          "string"
+        ],
+        "status": [
+          "string"
+        ],
+        "ts": [
+          "number"
+        ],
+        "type": [
+          "string"
+        ],
+        "v": [
+          "number"
+        ]
+      }
+    }
+  }
+}

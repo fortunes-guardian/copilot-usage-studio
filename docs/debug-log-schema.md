@@ -18,6 +18,8 @@ VS Code 1.124.2, GitHub Copilot Chat 0.52.0
 
 The schema is observed, not guaranteed by a published VS Code API. Treat it as a local data contract that must be verified with fixtures as VS Code Copilot changes.
 
+The repeatable update process and committed privacy-safe fingerprint are documented in [schema-change-workflow.md](schema-change-workflow.md). Run `npm run schema:audit` before importing sessions from a newly updated VS Code/Copilot runtime.
+
 ## Files In A Debug-Log Session
 
 Observed files:
