@@ -37,6 +37,17 @@ export class SessionRailComponent {
   @Output() readonly modelFilterChange = new EventEmitter<string>();
   @Output() readonly timeFilterChange = new EventEmitter<SessionTimeFilter>();
   @Output() readonly selectSession = new EventEmitter<CopilotSession>();
+  @Output() readonly closeRail = new EventEmitter<void>();
+
+  protected activeFilterCount(): number {
+    return [
+      this.timeFilter,
+      this.workspaceFilter,
+      this.modelFilter,
+      this.sizeFilter,
+      this.warningFilter,
+    ].filter((value) => value !== 'all').length;
+  }
 
   protected sessionTriage(session: CopilotSession): SessionTriage {
     return sessionTriage(session);

@@ -3,7 +3,7 @@ import { Component, EventEmitter, Input, Output, computed, signal } from '@angul
 import { FormsModule } from '@angular/forms';
 
 import { HelpPopoverComponent } from './help-popover.component';
-import { COPILOT_AI_CREDIT_USD, COPILOT_ALLOWANCE_PLANS } from './pricing';
+import { COPILOT_AI_CREDIT_USD } from './pricing';
 import {
   AnalyticsGrouping,
   AnalyticsTimeRange,
@@ -18,23 +18,11 @@ import {
 import { CopilotSession } from './session-data.model';
 import { sessionTotalTokens, sessionUsageCredits, sessionUsageUsd } from './session-cost-utils';
 
-interface AnalyticsMetric {
-  label: string;
-  value: string;
-  help: string;
-}
-
 interface AnalyticsHighlight {
   label: string;
   session: CopilotSession | null;
   value: string;
   help: string;
-}
-
-interface CreditPlanOption {
-  id: string;
-  label: string;
-  creditsPerUserMonthly: number;
 }
 
 @Component({
@@ -45,7 +33,6 @@ interface CreditPlanOption {
 })
 export class AnalyticsPageComponent {
   private readonly sessionsInput = signal<CopilotSession[]>([]);
-  private readonly totalSessionCountInput = signal(0);
 
   @Output() readonly openSession = new EventEmitter<CopilotSession>();
 
@@ -53,24 +40,15 @@ export class AnalyticsPageComponent {
     this.sessionsInput.set(value ?? []);
   }
 
-  @Input() set totalSessionCount(value: number | null | undefined) {
-    this.totalSessionCountInput.set(value ?? 0);
-  }
-
   protected readonly analyticsTimeRange = signal<AnalyticsTimeRange>('all');
   protected readonly analyticsWorkspaceFilter = signal('all');
   protected readonly analyticsModelFilter = signal('all');
   protected readonly analyticsGrouping = signal<AnalyticsGrouping>('day');
-  protected readonly selectedCreditPlan = signal('business-standard');
   protected readonly help = {
     analyticsScope:
-      'Multi-session analytics start from the sessions currently included by the sidebar filters, then apply the Analytics controls on this page.',
+      'Insights use imported sessions and the time, workspace, and model filters on this page.',
     trendGrouping:
-      'Time range chooses which sessions are included. Trend grouping only changes how the included sessions are bucketed in the Recent trend panel.',
-    creditWindow:
-      'Credit windows are based on imported local sessions, anchored to the latest imported session date.',
-    creditAllowance:
-      'Compares this imported local cohort with the monthly included AI credits for one Copilot license.',
+      'Time range chooses which sessions are included. Grouping only changes how those sessions are bucketed in the trend panel.',
   };
   protected readonly sizeOptions: SessionSize[] = ['Small', 'Medium', 'Large', 'Very large'];
   protected readonly analyticsTimeOptions: Array<{ value: AnalyticsTimeRange; label: string }> = [
@@ -86,12 +64,6 @@ export class AnalyticsPageComponent {
     { value: 'week', label: 'By week' },
     { value: 'month', label: 'By month' },
   ];
-  protected readonly creditPlanOptions: CreditPlanOption[] = COPILOT_ALLOWANCE_PLANS.map((plan) => ({
-    id: plan.id,
-    label: plan.label.replace('Copilot ', ''),
-    creditsPerUserMonthly: plan.creditsPerUserMonthly,
-  }));
-
   protected readonly analyticsWorkspaceOptions = computed(() => {
     const workspaces = new Set(this.sessionsInput().map((session) => session.workspace).filter(Boolean));
     const selected = this.analyticsWorkspaceFilter();
@@ -131,31 +103,11 @@ export class AnalyticsPageComponent {
   protected readonly analytics = computed(() => {
     const sessions = this.analyticsSessions();
     const count = sessions.length;
-    const sidebarCount = this.sessionsInput().length;
+    const importedCount = this.sessionsInput().length;
     const totalTokens = sessions.reduce((sum, session) => sum + sessionTotalTokens(session), 0);
     const totalCost = sessions.reduce((sum, session) => sum + sessionUsageUsd(session), 0);
     const avgTokens = count ? totalTokens / count : 0;
     const avgCost = count ? totalCost / count : 0;
-    const costPer1k = totalTokens ? (totalCost / totalTokens) * 1000 : 0;
-    const totalCredits = sessions.reduce((sum, session) => sum + sessionUsageCredits(session), 0);
-    const selectedPlan =
-      this.creditPlanOptions.find((plan) => plan.id === this.selectedCreditPlan()) ??
-      this.creditPlanOptions[0] ?? {
-        id: 'business-standard',
-        label: 'Business',
-        creditsPerUserMonthly: 1900,
-      };
-    const monthlyAllowance = selectedPlan ? selectedPlan.creditsPerUserMonthly : 0;
-    const allowanceShare = monthlyAllowance > 0 ? (totalCredits / monthlyAllowance) * 100 : 0;
-    const remainingCredits = monthlyAllowance > 0 ? Math.max(0, monthlyAllowance - totalCredits) : 0;
-    const allowanceStatus =
-      allowanceShare >= 100
-        ? 'Above one-license monthly allowance'
-        : allowanceShare >= 75
-          ? 'High share of one monthly allowance'
-          : allowanceShare >= 40
-            ? 'Within one monthly allowance'
-            : 'Low usage';
     const highestTokens = maxBy(sessions, (session) => sessionTotalTokens(session));
     const highestCost = maxBy(sessions, (session) => sessionUsageUsd(session));
     const modelRows = analyticsModelRows(sessions, totalCost);
@@ -167,67 +119,27 @@ export class AnalyticsPageComponent {
       this.analyticsWorkspaceFilter() !== 'all' ||
       this.analyticsModelFilter() !== 'all' ||
       this.analyticsGrouping() !== 'day';
-    const analyticsExcludedCount = Math.max(sidebarCount - count, 0);
+    const analyticsExcludedCount = Math.max(importedCount - count, 0);
 
     return {
       count,
-      sidebarCount,
+      importedCount,
       analyticsFiltersActive,
       analyticsExcludedCount,
       emptyTitle:
-        sidebarCount === 0
-          ? 'No sidebar-filtered sessions'
-          : 'No sessions in this Analytics cohort',
+        importedCount === 0
+          ? 'No imported sessions'
+          : 'No sessions in this Insights cohort',
       emptyDetail:
-        sidebarCount === 0
-          ? 'The sidebar search, size, signal, or source filters exclude every imported session.'
-          : `${analyticsExcludedCount.toLocaleString()} sidebar-filtered session${analyticsExcludedCount === 1 ? '' : 's'} excluded by the Analytics controls. Reset the Analytics filters to return to the sidebar cohort.`,
-      scopeLabel:
-        count === this.totalSessionCountInput() && sidebarCount === this.totalSessionCountInput()
-          ? 'All imported sessions'
-          : 'Filtered sessions',
+        importedCount === 0
+          ? 'Import VS Code sessions to explore model mix, run sizes, trends, and outliers.'
+          : `${analyticsExcludedCount.toLocaleString()} imported session${analyticsExcludedCount === 1 ? '' : 's'} excluded by the Insights controls. Reset the filters to return to all imported sessions.`,
       timeRangeLabel:
         this.analyticsTimeOptions.find((option) => option.value === this.analyticsTimeRange())?.label ?? 'All time',
-      creditWindowLabel:
-        this.analyticsTimeRange() === 'all'
-          ? 'All included sessions'
-          : this.analyticsTimeOptions.find((option) => option.value === this.analyticsTimeRange())?.label ?? 'Selected window',
       workspaceLabel: this.analyticsWorkspaceFilter() === 'all' ? 'All workspaces' : this.analyticsWorkspaceFilter(),
       modelLabel: this.analyticsModelFilter() === 'all' ? 'All models' : this.analyticsModelFilter(),
       groupingLabel:
         this.analyticsGroupingOptions.find((option) => option.value === this.analyticsGrouping())?.label ?? 'By day',
-      metrics: [
-        {
-          label: 'Total usage',
-          value: `$${totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-          help: 'Sum of GitHub source usage when VS Code logged it, with token-priced estimates used as fallback.',
-        },
-        {
-          label: 'AI credits used',
-          value: `${totalCredits.toLocaleString(undefined, { maximumFractionDigits: 1 })}`,
-          help: `GitHub documents 1 AI credit = $${COPILOT_AI_CREDIT_USD.toFixed(2)} USD. Source usage credits are used first; token estimates convert with that fixed rate when source usage is absent.`,
-        },
-        {
-          label: 'Total tokens',
-          value: totalTokens.toLocaleString(),
-          help: 'Normal input, cached input, cache write, and output token fields combined across included sessions.',
-        },
-        {
-          label: 'Avg usage / run',
-          value: `$${avgCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`,
-          help: 'Mean GitHub source usage per included session, falling back to token estimate when needed.',
-        },
-        {
-          label: 'Avg tokens / run',
-          value: Math.round(avgTokens).toLocaleString(),
-          help: 'Mean imported token count per included session.',
-        },
-        {
-          label: 'Usage / 1k tokens',
-          value: `$${costPer1k.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`,
-          help: 'USD usage per 1,000 imported tokens. This moves when model mix, input/output mix, or source usage changes.',
-        },
-      ] satisfies AnalyticsMetric[],
       highlights: [
         {
           label: 'Highest-token run',
@@ -246,12 +158,6 @@ export class AnalyticsPageComponent {
       trendRows,
       distribution,
       outliers,
-      totalCredits,
-      selectedPlan,
-      monthlyAllowance,
-      allowanceShare,
-      remainingCredits,
-      allowanceStatus,
     };
   });
 
@@ -269,10 +175,6 @@ export class AnalyticsPageComponent {
 
   protected setAnalyticsGrouping(value: AnalyticsGrouping): void {
     this.analyticsGrouping.set(value);
-  }
-
-  protected setCreditPlan(value: string): void {
-    this.selectedCreditPlan.set(value);
   }
 
   protected resetAnalyticsFilters(): void {

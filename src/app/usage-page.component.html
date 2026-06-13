@@ -1,25 +1,52 @@
 <section class="usage-page">
   <header class="usage-header">
     <div>
-      <p class="eyebrow">Usage</p>
-      <h2>How much did I use?</h2>
+      <p class="eyebrow">Usage home</p>
+      <h2>Your Copilot usage</h2>
       <p>
-        Credits first, USD second. Uses VS Code usage units when available; otherwise token-priced estimates.
+        Today, this week, this month, and recent activity across imported VS Code sessions.
         <app-help-popover [text]="help.scope" label="Explain usage scope"></app-help-popover>
       </p>
     </div>
-    <label class="plan-picker">
-      <span>
-        Monthly allowance
-        <app-help-popover [text]="help.allowance" label="Explain allowance"></app-help-popover>
-      </span>
-      <select [ngModel]="currentAllowancePlan()" (ngModelChange)="setAllowancePlan($event)">
-        @for (plan of allowancePlans; track plan.id) {
-          <option [value]="plan.id">{{ plan.label }}</option>
-        }
-      </select>
-    </label>
+    <div class="usage-controls">
+      <label>
+        <span>Workspace</span>
+        <select [ngModel]="workspaceFilter()" (ngModelChange)="setWorkspaceFilter($event)">
+          @for (workspace of workspaceOptions(); track workspace) {
+            <option [value]="workspace">{{ workspace === 'all' ? 'All workspaces' : workspace }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        <span>Model</span>
+        <select [ngModel]="modelFilter()" (ngModelChange)="setModelFilter($event)">
+          @for (model of modelOptions(); track model) {
+            <option [value]="model">{{ model === 'all' ? 'All models' : model }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        <span>
+          Monthly allowance
+          <app-help-popover [text]="help.allowance" label="Explain allowance"></app-help-popover>
+        </span>
+        <select [ngModel]="currentAllowancePlan()" (ngModelChange)="setAllowancePlan($event)">
+          @for (plan of allowancePlans; track plan.id) {
+            <option [value]="plan.id">{{ plan.label }}</option>
+          }
+        </select>
+      </label>
+    </div>
   </header>
+
+  <div class="usage-scope">
+    <span>{{ scopedSessions().length | number }} of {{ sessionsInput().length | number }} sessions</span>
+    <span>{{ workspaceFilter() === 'all' ? 'All workspaces' : workspaceFilter() }}</span>
+    <span>{{ modelFilter() === 'all' ? 'All models' : modelFilter() }}</span>
+    @if (scopeActive()) {
+      <button type="button" (click)="resetScope()">Reset scope</button>
+    }
+  </div>
 
   <section class="usage-answer-grid" aria-label="Usage answer cards">
     @for (window of usageWindows(); track window.id) {

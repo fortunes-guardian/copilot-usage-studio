@@ -28,7 +28,7 @@ describe('SessionRailComponent', () => {
 
     const text = fixture.nativeElement.textContent as string;
 
-    expect(text).toContain('1 of 2 sessions shown');
+    expect(text).toContain('1 of 2');
     expect(text).toContain('Time');
     expect(text).toContain('Workspace');
     expect(text).toContain('Model');
@@ -88,6 +88,23 @@ describe('SessionRailComponent', () => {
     expect(sizeValues).toContain('Large');
     expect(warningValues).toContain('High input context');
     expect(selected[0].id).toBe('large');
+  });
+
+  it('emits a close request from the drawer control', () => {
+    let closeCount = 0;
+    fixture.componentRef.setInput('sessions', []);
+    fixture.componentRef.setInput('filteredSessions', []);
+    fixture.componentRef.setInput('sizeOptions', ['all']);
+    fixture.componentRef.setInput('warningOptions', ['all']);
+    fixture.componentRef.setInput('workspaceOptions', ['all']);
+    fixture.componentRef.setInput('modelOptions', ['all']);
+    fixture.componentRef.setInput('timeOptions', [{ value: 'all', label: 'All time' }]);
+    fixture.componentInstance.closeRail.subscribe(() => closeCount++);
+    fixture.detectChanges();
+
+    fixture.nativeElement.querySelector('.sidebar-close').click();
+
+    expect(closeCount).toBe(1);
   });
 });
 

@@ -3,7 +3,6 @@ import { Component, Input } from '@angular/core';
 
 import { HelpPopoverComponent } from './help-popover.component';
 import { CopilotSession, RequestPayloadSummary, TokenBreakdown } from './session-data.model';
-import { sessionUsageCredits, sessionUsageLabel, sessionUsageUsd } from './session-cost-utils';
 
 interface CostAnswerViewModel {
   category: string;
@@ -81,24 +80,6 @@ export class SessionCostComponent {
 
   protected isCacheCategory(category: CostCategoryViewModel): boolean {
     return category.label === 'Cached input' || category.label === 'Cache write';
-  }
-
-  protected usageLabel(session: CopilotSession): string {
-    return sessionUsageLabel(session);
-  }
-
-  protected usageUsd(session: CopilotSession): number {
-    return sessionUsageUsd(session);
-  }
-
-  protected usageCredits(session: CopilotSession): number {
-    return sessionUsageCredits(session);
-  }
-
-  protected usageHelp(session: CopilotSession): string {
-    return session.sourceUsage
-      ? 'Usage reported by VS Code Copilot source usage units for this run.'
-      : 'Fallback estimate from imported token buckets and GitHub model prices because this run did not log source usage units.';
   }
 
   protected formatCompactNumber(value: number): string {

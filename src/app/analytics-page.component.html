@@ -2,26 +2,25 @@
   <section class="pricing-page analytics-page">
     <div class="pricing-header">
       <div>
-        <p class="eyebrow">Multi-session analytics</p>
-        <h2>{{ stats.scopeLabel }}</h2>
+        <p class="eyebrow">Cohort insights</p>
+        <h2>Run patterns</h2>
         <p class="analytics-cohort">
-          {{ stats.count }} of {{ stats.sidebarCount }} sidebar-filtered sessions included in this analytics cohort.
+          {{ stats.count }} of {{ stats.importedCount }} imported sessions included.
           @if (stats.analyticsExcludedCount > 0) {
-            {{ stats.analyticsExcludedCount }} excluded by Analytics controls.
+            {{ stats.analyticsExcludedCount }} excluded by these filters.
           }
           <app-help-popover [text]="help.analyticsScope" label="Explain analytics scope"></app-help-popover>
         </p>
       </div>
       @if (stats.analyticsFiltersActive) {
-        <button type="button" class="ghost-button" (click)="resetAnalyticsFilters()">Reset Analytics filters</button>
+        <button type="button" class="ghost-button" (click)="resetAnalyticsFilters()">Reset filters</button>
       }
     </div>
 
     <section class="analytics-controls" aria-label="Analytics cohort controls">
       <label>
         <span>
-          Credit window
-          <app-help-popover [text]="help.creditWindow" label="Explain credit window"></app-help-popover>
+          Time range
         </span>
         <select [ngModel]="analyticsTimeRange()" (ngModelChange)="setAnalyticsTimeRange($event)">
           @for (option of analyticsTimeOptions; track option.value) {
@@ -56,17 +55,6 @@
           }
         </select>
       </label>
-      <label>
-        <span>
-          Credit plan
-          <app-help-popover [text]="help.creditAllowance" label="Explain credit allowance"></app-help-popover>
-        </span>
-        <select [ngModel]="selectedCreditPlan()" (ngModelChange)="setCreditPlan($event)">
-          @for (plan of creditPlanOptions; track plan.id) {
-            <option [value]="plan.id">{{ plan.label }}</option>
-          }
-        </select>
-      </label>
     </section>
 
     @if (stats.count === 0) {
@@ -74,41 +62,16 @@
         <h3>{{ stats.emptyTitle }}</h3>
         <p>{{ stats.emptyDetail }}</p>
         @if (stats.analyticsFiltersActive) {
-          <button type="button" class="ghost-button" (click)="resetAnalyticsFilters()">Reset Analytics filters</button>
+          <button type="button" class="ghost-button" (click)="resetAnalyticsFilters()">Reset filters</button>
         }
       </section>
     } @else {
-      <section class="analytics-panel summary-panel analytics-summary-strip" aria-label="Analytics summary">
-        <aside class="credit-window-card" aria-label="Monthly AI credit allowance estimate">
-          <span>{{ stats.creditWindowLabel }} · {{ stats.selectedPlan.label }}</span>
-          <strong>{{ stats.totalCredits | number: '1.0-1' }} / {{ stats.monthlyAllowance | number: '1.0-0' }} credits</strong>
-          <em>
-            {{ stats.allowanceShare | number: '1.0-1' }}% of one monthly allowance.
-          </em>
-          <i><b [style.width.%]="stats.allowanceShare > 100 ? 100 : stats.allowanceShare"></b></i>
-          <small>
-            {{ stats.allowanceStatus }}
-          </small>
-        </aside>
-        <section class="analytics-metrics" aria-label="Analytics summary metrics">
-          @for (metric of stats.metrics; track metric.label) {
-            <article class="metric">
-              <span class="metric-label">
-                {{ metric.label }}
-                <app-help-popover [text]="metric.help" [label]="'Explain ' + metric.label"></app-help-popover>
-              </span>
-              <strong>{{ metric.value }}</strong>
-            </article>
-          }
-        </section>
-      </section>
-
       <section class="analytics-primary">
         <div class="analytics-panel model-panel">
           <div class="panel-heading">
             <div>
               <h3>Model breakdown</h3>
-              <p>Which pricing rows are driving this cohort.</p>
+              <p>Model mix and priced token shape for this cohort.</p>
             </div>
             <span>{{ stats.modelRows.length | number }} rows</span>
           </div>
@@ -155,7 +118,7 @@
                 </span>
               </div>
             } @empty {
-              <p class="empty">No model rows for the current Analytics cohort.</p>
+              <p class="empty">No model rows for the current Insights cohort.</p>
             }
           </div>
         </div>
@@ -164,7 +127,7 @@
           <div class="analytics-panel">
             <div class="panel-heading compact-heading">
               <h3>Run size mix</h3>
-              <p>Where credits concentrate.</p>
+              <p>How runs are distributed by size.</p>
             </div>
             <div class="stat-list compact">
               @for (bucket of stats.distribution; track bucket.size) {
@@ -186,7 +149,7 @@
 
           <div class="analytics-panel">
             <div class="panel-heading compact-heading">
-              <h3>Credit trend</h3>
+              <h3>Usage trend</h3>
               <p>{{ stats.groupingLabel }}.</p>
             </div>
             <div class="stat-list compact">
@@ -204,7 +167,7 @@
                   }
                 </button>
               } @empty {
-                <p class="empty">No trend rows for the current Analytics cohort.</p>
+                <p class="empty">No trend rows for the current Insights cohort.</p>
               }
             </div>
           </div>
@@ -215,7 +178,7 @@
         <div class="analytics-panel">
           <div class="panel-heading compact-heading">
             <h3>Runs to inspect</h3>
-            <p>Open the biggest suspects.</p>
+              <p>Open the largest runs in this cohort.</p>
           </div>
           <div class="highlight-list">
             @for (highlight of stats.highlights; track highlight.label) {
@@ -241,7 +204,7 @@
         <div class="analytics-panel">
           <div class="panel-heading compact-heading">
             <h3>Outlier signals</h3>
-            <p>High compared with this cohort.</p>
+              <p>Runs that stand apart from this cohort.</p>
           </div>
           <div class="highlight-list">
             @for (outlier of stats.outliers; track outlier.session.id) {
@@ -255,7 +218,7 @@
                 <span class="open-cue">Open run</span>
               </button>
             } @empty {
-              <p class="empty">No outliers in the current Analytics cohort.</p>
+              <p class="empty">No outliers in the current Insights cohort.</p>
             }
           </div>
         </div>

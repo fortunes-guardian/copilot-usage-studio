@@ -29,7 +29,9 @@ Done:
 - Added Trace inspector coverage for cached model-call details, fallback pricing labels, and tool events that are not directly priced.
 - Preserved raw VS Code `llm_request.attrs.estimatedCost` separately on trace events when present, without mixing it into the app-calculated estimate.
 - Preserved VS Code `llm_request.attrs.copilotUsageNanoAiu` as source usage evidence, use it as the primary local usage total when present, and verify that it reconciles with app-calculated token pricing.
-- Centralized source-first usage helpers so selected-run header, allowance meters, Analytics totals, Compare deltas, sidebar costs, and model-call displays use GitHub source usage before token-estimate fallback.
+- Centralized source-first usage helpers so the selected-run header, Usage totals, Compare deltas, Insights breakdowns, sidebar costs, and model-call displays use GitHub source usage before token-estimate fallback.
+- Centralized the information architecture: Usage is now the default home and owns calendar windows, workspace/model scope, and allowance context; selected-run Cost explains one run; Insights owns model mix, distribution, trends, and outliers.
+- Replaced the cramped narrow-screen Sessions column with a dismissible session-browser drawer while retaining the full rail on desktop.
 - Recorded optional matching Chat Debug transcript availability for debug-log sessions without using transcripts for pricing.
 - After the 2026-05-30 VS Code/Copilot update, preserved debug-log runtime metadata (`vscodeVersion`, `copilotVersion`) plus request-shape and text-verbosity metadata from new Agent Debug Log fields.
 - Added a compact selected-run Context Load card that compares largest raw input with `models.json` prompt/context limits and distinguishes near-limit runs from repeated-context runs without showing noisy model capability metadata.
@@ -96,36 +98,32 @@ Next:
 
 Why: comparison is useful when testing prompts, models, MCP setup, or workflow changes.
 
-## Phase 4: Multi-Session Analytics Dashboard
+## Phase 4: Usage Home And Multi-Session Insights
 
-Status: built, first pass.
+Status: built and consolidated.
 
 Done:
 
-- Added a separate `Analytics` top-level view between `Sessions` and `Prices`.
-- Starts from the current sidebar filters as the analytics universe.
-- Adds Analytics-specific controls for time range, workspace, model, and day/week/month grouping.
-- Shows session count, total tokens, total source-first usage, average tokens, average usage, and usage per 1k tokens.
-- Shows AI credits used for the current Analytics cohort and converts key cost displays into USD plus credits.
-- Added Analytics credit windows for current month, previous month, and rolling ranges, anchored to the latest imported session date.
-- Added a plan selector so the current Analytics cohort can be compared against one Copilot Business/Enterprise monthly included-credit allowance.
-- Added a dedicated top-level `Usage` page that answers the practical developer questions directly: last session credits, today, this week, current calendar month, visible filtered total, and recent daily usage.
+- Made `Usage` the default home and the single place for last-session, today, week, calendar-month, allowance, and selected-scope answers.
+- Added independent Workspace and Model scope controls to Usage.
+- Renamed the deeper multi-session page to `Insights`.
+- Removed duplicated headline totals and allowance controls from Insights.
+- Insights starts from all imported sessions and owns its Time range, Workspace, Model, and day/week/month grouping controls.
 - Highlights highest-token and most expensive sessions.
 - Shows model/pricing-row breakdowns.
 - Shows grouped credit trend rows, run size mix, and outlier signals.
 - Makes trend and size rows actionable by opening the highest-cost run in that bucket.
 - Explains likely outlier drivers such as input/context dominance, expensive model share, and high tool-call count.
-- Includes a reset for Analytics-only filters and a clear empty state when the current cohort has no sessions.
+- Includes a reset for Insights-only filters and a clear empty state when the current cohort has no sessions.
 - Separates a few obvious outlier cases, including plausible long agent runs and suspicious low-activity spikes.
 - Extracted Analytics into its own Angular component so the dashboard no longer lives inside the root shell template.
-- Added explicit `Open run` cues and test coverage for Analytics action cards that open selected sessions.
+- Added explicit `Open run` cues and test coverage for Insights action cards that open selected sessions.
 - Extracted Analytics calculation logic into `session-analytics.ts` and covered filters, cached token model rows, trend grouping, distribution, and outlier reasons with tests.
-- Added Analytics empty-state/reset test coverage.
+- Added Insights empty-state/reset test coverage.
 
 Next:
 
-- Keep clarifying the difference between `Credit window` as the included-session filter and `Group trend by` as the trend bucket display.
-- Keep "How much did I use?" as a central workflow. Keep the headline answers in credits first, USD second, source usage primary, and fallback estimates clearly marked only when needed.
+- Keep "How much did I use?" centralized on Usage. Do not reintroduce allowance/headline usage summaries into Insights or selected-run Cost.
 - Add a small daily/monthly usage chart or calendar strip only if it helps answer the usage question faster than the current recent-days list.
 - Consider local budget thresholds later: "warn me when my month-to-date local usage crosses X credits" without requiring SaaS billing import.
 - Improve outlier explanation with more real imported sessions.

@@ -278,11 +278,11 @@ export function analyticsUsageWindows(
     ),
     usageWindow(
       'visible',
-      'Visible total',
+      'Selected scope',
       sessions,
       monthlyAllowanceCredits,
-      'Current sidebar-filtered set',
-      'All sessions currently shown in the sidebar',
+      'Sessions matching Usage filters',
+      'All imported dates in this view',
     ),
   ];
 }

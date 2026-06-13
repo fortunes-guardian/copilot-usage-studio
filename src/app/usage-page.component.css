@@ -51,22 +51,30 @@
   line-height: 1.45;
 }
 
-.plan-picker {
+.usage-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(150px, 1fr));
+  gap: 8px;
+  width: min(720px, 58vw);
+}
+
+.usage-controls label {
   display: grid;
   gap: 6px;
-  min-width: 250px;
+  min-width: 0;
   color: var(--muted);
   font-size: 11px;
   font-weight: 760;
 }
 
-.plan-picker span {
+.usage-controls label > span {
   display: inline-flex;
   align-items: center;
   gap: 4px;
 }
 
-.plan-picker select {
+.usage-controls select {
+  width: 100%;
   min-height: 34px;
   border: 1px solid var(--line);
   border-radius: 9px;
@@ -76,6 +84,30 @@
   font: inherit;
   font-size: 13px;
   font-weight: 760;
+}
+
+.usage-scope {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.usage-scope > span,
+.usage-scope button {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: var(--surface-soft);
+}
+
+.usage-scope button {
+  color: var(--accent);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
 }
 
 .usage-answer-grid {
@@ -281,8 +313,9 @@
     display: grid;
   }
 
-  .plan-picker {
-    min-width: 0;
+  .usage-controls {
+    grid-template-columns: 1fr;
+    width: 100%;
   }
 
   .usage-answer-grid {

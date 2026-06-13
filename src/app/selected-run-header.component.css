@@ -78,52 +78,12 @@ h2 {
   letter-spacing: 0;
 }
 
-.credit-meter {
-  display: grid;
-  gap: 5px;
-  width: 100%;
-  margin-top: 7px;
-}
-
-.credit-meter label {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.credit-meter select {
-  max-width: 120px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 4px 7px;
-  background: var(--control-bg, rgba(5, 12, 22, 0.38));
-  color: var(--text);
-  font: inherit;
-  font-size: 11px;
-  font-weight: 720;
-}
-
-.credit-bar {
-  height: 6px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: rgba(97, 112, 133, 0.18);
-}
-
-.credit-bar span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--accent-2), #ffba4a);
-}
-
-.credit-meter em {
+.price > em {
+  margin-top: 4px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
   font-style: normal;
-  font-weight: 650;
-  text-align: right;
+  font-weight: 720;
 }
 
 .source-callout {
@@ -197,8 +157,7 @@ h2 {
   border-color: var(--line-strong);
 }
 
-.ghost-button:focus-visible,
-.credit-meter select:focus-visible {
+.ghost-button:focus-visible {
   outline: 2px solid rgba(39, 214, 176, 0.75);
   outline-offset: 2px;
 }

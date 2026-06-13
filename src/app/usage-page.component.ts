@@ -25,8 +25,10 @@ interface DailyUsageRow {
   styleUrl: './usage-page.component.css',
 })
 export class UsagePageComponent {
-  private readonly sessionsInput = signal<CopilotSession[]>([]);
+  protected readonly sessionsInput = signal<CopilotSession[]>([]);
   private readonly allowancePlanInput = signal<CopilotAllowancePlan>('business-standard');
+  protected readonly workspaceFilter = signal('all');
+  protected readonly modelFilter = signal('all');
 
   @Input() set sessions(value: CopilotSession[] | null | undefined) {
     this.sessionsInput.set(value ?? []);
@@ -53,15 +55,33 @@ export class UsagePageComponent {
       COPILOT_ALLOWANCE_PLANS[0],
   );
   protected readonly currentAllowancePlan = computed(() => this.selectedAllowance().id);
-
-  protected readonly usageWindows = computed(() =>
-    analyticsUsageWindows(this.sessionsInput(), this.selectedAllowance().creditsPerUserMonthly),
+  protected readonly workspaceOptions = computed(() => [
+    'all',
+    ...[...new Set(this.sessionsInput().map((session) => session.workspace).filter(Boolean))].sort(),
+  ]);
+  protected readonly modelOptions = computed(() => [
+    'all',
+    ...[...new Set(this.sessionsInput().map((session) => session.model).filter(Boolean))].sort(),
+  ]);
+  protected readonly scopedSessions = computed(() =>
+    this.sessionsInput().filter(
+      (session) =>
+        (this.workspaceFilter() === 'all' || session.workspace === this.workspaceFilter()) &&
+        (this.modelFilter() === 'all' || session.model === this.modelFilter()),
+    ),
+  );
+  protected readonly scopeActive = computed(
+    () => this.workspaceFilter() !== 'all' || this.modelFilter() !== 'all',
   );
 
-  protected readonly dailyRows = computed(() => this.buildDailyRows(this.sessionsInput(), 14));
+  protected readonly usageWindows = computed(() =>
+    analyticsUsageWindows(this.scopedSessions(), this.selectedAllowance().creditsPerUserMonthly),
+  );
+
+  protected readonly dailyRows = computed(() => this.buildDailyRows(this.scopedSessions(), 14));
 
   protected readonly sourceCoverage = computed(() => {
-    const sessions = this.sessionsInput();
+    const sessions = this.scopedSessions();
     const sourceCount = sessions.filter((session) => session.sourceUsage).length;
 
     return {
@@ -79,6 +99,19 @@ export class UsagePageComponent {
     const plan = value as CopilotAllowancePlan;
     this.allowancePlanInput.set(plan);
     this.allowancePlanChange.emit(plan);
+  }
+
+  protected setWorkspaceFilter(value: string): void {
+    this.workspaceFilter.set(value);
+  }
+
+  protected setModelFilter(value: string): void {
+    this.modelFilter.set(value);
+  }
+
+  protected resetScope(): void {
+    this.workspaceFilter.set('all');
+    this.modelFilter.set('all');
   }
 
   protected emitOpenSession(session: CopilotSession | null): void {

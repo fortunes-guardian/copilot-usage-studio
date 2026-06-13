@@ -21,7 +21,6 @@ describe('AnalyticsPageComponent', () => {
       sessionFixture('small-run', 'Small run', 0.01, 10_000),
       sessionFixture('expensive-run', 'Expensive run', 1.25, 900_000),
     ]);
-    fixture.componentRef.setInput('totalSessionCount', 2);
     fixture.componentInstance.openSession.subscribe((session) => opened.push(session));
     fixture.detectChanges();
 
@@ -35,7 +34,6 @@ describe('AnalyticsPageComponent', () => {
 
   it('shows a resettable empty state when analytics controls exclude visible sessions', () => {
     fixture.componentRef.setInput('sessions', [sessionFixture('small-run', 'Small run', 0.01, 10_000)]);
-    fixture.componentRef.setInput('totalSessionCount', 1);
     fixture.detectChanges();
 
     const workspaceSelect = fixture.nativeElement.querySelectorAll('select')[1] as HTMLSelectElement;
@@ -43,11 +41,11 @@ describe('AnalyticsPageComponent', () => {
     workspaceSelect.dispatchEvent(new Event('change'));
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('No sessions in this Analytics cohort');
-    expect(fixture.nativeElement.textContent).toContain('Reset Analytics filters');
+    expect(fixture.nativeElement.textContent).toContain('No sessions in this Insights cohort');
+    expect(fixture.nativeElement.textContent).toContain('Reset filters');
 
     const resetButton = [...fixture.nativeElement.querySelectorAll('button')].find((button) =>
-      button.textContent.includes('Reset Analytics filters'),
+      button.textContent.includes('Reset filters'),
     ) as HTMLButtonElement;
     resetButton.click();
     fixture.detectChanges();

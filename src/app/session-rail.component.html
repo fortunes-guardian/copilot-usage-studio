@@ -1,4 +1,12 @@
 <aside class="sidebar">
+  <header class="sidebar-header">
+    <div>
+      <strong>Sessions</strong>
+      <span>{{ filteredSessions.length }} of {{ sessions.length }}</span>
+    </div>
+    <button type="button" class="sidebar-close" aria-label="Close session browser" (click)="closeRail.emit()">×</button>
+  </header>
+
   <label class="search">
     <span>Search</span>
     <input
@@ -9,50 +17,56 @@
     />
   </label>
 
-  <div class="filters" aria-label="Session filters">
-    <label class="wide">
-      <span>Time</span>
-      <select [ngModel]="timeFilter" (ngModelChange)="timeFilterChange.emit($event)">
-        @for (option of timeOptions; track option.value) {
-          <option [value]="option.value">{{ option.label }}</option>
-        }
-      </select>
-    </label>
-    <label class="wide">
-      <span>Workspace</span>
-      <select [ngModel]="workspaceFilter" (ngModelChange)="workspaceFilterChange.emit($event)">
-        @for (workspace of workspaceOptions; track workspace) {
-          <option [value]="workspace">{{ workspace === 'all' ? 'All workspaces' : workspace }}</option>
-        }
-      </select>
-    </label>
-    <label class="wide">
-      <span>Model</span>
-      <select [ngModel]="modelFilter" (ngModelChange)="modelFilterChange.emit($event)">
-        @for (model of modelOptions; track model) {
-          <option [value]="model">{{ model === 'all' ? 'All models' : model }}</option>
-        }
-      </select>
-    </label>
-    <label>
-      <span>Size</span>
-      <select [ngModel]="sizeFilter" (ngModelChange)="sizeFilterChange.emit($event)">
-        @for (size of sizeOptions; track size) {
-          <option [value]="size">{{ size === 'all' ? 'All sizes' : size }}</option>
-        }
-      </select>
-    </label>
-    <label>
-      <span>Signal</span>
-      <select [ngModel]="warningFilter" (ngModelChange)="warningFilterChange.emit($event)">
-        @for (warning of warningOptions; track warning) {
-          <option [value]="warning">{{ warning === 'all' ? 'All signals' : warning }}</option>
-        }
-      </select>
-    </label>
-  </div>
-
-  <p class="filter-count">{{ filteredSessions.length }} of {{ sessions.length }} sessions shown</p>
+  <details class="filter-disclosure" open>
+    <summary>
+      <span>Filters</span>
+      @if (activeFilterCount()) {
+        <strong>{{ activeFilterCount() }} active</strong>
+      }
+    </summary>
+    <div class="filters" aria-label="Session filters">
+      <label class="wide">
+        <span>Time</span>
+        <select [ngModel]="timeFilter" (ngModelChange)="timeFilterChange.emit($event)">
+          @for (option of timeOptions; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </label>
+      <label class="wide">
+        <span>Workspace</span>
+        <select [ngModel]="workspaceFilter" (ngModelChange)="workspaceFilterChange.emit($event)">
+          @for (workspace of workspaceOptions; track workspace) {
+            <option [value]="workspace">{{ workspace === 'all' ? 'All workspaces' : workspace }}</option>
+          }
+        </select>
+      </label>
+      <label class="wide">
+        <span>Model</span>
+        <select [ngModel]="modelFilter" (ngModelChange)="modelFilterChange.emit($event)">
+          @for (model of modelOptions; track model) {
+            <option [value]="model">{{ model === 'all' ? 'All models' : model }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        <span>Size</span>
+        <select [ngModel]="sizeFilter" (ngModelChange)="sizeFilterChange.emit($event)">
+          @for (size of sizeOptions; track size) {
+            <option [value]="size">{{ size === 'all' ? 'All sizes' : size }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        <span>Signal</span>
+        <select [ngModel]="warningFilter" (ngModelChange)="warningFilterChange.emit($event)">
+          @for (warning of warningOptions; track warning) {
+            <option [value]="warning">{{ warning === 'all' ? 'All signals' : warning }}</option>
+          }
+        </select>
+      </label>
+    </div>
+  </details>
 
   <div class="session-list">
     @for (session of filteredSessions; track trackBySessionId($index, session)) {
@@ -63,13 +77,13 @@
         (click)="selectSession.emit(session)"
       >
         <span class="session-title">{{ session.firstPrompt }}</span>
-        <span class="session-meta">{{ session.model }}</span>
+        <span class="session-meta">{{ session.workspace }} · {{ session.model }}</span>
         @if (sessionTriage(session); as triage) {
           <span class="badge-row compact">
             <span class="triage-badge" [ngClass]="triage.sizeTone">
               {{ triage.size }}
             </span>
-            @for (warning of triage.warnings.slice(0, 2); track warning.label) {
+            @for (warning of triage.warnings.slice(0, 1); track warning.label) {
               <span class="triage-badge" [ngClass]="warning.tone">
                 {{ warning.label }}
               </span>
@@ -80,9 +94,7 @@
           <span>{{ session.startedAt | date: 'MMM d, HH:mm' }}</span>
           <strong>${{ usageUsd(session) | number: '1.2-2' }}</strong>
         </span>
-        <span class="session-scan">
-          {{ session.traceSummary.totalTokens | number }} tokens · {{ sourceKindLabel(session.sourceKind) }}
-        </span>
+        <span class="session-scan">{{ sourceKindLabel(session.sourceKind) }}</span>
       </button>
     } @empty {
       <p class="empty dark">No sessions match these filters.</p>

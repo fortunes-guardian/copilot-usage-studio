@@ -1,3 +1,8 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
 .sidebar {
   position: sticky;
   top: 58px;
@@ -13,6 +18,70 @@
   background: var(--rail);
   color: var(--text);
   scrollbar-color: var(--scrollbar, #34475e) transparent;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sidebar-header > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.sidebar-header strong {
+  color: var(--text-strong);
+  font-size: 14px;
+}
+
+.sidebar-header span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.sidebar-close {
+  display: none;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.filter-disclosure {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-soft) 76%, transparent);
+}
+
+.filter-disclosure summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 780;
+  cursor: pointer;
+}
+
+.filter-disclosure summary strong {
+  color: var(--accent-2);
+  font-size: 10px;
+}
+
+.filter-disclosure .filters {
+  padding: 0 8px 8px;
 }
 
 .search,
@@ -103,7 +172,7 @@
   overflow: hidden;
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 2;
 }
 
 .session-meta,
@@ -204,22 +273,41 @@
 }
 
 @media (max-width: 900px) {
+  :host {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 100;
+    width: min(380px, 92vw);
+    transform: translateX(-104%);
+    transition: transform 180ms ease;
+  }
+
+  :host-context(.rail-open) {
+    transform: translateX(0);
+  }
+
   .sidebar {
     position: static;
-    height: auto;
-    max-height: 36vh;
-    border-top: 1px solid var(--line);
-    border-right: 0;
-    padding: 12px 14px;
-    overflow: auto;
+    height: 100%;
+    max-height: none;
+    border: 0;
+    border-right: 1px solid var(--line);
+    padding: 14px;
+    overflow: hidden;
+    box-shadow: 18px 0 50px rgba(4, 10, 18, 0.28);
+  }
+
+  .sidebar-close {
+    display: grid;
+    place-items: center;
+  }
+
+  .session-list {
+    max-height: none;
   }
 }
 
 @media (max-width: 600px) {
-  .session-list {
-    max-height: 170px;
-  }
-
   .session-card {
     gap: 5px;
     padding: 10px;

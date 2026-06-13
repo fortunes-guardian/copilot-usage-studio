@@ -9,17 +9,17 @@
     </div>
 
     <nav class="view-nav" aria-label="Cost debugger views">
-      <button type="button" [class.active]="activeView() === 'sessions'" (click)="activeView.set('sessions')">
-        Sessions
-      </button>
       <button type="button" [class.active]="activeView() === 'usage'" (click)="activeView.set('usage')">
         Usage
+      </button>
+      <button type="button" [class.active]="activeView() === 'sessions'" (click)="activeView.set('sessions')">
+        Sessions
       </button>
       <button type="button" [class.active]="activeView() === 'compare'" (click)="activeView.set('compare')">
         Compare
       </button>
       <button type="button" [class.active]="activeView() === 'analytics'" (click)="activeView.set('analytics')">
-        Analytics
+        Insights
       </button>
       <button type="button" [class.active]="activeView() === 'pricing'" (click)="activeView.set('pricing')">
         Prices
@@ -43,7 +43,11 @@
 
   </header>
 
-  <div class="app-body" [class.with-rail]="activeView() === 'sessions'">
+  <div
+    class="app-body"
+    [class.with-rail]="activeView() === 'sessions'"
+    [class.rail-open]="sessionRailOpen()"
+  >
     @if (activeView() === 'sessions') {
       <app-session-rail
         [sessions]="sessions()"
@@ -66,8 +70,15 @@
         (workspaceFilterChange)="setWorkspaceFilter($event)"
         (modelFilterChange)="setModelFilter($event)"
         (timeFilterChange)="setTimeFilter($event)"
-        (selectSession)="selectSession($event)"
+        (selectSession)="selectSessionFromRail($event)"
+        (closeRail)="closeSessionRail()"
       ></app-session-rail>
+      <button
+        type="button"
+        class="rail-backdrop"
+        aria-label="Close session browser"
+        (click)="closeSessionRail()"
+      ></button>
     }
 
   <section class="content">
@@ -82,7 +93,7 @@
           (openSession)="openSession($event)"
         ></app-usage-page>
       } @placeholder {
-        <p class="deferred-panel">Loading usage…</p>
+        <p class="deferred-panel">Loading usage...</p>
       }
     } @else if (activeView() === 'pricing') {
       @defer {
@@ -97,12 +108,11 @@
     } @else if (activeView() === 'analytics') {
       @defer {
         <app-analytics-page
-          [sessions]="filteredSessions()"
-          [totalSessionCount]="sessions().length"
+          [sessions]="sessions()"
           (openSession)="openSession($event)"
         ></app-analytics-page>
       } @placeholder {
-        <p class="deferred-panel">Loading analytics…</p>
+        <p class="deferred-panel">Loading insights...</p>
       }
     } @else if (activeView() === 'compare') {
       @defer {
@@ -118,6 +128,15 @@
       }
     } @else if (activeView() === 'sessions') {
     <section class="sessions-page">
+      <div class="sessions-mobile-toolbar">
+        <button type="button" class="session-rail-toggle" (click)="openSessionRail()">
+          <span>Browse sessions</span>
+          <strong>{{ filteredSessions().length | number }}</strong>
+        </button>
+        @if (selectedSession(); as currentSession) {
+          <span>{{ currentSession.title }}</span>
+        }
+      </div>
       @if (sessionData()?.ingestion; as ingestion) {
         <app-session-import-context
           [ingestion]="ingestion"
@@ -131,16 +150,11 @@
         <app-selected-run-header
           [session]="session"
           [triage]="selectedTriage()"
-          [allowancePlan]="allowancePlan()"
-          [allowancePlans]="allowancePlans"
-          [selectedAllowance]="selectedAllowance()"
-          [allowanceUsage]="selectedAllowanceUsage()"
           [outsideFilters]="selectedSessionOutsideFilters()"
           [filteredCount]="filteredSessions().length"
           [pricingFallbacks]="selectedPricingFallbacks()"
           [sessionSizeHelp]="sessionSizeHelp"
           [pricingFallbackReason]="pricingFallbackReason"
-          (allowancePlanChange)="setAllowancePlan($event)"
           (openFirstFilteredSession)="openFirstFilteredSession()"
           (viewPrices)="activeView.set('pricing')"
         ></app-selected-run-header>

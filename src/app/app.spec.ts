@@ -130,7 +130,7 @@ describe('App', () => {
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('h1')?.textContent).toContain('Copilot Cost Debugger');
-    expect(compiled.textContent).toContain('1 sessions');
+    expect(compiled.textContent).toContain('Loading usage');
     expect(compiled.textContent).not.toContain('Triage');
     expect(compiled.textContent).not.toContain('Token totals');
     expect(compiled.textContent).toContain('Usage');
@@ -168,12 +168,29 @@ describe('App', () => {
     expect(fixture.nativeElement.textContent).toContain('Loading usage');
   });
 
+  it('opens Sessions from the view query parameter', async () => {
+    globalThis.history.pushState(null, '', '/?view=sessions');
+    const fixture = TestBed.createComponent(App);
+    TestBed.inject(HttpTestingController).expectOne('/data/sessions.json').flush(sessionDataFixture);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const activeButton = [...fixture.nativeElement.querySelectorAll('.view-nav button')].find(
+      (candidate: HTMLButtonElement) => candidate.textContent?.includes('Sessions'),
+    );
+
+    expect(activeButton?.classList.contains('active')).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('Browse sessions');
+  });
+
   it('navigates the selected-run debugger tabs', async () => {
     const fixture = TestBed.createComponent(App);
     TestBed.inject(HttpTestingController).expectOne('/data/sessions.json').flush(sessionDataFixture);
     await fixture.whenStable();
     fixture.detectChanges();
 
+    clickButtonContaining(fixture.nativeElement, 'Sessions');
+    fixture.detectChanges();
     clickButtonContaining(fixture.nativeElement, 'Cost');
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Cost answer');
@@ -194,6 +211,8 @@ describe('App', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
+    clickButtonContaining(fixture.nativeElement, 'Sessions');
+    fixture.detectChanges();
     clickButtonContaining(fixture.nativeElement, 'Calls');
     fixture.detectChanges();
     (fixture.nativeElement.querySelector('.trace-link') as HTMLButtonElement).click();

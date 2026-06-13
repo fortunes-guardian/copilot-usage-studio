@@ -23,12 +23,12 @@ describe('UsagePageComponent', () => {
 
     const text = fixture.nativeElement.textContent;
 
-    expect(text).toContain('How much did I use?');
+    expect(text).toContain('Your Copilot usage');
     expect(text).toContain('Last session');
     expect(text).toContain('Today');
     expect(text).toContain('This week');
     expect(text).toContain('Calendar month');
-    expect(text).toContain('Visible total');
+    expect(text).toContain('Selected scope');
     expect(text).toContain('50 credits');
     expect(text).toContain('Open top run');
     expect(text).toContain('Open run');
@@ -56,6 +56,22 @@ describe('UsagePageComponent', () => {
     fixture.detectChanges();
 
     expect(opened[0].id).toBe('today-run');
+  });
+
+  it('scopes usage by workspace', () => {
+    fixture.componentRef.setInput('sessions', [
+      sessionFixture('one', 'One', new Date().toISOString(), 0.01),
+      { ...sessionFixture('two', 'Two', new Date().toISOString(), 0.02), workspace: 'other-workspace' },
+    ]);
+    fixture.detectChanges();
+
+    const workspace = fixture.nativeElement.querySelectorAll('select')[0] as HTMLSelectElement;
+    workspace.value = 'other-workspace';
+    workspace.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('1 of 2 sessions');
+    expect(fixture.nativeElement.textContent).toContain('Reset scope');
   });
 });
 

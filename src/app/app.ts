@@ -30,7 +30,7 @@ import {
   sessionTriage,
   TraceFilter,
 } from './session-analysis';
-import { sessionUsageCredits, sessionUsageUsd } from './session-cost-utils';
+import { sessionUsageUsd } from './session-cost-utils';
 
 type ActiveView = 'sessions' | 'usage' | 'compare' | 'analytics' | 'pricing';
 type SelectedRunView = 'overview' | 'cost' | 'turns' | 'trace';
@@ -81,9 +81,9 @@ export class App {
   protected readonly modelCallSort = signal<ModelCallSort>('timeline');
   protected readonly activeView = signal<ActiveView>(this.readInitialView());
   protected readonly selectedRunView = signal<SelectedRunView>('overview');
+  protected readonly sessionRailOpen = signal(false);
   protected readonly theme = signal<ThemeMode>(this.readStoredTheme());
   protected readonly allowancePlan = signal<CopilotAllowancePlan>('business-standard');
-  protected readonly allowancePlans = COPILOT_ALLOWANCE_PLANS;
   protected readonly pricingSourceUrl = PRICING_SOURCE_URL;
   protected readonly help = {
     appEstimate:
@@ -191,25 +191,6 @@ export class App {
     traceFilter: this.traceFilter,
     selectedTraceEventIndex: this.selectedTraceEventIndex,
   });
-  protected readonly selectedAllowance = computed(
-    () =>
-      COPILOT_ALLOWANCE_PLANS.find((plan) => plan.id === this.allowancePlan()) ??
-      COPILOT_ALLOWANCE_PLANS[0],
-  );
-  protected readonly selectedAllowanceUsage = computed(() => {
-    const session = this.selectedSession();
-    const allowance = this.selectedAllowance();
-    const credits = session ? sessionUsageCredits(session) : 0;
-    const share =
-      allowance.creditsPerUserMonthly > 0 ? (credits / allowance.creditsPerUserMonthly) * 100 : 0;
-
-    return {
-      credits,
-      share,
-      remaining: Math.max(allowance.creditsPerUserMonthly - credits, 0),
-      over: Math.max(credits - allowance.creditsPerUserMonthly, 0),
-    };
-  });
   protected readonly costExplanation = this.selectedRunExplanationState.costExplanation;
   protected readonly flowEvents = this.selectedRunExplanationState.flowEvents;
   protected readonly filteredTraceEvents = this.selectedRunExplanationState.filteredTraceEvents;
@@ -296,6 +277,19 @@ export class App {
 
   protected setWarningFilter(value: string): void {
     this.warningFilter.set(value);
+  }
+
+  protected selectSessionFromRail(session: CopilotSession): void {
+    this.selectSession(session);
+    this.sessionRailOpen.set(false);
+  }
+
+  protected openSessionRail(): void {
+    this.sessionRailOpen.set(true);
+  }
+
+  protected closeSessionRail(): void {
+    this.sessionRailOpen.set(false);
   }
 
   protected setWorkspaceFilter(value: string): void {
@@ -423,11 +417,15 @@ export class App {
     try {
       const view = new URL(globalThis.location?.href ?? '').searchParams.get('view');
 
-      return view === 'usage' || view === 'compare' || view === 'analytics' || view === 'pricing'
+      return view === 'sessions' ||
+        view === 'usage' ||
+        view === 'compare' ||
+        view === 'analytics' ||
+        view === 'pricing'
         ? view
-        : 'sessions';
+        : 'usage';
     } catch {
-      return 'sessions';
+      return 'usage';
     }
   }
 
