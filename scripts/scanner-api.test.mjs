@@ -105,7 +105,7 @@ test('rejects invalid host options with a clear contract error', async () => {
 });
 
 function createWorkspaceFixture(name) {
-  const root = mkdirTemp(`copilot-cost-debugger-api-${name}-`);
+  const root = mkdirTemp(`copilot-usage-studio-api-${name}-`);
   const workspaceDir = join(root, 'workspace');
   mkdirSync(workspaceDir, { recursive: true });
   writeFileSync(

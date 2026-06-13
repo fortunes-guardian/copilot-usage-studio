@@ -32,7 +32,7 @@ describe('App', () => {
         status: 'Idle',
         title: 'test',
         firstPrompt: 'test',
-        workspace: 'copilot-cost-debugger',
+        workspace: 'copilot-usage-studio',
         sourcePath: 'debug-logs/session-1',
         model: 'Claude Sonnet 4.6',
         modelBreakdown: [
@@ -129,7 +129,7 @@ describe('App', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Copilot Cost Debugger');
+    expect(compiled.querySelector('h1')?.textContent).toContain('Copilot Usage Studio');
     expect(compiled.textContent).toContain('Loading usage');
     expect(compiled.textContent).not.toContain('Triage');
     expect(compiled.textContent).not.toContain('Token totals');

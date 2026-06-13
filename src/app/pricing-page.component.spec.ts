@@ -59,7 +59,7 @@ function sessionFixture(
     status: 'Idle',
     title: id,
     firstPrompt: id,
-    workspace: 'copilot-cost-debugger',
+    workspace: 'copilot-usage-studio',
     sourcePath: `debug-logs/${id}`,
     model,
     modelBreakdown: [

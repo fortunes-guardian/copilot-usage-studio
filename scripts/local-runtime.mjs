@@ -5,11 +5,11 @@ import { createLocalRuntime } from '../lib/local-runtime.mjs';
 
 export function parseLocalRuntimeArgs(args = process.argv.slice(2)) {
   const options = {
-    host: process.env.COPILOT_DEBUGGER_HOST ?? '127.0.0.1',
-    port: Number(process.env.COPILOT_DEBUGGER_PORT ?? 4312),
+    host: process.env.COPILOT_USAGE_STUDIO_HOST ?? '127.0.0.1',
+    port: Number(process.env.COPILOT_USAGE_STUDIO_PORT ?? 4312),
     dataFile: 'tmp/local-runtime/sessions.json',
     seedDataFile: 'public/data/sessions.json',
-    staticDir: 'dist/copilot-cost-debugger/browser',
+    staticDir: 'dist/copilot-usage-studio/browser',
     scanOnStart: true,
     roots: [],
   };

@@ -429,7 +429,7 @@ function tempSessionFixture(name) {
 }
 
 function tempWorkspaceFixture(name) {
-  const root = mkdtempSync(join(tmpdir(), `copilot-cost-debugger-${name}-`));
+  const root = mkdtempSync(join(tmpdir(), `copilot-usage-studio-${name}-`));
   const workspaceDir = join(root, 'workspace');
   mkdirSync(workspaceDir, { recursive: true });
   writeFileSync(join(workspaceDir, 'workspace.json'), JSON.stringify({ folder: 'file:///tmp/example-workspace' }), 'utf8');

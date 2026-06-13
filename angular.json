@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "copilot-cost-debugger": {
+    "copilot-usage-studio": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -21,7 +21,10 @@
             "assets": [
               {
                 "glob": "**/*",
-                "input": "public"
+                "input": "public",
+                "ignore": [
+                  "data/sessions.json"
+                ]
               }
             ],
             "styles": [
@@ -56,10 +59,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "copilot-cost-debugger:build:production"
+              "buildTarget": "copilot-usage-studio:build:production"
             },
             "development": {
-              "buildTarget": "copilot-cost-debugger:build:development"
+              "buildTarget": "copilot-usage-studio:build:development"
             }
           },
           "defaultConfiguration": "development"

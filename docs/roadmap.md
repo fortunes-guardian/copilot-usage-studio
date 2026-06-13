@@ -275,11 +275,17 @@ Done:
 - Added a compact global refresh action with scan progress, imported-session count, and last-generated timestamp.
 - Added `npm run preview:local` to build and serve the production UI and scanner runtime together.
 - Added runtime tests for refresh, status, persistence, failure retention, static SPA delivery, and CLI options.
+- Added a zero-runtime-dependency `copilot-usage-studio` executable for `npx` and global npm use.
+- Added cross-platform user-owned cache paths so disposable npm installations never own session data.
+- Added `serve`, `scan`, `status`, help, version, custom root, host, and port CLI behavior.
+- Excluded `public/data/sessions.json` from production assets and the npm package privacy boundary.
+- Added npm publish metadata, explicit package file allowlisting, Node engine requirements, and a full `release:check` gate.
+- Added CLI tests covering Windows/macOS/Linux paths, argument parsing, scanner output, runtime wiring, and status output.
 
 Build:
 
 - Add debounced background rescans of relevant debug-log directories after observing the manual/startup workflow in real use.
-- Package the local runtime as an `npx` command before adding an installer.
+- Publish the reviewed `0.1.0` package to npm so `npx copilot-usage-studio` resolves from the registry.
 - Use Electron as the first desktop wrapper unless scanner constraints materially change.
 - Add a thin VS Code companion extension only after the local runtime/import workflow is stable.
 - Investigate Visual Studio as a separate source adapter. Do not promise support until equivalent durable token and usage evidence is found.

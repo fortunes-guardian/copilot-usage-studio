@@ -11,7 +11,7 @@ describe('session analysis', () => {
     status: 'Idle',
     title: 'Review branch changes',
     firstPrompt: 'review branch changes',
-    workspace: 'copilot-cost-debugger',
+    workspace: 'copilot-usage-studio',
     sourcePath: 'debug-logs/session-1',
     model: 'Claude Sonnet 4.6',
     modelBreakdown: [

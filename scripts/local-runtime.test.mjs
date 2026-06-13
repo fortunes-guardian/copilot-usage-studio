@@ -80,6 +80,36 @@ test('keeps the last valid snapshot when a refresh fails', async () => {
   }
 });
 
+test('holds a fresh-install data request until the startup scan completes', async () => {
+  const fixture = runtimeFixture('first-run');
+  let finishScan;
+  const runtime = createLocalRuntime({
+    port: 0,
+    dataFile: fixture.dataFile,
+    seedDataFile: null,
+    staticDir: fixture.staticDir,
+    scanner: () => new Promise((resolveScan) => {
+      finishScan = resolveScan;
+    }),
+    logger: silentLogger(),
+  });
+
+  try {
+    const address = await runtime.listen();
+    const origin = `http://127.0.0.1:${address.port}`;
+    const pendingData = fetch(`${origin}/data/sessions.json`);
+    await new Promise((resolveWait) => setTimeout(resolveWait, 20));
+    finishScan(sessionData('first-session', '2026-06-13T10:00:00.000Z'));
+
+    const response = await pendingData;
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).sessions[0].id, 'first-session');
+  } finally {
+    await runtime.close();
+    rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
 test('serves the production UI and falls back to index for application routes', async () => {
   const fixture = runtimeFixture('static');
   const runtime = createLocalRuntime({
@@ -121,7 +151,7 @@ test('parses local runtime host options', () => {
 });
 
 function runtimeFixture(name) {
-  const root = mkdtempSync(join(tmpdir(), `copilot-cost-debugger-runtime-${name}-`));
+  const root = mkdtempSync(join(tmpdir(), `copilot-usage-studio-runtime-${name}-`));
   const staticDir = join(root, 'static');
   mkdirSync(staticDir, { recursive: true });
   writeFileSync(join(staticDir, 'index.html'), '<main>runtime fixture</main>', 'utf8');

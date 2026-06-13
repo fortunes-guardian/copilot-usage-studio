@@ -1,6 +1,22 @@
 {
-  "name": "copilot-cost-debugger",
-  "version": "0.0.0",
+  "name": "copilot-usage-studio",
+  "version": "0.1.0",
+  "description": "Local VS Code GitHub Copilot usage, cost, and session insights.",
+  "type": "module",
+  "bin": {
+    "copilot-usage-studio": "bin/copilot-usage-studio.mjs"
+  },
+  "files": [
+    "bin/",
+    "data/github-copilot-pricing.json",
+    "dist/copilot-usage-studio/browser/",
+    "docs/local-deployment.md",
+    "docs/pricing.md",
+    "docs/scanner-api.md",
+    "lib/",
+    "scripts/pricing-utils.mjs",
+    "scripts/scan-vscode-sessions.mjs"
+  ],
   "scripts": {
     "ng": "ng",
     "start": "node scripts/start-local-dev.mjs",
@@ -8,6 +24,8 @@
     "start:clean": "npm run clean:ng-cache && node scripts/start-local-dev.mjs",
     "runtime": "node scripts/local-runtime.mjs",
     "preview:local": "npm run build && node scripts/local-runtime.mjs",
+    "cli": "node bin/copilot-usage-studio.mjs",
+    "prebuild": "node scripts/clean-dist.mjs",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
@@ -17,31 +35,50 @@
     "scan": "node scripts/scan-vscode-sessions.mjs",
     "verify:data": "node scripts/verify-session-data.mjs",
     "schema:audit": "node scripts/audit-vscode-schema.mjs",
-    "schema:accept": "node scripts/audit-vscode-schema.mjs --accept"
+    "schema:accept": "node scripts/audit-vscode-schema.mjs --accept",
+    "verify:package": "node scripts/verify-package.mjs",
+    "release:check": "npm run test:scripts && npm test -- --watch=false && npm run build && npm run verify:package",
+    "prepack": "npm run build"
   },
-  "private": true,
   "exports": {
+    ".": "./lib/cli.mjs",
     "./scanner": "./lib/scanner-api.mjs",
     "./local-runtime": "./lib/local-runtime.mjs"
   },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fortunes-guardian/copilot-cost-ledger.git"
+  },
+  "bugs": {
+    "url": "https://github.com/fortunes-guardian/copilot-cost-ledger/issues"
+  },
+  "homepage": "https://github.com/fortunes-guardian/copilot-cost-ledger#readme",
+  "keywords": [
+    "github-copilot",
+    "vscode",
+    "ai-usage",
+    "token-cost",
+    "developer-tools"
+  ],
   "license": "MIT",
   "packageManager": "npm@11.11.0",
-  "dependencies": {
+  "devDependencies": {
+    "@angular/build": "^21.2.9",
+    "@angular/cli": "^21.2.9",
     "@angular/common": "^21.2.0",
     "@angular/compiler": "^21.2.0",
+    "@angular/compiler-cli": "^21.2.0",
     "@angular/core": "^21.2.0",
     "@angular/forms": "^21.2.0",
     "@angular/platform-browser": "^21.2.0",
     "@angular/router": "^21.2.0",
-    "rxjs": "~7.8.0",
-    "tslib": "^2.3.0"
-  },
-  "devDependencies": {
-    "@angular/build": "^21.2.9",
-    "@angular/cli": "^21.2.9",
-    "@angular/compiler-cli": "^21.2.0",
     "jsdom": "^28.0.0",
     "prettier": "^3.8.1",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0",
     "typescript": "~5.9.2",
     "vitest": "^4.0.8"
   }

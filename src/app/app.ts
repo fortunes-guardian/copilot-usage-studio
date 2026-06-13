@@ -430,7 +430,7 @@ export class App {
 
   private readStoredTheme(): ThemeMode {
     try {
-      return globalThis.localStorage?.getItem('copilot-cost-debugger-theme') === 'dark'
+      return globalThis.localStorage?.getItem('copilot-usage-studio-theme') === 'dark'
         ? 'dark'
         : 'light';
     } catch {
@@ -456,7 +456,7 @@ export class App {
 
   private persistTheme(theme: ThemeMode): void {
     try {
-      globalThis.localStorage?.setItem('copilot-cost-debugger-theme', theme);
+      globalThis.localStorage?.setItem('copilot-usage-studio-theme', theme);
     } catch {
       // Non-browser test/runtime environments can ignore persistence.
     }

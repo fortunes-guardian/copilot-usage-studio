@@ -1,14 +1,14 @@
 <main class="shell" [class.theme-light]="theme() === 'light'" [class.theme-dark]="theme() === 'dark'">
   <header class="topbar">
     <div class="brand">
-      <span class="brand-mark" aria-hidden="true">CD</span>
+      <span class="brand-mark" aria-hidden="true">US</span>
       <div>
-        <p class="eyebrow">Local cost debugger</p>
-        <h1>Copilot Cost Debugger</h1>
+        <p class="eyebrow">Local usage intelligence</p>
+        <h1>Copilot Usage Studio</h1>
       </div>
     </div>
 
-    <nav class="view-nav" aria-label="Cost debugger views">
+    <nav class="view-nav" aria-label="Application views">
       <button type="button" [class.active]="activeView() === 'usage'" (click)="activeView.set('usage')">
         Usage
       </button>

@@ -66,7 +66,7 @@ function sessionFixture(id: string, title: string, usd: number, input: number): 
     status: 'Idle',
     title,
     firstPrompt: title,
-    workspace: 'copilot-cost-debugger',
+    workspace: 'copilot-usage-studio',
     sourcePath: `debug-logs/${id}`,
     model: 'GPT-5.4',
     modelBreakdown: [

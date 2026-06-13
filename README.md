@@ -1,8 +1,10 @@
-# Copilot Cost Debugger
+# Copilot Usage Studio
 
-Local-first cost debugger for VS Code GitHub Copilot chat and agent sessions.
+Local-first usage, cost, and session insights for VS Code GitHub Copilot chat and agent sessions.
 
-Status: early local developer preview. It is useful today for local VS Code sessions; the first release path is clone-and-run.
+Independent open-source developer tool. Not affiliated with or endorsed by GitHub or Microsoft.
+
+Status: early local developer preview. The npm package is publish-ready; use clone-and-run until version `0.1.0` is published.
 
 Supported scope today: VS Code GitHub Copilot Chat and Agent sessions on the local machine. This does not currently support Visual Studio, JetBrains IDEs, Copilot CLI, GitHub.com chat, or GitHub billing exports.
 
@@ -24,22 +26,32 @@ It scans local VS Code data, uses GitHub source usage when VS Code logs it, fall
 
 ## Start Here
 
-1. Run the app locally:
+After the npm package is published, the shortest path is:
+
+```bash
+npx copilot-usage-studio
+```
+
+Then open `http://127.0.0.1:4312/`.
+
+From a repository checkout today:
 
 ```bash
 npm install
 npm start
 ```
 
-2. Open the local Angular URL printed by the dev server, usually:
+Open the local Angular URL printed by the dev server, usually:
 
 ```text
 http://127.0.0.1:4200/
 ```
 
-3. Read [docs/how-to-read-the-app.md](docs/how-to-read-the-app.md) if the UI terms are not obvious yet.
+Read [docs/how-to-read-the-app.md](docs/how-to-read-the-app.md) if the UI terms are not obvious yet.
 
 `npm start` now launches both the Angular development UI and the local scanner runtime. It serves cached data immediately, refreshes from VS Code in the background, and enables the **Refresh** action in the app. The app stays local because the useful source data can contain prompts, file paths, repository context, and tool results.
+
+The packaged CLI stores its cache in the current user's application-data directory. It does not write session data into the npm installation and does not include the maintainer's generated session data in the package.
 
 ## What Works Now
 
@@ -122,6 +134,7 @@ npm run scan
 npm run refresh:data
 npm run runtime
 npm run preview:local
+npm run cli -- --help
 npm run verify:data
 npm run schema:audit
 npm test -- --watch=false

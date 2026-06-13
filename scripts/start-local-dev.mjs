@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 
-const runtimePort = process.env.COPILOT_DEBUGGER_PORT ?? '4312';
+const runtimePort = process.env.COPILOT_USAGE_STUDIO_PORT ?? '4312';
 const forwardedArgs = process.argv.slice(2);
 if (forwardedArgs.some((argument) => !/^[\w./:=\\-]+$/.test(argument))) {
   throw new Error('Angular dev-server arguments contain unsupported shell characters.');

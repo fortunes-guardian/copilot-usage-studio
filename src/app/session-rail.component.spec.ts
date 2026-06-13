@@ -19,7 +19,7 @@ describe('SessionRailComponent', () => {
     fixture.componentRef.setInput('filteredSessions', [sessionFixture('large', 700_000)]);
     fixture.componentRef.setInput('sizeOptions', ['all', 'Small', 'Medium', 'Large', 'Very large']);
     fixture.componentRef.setInput('warningOptions', ['all', 'High input context']);
-    fixture.componentRef.setInput('workspaceOptions', ['all', 'copilot-cost-debugger']);
+    fixture.componentRef.setInput('workspaceOptions', ['all', 'copilot-usage-studio']);
     fixture.componentRef.setInput('modelOptions', ['all', 'GPT-5.4']);
     fixture.componentRef.setInput('timeOptions', [{ value: 'all', label: 'All time' }]);
     fixture.componentRef.setInput('sizeFilter', 'Large');
@@ -50,7 +50,7 @@ describe('SessionRailComponent', () => {
     fixture.componentRef.setInput('filteredSessions', [sessionFixture('large', 700_000)]);
     fixture.componentRef.setInput('sizeOptions', ['all', 'Small', 'Medium', 'Large', 'Very large']);
     fixture.componentRef.setInput('warningOptions', ['all', 'High input context']);
-    fixture.componentRef.setInput('workspaceOptions', ['all', 'copilot-cost-debugger']);
+    fixture.componentRef.setInput('workspaceOptions', ['all', 'copilot-usage-studio']);
     fixture.componentRef.setInput('modelOptions', ['all', 'GPT-5.4']);
     fixture.componentRef.setInput('timeOptions', [
       { value: 'all', label: 'All time' },
@@ -71,7 +71,7 @@ describe('SessionRailComponent', () => {
     input.dispatchEvent(new Event('input'));
     selects[0].value = '30d';
     selects[0].dispatchEvent(new Event('change'));
-    selects[1].value = 'copilot-cost-debugger';
+    selects[1].value = 'copilot-usage-studio';
     selects[1].dispatchEvent(new Event('change'));
     selects[2].value = 'GPT-5.4';
     selects[2].dispatchEvent(new Event('change'));
@@ -83,7 +83,7 @@ describe('SessionRailComponent', () => {
 
     expect(queryValues).toContain('review');
     expect(timeValues).toContain('30d');
-    expect(workspaceValues).toContain('copilot-cost-debugger');
+    expect(workspaceValues).toContain('copilot-usage-studio');
     expect(modelValues).toContain('GPT-5.4');
     expect(sizeValues).toContain('Large');
     expect(warningValues).toContain('High input context');
@@ -118,7 +118,7 @@ function sessionFixture(id: string, input: number): CopilotSession {
     status: 'Idle',
     title: id,
     firstPrompt: `${id} prompt`,
-    workspace: 'copilot-cost-debugger',
+    workspace: 'copilot-usage-studio',
     sourcePath: `debug-logs/${id}`,
     model: 'GPT-5.4',
     modelBreakdown: [

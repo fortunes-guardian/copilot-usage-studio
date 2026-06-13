@@ -2,7 +2,7 @@
 
 The app is intended to run locally, near the VS Code data it reads. It should not require a hosted SaaS backend for the core workflow.
 
-Current release posture: early local developer preview. The recommended public path is clone-and-run while the scanner and UI contract settle.
+Current release posture: early local developer preview. The npm package is prepared and locally verified; clone-and-run remains available until version `0.1.0` is published to the registry.
 
 Packaging foundation now available: the scanner exposes an in-memory Node API through `lib/scanner-api.mjs`. The existing scan command uses that same API and only adds argument parsing plus JSON persistence. This is the common core for the next local host, an `npx` command, Electron packaging, and a future thin VS Code extension.
 
@@ -35,11 +35,30 @@ Why: this is the fastest loop while the UI and scanner are changing. `npm start`
 
 ## First Public Release Path
 
-For the first public release, use a simple clone-and-run flow:
+The npm package is configured for a one-command local launch:
+
+```bash
+npx copilot-usage-studio
+```
+
+This command will become available after the package owner publishes version `0.1.0` to npm. It starts the packaged production UI and scanner runtime on `http://127.0.0.1:4312/` by default.
+
+Useful packaged commands:
+
+```bash
+npx copilot-usage-studio
+npx copilot-usage-studio scan
+npx copilot-usage-studio status
+npx copilot-usage-studio --help
+```
+
+The CLI requires Node.js 22.5 or newer because optional VS Code `state.vscdb` enrichment uses Node's built-in SQLite support.
+
+Before registry publication, use the repository flow:
 
 ```bash
 git clone <repo-url>
-cd copilot-cost-debugger
+cd copilot-cost-ledger
 npm install
 npm start
 ```
@@ -58,6 +77,32 @@ npm run build
 ```
 
 Release copy should describe the app as a local Copilot usage debugger for VS Code. The strongest promise is: "VS Code already logs useful usage data locally; this app makes it understandable for developers who do not have billing-console access."
+
+### Packaged Data Location
+
+The packaged CLI stores its current normalized snapshot outside the npm installation:
+
+- Windows: `%LOCALAPPDATA%\Copilot Usage Studio\sessions.json`
+- macOS: `~/Library/Application Support/Copilot Usage Studio/sessions.json`
+- Linux: `${XDG_DATA_HOME:-~/.local/share}/copilot-usage-studio/sessions.json`
+
+The npm tarball contains the compiled UI, scanner, pricing table, and runtime code. It must never contain `public/data/sessions.json` or any other developer's imported session data.
+
+### Publishing
+
+Run the full package gate:
+
+```bash
+npm run release:check
+```
+
+Inspect the tarball list, confirm no local session data or absolute paths are present, then publish deliberately:
+
+```bash
+npm publish --access public
+```
+
+Publishing is an external release action and should not be automated from ordinary development commands.
 
 If the browser shows updated markup with stale component styles, stop the dev server and restart it with a cache reset:
 
@@ -123,18 +168,20 @@ Why: a desktop app would make the project easier for non-frontend developers to 
 
 Recommended first implementation: Electron. The current scanner is Node ESM and uses `node:sqlite`, so Electron can reuse it directly. Tauri remains possible later, but it would require a Node sidecar or a scanner rewrite before it offers a meaningful simplicity advantage.
 
-## Future Option: Installer Or Single Command
+## Single Command
 
-A lightweight local CLI could provide commands such as:
+A lightweight local CLI now provides:
 
 ```bash
-copilot-cost-debugger scan
-copilot-cost-debugger serve
+copilot-usage-studio scan
+copilot-usage-studio
+copilot-usage-studio scan
+copilot-usage-studio status
 ```
 
 Why: this keeps the project local and scriptable without committing to a desktop shell too early.
 
-The shared scanner API and local runtime are now complete. The runtime can power a one-command `npx` experience first and be embedded by Electron later.
+The shared scanner API, runtime, and npm executable are complete. The same runtime can be embedded by Electron later.
 
 ## Future Option: VS Code Companion Extension
 
