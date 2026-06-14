@@ -34,6 +34,21 @@ The rate card is a versioned JSON file so the scanner, verifier, and UI use the 
 
 `src/app/pricing.ts` is intentionally just an Angular-facing adapter around the shared JSON. It adds TypeScript types and the `estimateCostUsd` helper, but it is not the source of truth.
 
+## Updating The Price Snapshot
+
+This should be a deliberate maintainer update, not a runtime web fetch.
+
+1. Open GitHub's official model pricing page and record the check date.
+2. Update `data/github-copilot-pricing.json`, including model availability, all token buckets, and request-size tiers.
+3. Keep tier thresholds machine-readable. Apply them per model call using normal plus cached input, never aggregated session tokens.
+4. Update the pricing version and snapshot date.
+5. Add or update threshold boundary tests and verify that several smaller calls do not accidentally trigger a long-context tier.
+6. Run `npm run refresh:data` to recalculate the local development snapshot.
+7. Run `npm run release:check` and inspect the Prices page in both themes.
+8. Update this document and the changelog when the pricing contract changed.
+
+The future automation worth adding is a maintainer-only audit that detects changes on GitHub's page and opens a reviewable diff. It should not silently update rates or alter historical calculations at runtime.
+
 ## What The App Calculates
 
 For each imported model call, the scanner reads local VS Code debug-log token totals when they are available:
