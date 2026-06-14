@@ -284,11 +284,11 @@ Done:
 - Added CLI tests covering Windows/macOS/Linux paths, argument parsing, scanner output, runtime wiring, and status output.
 - Renamed the product and distributable package to Copilot Usage Studio before the first public release.
 - Replaced the Angular starter favicon and added the initial release changelog.
+- Published `copilot-usage-studio@0.1.0` publicly on npm and verified the CLI from a clean installation directory.
 
 Build:
 
 - Add debounced background rescans of relevant debug-log directories after observing the manual/startup workflow in real use.
-- Publish the reviewed `0.1.0` package to npm so `npx copilot-usage-studio` resolves from the registry.
 - Use Electron as the first desktop wrapper unless scanner constraints materially change.
 - Add a thin VS Code companion extension only after the local runtime/import workflow is stable.
 - Investigate Visual Studio as a separate source adapter. Do not promise support until equivalent durable token and usage evidence is found.

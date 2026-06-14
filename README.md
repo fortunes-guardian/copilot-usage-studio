@@ -2,9 +2,12 @@
 
 Local-first usage, cost, and session insights for VS Code GitHub Copilot chat and agent sessions.
 
+[![npm version](https://img.shields.io/npm/v/copilot-usage-studio.svg)](https://www.npmjs.com/package/copilot-usage-studio)
+[![license](https://img.shields.io/badge/license-MIT-2563eb.svg)](LICENSE)
+
 Independent open-source developer tool. Not affiliated with or endorsed by GitHub or Microsoft.
 
-Status: early local developer preview. The npm package is publish-ready; use clone-and-run until version `0.1.0` is published.
+Status: early local developer preview. Version `0.1.0` is available on npm.
 
 Supported scope today: VS Code GitHub Copilot Chat and Agent sessions on the local machine. This does not currently support Visual Studio, JetBrains IDEs, Copilot CLI, GitHub.com chat, or GitHub billing exports.
 
@@ -26,7 +29,9 @@ It scans local VS Code data, uses GitHub source usage when VS Code logs it, fall
 
 ## Start Here
 
-After the npm package is published, the shortest path is:
+Requirements: Node.js 22.5 or newer, npm, and local VS Code GitHub Copilot session data.
+
+Run the released app:
 
 ```bash
 npx copilot-usage-studio
@@ -34,9 +39,17 @@ npx copilot-usage-studio
 
 Then open `http://127.0.0.1:4312/`.
 
-From a repository checkout today:
+`npx` downloads the latest published package from npm. To run this exact release:
 
 ```bash
+npx copilot-usage-studio@0.1.0
+```
+
+To contribute or run the current GitHub source:
+
+```bash
+git clone https://github.com/fortunes-guardian/copilot-usage-studio.git
+cd copilot-usage-studio
 npm install
 npm start
 ```

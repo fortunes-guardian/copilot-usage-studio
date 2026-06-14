@@ -2,13 +2,7 @@
 
 All notable changes to Copilot Usage Studio are recorded here.
 
-## Unreleased
-
-- Refresh the committed GitHub Copilot model rate card from the official documentation on June 14, 2026.
-- Apply GPT-5.4, GPT-5.5, and Gemini 3.1 Pro long-context rates per model call rather than to aggregated session tokens.
-- Preserve the selected pricing tier and per-bucket model costs in generated session data.
-
-## 0.1.0 - 2026-06-13
+## 0.1.0 - 2026-06-14
 
 Initial local developer preview.
 
@@ -20,5 +14,8 @@ Initial local developer preview.
 - Compare selected runs and review the GitHub pricing rows used by the app.
 - Run the complete local application with `npx copilot-usage-studio`.
 - Keep imported session data on the developer's machine.
+- Use the GitHub Copilot model rate card checked on June 14, 2026.
+- Apply GPT-5.4, GPT-5.5, and Gemini 3.1 Pro long-context rates per model call rather than to aggregated session tokens.
+- Preserve the selected pricing tier and per-bucket model costs in generated session data.
 
 Copilot Usage Studio is an independent open-source developer tool and is not affiliated with or endorsed by GitHub or Microsoft.

@@ -2,7 +2,7 @@
 
 The app is intended to run locally, near the VS Code data it reads. It should not require a hosted SaaS backend for the core workflow.
 
-Current release posture: early local developer preview. The npm package is prepared and locally verified; clone-and-run remains available until version `0.1.0` is published to the registry.
+Current release posture: early local developer preview. Version `0.1.0` is published publicly on npm, while clone-and-run remains available for contributors and development builds.
 
 Packaging foundation now available: the scanner exposes an in-memory Node API through `lib/scanner-api.mjs`. The existing scan command uses that same API and only adds argument parsing plus JSON persistence. This is the common core for the next local host, an `npx` command, Electron packaging, and a future thin VS Code extension.
 
@@ -33,7 +33,7 @@ http://127.0.0.1:4200/
 
 Why: this is the fastest loop while the UI and scanner are changing. `npm start` launches the Angular dev server and the local runtime together. The runtime serves the last valid snapshot immediately, performs a background startup scan, and powers the in-app refresh action.
 
-## First Public Release Path
+## Install From npm
 
 The npm package is configured for a one-command local launch:
 
@@ -41,7 +41,7 @@ The npm package is configured for a one-command local launch:
 npx copilot-usage-studio
 ```
 
-This command will become available after the package owner publishes version `0.1.0` to npm. It starts the packaged production UI and scanner runtime on `http://127.0.0.1:4312/` by default.
+This starts the packaged production UI and scanner runtime on `http://127.0.0.1:4312/` by default. It downloads the latest published npm version rather than the current GitHub `main` branch.
 
 Useful packaged commands:
 
@@ -54,10 +54,10 @@ npx copilot-usage-studio --help
 
 The CLI requires Node.js 22.5 or newer because optional VS Code `state.vscdb` enrichment uses Node's built-in SQLite support.
 
-Before registry publication, use the repository flow:
+For development or the current GitHub source, use the repository flow:
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/fortunes-guardian/copilot-usage-studio.git
 cd copilot-usage-studio
 npm install
 npm start
@@ -76,7 +76,7 @@ npm run test:scripts
 npm run build
 ```
 
-Release copy should describe the app as a local Copilot usage debugger for VS Code. The strongest promise is: "VS Code already logs useful usage data locally; this app makes it understandable for developers who do not have billing-console access."
+Release copy should describe the app as a local Copilot usage inspector for VS Code. The strongest promise is: "VS Code already logs useful usage data locally; this app makes it understandable for developers who do not have billing-console access."
 
 ### Packaged Data Location
 
