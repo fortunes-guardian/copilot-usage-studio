@@ -7,7 +7,7 @@ describe('App', () => {
   const sessionDataFixture = {
     schemaVersion: 1,
     generatedAt: '2026-05-01T13:44:12.977Z',
-    pricingVersion: 'github-copilot-usage-pricing-2026-06-01',
+    pricingVersion: 'github-copilot-usage-pricing-2026-06-14',
     usdToEur: 0.93,
     ingestion: {
       scannedRoots: [],
@@ -118,14 +118,18 @@ describe('App', () => {
 
   it('should create the app', () => {
     const fixture = TestBed.createComponent(App);
-    TestBed.inject(HttpTestingController).expectOne('/data/sessions.json').flush(sessionDataFixture);
+    TestBed.inject(HttpTestingController)
+      .expectOne('/data/sessions.json')
+      .flush(sessionDataFixture);
     const app = fixture.componentInstance;
     expect(app).toBeTruthy();
   });
 
   it('should render title', async () => {
     const fixture = TestBed.createComponent(App);
-    TestBed.inject(HttpTestingController).expectOne('/data/sessions.json').flush(sessionDataFixture);
+    TestBed.inject(HttpTestingController)
+      .expectOne('/data/sessions.json')
+      .flush(sessionDataFixture);
     await fixture.whenStable();
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
@@ -139,7 +143,9 @@ describe('App', () => {
 
   it('opens the Usage page route from top navigation', async () => {
     const fixture = TestBed.createComponent(App);
-    TestBed.inject(HttpTestingController).expectOne('/data/sessions.json').flush(sessionDataFixture);
+    TestBed.inject(HttpTestingController)
+      .expectOne('/data/sessions.json')
+      .flush(sessionDataFixture);
     await fixture.whenStable();
     fixture.detectChanges();
 
@@ -156,7 +162,9 @@ describe('App', () => {
   it('opens Usage from the view query parameter', async () => {
     globalThis.history.pushState(null, '', '/?view=usage');
     const fixture = TestBed.createComponent(App);
-    TestBed.inject(HttpTestingController).expectOne('/data/sessions.json').flush(sessionDataFixture);
+    TestBed.inject(HttpTestingController)
+      .expectOne('/data/sessions.json')
+      .flush(sessionDataFixture);
     await fixture.whenStable();
     fixture.detectChanges();
 
@@ -198,7 +206,9 @@ describe('App', () => {
   it('opens Sessions from the view query parameter', async () => {
     globalThis.history.pushState(null, '', '/?view=sessions');
     const fixture = TestBed.createComponent(App);
-    TestBed.inject(HttpTestingController).expectOne('/data/sessions.json').flush(sessionDataFixture);
+    TestBed.inject(HttpTestingController)
+      .expectOne('/data/sessions.json')
+      .flush(sessionDataFixture);
     await fixture.whenStable();
     fixture.detectChanges();
 
@@ -212,7 +222,9 @@ describe('App', () => {
 
   it('navigates the selected-run debugger tabs', async () => {
     const fixture = TestBed.createComponent(App);
-    TestBed.inject(HttpTestingController).expectOne('/data/sessions.json').flush(sessionDataFixture);
+    TestBed.inject(HttpTestingController)
+      .expectOne('/data/sessions.json')
+      .flush(sessionDataFixture);
     await fixture.whenStable();
     fixture.detectChanges();
 
@@ -234,7 +246,9 @@ describe('App', () => {
 
   it('opens the matching trace event from a model call', async () => {
     const fixture = TestBed.createComponent(App);
-    TestBed.inject(HttpTestingController).expectOne('/data/sessions.json').flush(sessionDataFixture);
+    TestBed.inject(HttpTestingController)
+      .expectOne('/data/sessions.json')
+      .flush(sessionDataFixture);
     await fixture.whenStable();
     fixture.detectChanges();
 
@@ -259,5 +273,3 @@ function clickButtonContaining(root: HTMLElement, text: string): void {
   expect(button).toBeTruthy();
   button?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 }
-
-

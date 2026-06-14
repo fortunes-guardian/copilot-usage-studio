@@ -2,6 +2,7 @@ import { CopilotSession, ModelBreakdown, TokenBreakdown, TraceEvent } from './se
 import {
   COPILOT_AI_CREDIT_USD,
   modelUsesPricingFallback,
+  priceForTokens,
   priceForPricingModel,
   pricingFallbackReason,
 } from './pricing';
@@ -21,6 +22,8 @@ export interface PricedModelBreakdown extends ModelBreakdown {
   totalUsd: number;
   share: number;
   usesFallbackPrice: boolean;
+  pricingTierLabel: string;
+  hasMixedPricingTiers: boolean;
 }
 
 export function explainModelCost(
@@ -28,12 +31,20 @@ export function explainModelCost(
   sessionCostUsd: number,
 ): PricedModelBreakdown {
   const pricingModel = entry.pricingModel || entry.model;
-  const price = priceForPricingModel(pricingModel);
-  const inputUsd = tokenCostUsd(entry.tokens.input, price.input);
-  const cachedInputUsd = tokenCostUsd(entry.tokens.cachedInput, price.cachedInput);
-  const cacheWriteUsd = tokenCostUsd(entry.tokens.cacheWrite, price.cacheWrite ?? 0);
-  const outputUsd = tokenCostUsd(entry.tokens.output, price.output);
+  const price = priceForTokens(pricingModel, entry.tokens);
+  const inputUsd = entry.costBreakdown?.inputUsd ?? tokenCostUsd(entry.tokens.input, price.input);
+  const cachedInputUsd =
+    entry.costBreakdown?.cachedInputUsd ??
+    tokenCostUsd(entry.tokens.cachedInput, price.cachedInput);
+  const cacheWriteUsd =
+    entry.costBreakdown?.cacheWriteUsd ??
+    tokenCostUsd(entry.tokens.cacheWrite, price.cacheWrite ?? 0);
+  const outputUsd =
+    entry.costBreakdown?.outputUsd ?? tokenCostUsd(entry.tokens.output, price.output);
   const totalUsd = inputUsd + cachedInputUsd + cacheWriteUsd + outputUsd;
+  const pricingTiers = entry.pricingTiers?.length
+    ? entry.pricingTiers
+    : [price.label ?? price.tierLabel ?? 'Default'];
 
   return {
     ...entry,
@@ -51,6 +62,8 @@ export function explainModelCost(
     totalUsd,
     share: sessionCostUsd > 0 ? (totalUsd / sessionCostUsd) * 100 : 0,
     usesFallbackPrice: modelUsesPricingFallback(entry.model, pricingModel),
+    pricingTierLabel: pricingTiers.join(' + '),
+    hasMixedPricingTiers: pricingTiers.length > 1,
   };
 }
 
@@ -126,5 +139,3 @@ function average(values: number[]): number {
 function finiteNumber(value: number | null | undefined): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
-
-

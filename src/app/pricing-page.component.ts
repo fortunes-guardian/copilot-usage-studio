@@ -11,7 +11,7 @@ import {
   COPILOT_ALLOWANCE_SOURCE_URL,
   CopilotAllowancePlan,
   MODEL_PRICES_USD_PER_MILLION,
-  PRICING_EFFECTIVE_DATE,
+  PRICING_SNAPSHOT_DATE,
   PRICING_IMPORTED_AT,
   PRICING_SOURCE_LABEL,
   PRICING_SOURCE_URL,
@@ -45,7 +45,7 @@ export class PricingPageComponent {
   protected readonly pricingVersion = PRICING_VERSION;
   protected readonly pricingSourceLabel = PRICING_SOURCE_LABEL;
   protected readonly pricingSourceUrl = PRICING_SOURCE_URL;
-  protected readonly pricingEffectiveDate = PRICING_EFFECTIVE_DATE;
+  protected readonly pricingSnapshotDate = PRICING_SNAPSHOT_DATE;
   protected readonly pricingImportedAt = PRICING_IMPORTED_AT;
   protected readonly allowanceSourceUrl = COPILOT_ALLOWANCE_SOURCE_URL;
   protected readonly creditUsd = COPILOT_AI_CREDIT_USD;
@@ -83,15 +83,17 @@ export class PricingPageComponent {
   protected readonly allowanceSessions = computed(() => {
     const cutoff = this.usageCutoff(this.sessionsInput(), this.usageTimeRange());
 
-    return this.sessionsInput().filter((session) => !cutoff || new Date(session.startedAt).getTime() >= cutoff);
+    return this.sessionsInput().filter(
+      (session) => !cutoff || new Date(session.startedAt).getTime() >= cutoff,
+    );
   });
 
   protected readonly totalEstimateUsd = computed(() =>
     this.allowanceSessions().reduce((sum, session) => sum + sessionUsageUsd(session), 0),
   );
 
-  protected readonly totalEstimateCredits = computed(
-    () => this.allowanceSessions().reduce((sum, session) => sum + sessionUsageCredits(session), 0),
+  protected readonly totalEstimateCredits = computed(() =>
+    this.allowanceSessions().reduce((sum, session) => sum + sessionUsageCredits(session), 0),
   );
 
   protected readonly selectedAllowanceUsage = computed(() => {
@@ -113,28 +115,57 @@ export class PricingPageComponent {
   });
 
   protected readonly pricingRows = computed(() =>
-    Object.entries(MODEL_PRICES_USD_PER_MILLION).map(([model, price]) => ({
-      model,
-      ...price,
-      cacheWrite: price.cacheWrite ?? 0,
-      usedByImportedSessions: this.sessionsInput().some((session) =>
-        session.modelBreakdown.some((entry) => entry.pricingModel === model),
-      ),
-      usedDirectly: this.sessionsInput().some((session) =>
-        session.modelBreakdown.some(
+    Object.entries(MODEL_PRICES_USD_PER_MILLION).flatMap(([model, price]) => {
+      const usageForTier = (tier: string) => {
+        const entries = this.sessionsInput().flatMap((session) => session.modelBreakdown);
+        const matchingEntries = entries.filter(
           (entry) =>
             entry.pricingModel === model &&
-            !this.usesPricingFallback(entry.model, entry.pricingModel),
-        ),
-      ),
-      usedAsFallback: this.sessionsInput().some((session) =>
-        session.modelBreakdown.some(
-          (entry) =>
-            entry.pricingModel === model &&
+            (entry.pricingTiers?.includes(tier) ?? tier === (price.tierLabel ?? 'Default')),
+        );
+
+        return {
+          usedByImportedSessions: matchingEntries.length > 0,
+          usedDirectly: matchingEntries.some(
+            (entry) => !this.usesPricingFallback(entry.model, entry.pricingModel),
+          ),
+          usedAsFallback: matchingEntries.some((entry) =>
             this.usesPricingFallback(entry.model, entry.pricingModel),
-        ),
-      ),
-    })),
+          ),
+        };
+      };
+      const shared = {
+        model,
+        provider: price.provider,
+        releaseStatus: price.releaseStatus,
+        category: price.category,
+        note: price.note,
+      };
+      const defaultTier = price.tierLabel ?? 'Default';
+
+      return [
+        {
+          ...shared,
+          ...usageForTier(defaultTier),
+          tier: defaultTier,
+          threshold: price.tierThresholdLabel ?? 'All request sizes',
+          input: price.input,
+          cachedInput: price.cachedInput,
+          cacheWrite: price.cacheWrite ?? 0,
+          output: price.output,
+        },
+        ...(price.tiers ?? []).map((tier) => ({
+          ...shared,
+          ...usageForTier(tier.label),
+          tier: tier.label,
+          threshold: tier.thresholdLabel,
+          input: tier.input,
+          cachedInput: tier.cachedInput,
+          cacheWrite: tier.cacheWrite ?? price.cacheWrite ?? 0,
+          output: tier.output,
+        })),
+      ];
+    }),
   );
 
   protected setSelectedAllowancePlan(value: string): void {
@@ -163,10 +194,10 @@ export class PricingPageComponent {
     }
 
     const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
-    const latest = Math.max(...sessions.map((session) => new Date(session.startedAt).getTime()).filter(Number.isFinite));
+    const latest = Math.max(
+      ...sessions.map((session) => new Date(session.startedAt).getTime()).filter(Number.isFinite),
+    );
 
     return Number.isFinite(latest) ? latest - days * 24 * 60 * 60 * 1000 : null;
   }
 }
-
-

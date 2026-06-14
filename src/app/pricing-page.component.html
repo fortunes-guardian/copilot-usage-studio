@@ -3,7 +3,10 @@
     <div>
       <p class="eyebrow">Cost inputs</p>
       <h2>GitHub Copilot prices used by this app</h2>
-      <p>Evidence page for the rate card, AI-credit conversion, source usage, and token-estimate fallback.</p>
+      <p>
+        Evidence page for the rate card, AI-credit conversion, source usage, and token-estimate
+        fallback.
+      </p>
     </div>
     <a [href]="pricingSourceUrl" target="_blank" rel="noreferrer">Open GitHub source</a>
   </div>
@@ -18,8 +21,8 @@
       <strong>{{ pricingVersion }}</strong>
     </div>
     <div>
-      <span>Effective date</span>
-      <strong>{{ pricingEffectiveDate | date: 'MMM d, y' }}</strong>
+      <span>Source checked</span>
+      <strong>{{ pricingSnapshotDate | date: 'MMM d, y' }}</strong>
     </div>
     <div>
       <span>Imported into app</span>
@@ -32,8 +35,10 @@
       <p class="eyebrow">License allowance</p>
       <h3>AI credits context</h3>
       <p>
-        GitHub converts model usage into AI credits at <strong>1 credit = ${{ creditUsd | number: '1.2-2' }} USD</strong>.
-        The meter below compares imported source usage, with token estimates as fallback, against the selected per-license allowance.
+        GitHub converts model usage into AI credits at
+        <strong>1 credit = ${{ creditUsd | number: '1.2-2' }} USD</strong>. The meter below compares
+        imported source usage, with token estimates as fallback, against the selected per-license
+        allowance.
       </p>
       <a [href]="allowanceSourceUrl" target="_blank" rel="noreferrer">Open allowance source</a>
     </div>
@@ -42,9 +47,15 @@
       <label>
         <span>
           Selected plan
-          <app-help-popover [text]="help.allowance" label="Explain AI credit allowance"></app-help-popover>
+          <app-help-popover
+            [text]="help.allowance"
+            label="Explain AI credit allowance"
+          ></app-help-popover>
         </span>
-        <select [ngModel]="selectedAllowance().id" (ngModelChange)="setSelectedAllowancePlan($event)">
+        <select
+          [ngModel]="selectedAllowance().id"
+          (ngModelChange)="setSelectedAllowancePlan($event)"
+        >
           @for (plan of allowancePlans; track plan.id) {
             <option [value]="plan.id">{{ plan.label }}</option>
           }
@@ -53,7 +64,10 @@
       <label>
         <span>
           Usage window
-          <app-help-popover [text]="help.usageWindow" label="Explain usage window"></app-help-popover>
+          <app-help-popover
+            [text]="help.usageWindow"
+            label="Explain usage window"
+          ></app-help-popover>
         </span>
         <select [ngModel]="usageTimeRange()" (ngModelChange)="setUsageTimeRange($event)">
           @for (option of usageTimeOptions; track option.value) {
@@ -66,7 +80,10 @@
         <div>
           <span>{{ selectedAllowanceUsage().windowLabel }}</span>
           <strong>{{ selectedAllowanceUsage().credits | number: '1.0-1' }} credits</strong>
-          <em>{{ selectedAllowanceUsage().sessions | number }} of {{ selectedAllowanceUsage().totalSessions | number }} sessions</em>
+          <em
+            >{{ selectedAllowanceUsage().sessions | number }} of
+            {{ selectedAllowanceUsage().totalSessions | number }} sessions</em
+          >
         </div>
         <div>
           <span>Monthly allowance</span>
@@ -78,7 +95,11 @@
         </div>
       </div>
       <div class="allowance-bar" aria-hidden="true">
-        <span [style.width.%]="selectedAllowanceUsage().share > 100 ? 100 : selectedAllowanceUsage().share"></span>
+        <span
+          [style.width.%]="
+            selectedAllowanceUsage().share > 100 ? 100 : selectedAllowanceUsage().share
+          "
+        ></span>
       </div>
       <p>{{ selectedAllowance().period }}. {{ selectedAllowance().note }}</p>
     </div>
@@ -103,8 +124,10 @@
     <strong>Calculation rule</strong>
     <p>
       Per-1M-token GitHub rates are multiplied by imported VS Code token buckets. Normal input is
-      <code>inputTokens - cachedTokens</code> when cached tokens are present. Estimates stay in USD because GitHub
-      prices and AI credits are USD-native; cache write is only priced when a numeric cache-write field is imported.
+      <code>inputTokens - cachedTokens</code> when cached tokens are present. Estimates stay in USD
+      because GitHub prices and AI credits are USD-native; cache write is only priced when a numeric
+      cache-write field is imported. Long-context rates are selected independently for each model
+      call from that call's normal plus cached input.
     </p>
   </div>
 
@@ -114,13 +137,29 @@
       <span>Provider</span>
       <span>Status</span>
       <span>Category</span>
-      <span>Normal input <app-help-popover [text]="help.inputTokens" label="Explain normal input"></app-help-popover></span>
-      <span>Cached input <app-help-popover [text]="help.cachedInput" label="Explain cached input"></app-help-popover></span>
-      <span>Cache write <app-help-popover [text]="help.cacheWrite" label="Explain cache write"></app-help-popover></span>
-      <span>Output <app-help-popover [text]="help.outputTokens" label="Explain output tokens"></app-help-popover></span>
+      <span>Tier</span>
+      <span
+        >Normal input
+        <app-help-popover [text]="help.inputTokens" label="Explain normal input"></app-help-popover
+      ></span>
+      <span
+        >Cached input
+        <app-help-popover [text]="help.cachedInput" label="Explain cached input"></app-help-popover
+      ></span>
+      <span
+        >Cache write
+        <app-help-popover [text]="help.cacheWrite" label="Explain cache write"></app-help-popover
+      ></span>
+      <span
+        >Output
+        <app-help-popover
+          [text]="help.outputTokens"
+          label="Explain output tokens"
+        ></app-help-popover
+      ></span>
       <span>Used</span>
     </div>
-    @for (price of pricingRows(); track price.model) {
+    @for (price of pricingRows(); track price.model + ':' + price.tier) {
       <div class="pricing-row">
         <strong>
           {{ price.model }}
@@ -131,6 +170,10 @@
         <span>{{ price.provider }}</span>
         <span>{{ price.releaseStatus }}</span>
         <span>{{ price.category }}</span>
+        <span>
+          {{ price.tier }}
+          <em>{{ price.threshold }}</em>
+        </span>
         <span>${{ price.input | number: '1.0-3' }}</span>
         <span>${{ price.cachedInput | number: '1.0-3' }}</span>
         <span>
@@ -146,12 +189,18 @@
             @if (price.usedDirectly && price.usedAsFallback) {
               <span class="used-pill fallback-used">
                 Direct + fallback
-                <app-help-popover [text]="help.pricingFallback" label="Explain fallback pricing"></app-help-popover>
+                <app-help-popover
+                  [text]="help.pricingFallback"
+                  label="Explain fallback pricing"
+                ></app-help-popover>
               </span>
             } @else if (price.usedAsFallback) {
               <span class="used-pill fallback-used">
                 Fallback row
-                <app-help-popover [text]="help.pricingFallback" label="Explain fallback pricing"></app-help-popover>
+                <app-help-popover
+                  [text]="help.pricingFallback"
+                  label="Explain fallback pricing"
+                ></app-help-popover>
               </span>
             } @else {
               <span class="used-pill">Direct match</span>
@@ -164,5 +213,3 @@
     }
   </div>
 </section>
-
-

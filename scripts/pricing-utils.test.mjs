@@ -7,10 +7,13 @@ import {
   modelKey,
   modelUsesPricingFallback,
   normalizeModel,
+  priceForTokens,
   pricingModelForModel,
 } from './pricing-utils.mjs';
 
-const pricingData = JSON.parse(readFileSync(new URL('../data/github-copilot-pricing.json', import.meta.url), 'utf8'));
+const pricingData = JSON.parse(
+  readFileSync(new URL('../data/github-copilot-pricing.json', import.meta.url), 'utf8'),
+);
 const pricing = pricingData.models;
 const fallback = pricingData.fallbackModel;
 
@@ -28,7 +31,10 @@ test('keeps unknown model labels but prices them with the explicit fallback row'
 
 test('does not mark direct model matches as fallback pricing', () => {
   assert.equal(pricingModelForModel('Claude Sonnet 4.6', pricing, fallback), 'Claude Sonnet 4.6');
-  assert.equal(modelUsesPricingFallback('Claude Sonnet 4.6', 'Claude Sonnet 4.6', pricing, fallback), false);
+  assert.equal(
+    modelUsesPricingFallback('Claude Sonnet 4.6', 'Claude Sonnet 4.6', pricing, fallback),
+    false,
+  );
 });
 
 test('prices with the provided fallback row when a pricing id is unknown', () => {
@@ -46,4 +52,24 @@ test('prices with the provided fallback row when a pricing id is unknown', () =>
   );
 
   assert.equal(unknownCost, fallbackCost);
+});
+
+test('selects long-context pricing per request using normal plus cached input', () => {
+  assert.equal(
+    priceForTokens('GPT-5.4', { input: 272_000, cachedInput: 0 }, pricing, fallback).input,
+    2.5,
+  );
+  assert.equal(
+    priceForTokens('GPT-5.4', { input: 272_001, cachedInput: 0 }, pricing, fallback).input,
+    5,
+  );
+  assert.equal(
+    priceForTokens('GPT-5.4', { input: 100_000, cachedInput: 180_000 }, pricing, fallback)
+      .cachedInput,
+    0.5,
+  );
+  assert.equal(
+    priceForTokens('Gemini 3.1 Pro', { input: 200_001, cachedInput: 0 }, pricing, fallback).output,
+    18,
+  );
 });

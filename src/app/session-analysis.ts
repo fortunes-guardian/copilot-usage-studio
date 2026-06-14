@@ -1,11 +1,17 @@
-import { CopilotSession, ModelBreakdown, ModelLimitSummary, TokenBreakdown, TraceEvent } from './session-data.model';
+import {
+  CopilotSession,
+  ModelBreakdown,
+  ModelLimitSummary,
+  TokenBreakdown,
+  TraceEvent,
+} from './session-data.model';
 import {
   modelKey,
   modelUsesPricingFallback,
-  priceForPricingModel,
+  priceForTokens,
   pricingModelForModel,
 } from './pricing';
-import { sessionUsageUsd, traceEventUsageUsd } from './session-cost-utils';
+import { explainModelCost, sessionUsageUsd, traceEventUsageUsd } from './session-cost-utils';
 
 export type SessionSize = 'Small' | 'Medium' | 'Large' | 'Very large';
 export type WarningTone = 'low' | 'info' | 'medium' | 'high';
@@ -64,18 +70,20 @@ export function sessionTriage(session: CopilotSession): SessionTriage {
   const size = sessionSize(totalTokens);
   const warnings: SessionWarning[] = [];
   const maxInput = Math.max(
-    ...session.traceEvents.filter((event) => event.type === 'llm_request').map((event) => event.inputTokens),
+    ...session.traceEvents
+      .filter((event) => event.type === 'llm_request')
+      .map((event) => event.inputTokens),
     0,
   );
 
-  const totalInputTokens = session.tokens.input + session.tokens.cachedInput + session.tokens.cacheWrite;
+  const totalInputTokens =
+    session.tokens.input + session.tokens.cachedInput + session.tokens.cacheWrite;
 
   if (totalInputTokens >= 150_000 || maxInput >= 100_000) {
     warnings.push({
       label: 'High input context',
       tone: 'high',
-      help:
-        'Large prompt/context payloads are being sent into the model. This usually means repo context, prior conversation, or tool results are driving cost.',
+      help: 'Large prompt/context payloads are being sent into the model. This usually means repo context, prior conversation, or tool results are driving cost.',
     });
   }
 
@@ -83,8 +91,7 @@ export function sessionTriage(session: CopilotSession): SessionTriage {
     warnings.push({
       label: 'Mixed models',
       tone: 'medium',
-      help:
-        'This run used more than one model. Cost is the sum of each model row, so model switches can make estimates harder to read at a glance.',
+      help: 'This run used more than one model. Cost is the sum of each model row, so model switches can make estimates harder to read at a glance.',
     });
   }
 
@@ -105,8 +112,11 @@ export function flowTraceEvents(events: TraceEvent[], modelBreakdown: ModelBreak
     .filter((event) => isFlowEvent(event))
     .map((event, index) => {
       const pricingModel = pricingModelForEvent(event, modelBreakdown);
-      const price = priceForPricingModel(pricingModel);
       const normalInputTokens = normalInputTokensForEvent(event);
+      const price = priceForTokens(pricingModel, {
+        input: normalInputTokens,
+        cachedInput: event.cachedInputTokens ?? 0,
+      });
       const estimatedUsd =
         traceEventUsageUsd(event) ??
         event.estimatedCost?.usd ??
@@ -135,7 +145,10 @@ export function matchesTraceFilter(event: TraceEvent, filter: TraceFilter): bool
   }
 
   if (filter === 'tool') {
-    return event.type.includes('tool') || toolLikeEventNames().some((name) => event.name.toLowerCase().includes(name));
+    return (
+      event.type.includes('tool') ||
+      toolLikeEventNames().some((name) => event.name.toLowerCase().includes(name))
+    );
   }
 
   if (filter === 'discovery') {
@@ -155,13 +168,19 @@ export function matchesTraceFilter(event: TraceEvent, filter: TraceFilter): bool
 
 export function traceEventDetails(event: TraceEvent, modelBreakdown: ModelBreakdown[]) {
   const pricingModel = pricingModelForEvent(event, modelBreakdown);
-  const price = priceForPricingModel(pricingModel);
   const normalInputTokens = normalInputTokensForEvent(event);
+  const price = priceForTokens(pricingModel, {
+    input: normalInputTokens,
+    cachedInput: event.cachedInputTokens ?? 0,
+  });
   const inputUsd = tokenCostUsd(normalInputTokens, price.input);
   const cachedInputUsd = tokenCostUsd(event.cachedInputTokens ?? 0, price.cachedInput);
   const cacheWriteUsd = tokenCostUsd(event.cacheWriteTokens ?? 0, price.cacheWrite ?? 0);
   const outputUsd = tokenCostUsd(event.outputTokens, price.output);
-  const estimatedUsd = traceEventUsageUsd(event) ?? event.estimatedCost?.usd ?? inputUsd + cachedInputUsd + cacheWriteUsd + outputUsd;
+  const estimatedUsd =
+    traceEventUsageUsd(event) ??
+    event.estimatedCost?.usd ??
+    inputUsd + cachedInputUsd + cacheWriteUsd + outputUsd;
   const totalTokens = eventTotalTokens(event);
   const rawModel = event.rawModel || event.model || modelFromEventDetail(event.detail);
   const normalizedFields = [
@@ -185,6 +204,10 @@ export function traceEventDetails(event: TraceEvent, modelBreakdown: ModelBreakd
           { label: 'Output tokens', value: event.outputTokens.toLocaleString() },
           { label: 'Total tokens', value: totalTokens.toLocaleString() },
           { label: 'Pricing row', value: pricingModel },
+          {
+            label: 'Pricing tier',
+            value: event.pricingTier ?? price.label ?? price.tierLabel ?? 'Default',
+          },
           {
             label: event.sourceUsage ? 'GitHub usage' : 'Estimated cost',
             value: `$${estimatedUsd.toLocaleString(undefined, {
@@ -211,7 +234,9 @@ export function traceEventDetails(event: TraceEvent, modelBreakdown: ModelBreakd
     ...(event.ttftMs ? [{ label: 'TTFT', value: `${event.ttftMs.toLocaleString()} ms` }] : []),
     ...(event.maxTokens ? [{ label: 'Max tokens', value: event.maxTokens.toLocaleString() }] : []),
     ...(event.reasoningEffort ? [{ label: 'Reasoning effort', value: event.reasoningEffort }] : []),
-    ...(event.hasReasoning ? [{ label: 'Reasoning text', value: 'Present in debug log payload' }] : []),
+    ...(event.hasReasoning
+      ? [{ label: 'Reasoning text', value: 'Present in debug log payload' }]
+      : []),
   ];
 
   return {
@@ -234,34 +259,6 @@ export function sessionTotalTokens(session: CopilotSession): number {
   return tokenTotal(session.tokens);
 }
 
-function explainModelCost(entry: ModelBreakdown, sessionCostUsd: number) {
-  const pricingModel = entry.pricingModel || entry.model;
-  const price = priceForPricingModel(pricingModel);
-  const inputUsd = tokenCostUsd(entry.tokens.input, price.input);
-  const cachedInputUsd = tokenCostUsd(entry.tokens.cachedInput, price.cachedInput);
-  const cacheWriteUsd = tokenCostUsd(entry.tokens.cacheWrite, price.cacheWrite ?? 0);
-  const outputUsd = tokenCostUsd(entry.tokens.output, price.output);
-  const totalUsd = inputUsd + cachedInputUsd + cacheWriteUsd + outputUsd;
-
-  return {
-    ...entry,
-    provider: price.provider,
-    releaseStatus: price.releaseStatus,
-    category: price.category,
-    inputRate: price.input,
-    cachedInputRate: price.cachedInput,
-    cacheWriteRate: price.cacheWrite ?? 0,
-    outputRate: price.output,
-    inputUsd,
-    cachedInputUsd,
-    cacheWriteUsd,
-    outputUsd,
-    totalUsd,
-    share: sessionCostUsd > 0 ? (totalUsd / sessionCostUsd) * 100 : 0,
-    usesFallbackPrice: modelUsesPricingFallback(entry.model, pricingModel),
-  };
-}
-
 function explainCategoryCosts(modelRows: ModelCostRow[]) {
   return [
     {
@@ -281,7 +278,8 @@ function explainCategoryCosts(modelRows: ModelCostRow[]) {
       label: 'Cached input',
       tokens: sumTokens(modelRows, 'cachedInput'),
       usd: modelRows.reduce((sum, row) => sum + row.cachedInputUsd, 0),
-      description: 'Prompt tokens served from provider cache when that billing signal is available.',
+      description:
+        'Prompt tokens served from provider cache when that billing signal is available.',
     },
     {
       label: 'Cache write',
@@ -292,10 +290,17 @@ function explainCategoryCosts(modelRows: ModelCostRow[]) {
   ];
 }
 
-function costAnswer(session: CopilotSession, modelRows: ModelCostRow[], modelCallRowList: ModelCallRow[]) {
+function costAnswer(
+  session: CopilotSession,
+  modelRows: ModelCostRow[],
+  modelCallRowList: ModelCallRow[],
+) {
   const sessionCost = Math.max(sessionUsageUsd(session), 0);
   const totalTokens = sessionTotalTokens(session);
-  const inputUsd = modelRows.reduce((sum, row) => sum + row.inputUsd + row.cachedInputUsd + row.cacheWriteUsd, 0);
+  const inputUsd = modelRows.reduce(
+    (sum, row) => sum + row.inputUsd + row.cachedInputUsd + row.cacheWriteUsd,
+    0,
+  );
   const outputUsd = modelRows.reduce((sum, row) => sum + row.outputUsd, 0);
   const inputShare = sessionCost > 0 ? (inputUsd / sessionCost) * 100 : 0;
   const outputShare = sessionCost > 0 ? (outputUsd / sessionCost) * 100 : 0;
@@ -329,9 +334,12 @@ function costAnswer(session: CopilotSession, modelRows: ModelCostRow[], modelCal
 
 function turnInsights(modelCallRowList: ModelCallRow[]) {
   const totalCost = modelCallRowList.reduce((sum, row) => sum + row.estimatedUsd, 0);
-  const mostExpensive = [...modelCallRowList].sort((a, b) => b.estimatedUsd - a.estimatedUsd)[0] ?? null;
-  const largestInput = [...modelCallRowList].sort((a, b) => b.inputTokens - a.inputTokens)[0] ?? null;
-  const largestOutput = [...modelCallRowList].sort((a, b) => b.outputTokens - a.outputTokens)[0] ?? null;
+  const mostExpensive =
+    [...modelCallRowList].sort((a, b) => b.estimatedUsd - a.estimatedUsd)[0] ?? null;
+  const largestInput =
+    [...modelCallRowList].sort((a, b) => b.inputTokens - a.inputTokens)[0] ?? null;
+  const largestOutput =
+    [...modelCallRowList].sort((a, b) => b.outputTokens - a.outputTokens)[0] ?? null;
   const averageCost = modelCallRowList.length ? totalCost / modelCallRowList.length : 0;
 
   return [
@@ -342,21 +350,27 @@ function turnInsights(modelCallRowList: ModelCallRow[]) {
     },
     {
       label: 'Most expensive call',
-      value: mostExpensive ? `#${mostExpensive.callNumber} · $${mostExpensive.estimatedUsd.toFixed(4)}` : 'None',
+      value: mostExpensive
+        ? `#${mostExpensive.callNumber} · $${mostExpensive.estimatedUsd.toFixed(4)}`
+        : 'None',
       detail: mostExpensive
         ? `${mostExpensive.totalTokens.toLocaleString()} tokens, raw event #${mostExpensive.index}.`
         : 'No priced model call rows are available.',
     },
     {
       label: 'Largest raw input',
-      value: largestInput ? `#${largestInput.callNumber} · ${largestInput.inputTokens.toLocaleString()}` : 'None',
+      value: largestInput
+        ? `#${largestInput.callNumber} · ${largestInput.inputTokens.toLocaleString()}`
+        : 'None',
       detail: largestInput
         ? 'This is the biggest raw inputTokens payload sent into the model before splitting normal and cached input.'
         : 'No input token totals were imported.',
     },
     {
       label: 'Largest output',
-      value: largestOutput ? `#${largestOutput.callNumber} · ${largestOutput.outputTokens.toLocaleString()}` : 'None',
+      value: largestOutput
+        ? `#${largestOutput.callNumber} · ${largestOutput.outputTokens.toLocaleString()}`
+        : 'None',
       detail: largestOutput
         ? 'This is the largest generated response in the imported model calls.'
         : 'No output token totals were imported.',
@@ -369,8 +383,15 @@ function turnInsights(modelCallRowList: ModelCallRow[]) {
   ];
 }
 
-function explainCostDrivers(session: CopilotSession, modelRows: ModelCostRow[], topTokenEventList: TopTokenEvent[]) {
-  const inputUsd = modelRows.reduce((sum, row) => sum + row.inputUsd + row.cachedInputUsd + row.cacheWriteUsd, 0);
+function explainCostDrivers(
+  session: CopilotSession,
+  modelRows: ModelCostRow[],
+  topTokenEventList: TopTokenEvent[],
+) {
+  const inputUsd = modelRows.reduce(
+    (sum, row) => sum + row.inputUsd + row.cachedInputUsd + row.cacheWriteUsd,
+    0,
+  );
   const outputUsd = modelRows.reduce((sum, row) => sum + row.outputUsd, 0);
   const sessionCost = Math.max(sessionUsageUsd(session), 0);
   const inputShare = sessionCost > 0 ? (inputUsd / sessionCost) * 100 : 0;
@@ -383,7 +404,8 @@ function explainCostDrivers(session: CopilotSession, modelRows: ModelCostRow[], 
   const topModel = [...modelRows].sort((a, b) => b.totalUsd - a.totalUsd)[0];
   const topModelShare = topModel && sessionCost > 0 ? (topModel.totalUsd / sessionCost) * 100 : 0;
   const toolCalls = session.traceSummary.toolCalls;
-  const toolsPerTurn = session.traceSummary.modelTurns > 0 ? toolCalls / session.traceSummary.modelTurns : 0;
+  const toolsPerTurn =
+    session.traceSummary.modelTurns > 0 ? toolCalls / session.traceSummary.modelTurns : 0;
   const mixedModelCount = modelRows.length;
 
   return [
@@ -410,7 +432,8 @@ function explainCostDrivers(session: CopilotSession, modelRows: ModelCostRow[], 
     },
     {
       title: 'Model mix',
-      value: mixedModelCount === 1 ? topModel?.model ?? session.model : `${mixedModelCount} models`,
+      value:
+        mixedModelCount === 1 ? (topModel?.model ?? session.model) : `${mixedModelCount} models`,
       detail: topModel
         ? `${topModel.model} contributes about ${topModelShare.toFixed(0)}% of usage using the ${topModel.pricingModel} price row.`
         : 'No model breakdown is available for this session.',
@@ -448,7 +471,8 @@ function modelCallRows(
     const userRequest = userRequestBeforeModelCall(event, events, previousModelEventIndex);
     const modelLimit = modelLimitForEvent(event, modelLimits);
     const cumulativeKey = modelLimitKey(modelLimit, event);
-    const cumulativeRawInputTokens = (cumulativeRawInputByModel.get(cumulativeKey) ?? 0) + event.inputTokens;
+    const cumulativeRawInputTokens =
+      (cumulativeRawInputByModel.get(cumulativeKey) ?? 0) + event.inputTokens;
     cumulativeRawInputByModel.set(cumulativeKey, cumulativeRawInputTokens);
     const promptLimitTokens = positiveNumber(modelLimit?.promptLimitTokens);
     const contextWindowTokens = positiveNumber(modelLimit?.contextWindowTokens);
@@ -468,7 +492,8 @@ function modelCallRows(
       promptLimitShare: promptLimitTokens ? event.inputTokens / promptLimitTokens : null,
       contextWindowShare: contextWindowTokens ? event.inputTokens / contextWindowTokens : null,
       cumulativeRawInputTokens,
-      repeatedInputFactorAtCall: event.inputTokens > 0 ? cumulativeRawInputTokens / event.inputTokens : 0,
+      repeatedInputFactorAtCall:
+        event.inputTokens > 0 ? cumulativeRawInputTokens / event.inputTokens : 0,
     };
   });
 
@@ -478,7 +503,8 @@ function modelCallRows(
 }
 
 export function isSetupEvent(event: TraceEvent): boolean {
-  const category = event.attributes?.find((field) => field.label === 'category')?.value.toLowerCase() ?? '';
+  const category =
+    event.attributes?.find((field) => field.label === 'category')?.value.toLowerCase() ?? '';
   const name = event.name.toLowerCase();
   const detail = event.detail.toLowerCase();
 
@@ -508,7 +534,10 @@ function userRequestBeforeModelCall(
   );
 }
 
-function modelLimitForEvent(event: TraceEvent, modelLimits: ModelLimitSummary[]): ModelLimitSummary | null {
+function modelLimitForEvent(
+  event: TraceEvent,
+  modelLimits: ModelLimitSummary[],
+): ModelLimitSummary | null {
   if (!modelLimits.length) {
     return null;
   }
@@ -521,8 +550,13 @@ function modelLimitForEvent(event: TraceEvent, modelLimits: ModelLimitSummary[])
 
   return (
     modelLimits.find((limit) => {
-      const candidates = [limit.model, limit.modelId, ...limit.rawModels].map((name) => modelKey(name)).filter(Boolean);
-      return candidates.some((candidate) => candidate === rawKey || rawKey.includes(candidate) || candidate.includes(rawKey));
+      const candidates = [limit.model, limit.modelId, ...limit.rawModels]
+        .map((name) => modelKey(name))
+        .filter(Boolean);
+      return candidates.some(
+        (candidate) =>
+          candidate === rawKey || rawKey.includes(candidate) || candidate.includes(rawKey),
+      );
     }) ?? (modelLimits.length === 1 ? modelLimits[0] : null)
   );
 }
@@ -547,19 +581,28 @@ function pricedModelCallEvents(events: TraceEvent[], modelBreakdown: ModelBreakd
     .filter((event) => event.inputTokens || event.outputTokens)
     .map((event) => {
       const pricingModel = pricingModelForEvent(event, modelBreakdown);
-      const price = priceForPricingModel(pricingModel);
       const normalInputTokens = normalInputTokensForEvent(event);
+      const price = priceForTokens(pricingModel, {
+        input: normalInputTokens,
+        cachedInput: event.cachedInputTokens ?? 0,
+      });
       const inputUsd = tokenCostUsd(normalInputTokens, price.input);
       const cachedInputUsd = tokenCostUsd(event.cachedInputTokens ?? 0, price.cachedInput);
       const cacheWriteUsd = tokenCostUsd(event.cacheWriteTokens ?? 0, price.cacheWrite ?? 0);
       const outputUsd = tokenCostUsd(event.outputTokens, price.output);
-      const estimatedUsd = traceEventUsageUsd(event) ?? event.estimatedCost?.usd ?? inputUsd + cachedInputUsd + cacheWriteUsd + outputUsd;
+      const estimatedUsd =
+        traceEventUsageUsd(event) ??
+        event.estimatedCost?.usd ??
+        inputUsd + cachedInputUsd + cacheWriteUsd + outputUsd;
 
       return {
         ...event,
         totalTokens: eventTotalTokens(event),
         pricingModel,
-        usesFallbackPrice: modelUsesPricingFallback(event.model || modelFromEventDetail(event.detail), pricingModel),
+        usesFallbackPrice: modelUsesPricingFallback(
+          event.model || modelFromEventDetail(event.detail),
+          pricingModel,
+        ),
         inputUsd,
         cachedInputUsd,
         cacheWriteUsd,
@@ -570,7 +613,9 @@ function pricedModelCallEvents(events: TraceEvent[], modelBreakdown: ModelBreakd
 }
 
 function eventTotalTokens(event: TraceEvent): number {
-  return event.totalTokens ?? event.inputTokens + event.outputTokens + (event.cacheWriteTokens ?? 0);
+  return (
+    event.totalTokens ?? event.inputTokens + event.outputTokens + (event.cacheWriteTokens ?? 0)
+  );
 }
 
 function normalInputTokensForEvent(event: TraceEvent): number {
@@ -587,7 +632,15 @@ function isFlowEvent(event: TraceEvent): boolean {
 }
 
 function toolLikeEventNames(): string[] {
-  return ['read_file', 'list_dir', 'grep_search', 'semantic_search', 'fetch_webpage', 'apply_patch', 'run_in_terminal'];
+  return [
+    'read_file',
+    'list_dir',
+    'grep_search',
+    'semantic_search',
+    'fetch_webpage',
+    'apply_patch',
+    'run_in_terminal',
+  ];
 }
 
 function pricingModelForEvent(event: TraceEvent, modelBreakdown: ModelBreakdown[]): string {
@@ -604,7 +657,10 @@ function tokenCostUsd(tokens: number, usdPerMillion: number): number {
   return (tokens / 1_000_000) * usdPerMillion;
 }
 
-function nearbyContextForEvent(event: TraceEvent, events: TraceEvent[]): { label: string; detail: string } {
+function nearbyContextForEvent(
+  event: TraceEvent,
+  events: TraceEvent[],
+): { label: string; detail: string } {
   const prior = [...events]
     .reverse()
     .find(
@@ -641,7 +697,9 @@ function readableEventType(type: string): string {
 }
 
 function compactText(value: string, maxLength = 180): string {
-  const text = String(value ?? '').replace(/\s+/g, ' ').trim();
+  const text = String(value ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
 
   return text.length > maxLength ? `${text.slice(0, maxLength - 1)}...` : text;
 }
@@ -685,7 +743,7 @@ function matchPricingModel(rawModel: string): string | null {
   }
 
   const pricingModel = pricingModelForModel(rawModel);
-  return modelKey(pricingModel) === rawKey || rawKey.includes(modelKey(pricingModel)) ? pricingModel : null;
+  return modelKey(pricingModel) === rawKey || rawKey.includes(modelKey(pricingModel))
+    ? pricingModel
+    : null;
 }
-
-

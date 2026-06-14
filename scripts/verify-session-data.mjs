@@ -1,13 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { costUsdForTokens, normalizeModel } from './pricing-utils.mjs';
+import { costBreakdownUsdForTokens, costUsdForTokens, normalizeModel } from './pricing-utils.mjs';
 
 const file = resolve(process.argv[2] ?? 'public/data/sessions.json');
 const sessionData = JSON.parse(readFileSync(file, 'utf8'));
 const errors = [];
 const warnings = [];
 const ids = new Set();
-const pricingData = JSON.parse(readFileSync(new URL('../data/github-copilot-pricing.json', import.meta.url), 'utf8'));
+const pricingData = JSON.parse(
+  readFileSync(new URL('../data/github-copilot-pricing.json', import.meta.url), 'utf8'),
+);
 const pricing = pricingData.models;
 const fallbackPricingModel = pricingData.fallbackModel;
 
@@ -21,6 +23,10 @@ function warn(message) {
 
 function expectedCostUsd(model, tokens) {
   return costUsdForTokens(model, tokens, pricing, fallbackPricingModel);
+}
+
+function expectedCostBreakdownUsd(model, tokens) {
+  return costBreakdownUsdForTokens(model, tokens, pricing, fallbackPricingModel);
 }
 
 function emptyCacheTokenAudit() {
@@ -90,13 +96,17 @@ function compareSourceUsage(actual, expected, label) {
 
   for (const field of ['nanoAiu', 'modelCalls']) {
     if (Number(actual[field] ?? NaN) !== Number(expected[field] ?? NaN)) {
-      fail(`${label} sourceUsage.${field}=${actual[field] ?? 'missing'} does not match expected ${expected[field]}`);
+      fail(
+        `${label} sourceUsage.${field}=${actual[field] ?? 'missing'} does not match expected ${expected[field]}`,
+      );
     }
   }
 
   for (const field of ['credits', 'usd']) {
     if (Math.abs(Number(actual[field] ?? NaN) - Number(expected[field] ?? NaN)) > 0.000000001) {
-      fail(`${label} sourceUsage.${field}=${actual[field] ?? 'missing'} does not match expected ${expected[field]}`);
+      fail(
+        `${label} sourceUsage.${field}=${actual[field] ?? 'missing'} does not match expected ${expected[field]}`,
+      );
     }
   }
 }
@@ -115,7 +125,10 @@ function mergeCacheTokenAudits(audits) {
     ]) {
       total[field] += Number(audit?.[field] ?? 0);
     }
-    total.maxCachedInputShare = Math.max(total.maxCachedInputShare, Number(audit?.maxCachedInputShare ?? 0));
+    total.maxCachedInputShare = Math.max(
+      total.maxCachedInputShare,
+      Number(audit?.maxCachedInputShare ?? 0),
+    );
     return total;
   }, emptyCacheTokenAudit());
 }
@@ -137,11 +150,15 @@ function compareCacheTokenAudit(actual, expected, label) {
     'outputTokens',
   ]) {
     if (Number(actual[field] ?? NaN) !== Number(expected[field] ?? NaN)) {
-      fail(`${label} cacheTokenAudit.${field}=${actual[field] ?? 'missing'} does not match expected ${expected[field]}`);
+      fail(
+        `${label} cacheTokenAudit.${field}=${actual[field] ?? 'missing'} does not match expected ${expected[field]}`,
+      );
     }
   }
 
-  if (Math.abs(Number(actual.maxCachedInputShare ?? NaN) - expected.maxCachedInputShare) > 0.000000001) {
+  if (
+    Math.abs(Number(actual.maxCachedInputShare ?? NaN) - expected.maxCachedInputShare) > 0.000000001
+  ) {
     fail(
       `${label} cacheTokenAudit.maxCachedInputShare=${actual.maxCachedInputShare ?? 'missing'} does not match expected ${expected.maxCachedInputShare}`,
     );
@@ -204,11 +221,15 @@ for (const session of sessionData.sessions ?? []) {
       }
     }
     if (Number(event.cachedInputTokens ?? 0) > Number(event.inputTokens ?? 0)) {
-      fail(`${session.id} traceEvents.${event.index ?? 'unknown'} has cachedInputTokens greater than inputTokens`);
+      fail(
+        `${session.id} traceEvents.${event.index ?? 'unknown'} has cachedInputTokens greater than inputTokens`,
+      );
     }
 
     const tokenTotal =
-      Number(event.inputTokens ?? 0) + Number(event.outputTokens ?? 0) + Number(event.cacheWriteTokens ?? 0);
+      Number(event.inputTokens ?? 0) +
+      Number(event.outputTokens ?? 0) +
+      Number(event.cacheWriteTokens ?? 0);
     if (tokenTotal > 0) {
       if (!event.model || !event.pricingModel) {
         fail(`${session.id} traceEvents.${event.index ?? 'unknown'} missing model/pricingModel`);
@@ -216,24 +237,42 @@ for (const session of sessionData.sessions ?? []) {
       if (!Number.isFinite(event.totalTokens) || event.totalTokens !== tokenTotal) {
         fail(`${session.id} traceEvents.${event.index ?? 'unknown'} has invalid totalTokens`);
       }
-      const expectedEventUsd = expectedCostUsd(event.pricingModel, {
+      const expectedEventCost = expectedCostBreakdownUsd(event.pricingModel, {
         input: Math.max(0, Number(event.inputTokens ?? 0) - Number(event.cachedInputTokens ?? 0)),
         cachedInput: Number(event.cachedInputTokens ?? 0),
         cacheWrite: Number(event.cacheWriteTokens ?? 0),
         output: event.outputTokens,
       });
+      const expectedEventUsd = expectedEventCost.total;
       if (Math.abs(expectedEventUsd - Number(event.estimatedCost?.usd)) > 0.000000001) {
-        fail(`${session.id} traceEvents.${event.index ?? 'unknown'} estimatedCost.usd does not match token pricing`);
+        fail(
+          `${session.id} traceEvents.${event.index ?? 'unknown'} estimatedCost.usd does not match token pricing`,
+        );
       }
-      if (Math.abs(expectedEventUsd * Number(sessionData.usdToEur) - Number(event.estimatedCost?.eur)) > 0.000000001) {
-        fail(`${session.id} traceEvents.${event.index ?? 'unknown'} estimatedCost.eur does not match token pricing and usdToEur`);
+      if (
+        Math.abs(
+          expectedEventUsd * Number(sessionData.usdToEur) - Number(event.estimatedCost?.eur),
+        ) > 0.000000001
+      ) {
+        fail(
+          `${session.id} traceEvents.${event.index ?? 'unknown'} estimatedCost.eur does not match token pricing and usdToEur`,
+        );
+      }
+      if (event.pricingTier !== expectedEventCost.tier) {
+        fail(
+          `${session.id} traceEvents.${event.index ?? 'unknown'} pricingTier does not match request size`,
+        );
       }
       if (event.sourceUsage) {
         if (Number(event.sourceUsage.nanoAiu ?? 0) <= 0) {
-          fail(`${session.id} traceEvents.${event.index ?? 'unknown'} sourceUsage.nanoAiu must be positive`);
+          fail(
+            `${session.id} traceEvents.${event.index ?? 'unknown'} sourceUsage.nanoAiu must be positive`,
+          );
         }
         if (Math.abs(Number(event.sourceUsage.usd ?? NaN) - expectedEventUsd) > 0.000000001) {
-          fail(`${session.id} traceEvents.${event.index ?? 'unknown'} sourceUsage.usd does not match token pricing`);
+          fail(
+            `${session.id} traceEvents.${event.index ?? 'unknown'} sourceUsage.usd does not match token pricing`,
+          );
         }
       }
     }
@@ -241,7 +280,11 @@ for (const session of sessionData.sessions ?? []) {
 
   const expectedCacheTokenAudit = auditFromTraceEvents(session.traceEvents);
   compareCacheTokenAudit(session.cacheTokenAudit, expectedCacheTokenAudit, session.id);
-  compareSourceUsage(session.sourceUsage, sourceUsageFromTraceEvents(session.traceEvents), session.id);
+  compareSourceUsage(
+    session.sourceUsage,
+    sourceUsageFromTraceEvents(session.traceEvents),
+    session.id,
+  );
 
   if (session.vscodeState) {
     if (!session.vscodeState.sourcePath) {
@@ -283,13 +326,23 @@ for (const session of sessionData.sessions ?? []) {
     }
   }
 
-  const hasBillableSignal = (tokens.input ?? 0) + (tokens.cachedInput ?? 0) + (tokens.cacheWrite ?? 0) + (tokens.output ?? 0) > 0;
+  const hasBillableSignal =
+    (tokens.input ?? 0) +
+      (tokens.cachedInput ?? 0) +
+      (tokens.cacheWrite ?? 0) +
+      (tokens.output ?? 0) >
+    0;
   const hasConversationSignal = Array.isArray(session.turns) && session.turns.length > 0;
   if (!hasBillableSignal && !hasConversationSignal) {
-    fail(`${session.id} has neither token totals nor turns; this should have been skipped by ingestion`);
+    fail(
+      `${session.id} has neither token totals nor turns; this should have been skipped by ingestion`,
+    );
   }
 
-  if (session.sourceKind === 'vscode-copilot-debug-log' && session.tokenSource !== 'llm_request_token_totals') {
+  if (
+    session.sourceKind === 'vscode-copilot-debug-log' &&
+    session.tokenSource !== 'llm_request_token_totals'
+  ) {
     warn(`${session.id} debug log does not use llm_request totals`);
   }
 
@@ -314,15 +367,36 @@ for (const session of sessionData.sessions ?? []) {
     }
     for (const field of ['input', 'cachedInput', 'cacheWrite', 'output']) {
       if (!Number.isFinite(entry.tokens?.[field]) || entry.tokens[field] < 0) {
-        fail(`${session.id} modelBreakdown.${entry.model ?? 'unknown'} has invalid token field ${field}`);
+        fail(
+          `${session.id} modelBreakdown.${entry.model ?? 'unknown'} has invalid token field ${field}`,
+        );
       }
     }
-    const normalizedRawModels = new Set(entry.rawModels.map((model) => normalizeModel(model, pricing)));
+    const normalizedRawModels = new Set(
+      entry.rawModels.map((model) => normalizeModel(model, pricing)),
+    );
     if (!normalizedRawModels.has(entry.model) && entry.model !== 'Unknown model') {
       fail(`${session.id} modelBreakdown.${entry.model} does not match raw model ids`);
     }
     const pricingModel = entry.pricingModel ?? entry.model;
-    const entryExpectedUsd = expectedCostUsd(pricingModel, entry.tokens ?? {});
+    let entryExpectedUsd;
+    if (entry.costBreakdown) {
+      for (const field of ['inputUsd', 'cachedInputUsd', 'cacheWriteUsd', 'outputUsd']) {
+        if (!Number.isFinite(entry.costBreakdown[field]) || entry.costBreakdown[field] < 0) {
+          fail(`${session.id} modelBreakdown.${entry.model} has invalid costBreakdown.${field}`);
+        }
+      }
+      entryExpectedUsd =
+        Number(entry.costBreakdown.inputUsd) +
+        Number(entry.costBreakdown.cachedInputUsd) +
+        Number(entry.costBreakdown.cacheWriteUsd) +
+        Number(entry.costBreakdown.outputUsd);
+      if (!Array.isArray(entry.pricingTiers) || !entry.pricingTiers.length) {
+        fail(`${session.id} modelBreakdown.${entry.model} missing pricingTiers`);
+      }
+    } else {
+      entryExpectedUsd = expectedCostUsd(pricingModel, entry.tokens ?? {});
+    }
     modelBreakdownUsd += entryExpectedUsd;
     if (Math.abs(entryExpectedUsd - Number(entry.cost?.usd)) > 0.000000001) {
       fail(`${session.id} modelBreakdown.${entry.model} cost.usd does not match token pricing`);
@@ -343,7 +417,9 @@ for (const session of sessionData.sessions ?? []) {
 
 const importedSessions = sessionData.ingestion?.importedSessions;
 if (Number.isFinite(importedSessions) && importedSessions !== (sessionData.sessions?.length ?? 0)) {
-  fail(`ingestion.importedSessions=${importedSessions} does not match sessions.length=${sessionData.sessions?.length ?? 0}`);
+  fail(
+    `ingestion.importedSessions=${importedSessions} does not match sessions.length=${sessionData.sessions?.length ?? 0}`,
+  );
 }
 
 for (const field of ['scannedStateDbs', 'enrichedFromStateDbs']) {
@@ -390,7 +466,9 @@ if (errors.length) {
 }
 
 const cacheTokenAudit = sessionData.ingestion?.cacheTokenAudit ?? emptyCacheTokenAudit();
-console.log(`Session data verification passed: ${sessionData.sessions?.length ?? 0} sessions in ${file}`);
+console.log(
+  `Session data verification passed: ${sessionData.sessions?.length ?? 0} sessions in ${file}`,
+);
 console.log(
   `Cache split audit: ${cacheTokenAudit.callsWithCachedTokens}/${cacheTokenAudit.modelCalls} model calls include cachedTokens; ${cacheTokenAudit.invalidCachedTokenSplits} invalid cached/input splits; ${Number(cacheTokenAudit.normalInputTokens ?? 0).toLocaleString()} normal input + ${Number(cacheTokenAudit.cachedInputTokens ?? 0).toLocaleString()} cached input from ${Number(cacheTokenAudit.rawInputTokens ?? 0).toLocaleString()} raw inputTokens.`,
 );

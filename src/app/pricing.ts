@@ -2,7 +2,7 @@ import { TokenBreakdown } from './session-data.model';
 import pricingData from '../../data/github-copilot-pricing.json';
 
 export interface ModelPrice {
-  provider: 'OpenAI' | 'Anthropic' | 'Google' | 'xAI' | 'Fine-tuned (GitHub)';
+  provider: 'OpenAI' | 'Anthropic' | 'Google' | 'Microsoft' | 'Fine-tuned (GitHub)';
   category: 'Lightweight' | 'Versatile' | 'Powerful';
   releaseStatus: 'GA' | 'Public preview';
   input: number;
@@ -10,6 +10,20 @@ export interface ModelPrice {
   cacheWrite?: number;
   output: number;
   note?: string;
+  tierLabel?: string;
+  tierThresholdLabel?: string;
+  tiers?: ModelPriceTier[];
+}
+
+export interface ModelPriceTier {
+  id: string;
+  label: string;
+  thresholdInputTokensExclusive: number;
+  thresholdLabel: string;
+  input: number;
+  cachedInput: number;
+  cacheWrite?: number;
+  output: number;
 }
 
 export type CopilotAllowancePlan =
@@ -30,7 +44,7 @@ export interface CopilotAllowance {
 export const PRICING_VERSION = pricingData.version;
 export const PRICING_SOURCE_URL = pricingData.sourceUrl;
 export const PRICING_SOURCE_LABEL = pricingData.sourceLabel;
-export const PRICING_EFFECTIVE_DATE = pricingData.effectiveDate;
+export const PRICING_SNAPSHOT_DATE = pricingData.snapshotDate;
 export const PRICING_IMPORTED_AT = pricingData.importedAt;
 export const FALLBACK_PRICING_MODEL = pricingData.fallbackModel;
 export const COPILOT_AI_CREDIT_USD = 0.01;
@@ -84,7 +98,9 @@ export function modelKey(model: string | null | undefined): string {
 }
 
 export function normalizeModel(model: string | null | undefined): string {
-  const raw = String(model ?? '').replace(/^copilot\//i, '').trim();
+  const raw = String(model ?? '')
+    .replace(/^copilot\//i, '')
+    .trim();
   const key = modelKey(raw);
   const knownModels = Object.keys(MODEL_PRICES_USD_PER_MILLION);
 
@@ -102,7 +118,23 @@ export function pricingModelForModel(model: string | null | undefined): string {
 }
 
 export function priceForPricingModel(pricingModel: string | null | undefined): ModelPrice {
-  return MODEL_PRICES_USD_PER_MILLION[pricingModel || ''] ?? MODEL_PRICES_USD_PER_MILLION[FALLBACK_PRICING_MODEL];
+  return (
+    MODEL_PRICES_USD_PER_MILLION[pricingModel || ''] ??
+    MODEL_PRICES_USD_PER_MILLION[FALLBACK_PRICING_MODEL]
+  );
+}
+
+export function priceForTokens(
+  pricingModel: string | null | undefined,
+  tokens: Pick<TokenBreakdown, 'input' | 'cachedInput'>,
+): ModelPrice & Partial<ModelPriceTier> {
+  const basePrice = priceForPricingModel(pricingModel);
+  const rawInputTokens = Math.max(0, tokens.input) + Math.max(0, tokens.cachedInput);
+  const tier = [...(basePrice.tiers ?? [])]
+    .sort((a, b) => b.thresholdInputTokensExclusive - a.thresholdInputTokensExclusive)
+    .find((candidate) => rawInputTokens > candidate.thresholdInputTokensExclusive);
+
+  return tier ? { ...basePrice, ...tier, tiers: basePrice.tiers } : basePrice;
 }
 
 export function modelUsesPricingFallback(
@@ -115,7 +147,10 @@ export function modelUsesPricingFallback(
   return priceRow !== normalized || !MODEL_PRICES_USD_PER_MILLION[normalized];
 }
 
-export function pricingFallbackReason(model: string | null | undefined, pricingModel: string | null | undefined): string {
+export function pricingFallbackReason(
+  model: string | null | undefined,
+  pricingModel: string | null | undefined,
+): string {
   const normalized = normalizeModel(model);
   const priceRow = pricingModel || pricingModelForModel(normalized);
 
@@ -127,7 +162,7 @@ export function pricingFallbackReason(model: string | null | undefined, pricingM
 }
 
 export function estimateCostUsd(model: string, tokens: TokenBreakdown): number {
-  const price = priceForPricingModel(model);
+  const price = priceForTokens(model, tokens);
 
   return (
     (tokens.input / 1_000_000) * price.input +
@@ -136,5 +171,3 @@ export function estimateCostUsd(model: string, tokens: TokenBreakdown): number {
     (tokens.output / 1_000_000) * price.output
   );
 }
-
-

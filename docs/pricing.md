@@ -1,6 +1,6 @@
 # Pricing
 
-This app is a local cost debugger. It uses GitHub's published Copilot usage-based model pricing to explain why a local Copilot run looks expensive, but it is not a GitHub invoice.
+This app is a local usage inspector. It uses GitHub's published Copilot usage-based model pricing to explain why a local Copilot run looks expensive, but it is not a GitHub invoice.
 
 Primary source:
 
@@ -17,10 +17,10 @@ https://docs.github.com/en/copilot/concepts/billing/usage-based-billing-for-orga
 Current version:
 
 ```text
-github-copilot-usage-pricing-2026-06-01
+github-copilot-usage-pricing-2026-06-14
 ```
 
-The source table says prices are per 1 million tokens and take effect on June 1, 2026.
+The source table says prices are per 1 million tokens. The committed snapshot was checked against GitHub Docs on June 14, 2026.
 
 ## Where Pricing Lives
 
@@ -66,6 +66,25 @@ ai_credits = cost_usd / 0.01
 
 GitHub documents `1 AI credit = $0.01 USD`.
 
+### Long-context tiers
+
+GitHub publishes a second rate tier for GPT-5.4 and GPT-5.5 requests over 272K input tokens, and for Gemini 3.1 Pro requests over 200K input tokens.
+
+The app evaluates that threshold independently for every model call:
+
+```text
+request_input_tokens = normal_input_tokens + cached_input_tokens
+```
+
+This reconstructs the raw request input represented by VS Code's `inputTokens` field. A request exactly at the threshold remains on the default row; only a request above it uses the long-context row. The app never applies a long-context price merely because many smaller calls add up to a large session.
+
+Each model summary therefore stores:
+
+- the pricing tiers encountered across its calls
+- normal-input, cached-input, cache-write, and output cost totals summed from those individually priced calls
+
+When a model used more than one tier, the Cost view says `Per-call tiered rates` rather than showing one misleading rate for the whole run.
+
 ## GitHub Source Usage
 
 Newer VS Code Copilot Agent Debug Logs can expose `llm_request.attrs.copilotUsageNanoAiu`.
@@ -90,17 +109,17 @@ The app also shows license allowance context for Copilot Business and Copilot En
 
 Standard included amounts:
 
-| Plan | AI credits per user per month |
-| --- | ---: |
-| Copilot Business | 1,900 |
-| Copilot Enterprise | 3,900 |
+| Plan               | AI credits per user per month |
+| ------------------ | ----------------------------: |
+| Copilot Business   |                         1,900 |
+| Copilot Enterprise |                         3,900 |
 
 Temporary promotional amounts documented by GitHub for existing customers from June 1 to September 1, 2026:
 
-| Plan | AI credits per user per month |
-| --- | ---: |
-| Copilot Business | 3,000 |
-| Copilot Enterprise | 7,000 |
+| Plan               | AI credits per user per month |
+| ------------------ | ----------------------------: |
+| Copilot Business   |                         3,000 |
+| Copilot Enterprise |                         7,000 |
 
 The UI treats these as allowance context, not as billing reconciliation. GitHub pools Business and Enterprise included credits at the billing entity level, so a run's percent-of-allowance is a per-seat mental model unless the app later adds organization seat counts.
 
@@ -167,7 +186,7 @@ The scanner imports input, output, and cached-input token totals from VS Code Ag
 
 GitHub's Copilot pricing docs describe three token categories for usage-based billing: input tokens, output tokens, and cached tokens. The same page defines input as what is sent to the model, output as what the model generates, and cached tokens as context the model reuses or stores.
 
-The GitHub Copilot model pricing table is also bucketed by rate. For OpenAI, Google, xAI, and GitHub fine-tuned models, the table has separate `Input`, `Cached input`, and `Output` columns. For Anthropic models, GitHub documents an additional `Cache write` column.
+The GitHub Copilot model pricing table is also bucketed by rate. For OpenAI, Google, Microsoft, and GitHub fine-tuned models, the table has separate `Input`, `Cached input`, and `Output` columns. For Anthropic models, GitHub documents an additional `Cache write` column.
 
 Those docs support this pricing shape:
 
@@ -237,3 +256,4 @@ That means:
 - Unknown model ids are preserved for display and priced with a visible fallback until the pricing table is updated.
 - Request payload sizes are optimization evidence, not exact cost allocation. The app can show that a tools file was large or that MCP tools were present, but it should not say "this MCP server cost $X" unless source logs expose section-level token totals.
 - The pricing table should be rechecked against GitHub Docs whenever GitHub changes model availability or usage-based rates.
+- Pricing is intentionally a versioned, committed snapshot rather than a runtime web fetch. This keeps scans reproducible and prevents an unavailable or changed web page from silently altering local historical calculations.

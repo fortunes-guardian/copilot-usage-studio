@@ -24,7 +24,9 @@ describe('PricingPageComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('75 credits');
     expect(fixture.nativeElement.textContent).toContain('2 of 2 sessions');
 
-    const usageWindowSelect = fixture.nativeElement.querySelectorAll('select')[1] as HTMLSelectElement;
+    const usageWindowSelect = fixture.nativeElement.querySelectorAll(
+      'select',
+    )[1] as HTMLSelectElement;
     usageWindowSelect.value = '7d';
     usageWindowSelect.dispatchEvent(new Event('change'));
     fixture.detectChanges();
@@ -40,6 +42,12 @@ describe('PricingPageComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('Fallback row');
+
+    const longContextRow = [...fixture.nativeElement.querySelectorAll('.pricing-row')].find(
+      (row: Element) =>
+        row.textContent?.includes('GPT-5.4') && row.textContent?.includes('Long context'),
+    );
+    expect(longContextRow?.textContent).toContain('Not yet');
   });
 });
 

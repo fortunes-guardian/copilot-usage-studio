@@ -9,6 +9,7 @@ import {
   eventModelCostFields,
   llmTokenFields,
   mergeCacheTokenAudits,
+  modelBreakdownFromLlmRequests,
   sessionFromChatSnapshot,
   sessionFromDebugLog,
 } from './scan-vscode-sessions.mjs';
@@ -67,6 +68,25 @@ test('prices scanner model fields from the four priced buckets', () => {
   assert.equal(modelCost.estimatedCost.usd, 83.85);
 });
 
+test('records the request pricing tier and does not tier aggregated session tokens', () => {
+  const longContextFields = llmTokenFields({
+    attrs: { inputTokens: 300_000, cachedTokens: 100_000, outputTokens: 1_000 },
+  });
+  const longContextCost = eventModelCostFields('gpt-5.4', longContextFields);
+
+  assert.equal(longContextCost.pricingTier, 'Long context');
+  assert.equal(longContextCost.estimatedCost.usd, 1.0725);
+
+  const breakdown = modelBreakdownFromLlmRequests([
+    { attrs: { model: 'gpt-5.4', inputTokens: 200_000, outputTokens: 0 } },
+    { attrs: { model: 'gpt-5.4', inputTokens: 200_000, outputTokens: 0 } },
+  ])[0];
+
+  assert.deepEqual(breakdown.pricingTiers, ['Default']);
+  assert.equal(breakdown.cost.usd, 1);
+  assert.equal(breakdown.costBreakdown.inputUsd, 1);
+});
+
 test('merges cache token audits without losing max cached share', () => {
   const merged = mergeCacheTokenAudits([
     {
@@ -108,7 +128,9 @@ test('imports exact debug-log token totals from a session fixture', () => {
   try {
     writeFileSync(
       join(sessionDir, 'system_prompt_0.json'),
-      JSON.stringify({ content: JSON.stringify([{ role: 'system', content: 'Follow repo instructions.' }]) }),
+      JSON.stringify({
+        content: JSON.stringify([{ role: 'system', content: 'Follow repo instructions.' }]),
+      }),
       'utf8',
     );
     writeFileSync(
@@ -286,17 +308,22 @@ test('preserves current VS Code Copilot runtime and request-shape metadata', () 
       hasPreviousResponseId: true,
     });
     assert.deepEqual(
-      modelEvent.attributes.filter((field) => ['textVerbosity', 'requestShape'].includes(field.label)),
+      modelEvent.attributes.filter((field) =>
+        ['textVerbosity', 'requestShape'].includes(field.label),
+      ),
       [
         { label: 'textVerbosity', value: 'low' },
         {
           label: 'requestShape',
-          value: 'api: responses · 1 input item · types: function_call_output · continues previous response',
+          value:
+            'api: responses · 1 input item · types: function_call_output · continues previous response',
         },
       ],
     );
     assert.deepEqual(
-      session.traceEvents[3].attributes.filter((field) => ['category', 'source'].includes(field.label)),
+      session.traceEvents[3].attributes.filter((field) =>
+        ['category', 'source'].includes(field.label),
+      ),
       [
         { label: 'category', value: 'customization' },
         { label: 'source', value: 'core' },
@@ -349,7 +376,12 @@ test('imports mixed-model debug-log sessions without flattening model rows', () 
         attrs: { model: 'gpt-5.4', inputTokens: 10_000, outputTokens: 500 },
       }),
       event(3, 'llm_request', 'panel/editAgent', {
-        attrs: { model: 'claude-sonnet-4.6', inputTokens: 12_000, cachedTokens: 2_000, outputTokens: 700 },
+        attrs: {
+          model: 'claude-sonnet-4.6',
+          inputTokens: 12_000,
+          cachedTokens: 2_000,
+          outputTokens: 700,
+        },
       }),
     ]);
 
@@ -432,7 +464,11 @@ function tempWorkspaceFixture(name) {
   const root = mkdtempSync(join(tmpdir(), `copilot-usage-studio-${name}-`));
   const workspaceDir = join(root, 'workspace');
   mkdirSync(workspaceDir, { recursive: true });
-  writeFileSync(join(workspaceDir, 'workspace.json'), JSON.stringify({ folder: 'file:///tmp/example-workspace' }), 'utf8');
+  writeFileSync(
+    join(workspaceDir, 'workspace.json'),
+    JSON.stringify({ folder: 'file:///tmp/example-workspace' }),
+    'utf8',
+  );
 
   return { root, workspaceDir };
 }

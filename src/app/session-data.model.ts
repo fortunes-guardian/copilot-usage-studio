@@ -18,6 +18,13 @@ export interface ModelBreakdown {
   turns: number;
   tokens: TokenBreakdown;
   cost: CostBreakdown;
+  costBreakdown?: {
+    inputUsd: number;
+    cachedInputUsd: number;
+    cacheWriteUsd: number;
+    outputUsd: number;
+  };
+  pricingTiers?: string[];
   pricingModel: string;
 }
 
@@ -107,6 +114,7 @@ export interface TraceEvent {
   model?: string;
   rawModel?: string;
   pricingModel?: string;
+  pricingTier?: string;
   estimatedCost?: CostBreakdown;
   sourceEstimatedCost?: string;
   sourceUsage?: SourceUsage;
@@ -260,5 +268,3 @@ export interface SessionData {
   };
   sessions: CopilotSession[];
 }
-
-

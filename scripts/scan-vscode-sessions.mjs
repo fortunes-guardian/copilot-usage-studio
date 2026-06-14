@@ -3,6 +3,7 @@ import { homedir, platform } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
+  costBreakdownUsdForTokens,
   costUsdForTokens,
   modelKey,
   normalizeModel,
@@ -10,7 +11,9 @@ import {
 } from './pricing-utils.mjs';
 
 const sessionDataSchemaVersion = 1;
-const pricingData = JSON.parse(readFileSync(new URL('../data/github-copilot-pricing.json', import.meta.url), 'utf8'));
+const pricingData = JSON.parse(
+  readFileSync(new URL('../data/github-copilot-pricing.json', import.meta.url), 'utf8'),
+);
 const pricingVersion = pricingData.version;
 const pricingSourceUrl = pricingData.sourceUrl;
 const fallbackPricingModel = pricingData.fallbackModel;
@@ -96,7 +99,9 @@ function readStateValue(db, key) {
 }
 
 function sessionIdFromResource(resource) {
-  const encoded = String(resource ?? '').split('/').pop();
+  const encoded = String(resource ?? '')
+    .split('/')
+    .pop();
   if (!encoded) {
     return '';
   }
@@ -174,7 +179,9 @@ function readWorkspaceState(workspaceDir) {
         lastResponseState: entry.lastResponseState,
         createdAt: timestampFromMillis(entry.timing?.created),
         lastActivityAt: timestampFromMillis(
-          entry.timing?.lastRequestEnded ?? entry.lastMessageDate ?? entry.timing?.lastRequestStarted,
+          entry.timing?.lastRequestEnded ??
+            entry.lastMessageDate ??
+            entry.timing?.lastRequestStarted,
         ),
       });
     }
@@ -258,6 +265,10 @@ function costUsd(model, tokens) {
   return costUsdForTokens(model, tokens, pricing, fallbackPricingModel);
 }
 
+function costBreakdownUsd(model, tokens) {
+  return costBreakdownUsdForTokens(model, tokens, pricing, fallbackPricingModel);
+}
+
 function transcriptAvailability(workspaceDir, sessionId) {
   const sourcePath = join(workspaceDir, 'GitHub.copilot-chat', 'transcripts', `${sessionId}.jsonl`);
 
@@ -292,7 +303,11 @@ function numericAttr(attrs, names) {
 export function llmTokenFields(event) {
   const inputTokens = Number(event.attrs?.inputTokens ?? 0);
   const outputTokens = Number(event.attrs?.outputTokens ?? 0);
-  const rawCachedInputTokens = numericAttr(event.attrs, ['cachedTokens', 'cachedInputTokens', 'cacheReadTokens']);
+  const rawCachedInputTokens = numericAttr(event.attrs, [
+    'cachedTokens',
+    'cachedInputTokens',
+    'cacheReadTokens',
+  ]);
   const cachedInputTokens = Math.min(inputTokens, rawCachedInputTokens);
   const cacheWriteTokens = numericAttr(event.attrs, ['cacheWriteTokens', 'cachedWriteTokens']);
   const billableInputTokens = Math.max(0, inputTokens - cachedInputTokens);
@@ -383,14 +398,18 @@ export function eventModelCostFields(rawModel, tokenFields) {
     cacheWrite: tokenFields.cacheWriteTokens,
     output: tokenFields.outputTokens,
   };
-  const usd = costUsd(pricingModel, tokens);
+  const costBreakdown = costBreakdownUsd(pricingModel, tokens);
 
   return {
     model: normalizedModel,
-    rawModel: String(rawModel ?? '').replace(/^copilot\//i, '').trim() || 'unknown',
+    rawModel:
+      String(rawModel ?? '')
+        .replace(/^copilot\//i, '')
+        .trim() || 'unknown',
     pricingModel,
+    pricingTier: costBreakdown.tier,
     totalTokens: tokenFields.inputTokens + tokenFields.outputTokens + tokenFields.cacheWriteTokens,
-    estimatedCost: { usd, eur: usd * usdToEur },
+    estimatedCost: { usd: costBreakdown.total, eur: costBreakdown.total * usdToEur },
   };
 }
 
@@ -432,12 +451,7 @@ function modelCapabilityIndex(sessionDir) {
   const index = new Map();
 
   for (const model of models) {
-    const keys = [
-      model?.id,
-      model?.name,
-      model?.version,
-      model?.capabilities?.family,
-    ]
+    const keys = [model?.id, model?.name, model?.version, model?.capabilities?.family]
       .filter(Boolean)
       .map(modelKey);
 
@@ -454,7 +468,11 @@ function modelCapabilityIndex(sessionDir) {
 function modelCapabilityFor(rawModel, capabilityIndex) {
   const key = modelKey(rawModel);
 
-  return capabilityIndex.get(key) ?? [...capabilityIndex.entries()].find(([candidate]) => key.includes(candidate))?.[1] ?? null;
+  return (
+    capabilityIndex.get(key) ??
+    [...capabilityIndex.entries()].find(([candidate]) => key.includes(candidate))?.[1] ??
+    null
+  );
 }
 
 function modelLimitSummaries(sessionDir, llmRequests) {
@@ -466,38 +484,48 @@ function modelLimitSummaries(sessionDir, llmRequests) {
   const byModel = new Map();
 
   for (const event of llmRequests) {
-    const rawModel = String(event.attrs?.model ?? '').replace(/^copilot\//i, '').trim();
+    const rawModel = String(event.attrs?.model ?? '')
+      .replace(/^copilot\//i, '')
+      .trim();
     const displayModel = normalizeModel(rawModel, pricing);
     const capability = modelCapabilityFor(rawModel || displayModel, capabilityIndex);
     const limits = capability?.capabilities?.limits ?? {};
     const supports = capability?.capabilities?.supports ?? {};
-    const current =
-      byModel.get(displayModel) ??
-      {
-        model: displayModel,
-        rawModels: new Set(),
-        modelId: capability?.id ?? rawModel,
-        vendor: capability?.vendor ?? '',
-        tokenizer: capability?.capabilities?.tokenizer ?? '',
-        contextWindowTokens: Number(limits.max_context_window_tokens ?? 0) || 0,
-        promptLimitTokens: Number(limits.max_prompt_tokens ?? 0) || 0,
-        outputLimitTokens: Number(limits.max_output_tokens ?? 0) || 0,
-        supportedReasoningEfforts: Array.isArray(supports.reasoning_effort) ? supports.reasoning_effort : [],
-        supportedEndpoints: Array.isArray(capability?.supported_endpoints) ? capability.supported_endpoints : [],
-        modelPickerEnabled: Boolean(capability?.model_picker_enabled),
-        isChatDefault: Boolean(capability?.is_chat_default),
-        isChatFallback: Boolean(capability?.is_chat_fallback),
-        modelCalls: 0,
-        largestRawInputTokens: 0,
-        totalRawInputTokens: 0,
-        largestOutputTokens: 0,
-      };
+    const current = byModel.get(displayModel) ?? {
+      model: displayModel,
+      rawModels: new Set(),
+      modelId: capability?.id ?? rawModel,
+      vendor: capability?.vendor ?? '',
+      tokenizer: capability?.capabilities?.tokenizer ?? '',
+      contextWindowTokens: Number(limits.max_context_window_tokens ?? 0) || 0,
+      promptLimitTokens: Number(limits.max_prompt_tokens ?? 0) || 0,
+      outputLimitTokens: Number(limits.max_output_tokens ?? 0) || 0,
+      supportedReasoningEfforts: Array.isArray(supports.reasoning_effort)
+        ? supports.reasoning_effort
+        : [],
+      supportedEndpoints: Array.isArray(capability?.supported_endpoints)
+        ? capability.supported_endpoints
+        : [],
+      modelPickerEnabled: Boolean(capability?.model_picker_enabled),
+      isChatDefault: Boolean(capability?.is_chat_default),
+      isChatFallback: Boolean(capability?.is_chat_fallback),
+      modelCalls: 0,
+      largestRawInputTokens: 0,
+      totalRawInputTokens: 0,
+      largestOutputTokens: 0,
+    };
 
     current.rawModels.add(rawModel || 'unknown');
     current.modelCalls += 1;
-    current.largestRawInputTokens = Math.max(current.largestRawInputTokens, Number(event.attrs?.inputTokens ?? 0));
+    current.largestRawInputTokens = Math.max(
+      current.largestRawInputTokens,
+      Number(event.attrs?.inputTokens ?? 0),
+    );
     current.totalRawInputTokens += Number(event.attrs?.inputTokens ?? 0);
-    current.largestOutputTokens = Math.max(current.largestOutputTokens, Number(event.attrs?.outputTokens ?? 0));
+    current.largestOutputTokens = Math.max(
+      current.largestOutputTokens,
+      Number(event.attrs?.outputTokens ?? 0),
+    );
     byModel.set(displayModel, current);
   }
 
@@ -505,27 +533,29 @@ function modelLimitSummaries(sessionDir, llmRequests) {
     ...summary,
     rawModels: [...summary.rawModels],
     promptLimitShare:
-      summary.promptLimitTokens > 0 ? summary.largestRawInputTokens / summary.promptLimitTokens : null,
+      summary.promptLimitTokens > 0
+        ? summary.largestRawInputTokens / summary.promptLimitTokens
+        : null,
     contextWindowShare:
-      summary.contextWindowTokens > 0 ? summary.largestRawInputTokens / summary.contextWindowTokens : null,
+      summary.contextWindowTokens > 0
+        ? summary.largestRawInputTokens / summary.contextWindowTokens
+        : null,
     repeatedInputFactor:
-      summary.largestRawInputTokens > 0 ? summary.totalRawInputTokens / summary.largestRawInputTokens : 0,
+      summary.largestRawInputTokens > 0
+        ? summary.totalRawInputTokens / summary.largestRawInputTokens
+        : 0,
   }));
 }
 
 function toolName(tool) {
-  return String(
-    tool?.function?.name ??
-      tool?.name ??
-      tool?.toolName ??
-      tool?.id ??
-      'unknown_tool',
-  );
+  return String(tool?.function?.name ?? tool?.name ?? tool?.toolName ?? tool?.id ?? 'unknown_tool');
 }
 
 function toolSchemaSize(tool) {
   const descriptionChars = charLength(tool?.function?.description ?? tool?.description);
-  const parameterChars = charLength(tool?.function?.parameters ?? tool?.parameters ?? tool?.input_schema);
+  const parameterChars = charLength(
+    tool?.function?.parameters ?? tool?.parameters ?? tool?.input_schema,
+  );
 
   return {
     name: toolName(tool),
@@ -558,7 +588,9 @@ function requestShapeMetadata(event) {
   return {
     api: shape.api ? String(shape.api) : '',
     inputItemCount: Number(shape.inputItemCount ?? 0),
-    inputItemTypes: Array.isArray(shape.inputItemTypes) ? shape.inputItemTypes.filter(Boolean).map(String) : [],
+    inputItemTypes: Array.isArray(shape.inputItemTypes)
+      ? shape.inputItemTypes.filter(Boolean).map(String)
+      : [],
     hasPreviousResponseId: Boolean(shape.hasPreviousResponseId),
   };
 }
@@ -597,7 +629,9 @@ function toolPayloadSummary(toolEvents) {
   const byName = new Map();
 
   for (const event of toolEvents) {
-    const name = String(event.data?.toolName ?? event.attrs?.toolName ?? event.name ?? event.type ?? 'tool');
+    const name = String(
+      event.data?.toolName ?? event.attrs?.toolName ?? event.name ?? event.type ?? 'tool',
+    );
     const current = byName.get(name) ?? { name, calls: 0, argsChars: 0, resultChars: 0 };
     current.calls += 1;
     current.argsChars += charLength(
@@ -620,7 +654,10 @@ function toolPayloadSummary(toolEvents) {
   }
 
   return [...byName.values()]
-    .sort((a, b) => b.resultChars + b.argsChars - (a.resultChars + a.argsChars) || a.name.localeCompare(b.name))
+    .sort(
+      (a, b) =>
+        b.resultChars + b.argsChars - (a.resultChars + a.argsChars) || a.name.localeCompare(b.name),
+    )
     .slice(0, 12);
 }
 
@@ -639,14 +676,22 @@ function requestPayloadSummary(sessionDir, llmRequests, toolEvents) {
     .map((file) => join(sessionDir, file))
     .filter(existsSync)
     .map(parseContentFile);
-  const tools = toolFileSummaries.flatMap((summary) => (Array.isArray(summary.content) ? summary.content : []));
+  const tools = toolFileSummaries.flatMap((summary) =>
+    Array.isArray(summary.content) ? summary.content : [],
+  );
   const toolSchemas = tools.map(toolSchemaSize);
-  const mcpToolNames = toolSchemas.map((tool) => tool.name).filter((name) => name.startsWith('mcp_'));
-  const reasoningEfforts = countedValues(llmRequests.map(reasoningEffort)).map(({ value, count }) => ({
-    effort: value,
-    count,
-  }));
-  const subagentLogCount = listFiles(sessionDir, '.jsonl').filter((file) => basename(file).startsWith('runSubagent-')).length;
+  const mcpToolNames = toolSchemas
+    .map((tool) => tool.name)
+    .filter((name) => name.startsWith('mcp_'));
+  const reasoningEfforts = countedValues(llmRequests.map(reasoningEffort)).map(
+    ({ value, count }) => ({
+      effort: value,
+      count,
+    }),
+  );
+  const subagentLogCount = listFiles(sessionDir, '.jsonl').filter((file) =>
+    basename(file).startsWith('runSubagent-'),
+  ).length;
 
   return {
     systemPromptFiles: systemPrompts.length,
@@ -657,7 +702,8 @@ function requestPayloadSummary(sessionDir, llmRequests, toolEvents) {
     mcpToolCount: mcpToolNames.length,
     mcpToolNames: [...new Set(mcpToolNames)].sort(),
     largestToolSchemas: toolSchemas.sort((a, b) => b.totalChars - a.totalChars).slice(0, 8),
-    modelCallsWithSystemPromptFile: llmRequests.filter((event) => event.attrs?.systemPromptFile).length,
+    modelCallsWithSystemPromptFile: llmRequests.filter((event) => event.attrs?.systemPromptFile)
+      .length,
     modelCallsWithToolsFile: llmRequests.filter((event) => event.attrs?.toolsFile).length,
     reasoningEfforts,
     toolResultCharsByName: toolPayloadSummary(toolEvents),
@@ -699,7 +745,9 @@ function modelCallSetupPayloadFactory(sessionDir) {
     const toolsSummary = contentSummaryFromCache(sessionDir, cache, toolsFile);
     const tools = Array.isArray(toolsSummary?.content) ? toolsSummary.content : [];
     const toolSchemas = tools.map(toolSchemaSize);
-    const mcpToolNames = toolSchemas.map((tool) => tool.name).filter((name) => name.startsWith('mcp_'));
+    const mcpToolNames = toolSchemas
+      .map((tool) => tool.name)
+      .filter((name) => name.startsWith('mcp_'));
 
     return {
       systemPromptFile,
@@ -717,11 +765,15 @@ function modelCallSetupPayloadFactory(sessionDir) {
 function debugEvidence(llmRequests, agentResponses) {
   const inputSeries = llmRequests.map((event) => Number(event.attrs?.inputTokens ?? 0));
   const outputCaps = [
-    ...new Set(llmRequests.map((event) => Number(event.attrs?.maxTokens ?? 0)).filter((value) => value > 0)),
+    ...new Set(
+      llmRequests.map((event) => Number(event.attrs?.maxTokens ?? 0)).filter((value) => value > 0),
+    ),
   ].sort((a, b) => a - b);
   const maxInputTokens = Math.max(0, ...inputSeries);
   const maxRequestTokens = Math.max(0, ...outputCaps);
-  const reasoningEvents = agentResponses.filter((event) => String(event.attrs?.reasoning ?? '').trim()).length;
+  const reasoningEvents = agentResponses.filter((event) =>
+    String(event.attrs?.reasoning ?? '').trim(),
+  ).length;
   const efforts = countedValues(llmRequests.map(reasoningEffort));
   const primaryEffort = efforts[0]?.value ?? '';
 
@@ -730,12 +782,15 @@ function debugEvidence(llmRequests, agentResponses) {
       visible: reasoningEvents > 0 || Boolean(primaryEffort),
       level: primaryEffort,
       events: reasoningEvents,
-      source: primaryEffort ? 'llm_request.attrs.requestOptions.reasoning.effort' : reasoningEvents > 0 ? 'agent_response.attrs.reasoning' : '',
-      help:
-        primaryEffort
-          ? 'VS Code Agent Debug Logs expose the request reasoning effort in llm_request.attrs.requestOptions.reasoning.effort.'
-          : reasoningEvents > 0
-            ? 'VS Code debug logs include reasoning text on agent_response events, but no request reasoning effort was imported.'
+      source: primaryEffort
+        ? 'llm_request.attrs.requestOptions.reasoning.effort'
+        : reasoningEvents > 0
+          ? 'agent_response.attrs.reasoning'
+          : '',
+      help: primaryEffort
+        ? 'VS Code Agent Debug Logs expose the request reasoning effort in llm_request.attrs.requestOptions.reasoning.effort.'
+        : reasoningEvents > 0
+          ? 'VS Code debug logs include reasoning text on agent_response events, but no request reasoning effort was imported.'
           : 'No reasoning text field was present on imported agent_response events.',
     },
     context: {
@@ -743,7 +798,10 @@ function debugEvidence(llmRequests, agentResponses) {
       maxRequestTokens,
       outputCaps,
       requestCapShare: maxRequestTokens > 0 ? maxInputTokens / maxRequestTokens : null,
-      source: maxRequestTokens > 0 ? 'llm_request.attrs.inputTokens and attrs.maxTokens' : 'llm_request.attrs.inputTokens',
+      source:
+        maxRequestTokens > 0
+          ? 'llm_request.attrs.inputTokens and attrs.maxTokens'
+          : 'llm_request.attrs.inputTokens',
       help:
         maxRequestTokens > 0
           ? 'Compares the largest observed input token count with the request maxTokens field present in VS Code debug logs. This is an observed pressure signal, not a provider context-window guarantee.'
@@ -752,7 +810,7 @@ function debugEvidence(llmRequests, agentResponses) {
   };
 }
 
-function modelBreakdownFromLlmRequests(llmRequests) {
+export function modelBreakdownFromLlmRequests(llmRequests) {
   const byModel = new Map();
 
   for (const event of llmRequests) {
@@ -766,6 +824,8 @@ function modelBreakdownFromLlmRequests(llmRequests) {
       turns: 0,
       tokens: { input: 0, cachedInput: 0, cacheWrite: 0, output: 0 },
       cost: { usd: 0, eur: 0 },
+      costBreakdown: { inputUsd: 0, cachedInputUsd: 0, cacheWriteUsd: 0, outputUsd: 0 },
+      pricingTiers: new Set(),
       pricingModel: pricingModelForModel(displayModel, pricing, fallbackPricingModel),
     };
 
@@ -776,14 +836,30 @@ function modelBreakdownFromLlmRequests(llmRequests) {
     current.tokens.cachedInput += tokenFields.cachedInputTokens;
     current.tokens.cacheWrite += tokenFields.cacheWriteTokens;
     current.tokens.output += tokenFields.outputTokens;
+    const callCost = costBreakdownUsd(current.pricingModel, {
+      input: tokenFields.billableInputTokens,
+      cachedInput: tokenFields.cachedInputTokens,
+      cacheWrite: tokenFields.cacheWriteTokens,
+      output: tokenFields.outputTokens,
+    });
+    current.costBreakdown.inputUsd += callCost.input;
+    current.costBreakdown.cachedInputUsd += callCost.cachedInput;
+    current.costBreakdown.cacheWriteUsd += callCost.cacheWrite;
+    current.costBreakdown.outputUsd += callCost.output;
+    current.pricingTiers.add(callCost.tier);
     byModel.set(displayModel, current);
   }
 
   return [...byModel.values()].map((entry) => {
-    const usd = costUsd(entry.pricingModel, entry.tokens);
+    const usd =
+      entry.costBreakdown.inputUsd +
+      entry.costBreakdown.cachedInputUsd +
+      entry.costBreakdown.cacheWriteUsd +
+      entry.costBreakdown.outputUsd;
     return {
       ...entry,
       rawModels: [...entry.rawModels],
+      pricingTiers: [...entry.pricingTiers],
       cost: { usd, eur: usd * usdToEur },
     };
   });
@@ -837,7 +913,9 @@ function eventDetail(event) {
 }
 
 function boundedText(value, maxLength = 260) {
-  const compact = String(value ?? '').replace(/\s+/g, ' ').trim();
+  const compact = String(value ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
   return compact.length > maxLength ? `${compact.slice(0, maxLength - 1)}...` : compact;
 }
 
@@ -948,7 +1026,10 @@ function eventAttributeSummary(event) {
     ['toolName', data.toolName ?? attrs.toolName],
     ['details', attrs.details],
     ['content', attrs.content],
-    ['response', event.type === 'agent_response' ? parseAssistantResponse(attrs.response) : undefined],
+    [
+      'response',
+      event.type === 'agent_response' ? parseAssistantResponse(attrs.response) : undefined,
+    ],
     ['data', data && Object.keys(data).length ? data : undefined],
   ];
 
@@ -1030,13 +1111,19 @@ export function sessionFromDebugLog(sessionDir, workspaceDir) {
     modelBreakdown,
     llmRequests.find((event) => event.attrs?.model)?.attrs?.model,
   );
-  const input = llmRequests.reduce((sum, event) => sum + llmTokenFields(event).billableInputTokens, 0);
-  const cachedInput = llmRequests.reduce((sum, event) => sum + llmTokenFields(event).cachedInputTokens, 0);
-  const cacheWrite = llmRequests.reduce((sum, event) => sum + llmTokenFields(event).cacheWriteTokens, 0);
-  const output = llmRequests.reduce(
-    (sum, event) => sum + llmTokenFields(event).outputTokens,
+  const input = llmRequests.reduce(
+    (sum, event) => sum + llmTokenFields(event).billableInputTokens,
     0,
   );
+  const cachedInput = llmRequests.reduce(
+    (sum, event) => sum + llmTokenFields(event).cachedInputTokens,
+    0,
+  );
+  const cacheWrite = llmRequests.reduce(
+    (sum, event) => sum + llmTokenFields(event).cacheWriteTokens,
+    0,
+  );
+  const output = llmRequests.reduce((sum, event) => sum + llmTokenFields(event).outputTokens, 0);
   const tokens = { input, cachedInput, cacheWrite, output };
   const usd = modelBreakdown.length
     ? modelBreakdown.reduce((sum, entry) => sum + entry.cost.usd, 0)
@@ -1105,7 +1192,9 @@ export function sessionFromDebugLog(sessionDir, workspaceDir) {
     firstPrompt: firstUserMessage.slice(0, 240),
     workspace: workspaceName(workspaceDir),
     sourcePath: sessionDir,
-    ...(debugLogRuntime.logVersion || debugLogRuntime.vscodeVersion || debugLogRuntime.copilotVersion
+    ...(debugLogRuntime.logVersion ||
+    debugLogRuntime.vscodeVersion ||
+    debugLogRuntime.copilotVersion
       ? { debugLogRuntime }
       : {}),
     model,
@@ -1171,7 +1260,8 @@ export function sessionFromDebugLog(sessionDir, workspaceDir) {
           outputTokens: tokenFields.outputTokens,
           ttftMs: event.type === 'llm_request' ? Number(event.attrs?.ttft ?? 0) : 0,
           maxTokens: event.type === 'llm_request' ? Number(event.attrs?.maxTokens ?? 0) : 0,
-          hasReasoning: event.type === 'agent_response' && Boolean(String(event.attrs?.reasoning ?? '').trim()),
+          hasReasoning:
+            event.type === 'agent_response' && Boolean(String(event.attrs?.reasoning ?? '').trim()),
           reasoningEffort: event.type === 'llm_request' ? reasoningEffort(event) : '',
           ...(requestShape ? { requestShape } : {}),
           ...(event.type === 'llm_request'
@@ -1384,12 +1474,14 @@ function enrichSessionFromWorkspaceState(session, stateBySessionId) {
     startedAt: state.createdAt || session.startedAt,
     endedAt: state.lastActivityAt || session.endedAt,
     tags: [
-      ...new Set([
-        ...session.tags,
-        'state-vscdb-enriched',
-        state.hasPendingEdits ? 'pending-edits' : '',
-        state.isExternal ? 'external' : '',
-      ].filter(Boolean)),
+      ...new Set(
+        [
+          ...session.tags,
+          'state-vscdb-enriched',
+          state.hasPendingEdits ? 'pending-edits' : '',
+          state.isExternal ? 'external' : '',
+        ].filter(Boolean),
+      ),
     ],
     vscodeState: {
       sourcePath: state.sourcePath,
@@ -1475,7 +1567,10 @@ export async function scanVsCodeSessions(options = {}) {
   try {
     DatabaseSync = options.sqlite === false ? null : await loadSqliteSupport();
     const workspaceDirs = roots.flatMap((root) => {
-      if (basename(dirname(root)) === 'workspaceStorage' || existsSync(join(root, 'workspace.json'))) {
+      if (
+        basename(dirname(root)) === 'workspaceStorage' ||
+        existsSync(join(root, 'workspace.json'))
+      ) {
         return [root];
       }
       return workspaceDirsFromUserDir(root);

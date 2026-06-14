@@ -6,7 +6,9 @@
       <p class="panel-lede">Usage first. Token buckets explain the shape.</p>
     </div>
     <div class="cost-header-actions">
-      <a class="price-link" [href]="pricingSourceUrl" target="_blank" rel="noreferrer">GitHub price source</a>
+      <a class="price-link" [href]="pricingSourceUrl" target="_blank" rel="noreferrer"
+        >GitHub price source</a
+      >
     </div>
   </div>
 
@@ -20,7 +22,10 @@
       <div>
         <span>Share</span>
         <strong>{{ cost.costAnswer.categoryShare | number: '1.0-0' }}%</strong>
-        <em>{{ cost.costAnswer.inputShare | number: '1.0-0' }}% input / {{ cost.costAnswer.outputShare | number: '1.0-0' }}% output</em>
+        <em
+          >{{ cost.costAnswer.inputShare | number: '1.0-0' }}% input /
+          {{ cost.costAnswer.outputShare | number: '1.0-0' }}% output</em
+        >
       </div>
       <div>
         <span>Top model</span>
@@ -30,7 +35,10 @@
       <div>
         <span>Top call</span>
         <strong>{{ cost.costAnswer.topCallLabel }}</strong>
-        <em>{{ cost.costAnswer.topCallShare | number: '1.0-0' }}% · {{ cost.costAnswer.topCallDetail }}</em>
+        <em
+          >{{ cost.costAnswer.topCallShare | number: '1.0-0' }}% ·
+          {{ cost.costAnswer.topCallDetail }}</em
+        >
       </div>
       <div>
         <span>Cost / 1k tokens</span>
@@ -51,7 +59,10 @@
       >
         <span>
           {{ category.label }}
-          <app-help-popover [text]="category.description" [label]="'Explain ' + category.label"></app-help-popover>
+          <app-help-popover
+            [text]="category.description"
+            [label]="'Explain ' + category.label"
+          ></app-help-popover>
         </span>
         @if (!cost.hasCacheData && isCacheCategory(category)) {
           <strong>Not in local logs</strong>
@@ -70,7 +81,10 @@
   <div class="cost-table" role="table" aria-label="Model price rows">
     <div class="cost-row cost-row-heading" role="row">
       <span>Model</span>
-      <span>Price row <app-help-popover [text]="help.priceRow" label="Explain price row"></app-help-popover></span>
+      <span
+        >Price row
+        <app-help-popover [text]="help.priceRow" label="Explain price row"></app-help-popover
+      ></span>
       <span>
         Tokens
         <app-help-popover
@@ -78,7 +92,10 @@
           label="Explain token columns"
         ></app-help-popover>
       </span>
-      <span>Rates / 1M <app-help-popover [text]="help.appEstimate" label="Explain rates"></app-help-popover></span>
+      <span
+        >Rates / 1M
+        <app-help-popover [text]="help.appEstimate" label="Explain rates"></app-help-popover
+      ></span>
       <span>Cost</span>
       <span>Share</span>
     </div>
@@ -90,24 +107,39 @@
         </strong>
         <span role="cell" data-label="Price row">
           {{ model.pricingModel }}
+          <em>{{ model.pricingTierLabel }}</em>
           @if (model.usesFallbackPrice) {
             <em class="warning-text">fallback</em>
           }
         </span>
         <span role="cell" data-label="Tokens">
-          {{ model.tokens.input | number }} normal in /
-          {{ model.tokens.output | number }} out
+          {{ model.tokens.input | number }} normal in / {{ model.tokens.output | number }} out
           @if (model.tokens.cachedInput || model.tokens.cacheWrite) {
-            <em>{{ model.tokens.cachedInput | number }} cached in / {{ model.tokens.cacheWrite | number }} cache write</em>
+            <em
+              >{{ model.tokens.cachedInput | number }} cached in /
+              {{ model.tokens.cacheWrite | number }} cache write</em
+            >
           }
         </span>
         <span role="cell" data-label="Rates / 1M">
-          ${{ model.inputRate | number: '1.0-3' }} in /
-          ${{ model.outputRate | number: '1.0-3' }} out
-          @if (model.cacheWriteRate) {
-            <em>${{ model.cachedInputRate | number: '1.0-3' }} cached / ${{ model.cacheWriteRate | number: '1.0-3' }} write</em>
+          @if (model.hasMixedPricingTiers) {
+            Per-call tiered rates
+            <em>{{ model.pricingTierLabel }}</em>
           } @else {
-            <em>${{ model.cachedInputRate | number: '1.0-3' }} cached</em>
+            ${{ model.inputRate | number: '1.0-3' }} in / ${{
+              model.outputRate | number: '1.0-3'
+            }}
+            out
+            @if (model.cacheWriteRate) {
+              <em
+                >${{ model.cachedInputRate | number: '1.0-3' }} cached / ${{
+                  model.cacheWriteRate | number: '1.0-3'
+                }}
+                write</em
+              >
+            } @else {
+              <em>${{ model.cachedInputRate | number: '1.0-3' }} cached</em>
+            }
           }
         </span>
         <span role="cell" data-label="Cost">
@@ -156,12 +188,18 @@
             <article>
               <span>System prompt</span>
               <strong>{{ payloadSizeLabel(payload.systemPromptChars) }}</strong>
-              <em>{{ payload.modelCallsWithSystemPromptFile | number }} model calls referenced {{ payload.systemPromptFiles | number }} file(s)</em>
+              <em
+                >{{ payload.modelCallsWithSystemPromptFile | number }} model calls referenced
+                {{ payload.systemPromptFiles | number }} file(s)</em
+              >
             </article>
             <article>
               <span>Tool schemas</span>
               <strong>{{ payloadSizeLabel(payload.toolSchemaChars) }}</strong>
-              <em>{{ payload.toolCount | number }} tools from {{ payload.toolSchemaFiles | number }} file(s)</em>
+              <em
+                >{{ payload.toolCount | number }} tools from
+                {{ payload.toolSchemaFiles | number }} file(s)</em
+              >
             </article>
             <article>
               <span>MCP tools</span>
@@ -211,5 +249,3 @@
     }
   </section>
 </section>
-
-

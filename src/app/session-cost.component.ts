@@ -49,6 +49,8 @@ interface ModelCostViewModel {
   totalUsd: number;
   share: number;
   usesFallbackPrice: boolean;
+  pricingTierLabel: string;
+  hasMixedPricingTiers: boolean;
 }
 
 export interface SessionCostViewModel {
@@ -99,11 +101,11 @@ export class SessionCostComponent {
 
     return Boolean(
       payload.systemPromptChars ||
-        payload.toolSchemaChars ||
-        payload.toolCount ||
-        payload.mcpToolCount ||
-        payload.toolResultCharsByName.length ||
-        payload.reasoningEfforts.length,
+      payload.toolSchemaChars ||
+      payload.toolCount ||
+      payload.mcpToolCount ||
+      payload.toolResultCharsByName.length ||
+      payload.reasoningEfforts.length,
     );
   }
 
@@ -135,9 +137,8 @@ export class SessionCostComponent {
     }
 
     const names = payload.mcpToolNames.slice(0, 3).join(', ');
-    const suffix = payload.mcpToolNames.length > 3 ? `, +${payload.mcpToolNames.length - 3} more` : '';
+    const suffix =
+      payload.mcpToolNames.length > 3 ? `, +${payload.mcpToolNames.length - 3} more` : '';
     return names ? `${names}${suffix}` : 'MCP tools were counted, but names were not available.';
   }
 }
-
-

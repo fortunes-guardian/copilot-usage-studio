@@ -40,7 +40,7 @@ const required = [
   'CHANGELOG.md',
   'bin/copilot-usage-studio.mjs',
   'data/github-copilot-pricing.json',
-  'dist/copilot-usage-studio/browser/favicon.svg',
+  'dist/copilot-usage-studio/browser/usage-studio.svg',
   'dist/copilot-usage-studio/browser/index.html',
   'lib/cli.mjs',
   'lib/local-runtime.mjs',

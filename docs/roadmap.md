@@ -238,6 +238,7 @@ Status: proposed near-term hardening.
 Done:
 
 - Moved GitHub Copilot pricing into one shared JSON file used by the scanner, verifier, and UI.
+- Refreshed the shared GitHub rate-card snapshot on June 14, 2026 and added per-call long-context tiers for GPT-5.4, GPT-5.5, and Gemini 3.1 Pro.
 - Added a visible app data loading/error state for `/data/sessions.json`.
 - Moved generated session-data loading into `SessionDataService`.
 - Added shared UI cost helpers for model-cost rows, token totals, percent deltas, and pricing fallback explanations.

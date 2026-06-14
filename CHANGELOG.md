@@ -2,6 +2,12 @@
 
 All notable changes to Copilot Usage Studio are recorded here.
 
+## Unreleased
+
+- Refresh the committed GitHub Copilot model rate card from the official documentation on June 14, 2026.
+- Apply GPT-5.4, GPT-5.5, and Gemini 3.1 Pro long-context rates per model call rather than to aggregated session tokens.
+- Preserve the selected pricing tier and per-bucket model costs in generated session data.
+
 ## 0.1.0 - 2026-06-13
 
 Initial local developer preview.

@@ -131,7 +131,7 @@ Costs are estimates calculated from token totals and the local pricing table. Th
 - `cost.usd`
 - `cost.eur`
 
-The current pricing version is `github-copilot-usage-pricing-2026-06-01`. The app displays `cost.usd` and treats USD as the canonical estimate because GitHub prices and AI credits are USD-native. The `cost.eur` and `usdToEur` fields remain only as legacy schema compatibility fields; new scans default `usdToEur` to `1`.
+The current pricing version is `github-copilot-usage-pricing-2026-06-14`. The app displays `cost.usd` and treats USD as the canonical estimate because GitHub prices and AI credits are USD-native. The `cost.eur` and `usdToEur` fields remain only as legacy schema compatibility fields; new scans default `usdToEur` to `1`.
 
 The GitHub rate card lives in `data/github-copilot-pricing.json`. The scanner, verifier, and UI all read this same file. Why: pricing is part of the data contract. If the app calculates cost with one table and explains it with another, the debugger becomes untrustworthy.
 
@@ -140,6 +140,8 @@ When a debug-log session uses more than one model, cost is calculated per `model
 The price table is copied from GitHub's public Copilot model pricing documentation, then exposed in the UI as a first-class `GitHub prices` view. Why: cost estimates should be inspectable from their inputs. A user should not have to trust a hidden rate card.
 
 Token-bearing trace rows repeat the pricing decision at the event level. Why: the UI should not parse cost-critical facts back out of human display text such as `detail`. The generated session data is the contract, so it carries the exact model and price row used for each model call.
+
+For models with GitHub long-context rates, the scanner chooses the tier for each `llm_request`, never from an aggregated session total. The request-size test uses normal input plus cached input because together they reconstruct the raw prompt/context sent for that call. A GPT-5.4 request uses the long-context row only above 272,000 raw input tokens; Gemini 3.1 Pro uses it only above 200,000. Model summaries store the tiers encountered and sum the four cost buckets from the individually priced calls.
 
 ## Display semantics
 
