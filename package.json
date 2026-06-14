@@ -51,12 +51,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fortunes-guardian/copilot-cost-ledger.git"
+    "url": "git+https://github.com/fortunes-guardian/copilot-usage-studio.git"
   },
   "bugs": {
-    "url": "https://github.com/fortunes-guardian/copilot-cost-ledger/issues"
+    "url": "https://github.com/fortunes-guardian/copilot-usage-studio/issues"
   },
-  "homepage": "https://github.com/fortunes-guardian/copilot-cost-ledger#readme",
+  "homepage": "https://github.com/fortunes-guardian/copilot-usage-studio#readme",
   "keywords": [
     "github-copilot",
     "vscode",

@@ -58,7 +58,7 @@ Before registry publication, use the repository flow:
 
 ```bash
 git clone <repo-url>
-cd copilot-cost-ledger
+cd copilot-usage-studio
 npm install
 npm start
 ```
