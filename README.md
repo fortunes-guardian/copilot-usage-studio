@@ -3,6 +3,7 @@
 Local-first usage, cost, and session insights for VS Code GitHub Copilot chat and agent sessions.
 
 [![npm version](https://img.shields.io/npm/v/copilot-usage-studio.svg)](https://www.npmjs.com/package/copilot-usage-studio)
+[![CI](https://github.com/fortunes-guardian/copilot-usage-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/fortunes-guardian/copilot-usage-studio/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-2563eb.svg)](LICENSE)
 
 Independent open-source developer tool. Not affiliated with or endorsed by GitHub or Microsoft.
@@ -92,6 +93,17 @@ npm run build
 ```
 
 See [docs/local-deployment.md](docs/local-deployment.md) for packaging options and why the app stays local-first.
+
+## Releasing
+
+Releases are tag-driven. After a change is merged to `main`, the maintainer bumps the version and pushes the generated tag:
+
+```bash
+npm version patch
+git push origin main --follow-tags
+```
+
+Use `minor` or `major` instead of `patch` when appropriate. GitHub Actions then tests and packages that exact tagged commit, publishes it to npm, and creates the matching GitHub Release. See [docs/local-deployment.md](docs/local-deployment.md#automated-releases) for the one-time npm Trusted Publisher setup and the full release procedure.
 
 ## Current Boundaries
 

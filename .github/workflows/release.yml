@@ -1,0 +1,107 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to release or repair, for example v0.1.0
+        required: true
+        type: string
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    name: Publish npm package and GitHub Release
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Set up Node.js and npm registry
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Use an OIDC-capable npm version
+        run: npm install --global "npm@^11.5.1"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify tag matches package version
+        shell: bash
+        run: |
+          if [[ "$RELEASE_TAG" != v* ]]; then
+            echo "Release tag must start with v; received $RELEASE_TAG."
+            exit 1
+          fi
+
+          package_version="$(node -p "require('./package.json').version")"
+          tag_version="${RELEASE_TAG#v}"
+
+          if [[ "$package_version" != "$tag_version" ]]; then
+            echo "Tag $RELEASE_TAG does not match package.json version $package_version."
+            exit 1
+          fi
+
+      - name: Check npm publication state
+        id: npm-state
+        shell: bash
+        run: |
+          package_name="$(node -p "require('./package.json').name")"
+          package_version="$(node -p "require('./package.json').version")"
+          release_commit="$(git rev-parse HEAD)"
+
+          if npm view "$package_name@$package_version" version >/dev/null 2>&1; then
+            published_git_head="$(npm view "$package_name@$package_version" gitHead)"
+
+            if [[ -z "$published_git_head" || "$published_git_head" != "$release_commit" ]]; then
+              echo "$package_name@$package_version already exists on npm from a different or unverifiable commit."
+              exit 1
+            fi
+
+            echo "$package_name@$package_version is already published from this exact commit; continuing safely."
+            echo "already-published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "already-published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run release gate
+        run: npm run release:check
+
+      - name: Publish to npm
+        if: steps.npm-state.outputs.already-published != 'true'
+        run: npm publish --access public
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "GitHub Release $RELEASE_TAG already exists."
+            exit 0
+          fi
+
+          gh release create "$RELEASE_TAG" \
+            --verify-tag \
+            --generate-notes \
+            --title "Copilot Usage Studio $RELEASE_TAG"

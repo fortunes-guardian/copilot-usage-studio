@@ -2,6 +2,13 @@
 
 All notable changes to Copilot Usage Studio are recorded here.
 
+## Unreleased
+
+- Add GitHub Actions CI for pull requests and pushes to `main`.
+- Add tag-driven npm Trusted Publishing with automatic provenance.
+- Create the matching GitHub Release from the same version tag.
+- Support safe workflow reruns and manual backfill of an existing tagged release.
+
 ## 0.1.0 - 2026-06-14
 
 Initial local developer preview.

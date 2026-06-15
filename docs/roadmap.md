@@ -285,6 +285,8 @@ Done:
 - Renamed the product and distributable package to Copilot Usage Studio before the first public release.
 - Replaced the Angular starter favicon and added the initial release changelog.
 - Published `copilot-usage-studio@0.1.0` publicly on npm and verified the CLI from a clean installation directory.
+- Added GitHub Actions CI for pull requests and `main`, using the same full package gate as a release.
+- Added tag-driven npm Trusted Publishing and matching GitHub Release creation, with tag/package-version validation, conflict protection, and safe reruns for the same commit.
 
 Build:
 

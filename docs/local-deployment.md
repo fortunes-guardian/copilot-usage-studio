@@ -88,7 +88,56 @@ The packaged CLI stores its current normalized snapshot outside the npm installa
 
 The npm tarball contains the compiled UI, scanner, pricing table, and runtime code. It must never contain `public/data/sessions.json` or any other developer's imported session data.
 
-### Publishing
+## Automated Releases
+
+GitHub Actions is the release control plane:
+
+- `.github/workflows/ci.yml` runs the full release gate for pull requests and pushes to `main`.
+- `.github/workflows/release.yml` runs automatically for version tags such as `v0.1.1`, with a manual existing-tag mode for repair and backfill.
+- The release workflow verifies that the tag matches `package.json`, publishes the exact tagged source, and creates the matching GitHub Release.
+- A failed workflow can be rerun safely: an existing npm version is accepted only when its published `gitHead` matches the exact tagged commit. Conflicting or unverifiable versions are refused.
+
+This keeps GitHub, npm, and the source tag tied to the same commit. Ordinary pushes never publish.
+
+### One-Time npm Setup
+
+Commit and push the workflow files first, then configure npm Trusted Publishing for the existing `copilot-usage-studio` package:
+
+1. Open the package settings on npm and add a GitHub Actions trusted publisher.
+2. Set organization or user to `fortunes-guardian`.
+3. Set repository to `copilot-usage-studio`.
+4. Set workflow filename to `release.yml`.
+5. Allow the `npm publish` action.
+6. Leave the environment blank unless the workflow is later changed to use a protected GitHub environment.
+
+The workflow uses GitHub's OIDC identity, so no long-lived `NPM_TOKEN` repository secret is required. npm automatically adds provenance for a public package published from a public repository through Trusted Publishing.
+
+### Publishing a Version
+
+Start from an up-to-date, clean `main` branch. Choose the semantic-version bump that matches the change:
+
+```bash
+git switch main
+git pull --ff-only
+npm run release:check
+npm version patch
+git push origin main --follow-tags
+```
+
+`npm version patch` updates both `package.json` and `package-lock.json`, creates a version commit, and creates an annotated `vX.Y.Z` tag. Use `npm version minor` for a backward-compatible feature release or `npm version major` for a breaking release.
+
+After the tag is pushed:
+
+1. Watch the **Release** workflow in GitHub Actions.
+2. Confirm the new version appears on npm.
+3. Confirm GitHub created a Release for the same tag.
+4. Run `npx copilot-usage-studio@X.Y.Z --version` from a clean directory as a final smoke test.
+
+If CI or release validation fails, fix the issue on `main` and publish a new version. Do not move or reuse a public release tag, and do not overwrite an npm version; both are immutable release coordinates.
+
+The workflow also has a manual **Run workflow** action with a required existing tag. Use this to repair or backfill the GitHub Release for an exact tag. For the already-published first version, ensure `v0.1.0` exists on GitHub, then run the workflow once with `v0.1.0`; it will verify npm's published `gitHead`, skip republishing, and create the missing GitHub Release.
+
+### Manual Emergency Fallback
 
 Run the full package gate:
 
@@ -102,7 +151,7 @@ Inspect the tarball list, confirm no local session data or absolute paths are pr
 npm publish --access public
 ```
 
-Publishing is an external release action and should not be automated from ordinary development commands.
+Use this only if Trusted Publishing or GitHub Actions is unavailable. The normal path is the tag-driven workflow above.
 
 If the browser shows updated markup with stale component styles, stop the dev server and restart it with a cache reset:
 
