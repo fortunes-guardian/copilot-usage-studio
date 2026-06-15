@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 
@@ -44,16 +45,17 @@ test('scan command writes to the user-owned cache by default', async () => {
   const writes = [];
   const logs = [];
   const sessionData = { sessions: [{ id: 'one' }] };
+  const appDataDir = join(tmpdir(), 'copilot-usage-studio-cli-test');
 
   const result = await runCli(['scan'], {
-    appDataDir: 'C:\\local\\app-data',
+    appDataDir,
     scanner: async () => sessionData,
     writer: (data, output) => writes.push({ data, output }),
     logger: { log: (message) => logs.push(message) },
   });
 
   assert.equal(result, sessionData);
-  assert.deepEqual(writes, [{ data: sessionData, output: join('C:\\local\\app-data', 'sessions.json') }]);
+  assert.deepEqual(writes, [{ data: sessionData, output: join(appDataDir, 'sessions.json') }]);
   assert.match(logs[0], /Imported 1 sessions/);
 });
 
