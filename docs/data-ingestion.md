@@ -27,7 +27,7 @@ The scanner reads Markdown files beneath two observed stores:
 
 Workspace stores can contain `repo/` memories and base64-encoded session-id folders containing files such as `plan.md`. Global storage contains user-wide memories. The scanner indexes Markdown only, caps a single file at 1 MiB, and caps a memory root at 5,000 files.
 
-Memory indexing is read-only. The normalized record preserves title, content, excerpt, scope, workspace, optional session id, path, timestamps, byte/character/line counts, and whether the file is a plan. See [copilot-memory.md](copilot-memory.md) for the full evidence boundary.
+Memory indexing is read-only. The normalized record preserves title, content, excerpt, scope, workspace, optional session id, path, timestamps, byte/character/line counts, and whether the file is a plan. Explicit Agent Debug Log `memory view` events are attached as recall history with their session, time, returned character count, and following model-request totals. Those request totals are not treated as memory-only tokens or cost. See [copilot-memory.md](copilot-memory.md) for the full evidence boundary.
 
 ## Preferred source
 

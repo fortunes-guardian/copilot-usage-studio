@@ -50,6 +50,7 @@ Version one is a read-only knowledge library:
 - filter by plan/memory, scope, and workspace
 - read the Markdown source
 - link session-scoped files to imported runs
+- show observed recall frequency, time, session, returned content size, and the following model request
 - open the file or reveal it through the local runtime
 
 The browser does not receive arbitrary filesystem access. Open/reveal actions identify a memory by its scanner-generated id, and the runtime accepts only files present in the current scanned snapshot.
@@ -65,7 +66,7 @@ Agent Debug Logs provide a useful distinction between a memory being available a
 
 In the June 15, 2026 local log sample, 46 JSONL files contained 127 model requests with a memory inventory and 18 explicit memory-tool operations across 11 sessions. Fifteen operations were reads, including repeated reads of the repository memory. These counts establish that recall is observable, but they are only a local sample and not a VS Code API contract.
 
-A future recall view can reliably show:
+The recall view shows:
 
 - which memory path was read
 - when and in which session it was read
@@ -82,9 +83,6 @@ Therefore the first version does not label memories as useful, stale, harmful, o
 
 Future evidence-backed opportunities:
 
-- mark when a specific memory is observed in a `memory view` event
-- show memory recall frequency and last observed use
-- link each recall to the following model call without claiming exact memory-only cost
 - flag conflicting or old memories for review
 - compare request input before and after a memory is edited or removed
 - help turn a proven durable memory into repository instructions

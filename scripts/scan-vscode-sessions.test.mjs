@@ -5,14 +5,89 @@ import { join } from 'node:path';
 import test from 'node:test';
 
 import {
+  attachMemoryRecalls,
   cacheTokenAuditFromLlmRequests,
   eventModelCostFields,
   llmTokenFields,
   mergeCacheTokenAudits,
+  memoryRecallsFromDebugLog,
   modelBreakdownFromLlmRequests,
   sessionFromChatSnapshot,
   sessionFromDebugLog,
 } from './scan-vscode-sessions.mjs';
+
+test('records explicit memory reads and links them to the following model request', () => {
+  const { root, sessionDir } = tempSessionFixture('memory-recall-session');
+  const subagentFile = join(sessionDir, 'runSubagent-Explore-call_1.jsonl');
+
+  try {
+    writeJsonl(subagentFile, [
+      event(1, 'tool_call', 'memory', {
+        attrs: {
+          args: JSON.stringify({ command: 'view', path: '/memories/repo/architecture.md' }),
+          result: '# Architecture\n\nUse the shared scanner API.',
+        },
+      }),
+      event(2, 'llm_request', 'panel/editAgent', {
+        attrs: {
+          model: 'gpt-5.4',
+          inputTokens: 12_000,
+          cachedTokens: 10_000,
+          outputTokens: 250,
+        },
+      }),
+    ]);
+
+    const recalls = memoryRecallsFromDebugLog(sessionDir, 'example-workspace');
+
+    assert.equal(recalls.length, 1);
+    assert.equal(recalls[0].virtualPath, '/memories/repo/architecture.md');
+    assert.equal(recalls[0].workspace, 'example-workspace');
+    assert.equal(recalls[0].returnedCharacterCount, 43);
+    assert.deepEqual(recalls[0].followingModelCall, {
+      number: 1,
+      model: 'GPT-5.4',
+      inputTokens: 12_000,
+      cachedInputTokens: 10_000,
+      outputTokens: 250,
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('attaches recalls only to the matching memory scope and workspace', () => {
+  const memories = [
+    {
+      id: 'repo-a',
+      scope: 'repository',
+      workspace: 'repo-a',
+      sessionId: '',
+      relativePath: 'repo\\architecture.md',
+    },
+    {
+      id: 'repo-b',
+      scope: 'repository',
+      workspace: 'repo-b',
+      sessionId: '',
+      relativePath: 'repo\\architecture.md',
+    },
+  ];
+  const recall = {
+    id: 'recall-1',
+    sessionId: 'session-1',
+    workspace: 'repo-a',
+    virtualPath: '/memories/repo/architecture.md',
+    timestamp: '2026-06-15T10:00:00.000Z',
+    sourceLog: 'main.jsonl',
+    returnedCharacterCount: 100,
+  };
+
+  const attached = attachMemoryRecalls(memories, [{ memoryRecalls: [recall] }]);
+
+  assert.deepEqual(attached[0].recalls, [recall]);
+  assert.equal(attached[1].recalls, undefined);
+});
 
 test('splits raw VS Code inputTokens into normal and cached input tokens', () => {
   const tokenFields = llmTokenFields({

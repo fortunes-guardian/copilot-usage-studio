@@ -16,7 +16,27 @@ describe('MemoryPageComponent', () => {
 
     fixture = TestBed.createComponent(MemoryPageComponent);
     fixture.componentRef.setInput('memories', [
-      memoryFixture('plan-1', 'plan', 'session', 'CSV Export Plan', 'repo-a', 'session-1'),
+      {
+        ...memoryFixture('plan-1', 'plan', 'session', 'CSV Export Plan', 'repo-a', 'session-1'),
+        recalls: [
+          {
+            id: 'recall-1',
+            sessionId: 'session-1',
+            workspace: 'repo-a',
+            virtualPath: '/memories/session/plan.md',
+            timestamp: '2026-06-15T11:30:00.000Z',
+            sourceLog: 'main.jsonl',
+            returnedCharacterCount: 320,
+            followingModelCall: {
+              number: 3,
+              model: 'GPT-5.4',
+              inputTokens: 12_000,
+              cachedInputTokens: 10_000,
+              outputTokens: 250,
+            },
+          },
+        ],
+      },
       memoryFixture('repo-1', 'memory', 'repository', 'Architecture Notes', 'repo-a'),
       memoryFixture('global-1', 'memory', 'global', 'Global Preferences', ''),
     ]);
@@ -55,6 +75,17 @@ describe('MemoryPageComponent', () => {
 
     createdInButton.click();
     expect(openSession).toHaveBeenCalledWith(expect.objectContaining({ id: 'session-1' }));
+  });
+
+  it('shows source-backed recall history without assigning memory-only cost', () => {
+    const text = fixture.nativeElement.textContent;
+
+    expect(text).toContain('Observed use');
+    expect(text).toContain('Read 1 time');
+    expect(text).toContain('320 characters loaded');
+    expect(text).toContain('Before model request 3');
+    expect(text).toContain('Request totals include the complete prompt and context');
+    expect(text).not.toContain('memory cost');
   });
 });
 

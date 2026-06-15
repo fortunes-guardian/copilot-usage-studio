@@ -7,6 +7,7 @@ All notable changes to Copilot Usage Studio are recorded here.
 - Add a read-only Copilot Memory library for global, repository, workspace, and session-scoped memories and plans.
 - Link session-scoped memory files to the imported run that created them.
 - Add guarded local-runtime actions to open or reveal an indexed memory file.
+- Show source-backed memory recall history from explicit VS Code `memory view` events, linked to the following model request without inventing memory-only cost.
 - Add GitHub Actions CI for pull requests and pushes to `main`.
 - Add tag-driven npm Trusted Publishing with automatic provenance.
 - Create the matching GitHub Release from the same version tag.

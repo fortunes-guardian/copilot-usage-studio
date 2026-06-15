@@ -269,6 +269,29 @@ function listFiles(dir, suffix) {
     .filter((path) => statSync(path).isFile() && path.endsWith(suffix));
 }
 
+function listDebugLogFiles(root) {
+  if (!existsSync(root)) {
+    return [];
+  }
+
+  const files = [];
+  const pending = [root];
+
+  while (pending.length) {
+    const current = pending.pop();
+    for (const entry of readdirSync(current, { withFileTypes: true })) {
+      const path = join(current, entry.name);
+      if (entry.isDirectory()) {
+        pending.push(path);
+      } else if (entry.isFile() && entry.name.endsWith('.jsonl')) {
+        files.push(path);
+      }
+    }
+  }
+
+  return files.sort();
+}
+
 function listFilesRecursive(root, predicate, limit = memoryFileLimit) {
   if (!existsSync(root)) {
     return [];
@@ -401,6 +424,105 @@ function memoriesFromRoot(root, source, workspace = '') {
   diagnostics.importedMemories += memories.length;
   diagnostics.importedPlans += memories.filter((memory) => memory.kind === 'plan').length;
   return memories;
+}
+
+function normalizeMemoryVirtualPath(value) {
+  const path = String(value ?? '').trim().replace(/\\/g, '/');
+  return path.startsWith('/') ? path : `/${path}`;
+}
+
+function virtualPathForMemory(memory) {
+  const segments = String(memory.relativePath ?? '').split(/[\\/]+/).filter(Boolean);
+
+  if (memory.scope === 'session') {
+    return normalizeMemoryVirtualPath(`/memories/session/${segments.slice(1).join('/')}`);
+  }
+
+  return normalizeMemoryVirtualPath(`/memories/${segments.join('/')}`);
+}
+
+export function memoryRecallsFromDebugLog(sessionDir, workspace = '') {
+  const sessionId = basename(sessionDir);
+  const recalls = [];
+
+  for (const file of listDebugLogFiles(sessionDir)) {
+    const events = readJsonl(file);
+    let modelCallNumber = 0;
+    const modelCallNumbers = new Map();
+
+    events.forEach((event, index) => {
+      if (event.type === 'llm_request') {
+        modelCallNumber += 1;
+        modelCallNumbers.set(index, modelCallNumber);
+      }
+    });
+
+    events.forEach((event, index) => {
+      if (event.type !== 'tool_call' || event.name !== 'memory') {
+        return;
+      }
+
+      const args = safeJson(event.attrs?.args) ?? {};
+      if (args.command !== 'view' || !args.path) {
+        return;
+      }
+
+      const nextModelIndex = events.findIndex(
+        (candidate, candidateIndex) => candidateIndex > index && candidate.type === 'llm_request',
+      );
+      const nextModel = nextModelIndex >= 0 ? events[nextModelIndex] : null;
+      const tokenFields = nextModel ? llmTokenFields(nextModel) : null;
+      const sourceLog = basename(file);
+
+      recalls.push({
+        id: createHash('sha256')
+          .update(`${resolve(file)}:${index}:${args.path}`)
+          .digest('hex')
+          .slice(0, 24),
+        sessionId,
+        workspace,
+        virtualPath: normalizeMemoryVirtualPath(args.path),
+        timestamp: timestampForEvent(event),
+        sourceLog,
+        returnedCharacterCount: String(event.attrs?.result ?? '').length,
+        ...(nextModel
+          ? {
+              followingModelCall: {
+                number: modelCallNumbers.get(nextModelIndex) ?? 0,
+                model: normalizeModel(nextModel.attrs?.model, pricing),
+                inputTokens: tokenFields.inputTokens,
+                cachedInputTokens: tokenFields.cachedInputTokens,
+                outputTokens: tokenFields.outputTokens,
+              },
+            }
+          : {}),
+      });
+    });
+  }
+
+  return recalls.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+}
+
+export function attachMemoryRecalls(memories, sessions) {
+  const recalls = sessions.flatMap((session) => session.memoryRecalls ?? []);
+
+  return memories.map((memory) => {
+    const virtualPath = virtualPathForMemory(memory);
+    const matchingRecalls = recalls.filter((recall) => {
+      if (recall.virtualPath !== virtualPath) {
+        return false;
+      }
+      if (memory.scope === 'session') {
+        return memory.sessionId === recall.sessionId;
+      }
+      if (memory.scope === 'repository' || memory.scope === 'workspace') {
+        return memory.workspace === recall.workspace;
+      }
+      return memory.scope === 'global';
+    });
+
+    return matchingRecalls.length ? { ...memory, recalls: matchingRecalls } : memory;
+  });
 }
 
 function costUsd(model, tokens) {
@@ -1294,6 +1416,7 @@ export function sessionFromDebugLog(sessionDir, workspaceDir) {
   const sourceUsage = sourceUsageSummary(llmRequests);
   const setupPayloadForEvent = modelCallSetupPayloadFactory(sessionDir);
   const transcript = transcriptAvailability(workspaceDir, sid);
+  const memoryRecalls = memoryRecallsFromDebugLog(sessionDir, workspaceName(workspaceDir));
 
   if (transcript.available) {
     diagnostics.debugLogSessionsWithTranscripts += 1;
@@ -1371,6 +1494,7 @@ export function sessionFromDebugLog(sessionDir, workspaceDir) {
     advancedSignals: evidence,
     requestPayload: payload,
     modelLimits,
+    ...(memoryRecalls.length ? { memoryRecalls } : {}),
     traceEvents: capTraceEvents(
       main.map((event, index) => {
         const tokenFields =
@@ -1757,7 +1881,7 @@ export async function scanVsCodeSessions(options = {}) {
     ]) {
       memoryMap.set(memory.id, memory);
     }
-    const memories = [...memoryMap.values()].sort((a, b) =>
+    const memories = attachMemoryRecalls([...memoryMap.values()], sessions).sort((a, b) =>
       b.modifiedAt.localeCompare(a.modifiedAt),
     );
     const seenIds = new Set();

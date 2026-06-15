@@ -231,6 +231,15 @@
   white-space: nowrap;
 }
 
+.memory-card .memory-read-count {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 3px 7px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: var(--accent);
+  font-weight: 760;
+}
+
 .memory-detail {
   min-width: 0;
   padding: 18px;
@@ -290,6 +299,74 @@
   margin: 12px 0 0;
   color: var(--accent);
   font-size: 11px;
+}
+
+.memory-recalls {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
+  border-radius: 12px;
+  padding: 13px;
+  background: color-mix(in srgb, var(--accent) 4%, var(--surface-soft));
+}
+
+.memory-recalls > header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.memory-recalls h4 {
+  margin: 3px 0 0;
+  color: var(--text-strong);
+  font-size: 15px;
+}
+
+.memory-recalls > header p,
+.memory-recall-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.memory-recall-list {
+  display: grid;
+  gap: 6px;
+}
+
+.memory-recall-row {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.8fr) minmax(260px, 1.2fr);
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+
+.memory-recall-row > div,
+.memory-recall-facts {
+  display: grid;
+  gap: 3px;
+}
+
+.memory-recall-row time,
+.memory-recall-row span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.memory-recall-row button {
+  width: fit-content;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 760;
+  text-align: left;
+  cursor: pointer;
 }
 
 .memory-content {
@@ -366,5 +443,11 @@
 
   .memory-actions {
     justify-content: flex-start;
+  }
+
+  .memory-recalls > header,
+  .memory-recall-row {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 }

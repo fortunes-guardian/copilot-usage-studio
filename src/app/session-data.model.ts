@@ -239,6 +239,7 @@ export interface CopilotSession {
   advancedSignals?: AdvancedSignals;
   requestPayload?: RequestPayloadSummary;
   modelLimits?: ModelLimitSummary[];
+  memoryRecalls?: MemoryRecall[];
   traceEvents: TraceEvent[];
   vscodeState?: VscodeStateEnrichment;
   turns: SessionTurn[];
@@ -246,6 +247,25 @@ export interface CopilotSession {
 
 export type CopilotMemoryKind = 'memory' | 'plan';
 export type CopilotMemoryScope = 'global' | 'repository' | 'session' | 'workspace';
+
+export interface MemoryRecallModelCall {
+  number: number;
+  model: string;
+  inputTokens: number;
+  cachedInputTokens: number;
+  outputTokens: number;
+}
+
+export interface MemoryRecall {
+  id: string;
+  sessionId: string;
+  workspace: string;
+  virtualPath: string;
+  timestamp: string;
+  sourceLog: string;
+  returnedCharacterCount: number;
+  followingModelCall?: MemoryRecallModelCall;
+}
 
 export interface CopilotMemory {
   id: string;
@@ -263,6 +283,7 @@ export interface CopilotMemory {
   sizeBytes: number;
   characterCount: number;
   lineCount: number;
+  recalls?: MemoryRecall[];
 }
 
 export interface SessionData {

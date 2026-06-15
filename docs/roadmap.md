@@ -310,12 +310,12 @@ Done:
 - Add a top-level Memory library with search, scope/type/workspace filters, readable Markdown source, and session links.
 - Add local-runtime-only file open and reveal actions without exposing arbitrary filesystem access to the browser.
 - Bound scanning to Markdown, 1 MiB per file, and 5,000 files per root.
+- Add source-backed recall history from explicit Agent Debug Log `memory view` events: memory path, timestamp, session, returned content size, and the following model call.
+- Show recall frequency and last observed use without claiming exact memory-only tokens or cost.
 
 Next:
 
 - Validate memory layouts across more VS Code/Copilot versions and macOS/Linux installations.
-- Add source-backed recall history from explicit Agent Debug Log `memory view` events: memory path, timestamp, session, returned content size, and the following model call.
-- Show recall frequency and last observed use, but do not claim exact memory-only tokens or cost because the logs expose totals for the following model request rather than a separately tokenized memory section.
 - Measure memory-inventory size separately from full-memory reads. Treat it as context footprint evidence, not a provider token bill.
 - Investigate safe edit/delete behavior and any hidden VS Code index before enabling mutation.
 - Consider a domain/code-area view when memory content or source evidence provides a reliable mapping.

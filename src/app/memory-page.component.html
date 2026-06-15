@@ -11,7 +11,7 @@
   <section class="memory-summary" aria-label="Memory summary">
     <div><strong>{{ summary().total | number }}</strong><span>Saved files</span></div>
     <div><strong>{{ summary().plans | number }}</strong><span>Plans</span></div>
-    <div><strong>{{ summary().global | number }}</strong><span>Global memories</span></div>
+    <div><strong>{{ summary().recalls | number }}</strong><span>Observed reads</span></div>
     <div><strong>{{ summary().repositories | number }}</strong><span>Workspaces</span></div>
   </section>
 
@@ -79,6 +79,12 @@
             <strong>{{ memory.title }}</strong>
             <p>{{ memory.excerpt }}</p>
             <small>{{ memory.workspace || 'All workspaces' }}</small>
+            @if (memory.recalls?.length) {
+              <small class="memory-read-count">
+                Read {{ memory.recalls?.length | number }}
+                {{ memory.recalls?.length === 1 ? 'time' : 'times' }}
+              </small>
+            }
           </button>
         }
       </aside>
@@ -118,6 +124,51 @@
 
           @if (actionStatus()) {
             <p class="memory-action-status" aria-live="polite">{{ actionStatus() }}</p>
+          }
+
+          @if (memory.recalls?.length) {
+            <section class="memory-recalls" aria-label="Observed memory use">
+              <header>
+                <div>
+                  <span class="memory-kicker">Observed use</span>
+                  <h4>
+                    Read {{ memory.recalls?.length | number }}
+                    {{ memory.recalls?.length === 1 ? 'time' : 'times' }}
+                  </h4>
+                </div>
+                <p>These are explicit memory reads recorded by VS Code.</p>
+              </header>
+              <div class="memory-recall-list">
+                @for (recall of memory.recalls; track recall.id) {
+                  <article class="memory-recall-row">
+                    <div>
+                      <time>{{ recall.timestamp | date: 'medium' }}</time>
+                      @if (recallSession(recall.sessionId); as session) {
+                        <button type="button" (click)="emitRecallSession(recall.sessionId)">
+                          {{ session.title }}
+                        </button>
+                      } @else {
+                        <span>Session {{ recall.sessionId.slice(0, 8) }}</span>
+                      }
+                    </div>
+                    <div class="memory-recall-facts">
+                      <span>{{ recall.returnedCharacterCount | number }} characters loaded</span>
+                      @if (recall.followingModelCall; as call) {
+                        <span>
+                          {{ recallRequestLabel(recall) }} · {{ call.inputTokens | number }} input
+                          @if (call.cachedInputTokens) {
+                            · {{ call.cachedInputTokens | number }} cached
+                          }
+                        </span>
+                      }
+                    </div>
+                  </article>
+                }
+              </div>
+              <p class="memory-recall-note">
+                Request totals include the complete prompt and context, not only this memory.
+              </p>
+            </section>
           }
 
           <pre class="memory-content">{{ memory.content }}</pre>

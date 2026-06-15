@@ -8,6 +8,7 @@ import {
   CopilotMemoryKind,
   CopilotMemoryScope,
   CopilotSession,
+  MemoryRecall,
 } from './session-data.model';
 
 type MemoryKindFilter = 'all' | CopilotMemoryKind;
@@ -78,10 +79,29 @@ export class MemoryPageComponent {
     return {
       total: memories.length,
       plans: memories.filter((memory) => memory.kind === 'plan').length,
-      global: memories.filter((memory) => memory.scope === 'global').length,
+      recalls: memories.reduce((total, memory) => total + (memory.recalls?.length ?? 0), 0),
       repositories: new Set(memories.map((memory) => memory.workspace).filter(Boolean)).size,
     };
   });
+
+  protected recallSession(sessionId: string): CopilotSession | null {
+    return this.sessionsInput().find((session) => session.id === sessionId) ?? null;
+  }
+
+  protected emitRecallSession(sessionId: string): void {
+    const session = this.recallSession(sessionId);
+    if (session) {
+      this.openSession.emit(session);
+    }
+  }
+
+  protected recallRequestLabel(recall: MemoryRecall): string {
+    const number = recall.followingModelCall?.number;
+    const request = number ? `request ${number}` : 'request';
+    return recall.sourceLog === 'main.jsonl'
+      ? `Before model ${request}`
+      : `Before subagent model ${request}`;
+  }
 
   protected selectMemory(memory: CopilotMemory): void {
     this.selectedId.set(memory.id);
