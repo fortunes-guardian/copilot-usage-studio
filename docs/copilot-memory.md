@@ -54,16 +54,37 @@ Version one is a read-only knowledge library:
 
 The browser does not receive arbitrary filesystem access. Open/reveal actions identify a memory by its scanner-generated id, and the runtime accepts only files present in the current scanned snapshot.
 
+## Observed recall evidence
+
+Agent Debug Logs provide a useful distinction between a memory being available and actually being recalled:
+
+- VS Code injects a memory inventory into model input. The observed inventory names available user, session, and repository memory files, but does not include every file's full contents.
+- When the agent calls the `memory` tool with `command: "view"`, the tool event records the requested memory path and returned content.
+- That tool result is then present in the following model request. The app can therefore say that a specific memory was loaded before a specific model call.
+- The following model call exposes exact total input, cached input, output, and source usage when those fields are present. It does not expose a separate token total or cost for the memory text alone.
+
+In the June 15, 2026 local log sample, 46 JSONL files contained 127 model requests with a memory inventory and 18 explicit memory-tool operations across 11 sessions. Fifteen operations were reads, including repeated reads of the repository memory. These counts establish that recall is observable, but they are only a local sample and not a VS Code API contract.
+
+A future recall view can reliably show:
+
+- which memory path was read
+- when and in which session it was read
+- the returned content size
+- the next model call and that call's total token/usage facts
+
+It must not label the entire following request as memory cost or derive an exact memory-only token charge from character count.
+
 ## What the app does not claim
 
-A saved memory is evidence that Copilot wrote a local file. It is not evidence that Copilot later recalled that file or sent it to a model.
+A saved memory is evidence that Copilot wrote a local file. A matching `memory view` tool event is evidence that Copilot later recalled it and included the returned content in the request chain.
 
 Therefore the first version does not label memories as useful, stale, harmful, or token-consuming. Those conclusions require a matching Agent Debug Log or request side-file showing that the memory was included in a model request.
 
 Future evidence-backed opportunities:
 
-- mark when a specific memory is observed in request input
+- mark when a specific memory is observed in a `memory view` event
 - show memory recall frequency and last observed use
+- link each recall to the following model call without claiming exact memory-only cost
 - flag conflicting or old memories for review
 - compare request input before and after a memory is edited or removed
 - help turn a proven durable memory into repository instructions
