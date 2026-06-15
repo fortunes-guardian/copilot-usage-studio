@@ -96,6 +96,7 @@ GitHub Actions is the release control plane:
 - `.github/workflows/release.yml` runs automatically for version tags such as `v0.1.1`, with a manual existing-tag mode for repair and backfill.
 - The release workflow verifies that the tag matches `package.json`, publishes the exact tagged source, and creates the matching GitHub Release.
 - A failed workflow can be rerun safely: an existing npm version is accepted only when its published `gitHead` matches the exact tagged commit. Conflicting or unverifiable versions are refused.
+- New versions must pass the full release gate before publication. An exact-commit backfill of an already-published historical version skips its old test suite and only repairs the missing GitHub Release.
 
 This keeps GitHub, npm, and the source tag tied to the same commit. Ordinary pushes never publish.
 
@@ -135,7 +136,7 @@ After the tag is pushed:
 
 If CI or release validation fails, fix the issue on `main` and publish a new version. Do not move or reuse a public release tag, and do not overwrite an npm version; both are immutable release coordinates.
 
-The workflow also has a manual **Run workflow** action with a required existing tag. Use this to repair or backfill the GitHub Release for an exact tag. For the already-published first version, ensure `v0.1.0` exists on GitHub, then run the workflow once with `v0.1.0`; it will verify npm's published `gitHead`, skip republishing, and create the missing GitHub Release.
+The workflow also has a manual **Run workflow** action with a required existing tag. Use this to repair or backfill the GitHub Release for an exact tag. For the already-published first version, ensure `v0.1.0` exists on GitHub, then run the workflow once with `v0.1.0`; it will verify npm's published `gitHead`, skip the historical release gate and npm publication, and create the missing GitHub Release.
 
 ### Manual Emergency Fallback
 
