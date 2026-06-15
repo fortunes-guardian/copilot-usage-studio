@@ -132,6 +132,51 @@ test('serves the production UI and falls back to index for application routes', 
   }
 });
 
+test('opens only memory files present in the current scanned snapshot', async () => {
+  const fixture = runtimeFixture('memory-actions');
+  const cached = sessionData('memory-session', '2026-06-15T10:00:00.000Z');
+  cached.memories = [
+    {
+      id: 'abcdef123456abcdef123456',
+      sourcePath: join(fixture.root, 'plan.md'),
+    },
+  ];
+  writeFileSync(fixture.dataFile, JSON.stringify(cached), 'utf8');
+  const opened = [];
+  const runtime = createLocalRuntime({
+    port: 0,
+    dataFile: fixture.dataFile,
+    seedDataFile: null,
+    staticDir: fixture.staticDir,
+    scanOnStart: false,
+    openPath: async (path, action) => opened.push({ path, action }),
+    logger: silentLogger(),
+  });
+
+  try {
+    const address = await runtime.listen();
+    const origin = `http://127.0.0.1:${address.port}`;
+    const response = await jsonRequest(
+      `${origin}/api/memories/abcdef123456abcdef123456/open`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'reveal' }),
+      },
+    );
+
+    assert.deepEqual(response, { ok: true, action: 'reveal' });
+    assert.deepEqual(opened, [{ path: join(fixture.root, 'plan.md'), action: 'reveal' }]);
+    assert.equal(
+      (await fetch(`${origin}/api/memories/000000000000000000000000/open`, { method: 'POST' })).status,
+      404,
+    );
+  } finally {
+    await runtime.close();
+    rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
 test('parses local runtime host options', () => {
   const options = parseLocalRuntimeArgs([
     '--host=0.0.0.0',

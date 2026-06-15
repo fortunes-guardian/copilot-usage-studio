@@ -23,6 +23,8 @@ export class SelectedRunHeaderComponent {
   @Input() outsideFilters = false;
   @Input() filteredCount = 0;
   @Input() pricingFallbacks: PricingFallback[] = [];
+  @Input() savedMemoryCount = 0;
+  @Input() savedPlanCount = 0;
   @Input({ required: true }) sessionSizeHelp!: (triage: SessionTriage) => string;
   @Input({ required: true }) pricingFallbackReason!: (model: string, pricingModel: string) => string;
 
@@ -63,6 +65,18 @@ export class SelectedRunHeaderComponent {
 
   protected displayedUsageCredits(session: CopilotSession): number {
     return sessionUsageCredits(session);
+  }
+
+  protected savedMemoryLabel(): string {
+    const parts = [];
+    if (this.savedPlanCount) {
+      parts.push(`${this.savedPlanCount} plan${this.savedPlanCount === 1 ? '' : 's'}`);
+    }
+    const otherMemories = this.savedMemoryCount - this.savedPlanCount;
+    if (otherMemories > 0) {
+      parts.push(`${otherMemories} memor${otherMemories === 1 ? 'y' : 'ies'}`);
+    }
+    return `Saved ${parts.join(' · ')}`;
   }
 }
 

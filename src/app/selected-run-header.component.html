@@ -13,6 +13,9 @@
           <app-help-popover [text]="reasoningEffortHelp(session)" label="Explain reasoning effort"></app-help-popover>
         </span>
       }
+      @if (savedMemoryCount) {
+        <span class="memory-chip">{{ savedMemoryLabel() }}</span>
+      }
     </div>
     <h2>{{ session.title }}</h2>
     <p class="detail-subtitle">

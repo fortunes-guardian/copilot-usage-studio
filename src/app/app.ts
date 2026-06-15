@@ -3,6 +3,7 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 
 import { AnalyticsPageComponent } from './analytics-page.component';
 import { ComparePageComponent } from './compare-page.component';
+import { MemoryPageComponent } from './memory-page.component';
 import { SessionDataService } from './session-data.service';
 import { SessionDataStatePanelComponent } from './session-data-state-panel.component';
 import { CopilotSession, TraceEvent } from './session-data.model';
@@ -32,7 +33,7 @@ import {
 } from './session-analysis';
 import { sessionUsageUsd } from './session-cost-utils';
 
-type ActiveView = 'sessions' | 'usage' | 'compare' | 'analytics' | 'pricing';
+type ActiveView = 'sessions' | 'usage' | 'memory' | 'compare' | 'analytics' | 'pricing';
 type SelectedRunView = 'overview' | 'cost' | 'turns' | 'trace';
 type ThemeMode = 'light' | 'dark';
 type SessionTimeFilter = 'all' | '7d' | '30d' | '90d';
@@ -43,6 +44,7 @@ type SessionTimeFilter = 'all' | '7d' | '30d' | '90d';
     AnalyticsPageComponent,
     DecimalPipe,
     ComparePageComponent,
+    MemoryPageComponent,
     SessionDataStatePanelComponent,
     PricingPageComponent,
     SessionCostComponent,
@@ -140,6 +142,7 @@ export class App {
   ];
 
   protected readonly sessions = computed(() => this.sessionData()?.sessions ?? []);
+  protected readonly memories = computed(() => this.sessionData()?.memories ?? []);
   protected readonly warningOptions = computed(() => {
     const labels = new Set<string>();
 
@@ -186,6 +189,13 @@ export class App {
     const id = this.selectedId() ?? this.filteredSessions()[0]?.id;
     return this.sessions().find((session) => session.id === id) ?? null;
   });
+  protected readonly selectedSessionMemories = computed(() => {
+    const sessionId = this.selectedSession()?.id;
+    return sessionId ? this.memories().filter((memory) => memory.sessionId === sessionId) : [];
+  });
+  protected readonly selectedSessionPlanCount = computed(
+    () => this.selectedSessionMemories().filter((memory) => memory.kind === 'plan').length,
+  );
   private readonly selectedRunExplanationState = this.selectedRunExplanationService.createState({
     filteredSessions: this.filteredSessions,
     selectedSession: this.selectedSession,
@@ -444,6 +454,7 @@ export class App {
 
       return view === 'sessions' ||
         view === 'usage' ||
+        view === 'memory' ||
         view === 'compare' ||
         view === 'analytics' ||
         view === 'pricing'

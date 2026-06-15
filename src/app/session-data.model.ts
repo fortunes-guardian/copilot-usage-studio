@@ -244,6 +244,27 @@ export interface CopilotSession {
   turns: SessionTurn[];
 }
 
+export type CopilotMemoryKind = 'memory' | 'plan';
+export type CopilotMemoryScope = 'global' | 'repository' | 'session' | 'workspace';
+
+export interface CopilotMemory {
+  id: string;
+  kind: CopilotMemoryKind;
+  scope: CopilotMemoryScope;
+  title: string;
+  excerpt: string;
+  content: string;
+  workspace: string;
+  sessionId: string;
+  sourcePath: string;
+  relativePath: string;
+  createdAt: string;
+  modifiedAt: string;
+  sizeBytes: number;
+  characterCount: number;
+  lineCount: number;
+}
+
 export interface SessionData {
   schemaVersion: number;
   generatedAt: string;
@@ -259,6 +280,11 @@ export interface SessionData {
     importedChatSnapshotSessions: number;
     debugLogSessionsWithTranscripts?: number;
     transcriptEventsAvailable?: number;
+    scannedMemoryRoots?: number;
+    importedMemories?: number;
+    importedPlans?: number;
+    skippedOversizedMemories?: number;
+    skippedUnreadableMemories?: number;
     skippedEmptyDebugLogs: number;
     skippedChatSnapshotsWithoutRequests: number;
     skippedDuplicateChatSnapshots: number;
@@ -266,5 +292,6 @@ export interface SessionData {
     cacheTokenAudit?: CacheTokenAudit;
     warnings: string[];
   };
+  memories?: CopilotMemory[];
   sessions: CopilotSession[];
 }

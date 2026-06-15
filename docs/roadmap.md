@@ -297,7 +297,31 @@ Build:
 
 Why: this project should stay local-first because the useful source data lives on the developer machine and may contain prompts, file paths, repo context, and tool results.
 
-## Phase 9: Trace Event Inspector
+## Phase 9: Copilot Memory Library
+
+Status: first read-only slice built.
+
+Done:
+
+- Scan workspace and global VS Code Copilot memory stores.
+- Classify global, repository, workspace, and session-scoped memory.
+- Distinguish saved plans from general memory files.
+- Decode session memory folders and link them to imported Agent Debug Log sessions.
+- Add a top-level Memory library with search, scope/type/workspace filters, readable Markdown source, and session links.
+- Add local-runtime-only file open and reveal actions without exposing arbitrary filesystem access to the browser.
+- Bound scanning to Markdown, 1 MiB per file, and 5,000 files per root.
+
+Next:
+
+- Validate memory layouts across more VS Code/Copilot versions and macOS/Linux installations.
+- Investigate whether Agent Debug Logs or request side files expose specific memory recall. Only then show recall frequency, last use, or token/context impact.
+- Investigate safe edit/delete behavior and any hidden VS Code index before enabling mutation.
+- Consider a domain/code-area view when memory content or source evidence provides a reliable mapping.
+- Consider an explicit "promote to instructions" workflow only as a reviewed transformation, never an automatic rewrite.
+
+Why: Copilot can save useful repository knowledge and plans in local files with little cross-session visibility. A read-only library makes that knowledge discoverable without claiming that every saved memory is recalled or consumes tokens.
+
+## Phase 10: Trace Event Inspector
 
 Status: built first pass.
 
@@ -319,7 +343,7 @@ Still to improve:
 
 Why: the Trace view is currently good for scanning, but debugging needs selection. VS Code's own Agent Debug Logs let a user click an event and inspect details. This app should do the same, with cost fields added.
 
-## Phase 10: Input Attribution And MCP Impact
+## Phase 11: Input Attribution And MCP Impact
 
 Status: started, needs careful evidence boundaries.
 
@@ -363,7 +387,7 @@ Evidence boundary:
 - The app can say "this model request referenced this large instructions/tools payload" when the side-file reference is present. It should not say "this instruction cost $X" unless the log exposes section-level token totals or billing fields.
 - Per-section input attribution may be derived from raw request payload fields when available, but it is not the same as provider billing unless segment token counts are logged directly.
 
-## Phase 11: App-Owned SQLite
+## Phase 12: App-Owned SQLite
 
 Build:
 
@@ -377,7 +401,7 @@ Build:
 
 Why: VS Code `state.vscdb` is external editor state and should stay read-only enrichment. App-owned SQLite becomes useful once the app has durable user state.
 
-## Phase 12: Billing Reconciliation
+## Phase 13: Billing Reconciliation
 
 Status: later, not the current focus.
 

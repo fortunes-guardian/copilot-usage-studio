@@ -26,7 +26,7 @@ The app helps answer two practical questions:
 >
 > Why did this Copilot run cost what it cost?
 
-It scans local VS Code data, uses GitHub source usage when VS Code logs it, falls back to GitHub published model prices when it has to, and shows which models, token categories, and model calls drove the usage.
+It scans local VS Code data, uses GitHub source usage when VS Code logs it, falls back to GitHub published model prices when it has to, and shows which models, token categories, and model calls drove the usage. It also indexes Copilot's locally saved memories and plans so they are no longer hidden in VS Code storage.
 
 ## Start Here
 
@@ -71,6 +71,7 @@ The packaged CLI stores its cache in the current user's application-data directo
 
 - **Usage**: the default home for last session, today, this week, current calendar month, selected workspace/model scope, and recent daily usage in GitHub AI credits.
 - **Sessions**: selected-run debugging with Overview, Cost, Calls, and Trace views.
+- **Memory**: read-only search and inspection for global, repository, workspace, and session-scoped Copilot memories and saved plans.
 - **Cost**: source usage when VS Code logs it, fallback pricing when it does not, and separate normal input, cached input, cache write, and output buckets.
 - **Calls**: model-call timeline, context-load timeline, setup-footprint clues, and links back to the raw Trace event.
 - **Trace**: filterable raw log timeline with clickable event inspection.
@@ -120,6 +121,7 @@ The app is a local developer visibility tool. It shows what can be understood fr
 - [docs/local-deployment.md](docs/local-deployment.md): local run, build, and future packaging options.
 - [docs/scanner-api.md](docs/scanner-api.md): reusable Node scanner contract for local hosts, desktop packaging, and extensions.
 - [docs/data-ingestion.md](docs/data-ingestion.md): where the data comes from and what it means.
+- [docs/copilot-memory.md](docs/copilot-memory.md): observed Copilot memory storage, normalized fields, and evidence boundaries.
 - [docs/debug-log-schema.md](docs/debug-log-schema.md): observed VS Code Agent Debug Log schema and generated app data contract.
 - [docs/schema-change-workflow.md](docs/schema-change-workflow.md): weekly VS Code/Copilot update audit, compatibility gates, and baseline procedure.
 - [docs/roadmap.md](docs/roadmap.md): current state, completed work, and planned build order.

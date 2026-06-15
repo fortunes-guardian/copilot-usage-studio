@@ -15,6 +15,9 @@
       <button type="button" [class.active]="activeView() === 'sessions'" (click)="activeView.set('sessions')">
         Sessions
       </button>
+      <button type="button" [class.active]="activeView() === 'memory'" (click)="activeView.set('memory')">
+        Memory
+      </button>
       <button type="button" [class.active]="activeView() === 'compare'" (click)="activeView.set('compare')">
         Compare
       </button>
@@ -115,6 +118,16 @@
       } @placeholder {
         <p class="deferred-panel">Loading usage...</p>
       }
+    } @else if (activeView() === 'memory') {
+      @defer {
+        <app-memory-page
+          [memories]="memories()"
+          [sessions]="sessions()"
+          (openSession)="openSession($event)"
+        ></app-memory-page>
+      } @placeholder {
+        <p class="deferred-panel">Loading memories...</p>
+      }
     } @else if (activeView() === 'pricing') {
       @defer {
         <app-pricing-page
@@ -173,6 +186,8 @@
           [outsideFilters]="selectedSessionOutsideFilters()"
           [filteredCount]="filteredSessions().length"
           [pricingFallbacks]="selectedPricingFallbacks()"
+          [savedMemoryCount]="selectedSessionMemories().length"
+          [savedPlanCount]="selectedSessionPlanCount()"
           [sessionSizeHelp]="sessionSizeHelp"
           [pricingFallbackReason]="pricingFallbackReason"
           (openFirstFilteredSession)="openFirstFilteredSession()"

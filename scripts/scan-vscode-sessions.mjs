@@ -1,6 +1,7 @@
+import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { homedir, platform } from 'node:os';
-import { basename, dirname, join, resolve } from 'node:path';
+import { basename, dirname, extname, join, relative, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
   costBreakdownUsdForTokens,
@@ -18,6 +19,8 @@ const pricingVersion = pricingData.version;
 const pricingSourceUrl = pricingData.sourceUrl;
 const fallbackPricingModel = pricingData.fallbackModel;
 const traceEventLimit = 1000;
+const memoryFileLimit = 5000;
+const memoryFileSizeLimit = 1024 * 1024;
 
 const pricing = pricingData.models;
 
@@ -36,6 +39,11 @@ function createDiagnostics() {
     importedChatSnapshotSessions: 0,
     debugLogSessionsWithTranscripts: 0,
     transcriptEventsAvailable: 0,
+    scannedMemoryRoots: 0,
+    importedMemories: 0,
+    importedPlans: 0,
+    skippedOversizedMemories: 0,
+    skippedUnreadableMemories: 0,
     skippedEmptyDebugLogs: 0,
     skippedChatSnapshotsWithoutRequests: 0,
     skippedDuplicateChatSnapshots: 0,
@@ -259,6 +267,140 @@ function listFiles(dir, suffix) {
   return readdirSync(dir)
     .map((entry) => join(dir, entry))
     .filter((path) => statSync(path).isFile() && path.endsWith(suffix));
+}
+
+function listFilesRecursive(root, predicate, limit = memoryFileLimit) {
+  if (!existsSync(root)) {
+    return [];
+  }
+
+  const files = [];
+  const pending = [root];
+
+  while (pending.length && files.length < limit) {
+    const current = pending.pop();
+    let entries = [];
+
+    try {
+      entries = readdirSync(current, { withFileTypes: true });
+    } catch (error) {
+      diagnostics.skippedUnreadableMemories += 1;
+      diagnostics.warnings.push(`${current}: memory directory skipped: ${error.message}`);
+      continue;
+    }
+
+    for (const entry of entries) {
+      const path = join(current, entry.name);
+      if (entry.isDirectory()) {
+        pending.push(path);
+      } else if (entry.isFile() && predicate(path)) {
+        files.push(path);
+        if (files.length >= limit) {
+          diagnostics.warnings.push(`${root}: memory scan capped at ${limit} files.`);
+          break;
+        }
+      }
+    }
+  }
+
+  return files;
+}
+
+function decodeMemorySessionId(value) {
+  try {
+    const decoded = Buffer.from(String(value), 'base64').toString('utf8');
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(decoded)
+      ? decoded
+      : '';
+  } catch {
+    return '';
+  }
+}
+
+function memoryTitle(content, file) {
+  const heading = String(content)
+    .split(/\r?\n/)
+    .map((line) => line.match(/^#{1,3}\s+(.+?)\s*#*$/)?.[1]?.trim())
+    .find(Boolean);
+
+  if (heading) {
+    return heading.slice(0, 160);
+  }
+
+  return basename(file, extname(file))
+    .replace(/[-_]+/g, ' ')
+    .replace(/\b\w/g, (character) => character.toUpperCase())
+    .slice(0, 160);
+}
+
+function memoryExcerpt(content) {
+  return String(content)
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/[`*_>~-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 280);
+}
+
+function memoryFromFile(file, root, source, workspace) {
+  try {
+    const stats = statSync(file);
+    if (stats.size > memoryFileSizeLimit) {
+      diagnostics.skippedOversizedMemories += 1;
+      diagnostics.warnings.push(`${file}: memory skipped because it exceeds 1 MiB.`);
+      return null;
+    }
+
+    const content = readFileSync(file, 'utf8');
+    const relativePath = relative(root, file);
+    const segments = relativePath.split(sep).filter(Boolean);
+    const sessionId = source === 'workspace' ? decodeMemorySessionId(segments[0]) : '';
+    const kind = basename(file).toLowerCase() === 'plan.md' ? 'plan' : 'memory';
+    const scope = source === 'global'
+      ? 'global'
+      : segments[0]?.toLowerCase() === 'repo'
+        ? 'repository'
+        : sessionId
+          ? 'session'
+          : 'workspace';
+
+    return {
+      id: createHash('sha256').update(resolve(file)).digest('hex').slice(0, 24),
+      kind,
+      scope,
+      title: memoryTitle(content, file),
+      excerpt: memoryExcerpt(content),
+      content,
+      workspace: source === 'global' ? '' : workspace,
+      sessionId,
+      sourcePath: resolve(file),
+      relativePath,
+      createdAt: stats.birthtimeMs > 0 ? stats.birthtime.toISOString() : '',
+      modifiedAt: stats.mtime.toISOString(),
+      sizeBytes: stats.size,
+      characterCount: content.length,
+      lineCount: content ? content.split(/\r?\n/).length : 0,
+    };
+  } catch (error) {
+    diagnostics.skippedUnreadableMemories += 1;
+    diagnostics.warnings.push(`${file}: memory skipped: ${error.message}`);
+    return null;
+  }
+}
+
+function memoriesFromRoot(root, source, workspace = '') {
+  if (!existsSync(root)) {
+    return [];
+  }
+
+  diagnostics.scannedMemoryRoots += 1;
+  const memories = listFilesRecursive(root, (file) => extname(file).toLowerCase() === '.md')
+    .map((file) => memoryFromFile(file, root, source, workspace))
+    .filter(Boolean);
+
+  diagnostics.importedMemories += memories.length;
+  diagnostics.importedPlans += memories.filter((memory) => memory.kind === 'plan').length;
+  return memories;
 }
 
 function costUsd(model, tokens) {
@@ -1504,6 +1646,7 @@ function enrichSessionFromWorkspaceState(session, stateBySessionId) {
 function parseWorkspace(workspaceDir) {
   diagnostics.scannedWorkspaces += 1;
   const stateBySessionId = readWorkspaceState(workspaceDir);
+  const workspace = workspaceName(workspaceDir);
   const debugRoot = join(workspaceDir, 'GitHub.copilot-chat', 'debug-logs');
   const debugSessions = listDirs(debugRoot)
     .map((sessionDir) => sessionFromDebugLog(sessionDir, workspaceDir))
@@ -1524,12 +1667,42 @@ function parseWorkspace(workspaceDir) {
     .filter(Boolean);
   diagnostics.importedChatSnapshotSessions += chatSessions.length;
 
-  return [...debugSessions, ...chatSessions];
+  return {
+    sessions: [...debugSessions, ...chatSessions],
+    memories: memoriesFromRoot(
+      join(workspaceDir, 'GitHub.copilot-chat', 'memory-tool', 'memories'),
+      'workspace',
+      workspace,
+    ),
+  };
 }
 
 function workspaceDirsFromUserDir(userDir) {
   const workspaceStorage = join(userDir, 'workspaceStorage');
   return listDirs(workspaceStorage);
+}
+
+function workspaceDirsForRoot(root) {
+  if (existsSync(join(root, 'workspace.json'))) {
+    return [root];
+  }
+  if (basename(root) === 'workspaceStorage') {
+    return listDirs(root);
+  }
+  return workspaceDirsFromUserDir(root);
+}
+
+function userDirForRoot(root) {
+  if (existsSync(join(root, 'workspaceStorage'))) {
+    return root;
+  }
+  if (basename(root) === 'workspaceStorage') {
+    return dirname(root);
+  }
+  if (basename(dirname(root)) === 'workspaceStorage') {
+    return dirname(dirname(root));
+  }
+  return null;
 }
 
 /**
@@ -1566,19 +1739,27 @@ export async function scanVsCodeSessions(options = {}) {
 
   try {
     DatabaseSync = options.sqlite === false ? null : await loadSqliteSupport();
-    const workspaceDirs = roots.flatMap((root) => {
-      if (
-        basename(dirname(root)) === 'workspaceStorage' ||
-        existsSync(join(root, 'workspace.json'))
-      ) {
-        return [root];
-      }
-      return workspaceDirsFromUserDir(root);
-    });
-
-    const sessions = workspaceDirs
-      .flatMap(parseWorkspace)
+    const workspaceDirs = [...new Set(roots.flatMap(workspaceDirsForRoot))];
+    const workspaceResults = workspaceDirs.map(parseWorkspace);
+    const sessions = workspaceResults
+      .flatMap((result) => result.sessions)
       .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+    const globalMemoryRoots = [...new Set(
+      roots
+        .map(userDirForRoot)
+        .filter(Boolean)
+        .map((userDir) => join(userDir, 'globalStorage', 'github.copilot-chat', 'memory-tool', 'memories')),
+    )];
+    const memoryMap = new Map();
+    for (const memory of [
+      ...workspaceResults.flatMap((result) => result.memories),
+      ...globalMemoryRoots.flatMap((root) => memoriesFromRoot(root, 'global')),
+    ]) {
+      memoryMap.set(memory.id, memory);
+    }
+    const memories = [...memoryMap.values()].sort((a, b) =>
+      b.modifiedAt.localeCompare(a.modifiedAt),
+    );
     const seenIds = new Set();
     for (const session of sessions) {
       if (seenIds.has(session.id)) {
@@ -1600,6 +1781,7 @@ export async function scanVsCodeSessions(options = {}) {
           sessions.map((session) => session.cacheTokenAudit).filter(Boolean),
         ),
       },
+      memories,
       sessions,
     };
   } finally {

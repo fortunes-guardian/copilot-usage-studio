@@ -1,0 +1,147 @@
+<section class="memory-page">
+  <header class="memory-header">
+    <div>
+      <p class="eyebrow">Copilot memory</p>
+      <h2>What Copilot remembers</h2>
+      <p>Browse saved knowledge and plans across your local VS Code workspaces.</p>
+    </div>
+    <span class="read-only-badge">Read-only library</span>
+  </header>
+
+  <section class="memory-summary" aria-label="Memory summary">
+    <div><strong>{{ summary().total | number }}</strong><span>Saved files</span></div>
+    <div><strong>{{ summary().plans | number }}</strong><span>Plans</span></div>
+    <div><strong>{{ summary().global | number }}</strong><span>Global memories</span></div>
+    <div><strong>{{ summary().repositories | number }}</strong><span>Workspaces</span></div>
+  </section>
+
+  <section class="memory-controls" aria-label="Memory filters">
+    <label class="memory-search">
+      <span>Search memories</span>
+      <input
+        type="search"
+        placeholder="Search title, content, or path"
+        [ngModel]="query()"
+        (ngModelChange)="setQuery($event)"
+      />
+    </label>
+    <label>
+      <span>Type</span>
+      <select [ngModel]="kindFilter()" (ngModelChange)="setKindFilter($event)">
+        <option value="all">Memories and plans</option>
+        <option value="memory">Memories</option>
+        <option value="plan">Plans</option>
+      </select>
+    </label>
+    <label>
+      <span>Scope</span>
+      <select [ngModel]="scopeFilter()" (ngModelChange)="setScopeFilter($event)">
+        <option value="all">All scopes</option>
+        <option value="global">Global</option>
+        <option value="repository">Repository</option>
+        <option value="session">Session</option>
+        <option value="workspace">Workspace</option>
+      </select>
+    </label>
+    <label>
+      <span>Workspace</span>
+      <select [ngModel]="workspaceFilter()" (ngModelChange)="setWorkspaceFilter($event)">
+        @for (workspace of workspaceOptions(); track workspace) {
+          <option [value]="workspace">{{ workspace === 'all' ? 'All workspaces' : workspace }}</option>
+        }
+      </select>
+    </label>
+  </section>
+
+  @if (filteredMemories().length) {
+    <section class="memory-workspace">
+      <aside class="memory-list" aria-label="Saved memories">
+        <div class="memory-list-heading">
+          <span>{{ filteredMemories().length | number }} shown</span>
+          @if (
+            query() || scopeFilter() !== 'all' || kindFilter() !== 'all' || workspaceFilter() !== 'all'
+          ) {
+            <button type="button" (click)="resetFilters()">Reset</button>
+          }
+        </div>
+        @for (memory of filteredMemories(); track memory.id) {
+          <button
+            type="button"
+            class="memory-card"
+            [class.active]="selectedMemory().id === memory.id"
+            [class.plan]="memory.kind === 'plan'"
+            (click)="selectMemory(memory)"
+          >
+            <span class="memory-card-meta">
+              <b>{{ memory.kind === 'plan' ? 'Plan' : scopeLabel(memory.scope) }}</b>
+              <time>{{ memory.modifiedAt | date: 'MMM d, y' }}</time>
+            </span>
+            <strong>{{ memory.title }}</strong>
+            <p>{{ memory.excerpt }}</p>
+            <small>{{ memory.workspace || 'All workspaces' }}</small>
+          </button>
+        }
+      </aside>
+
+      @if (selectedMemory(); as memory) {
+        <article class="memory-detail">
+          <header class="memory-detail-header">
+            <div>
+              <span class="memory-kicker">
+                {{ memory.kind === 'plan' ? 'Saved plan' : scopeLabel(memory.scope) + ' memory' }}
+              </span>
+              <h3>{{ memory.title }}</h3>
+              <p>
+                {{ memory.workspace || 'Available across workspaces' }} · updated
+                {{ memory.modifiedAt | date: 'medium' }}
+              </p>
+            </div>
+            <div class="memory-actions">
+              <button type="button" (click)="runMemoryAction(memory, 'open')">Open file</button>
+              <button type="button" (click)="runMemoryAction(memory, 'reveal')">Show in folder</button>
+              <button type="button" (click)="copyPath(memory)">Copy path</button>
+            </div>
+          </header>
+
+          <div class="memory-facts">
+            <span><b>{{ scopeLabel(memory.scope) }}</b> scope</span>
+            <span><b>{{ memory.characterCount | number }}</b> characters</span>
+            <span><b>{{ memory.lineCount | number }}</b> lines</span>
+            @if (linkedSession(memory); as session) {
+              <button type="button" (click)="emitOpenSession(memory)">
+                Created in: {{ session.title }}
+              </button>
+            } @else if (memory.sessionId) {
+              <span>Session {{ memory.sessionId.slice(0, 8) }}</span>
+            }
+          </div>
+
+          @if (actionStatus()) {
+            <p class="memory-action-status" aria-live="polite">{{ actionStatus() }}</p>
+          }
+
+          <pre class="memory-content">{{ memory.content }}</pre>
+
+          <footer class="memory-path">
+            <span>Local file</span>
+            <code>{{ memory.sourcePath }}</code>
+          </footer>
+        </article>
+      }
+    </section>
+  } @else {
+    <section class="memory-empty">
+      <h3>{{ memoriesInput().length ? 'No memories match these filters' : 'No Copilot memories found' }}</h3>
+      <p>
+        {{
+          memoriesInput().length
+            ? 'Try a broader search or reset the filters.'
+            : 'Create a saved memory or plan in VS Code, then refresh the local scan.'
+        }}
+      </p>
+      @if (memoriesInput().length) {
+        <button type="button" (click)="resetFilters()">Reset filters</button>
+      }
+    </section>
+  }
+</section>

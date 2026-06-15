@@ -35,6 +35,48 @@ test('returns normalized session data without writing an output file', async () 
   }
 });
 
+test('indexes workspace memories and links session plans without inferring recall', async () => {
+  const fixture = createWorkspaceFixture('memories');
+  const sessionId = 'adfd2a29-d246-4b89-88da-1c1b5622ae1b';
+  const encodedSessionId = Buffer.from(sessionId, 'utf8').toString('base64').replace(/=+$/, '');
+  try {
+    writeDebugSession(fixture.workspaceDir, sessionId, 1_000, 750, 50);
+    const memoryRoot = join(
+      fixture.workspaceDir,
+      'GitHub.copilot-chat',
+      'memory-tool',
+      'memories',
+    );
+    mkdirSync(join(memoryRoot, encodedSessionId), { recursive: true });
+    mkdirSync(join(memoryRoot, 'repo'), { recursive: true });
+    writeFileSync(
+      join(memoryRoot, encodedSessionId, 'plan.md'),
+      '# Plan: Small feature\n\nKeep the first version read-only.',
+      'utf8',
+    );
+    writeFileSync(
+      join(memoryRoot, 'repo', 'architecture.md'),
+      '# Architecture notes\n\nThe scanner owns normalized local evidence.',
+      'utf8',
+    );
+
+    const result = await scanVsCodeSessions({ roots: [fixture.workspaceDir], sqlite: false });
+
+    assert.equal(result.memories.length, 2);
+    assert.equal(result.ingestion.importedMemories, 2);
+    assert.equal(result.ingestion.importedPlans, 1);
+    const plan = result.memories.find((memory) => memory.kind === 'plan');
+    const repositoryMemory = result.memories.find((memory) => memory.scope === 'repository');
+    assert.equal(plan.scope, 'session');
+    assert.equal(plan.sessionId, sessionId);
+    assert.match(plan.content, /read-only/);
+    assert.equal(repositoryMemory.kind, 'memory');
+    assert.equal(repositoryMemory.sessionId, '');
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
 test('keeps diagnostics isolated between API scans', async () => {
   const populated = createWorkspaceFixture('populated');
   const empty = createWorkspaceFixture('empty');

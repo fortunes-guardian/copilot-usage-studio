@@ -14,6 +14,21 @@ This generated session-data contract is intentionally local-first. The scanner r
 
 The normalized `SessionData` object is the deeper boundary. `scanVsCodeSessions()` returns that object without writing to disk. The CLI, a local HTTP host, a desktop shell, or an editor extension can then decide whether to persist it, cache it, or return it directly to the UI. See [scanner-api.md](scanner-api.md).
 
+The same contract now carries a sibling `memories` collection. Memories are not sessions and are not folded into session cost records. Session-scoped memory folders are linked by decoded session id when that relationship is present on disk.
+
+## Copilot memory sources
+
+The scanner reads Markdown files beneath two observed stores:
+
+```text
+<VS Code User>/workspaceStorage/<workspace-id>/GitHub.copilot-chat/memory-tool/memories/
+<VS Code User>/globalStorage/github.copilot-chat/memory-tool/memories/
+```
+
+Workspace stores can contain `repo/` memories and base64-encoded session-id folders containing files such as `plan.md`. Global storage contains user-wide memories. The scanner indexes Markdown only, caps a single file at 1 MiB, and caps a memory root at 5,000 files.
+
+Memory indexing is read-only. The normalized record preserves title, content, excerpt, scope, workspace, optional session id, path, timestamps, byte/character/line counts, and whether the file is a plan. See [copilot-memory.md](copilot-memory.md) for the full evidence boundary.
+
 ## Preferred source
 
 The strongest current source is:

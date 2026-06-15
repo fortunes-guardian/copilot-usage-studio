@@ -7,6 +7,7 @@ const sessionData = JSON.parse(readFileSync(file, 'utf8'));
 const errors = [];
 const warnings = [];
 const ids = new Set();
+const memoryIds = new Set();
 const pricingData = JSON.parse(
   readFileSync(new URL('../data/github-copilot-pricing.json', import.meta.url), 'utf8'),
 );
@@ -171,6 +172,41 @@ if (sessionData.schemaVersion !== 1) {
 
 if (!Array.isArray(sessionData.sessions)) {
   fail('Expected sessions to be an array');
+}
+
+if (sessionData.memories !== undefined && !Array.isArray(sessionData.memories)) {
+  fail('Expected memories to be an array when present');
+}
+
+for (const memory of sessionData.memories ?? []) {
+  if (!memory.id) {
+    fail('Memory missing id');
+  } else if (memoryIds.has(memory.id)) {
+    fail(`Duplicate memory id: ${memory.id}`);
+  } else {
+    memoryIds.add(memory.id);
+  }
+
+  for (const field of ['kind', 'scope', 'title', 'content', 'sourcePath', 'relativePath', 'modifiedAt']) {
+    if (!memory[field]) {
+      fail(`${memory.id ?? 'unknown memory'} missing ${field}`);
+    }
+  }
+
+  if (!['memory', 'plan'].includes(memory.kind)) {
+    fail(`${memory.id} has invalid kind ${memory.kind}`);
+  }
+  if (!['global', 'repository', 'session', 'workspace'].includes(memory.scope)) {
+    fail(`${memory.id} has invalid scope ${memory.scope}`);
+  }
+  if (memory.scope === 'session' && !memory.sessionId) {
+    fail(`${memory.id} is session-scoped but has no sessionId`);
+  }
+  for (const field of ['sizeBytes', 'characterCount', 'lineCount']) {
+    if (!Number.isFinite(memory[field]) || memory[field] < 0) {
+      fail(`${memory.id} has invalid ${field}`);
+    }
+  }
 }
 
 for (const session of sessionData.sessions ?? []) {
@@ -422,6 +458,16 @@ if (Number.isFinite(importedSessions) && importedSessions !== (sessionData.sessi
   );
 }
 
+const importedMemories = sessionData.ingestion?.importedMemories;
+if (
+  Number.isFinite(importedMemories) &&
+  importedMemories !== (sessionData.memories?.length ?? 0)
+) {
+  fail(
+    `ingestion.importedMemories=${importedMemories} does not match memories.length=${sessionData.memories?.length ?? 0}`,
+  );
+}
+
 for (const field of ['scannedStateDbs', 'enrichedFromStateDbs']) {
   if (!Number.isFinite(sessionData.ingestion?.[field]) || sessionData.ingestion[field] < 0) {
     fail(`ingestion.${field} is missing or invalid`);
@@ -433,6 +479,21 @@ for (const warning of sessionData.ingestion?.warnings ?? []) {
 }
 
 for (const field of ['debugLogSessionsWithTranscripts', 'transcriptEventsAvailable']) {
+  if (
+    sessionData.ingestion?.[field] !== undefined &&
+    (!Number.isFinite(sessionData.ingestion[field]) || sessionData.ingestion[field] < 0)
+  ) {
+    fail(`ingestion.${field} is invalid`);
+  }
+}
+
+for (const field of [
+  'scannedMemoryRoots',
+  'importedMemories',
+  'importedPlans',
+  'skippedOversizedMemories',
+  'skippedUnreadableMemories',
+]) {
   if (
     sessionData.ingestion?.[field] !== undefined &&
     (!Number.isFinite(sessionData.ingestion[field]) || sessionData.ingestion[field] < 0)

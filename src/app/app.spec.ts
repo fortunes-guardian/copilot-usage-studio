@@ -22,6 +22,25 @@ describe('App', () => {
       importedSessions: 1,
       warnings: [],
     },
+    memories: [
+      {
+        id: 'abcdef123456abcdef123456',
+        kind: 'plan',
+        scope: 'session',
+        title: 'Plan: Test feature',
+        excerpt: 'A small saved plan.',
+        content: '# Plan: Test feature\n\nA small saved plan.',
+        workspace: 'copilot-usage-studio',
+        sessionId: 'session-1',
+        sourcePath: 'memory-tool/memories/session/plan.md',
+        relativePath: 'session/plan.md',
+        createdAt: '2026-05-01T13:28:17.497Z',
+        modifiedAt: '2026-05-01T13:29:32.374Z',
+        sizeBytes: 40,
+        characterCount: 40,
+        lineCount: 3,
+      },
+    ],
     sessions: [
       {
         id: 'session-1',
@@ -174,6 +193,23 @@ describe('App', () => {
 
     expect(activeButton?.classList.contains('active')).toBe(true);
     expect(fixture.nativeElement.textContent).toContain('Loading usage');
+  });
+
+  it('opens Memory from the view query parameter', async () => {
+    globalThis.history.pushState(null, '', '/?view=memory');
+    const fixture = TestBed.createComponent(App);
+    TestBed.inject(HttpTestingController)
+      .expectOne('/data/sessions.json')
+      .flush(sessionDataFixture);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const activeButton = [...fixture.nativeElement.querySelectorAll('.view-nav button')].find(
+      (candidate: HTMLButtonElement) => candidate.textContent?.includes('Memory'),
+    );
+
+    expect(activeButton?.classList.contains('active')).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('Loading memories');
   });
 
   it('refreshes local VS Code session data through the runtime', async () => {

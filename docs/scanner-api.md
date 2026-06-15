@@ -26,7 +26,7 @@ import { scanVsCodeSessions } from './lib/scanner-api.mjs';
 const sessionData = await scanVsCodeSessions();
 ```
 
-The result is the normalized `SessionData` document consumed by the Angular UI. No file is created or changed.
+The result is the normalized `SessionData` document consumed by the Angular UI. It contains imported `sessions` plus a sibling `memories` collection for observed Copilot Markdown memories and plans. No file is created or changed.
 
 This is the intended path for:
 
@@ -96,7 +96,7 @@ There is one parser and pricing implementation. Future hosts should not copy sca
 
 ## Privacy And Source Rules
 
-The API reads local VS Code Copilot storage and can encounter prompts, file paths, repository context, tool schemas, and tool results. Hosts must keep results local unless a user explicitly exports them.
+The API reads local VS Code Copilot storage and can encounter prompts, file paths, repository context, tool schemas, tool results, saved memories, and saved plans. Hosts must keep results local unless a user explicitly exports them.
 
 The API does not change evidence rules:
 
@@ -105,5 +105,6 @@ The API does not change evidence rules:
 - cached input remains separate from normal input and output
 - chat snapshots remain fallback data
 - SQLite is metadata enrichment, not a billing source
+- saved memory files are indexed as local artifacts; their presence does not prove they were recalled into a model request
 
-See [data-ingestion.md](data-ingestion.md), [debug-log-schema.md](debug-log-schema.md), and [pricing.md](pricing.md) for those contracts.
+See [data-ingestion.md](data-ingestion.md), [copilot-memory.md](copilot-memory.md), [debug-log-schema.md](debug-log-schema.md), and [pricing.md](pricing.md) for those contracts.

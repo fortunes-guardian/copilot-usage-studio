@@ -12,6 +12,7 @@
     "data/github-copilot-pricing.json",
     "dist/copilot-usage-studio/browser/",
     "docs/local-deployment.md",
+    "docs/copilot-memory.md",
     "docs/pricing.md",
     "docs/scanner-api.md",
     "lib/",
