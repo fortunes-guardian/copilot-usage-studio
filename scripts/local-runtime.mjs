@@ -11,6 +11,7 @@ export function parseLocalRuntimeArgs(args = process.argv.slice(2)) {
     seedDataFile: 'public/data/sessions.json',
     staticDir: 'dist/copilot-usage-studio/browser',
     scanOnStart: true,
+    backendOnly: false,
     roots: [],
   };
 
@@ -21,6 +22,10 @@ export function parseLocalRuntimeArgs(args = process.argv.slice(2)) {
 
     if (flag === '--no-startup-scan') {
       options.scanOnStart = false;
+      continue;
+    }
+    if (flag === '--backend-only') {
+      options.backendOnly = true;
       continue;
     }
     if (['--host', '--port', '--data', '--seed', '--static', '--root'].includes(flag) && !value) {
@@ -54,6 +59,7 @@ export async function runLocalRuntimeCli(args = process.argv.slice(2)) {
     seedDataFile: resolve(options.seedDataFile),
     staticDir: resolve(options.staticDir),
     scanOnStart: options.scanOnStart,
+    backendOnly: options.backendOnly,
     scanOptions: options.roots.length ? { roots: options.roots } : {},
   });
 

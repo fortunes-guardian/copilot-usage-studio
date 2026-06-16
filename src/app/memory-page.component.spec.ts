@@ -50,12 +50,14 @@ describe('MemoryPageComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('What Copilot remembers');
     expect(fixture.nativeElement.textContent).toContain('3');
     expect(fixture.nativeElement.textContent).toContain('CSV Export Plan');
-    expect(fixture.nativeElement.textContent).toContain('Read-only library');
+    expect(fixture.nativeElement.textContent).toContain('Read-only');
+    expect(fixture.nativeElement.textContent).toContain('plan-1.md');
+    expect(fixture.nativeElement.textContent).toContain('Session-scoped memory');
   });
 
   it('filters memory content without losing the readable detail view', () => {
     const input = fixture.nativeElement.querySelector('input[type="search"]') as HTMLInputElement;
-    input.value = 'Architecture';
+    input.value = 'repo-1.md';
     input.dispatchEvent(new Event('input'));
     fixture.detectChanges();
 
@@ -64,6 +66,24 @@ describe('MemoryPageComponent', () => {
     expect(fixture.nativeElement.querySelector('.memory-content')?.textContent).toContain(
       'Architecture Notes',
     );
+  });
+
+  it('copies the selected memory content without requiring manual selection', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(globalThis.navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+    const copyButton = [...fixture.nativeElement.querySelectorAll('button')].find(
+      (button: HTMLButtonElement) => button.textContent?.trim() === 'Copy',
+    ) as HTMLButtonElement;
+
+    copyButton.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(writeText).toHaveBeenCalledWith('# CSV Export Plan\n\nUseful saved context.');
+    expect(fixture.nativeElement.textContent).toContain('Memory copied');
   });
 
   it('links a session-scoped plan back to the imported run', () => {

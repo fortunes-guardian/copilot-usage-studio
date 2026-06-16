@@ -10,6 +10,7 @@ import {
   CopilotSession,
   MemoryRecall,
 } from './session-data.model';
+import { HelpPopoverComponent } from './help-popover.component';
 
 type MemoryKindFilter = 'all' | CopilotMemoryKind;
 type MemoryScopeFilter = 'all' | CopilotMemoryScope;
@@ -17,7 +18,7 @@ type MemoryAction = 'open' | 'reveal';
 
 @Component({
   selector: 'app-memory-page',
-  imports: [DatePipe, DecimalPipe, FormsModule],
+  imports: [DatePipe, DecimalPipe, FormsModule, HelpPopoverComponent],
   templateUrl: './memory-page.component.html',
   styleUrl: './memory-page.component.css',
 })
@@ -56,7 +57,17 @@ export class MemoryPageComponent {
     return this.memoriesInput().filter((memory) => {
       const matchesQuery =
         !query ||
-        [memory.title, memory.excerpt, memory.content, memory.relativePath, memory.workspace]
+        [
+          memory.title,
+          memory.excerpt,
+          memory.content,
+          memory.relativePath,
+          memory.sourcePath,
+          this.fileName(memory),
+          memory.workspace,
+          memory.scope,
+          memory.kind,
+        ]
           .join(' ')
           .toLowerCase()
           .includes(query);
@@ -111,21 +122,25 @@ export class MemoryPageComponent {
   protected setScopeFilter(value: MemoryScopeFilter): void {
     this.scopeFilter.set(value);
     this.actionStatus.set('');
+    this.ensureVisibleSelection();
   }
 
   protected setKindFilter(value: MemoryKindFilter): void {
     this.kindFilter.set(value);
     this.actionStatus.set('');
+    this.ensureVisibleSelection();
   }
 
   protected setWorkspaceFilter(value: string): void {
     this.workspaceFilter.set(value);
     this.actionStatus.set('');
+    this.ensureVisibleSelection();
   }
 
   protected setQuery(value: string): void {
     this.query.set(value);
     this.actionStatus.set('');
+    this.ensureVisibleSelection();
   }
 
   protected resetFilters(): void {
@@ -133,6 +148,31 @@ export class MemoryPageComponent {
     this.scopeFilter.set('all');
     this.kindFilter.set('all');
     this.workspaceFilter.set('all');
+    this.ensureVisibleSelection();
+  }
+
+  protected fileName(memory: CopilotMemory): string {
+    return (memory.relativePath || memory.sourcePath).split(/[\\/]+/).filter(Boolean).at(-1) ?? memory.title;
+  }
+
+  protected scopeHelp(scope: CopilotMemoryScope): string {
+    return {
+      session: 'Session-scoped memory is tied to one Copilot session. It is useful for saved plans or temporary research from that run.',
+      repository: 'Repository memory is saved for a workspace repository and can be available to future Copilot sessions in that workspace.',
+      workspace: 'Workspace memory belongs to this VS Code workspace but is not clearly tied to one repository or session.',
+      global: 'Global memory is stored in VS Code user storage and can apply across workspaces on this machine.',
+    }[scope];
+  }
+
+  private ensureVisibleSelection(): void {
+    const filtered = this.filteredMemories();
+    if (!filtered.length) {
+      this.selectedId.set(null);
+      return;
+    }
+    if (!filtered.some((memory) => memory.id === this.selectedId())) {
+      this.selectedId.set(filtered[0].id);
+    }
   }
 
   protected linkedSession(memory: CopilotMemory): CopilotSession | null {
@@ -162,6 +202,15 @@ export class MemoryPageComponent {
       this.actionStatus.set('Path copied');
     } catch {
       this.actionStatus.set('Could not copy the path');
+    }
+  }
+
+  protected async copyContent(memory: CopilotMemory): Promise<void> {
+    try {
+      await globalThis.navigator?.clipboard?.writeText(memory.content);
+      this.actionStatus.set('Memory copied');
+    } catch {
+      this.actionStatus.set('Could not copy the memory');
     }
   }
 

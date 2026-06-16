@@ -186,12 +186,14 @@ test('parses local runtime host options', () => {
     'first-root',
     '--root=second-root',
     '--no-startup-scan',
+    '--backend-only',
   ]);
 
   assert.equal(options.host, '0.0.0.0');
   assert.equal(options.port, 4400);
   assert.deepEqual(options.roots, ['first-root', 'second-root']);
   assert.equal(options.scanOnStart, false);
+  assert.equal(options.backendOnly, true);
   assert.throws(() => parseLocalRuntimeArgs(['--root']), /--root requires a value/);
 });
 

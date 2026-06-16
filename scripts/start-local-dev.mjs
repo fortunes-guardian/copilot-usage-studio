@@ -5,16 +5,36 @@ const forwardedArgs = process.argv.slice(2);
 if (forwardedArgs.some((argument) => !/^[\w./:=\\-]+$/.test(argument))) {
   throw new Error('Angular dev-server arguments contain unsupported shell characters.');
 }
-const runtime = spawn(process.execPath, ['scripts/local-runtime.mjs', '--port', runtimePort], {
+const runtime = spawn(process.execPath, ['scripts/local-runtime.mjs', '--port', runtimePort, '--backend-only'], {
   stdio: 'inherit',
 });
+console.log('Starting Copilot Usage Studio in local development mode...');
+console.log('The backend API is internal. Open the app URL printed below.');
+
 const angular = process.platform === 'win32'
   ? spawn(
       process.env.ComSpec ?? 'cmd.exe',
       ['/d', '/s', '/c', ['npm run start:angular --', ...forwardedArgs].join(' ')],
-      { stdio: 'inherit' },
+      { stdio: ['ignore', 'pipe', 'pipe'] },
     )
-  : spawn('npm', ['run', 'start:angular', '--', ...forwardedArgs], { stdio: 'inherit' });
+  : spawn('npm', ['run', 'start:angular', '--', ...forwardedArgs], { stdio: ['ignore', 'pipe', 'pipe'] });
+
+let angularOutput = '';
+let announcedAppUrl = false;
+function handleAngularOutput(chunk, stream) {
+  const text = chunk.toString();
+  stream.write(text);
+  if (announcedAppUrl) return;
+  angularOutput = `${angularOutput}${text}`.slice(-4000);
+  const match = angularOutput.match(/http:\/\/(?:localhost|127\.0\.0\.1):\d+\//);
+  if (match) {
+    announcedAppUrl = true;
+    console.log(`\nOpen the app: ${match[0]}`);
+  }
+}
+
+angular.stdout.on('data', (chunk) => handleAngularOutput(chunk, process.stdout));
+angular.stderr.on('data', (chunk) => handleAngularOutput(chunk, process.stderr));
 
 let stopping = false;
 function stop(exitCode = 0) {

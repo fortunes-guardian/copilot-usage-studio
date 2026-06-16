@@ -3,24 +3,23 @@
     <div>
       <p class="eyebrow">Copilot memory</p>
       <h2>What Copilot remembers</h2>
-      <p>Browse saved knowledge and plans across your local VS Code workspaces.</p>
+      <p>Saved plans and memories from local VS Code Copilot storage.</p>
     </div>
-    <span class="read-only-badge">Read-only library</span>
+    <div class="memory-header-meta" aria-label="Memory summary">
+      <span><strong>{{ summary().total | number }}</strong> files</span>
+      <span><strong>{{ summary().plans | number }}</strong> plans</span>
+      <span><strong>{{ summary().recalls | number }}</strong> reads</span>
+      <span><strong>{{ summary().repositories | number }}</strong> workspaces</span>
+      <b>Read-only</b>
+    </div>
   </header>
-
-  <section class="memory-summary" aria-label="Memory summary">
-    <div><strong>{{ summary().total | number }}</strong><span>Saved files</span></div>
-    <div><strong>{{ summary().plans | number }}</strong><span>Plans</span></div>
-    <div><strong>{{ summary().recalls | number }}</strong><span>Observed reads</span></div>
-    <div><strong>{{ summary().repositories | number }}</strong><span>Workspaces</span></div>
-  </section>
 
   <section class="memory-controls" aria-label="Memory filters">
     <label class="memory-search">
       <span>Search memories</span>
       <input
         type="search"
-        placeholder="Search title, content, or path"
+        placeholder="Search title, filename, content, or path"
         [ngModel]="query()"
         (ngModelChange)="setQuery($event)"
       />
@@ -72,19 +71,24 @@
             [class.plan]="memory.kind === 'plan'"
             (click)="selectMemory(memory)"
           >
-            <span class="memory-card-meta">
-              <b>{{ memory.kind === 'plan' ? 'Plan' : scopeLabel(memory.scope) }}</b>
-              <time>{{ memory.modifiedAt | date: 'MMM d, y' }}</time>
+            <span class="memory-file-icon" aria-hidden="true">
+              {{ memory.kind === 'plan' ? 'P' : 'M' }}
             </span>
-            <strong>{{ memory.title }}</strong>
-            <p>{{ memory.excerpt }}</p>
-            <small>{{ memory.workspace || 'All workspaces' }}</small>
-            @if (memory.recalls?.length) {
-              <small class="memory-read-count">
-                Read {{ memory.recalls?.length | number }}
-                {{ memory.recalls?.length === 1 ? 'time' : 'times' }}
-              </small>
-            }
+            <span class="memory-card-main">
+              <small>{{ fileName(memory) }}</small>
+              <strong>{{ memory.title }}</strong>
+            </span>
+            <span class="memory-card-side">
+              <b>{{ memory.kind === 'plan' ? 'Plan' : scopeLabel(memory.scope) }}</b>
+              @if (memory.recalls?.length) {
+                <em>
+                  {{ memory.recalls?.length | number }}
+                  {{ memory.recalls?.length === 1 ? 'read' : 'reads' }}
+                </em>
+              } @else {
+                <time>{{ memory.modifiedAt | date: 'MMM d' }}</time>
+              }
+            </span>
           </button>
         }
       </aside>
@@ -103,6 +107,7 @@
               </p>
             </div>
             <div class="memory-actions">
+              <button type="button" (click)="copyContent(memory)">Copy</button>
               <button type="button" (click)="runMemoryAction(memory, 'open')">Open file</button>
               <button type="button" (click)="runMemoryAction(memory, 'reveal')">Show in folder</button>
               <button type="button" (click)="copyPath(memory)">Copy path</button>
@@ -110,9 +115,13 @@
           </header>
 
           <div class="memory-facts">
-            <span><b>{{ scopeLabel(memory.scope) }}</b> scope</span>
+            <span class="scope-fact">
+              <b>{{ scopeLabel(memory.scope) }}</b> scope
+              <app-help-popover [text]="scopeHelp(memory.scope)" label="Explain memory scope"></app-help-popover>
+            </span>
             <span><b>{{ memory.characterCount | number }}</b> characters</span>
             <span><b>{{ memory.lineCount | number }}</b> lines</span>
+            <span><b>{{ fileName(memory) }}</b></span>
             @if (linkedSession(memory); as session) {
               <button type="button" (click)="emitOpenSession(memory)">
                 Created in: {{ session.title }}
@@ -171,7 +180,13 @@
             </section>
           }
 
-          <pre class="memory-content">{{ memory.content }}</pre>
+          <details class="memory-source">
+            <summary>
+              <span>Markdown source</span>
+              <small>{{ memory.lineCount | number }} lines · {{ memory.characterCount | number }} characters</small>
+            </summary>
+            <pre class="memory-content">{{ memory.content }}</pre>
+          </details>
 
           <footer class="memory-path">
             <span>Local file</span>

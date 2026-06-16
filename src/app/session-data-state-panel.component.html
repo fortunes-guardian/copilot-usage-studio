@@ -1,8 +1,8 @@
 @if (state === 'loading') {
-  <section class="state-panel">
+  <section class="state-panel loading" aria-live="polite">
     <p class="eyebrow">Loading</p>
     <h2>Reading local sessions</h2>
-    <p>Checking the local Copilot data already imported by the runtime.</p>
+    <p>Checking the local Copilot data imported by the runtime.</p>
   </section>
 } @else if (state === 'error') {
   <section class="state-panel" [class.danger]="!isEmptyState">

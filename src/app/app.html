@@ -107,6 +107,8 @@
       (refresh)="refreshSessionData()"
     ></app-session-data-state-panel>
 
+    @if (sessionDataLoadState() === 'ready') {
+
     @if (activeView() === 'usage') {
       @defer {
         <app-usage-page
@@ -289,6 +291,7 @@
       </section>
     }
     </section>
+    }
     }
   </section>
   </div>
