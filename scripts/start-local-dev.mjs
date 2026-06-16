@@ -9,7 +9,8 @@ const runtime = spawn(process.execPath, ['scripts/local-runtime.mjs', '--port', 
   stdio: 'inherit',
 });
 console.log('Starting Copilot Usage Studio in local development mode...');
-console.log('The backend API is internal. Open the app URL printed below.');
+console.log(`Backend API: http://127.0.0.1:${runtimePort}/ (internal data service, not the app)`);
+console.log('Open the Angular app URL after it finishes building, usually http://localhost:4200/.');
 
 const angular = process.platform === 'win32'
   ? spawn(
@@ -25,12 +26,16 @@ function handleAngularOutput(chunk, stream) {
   const text = chunk.toString();
   stream.write(text);
   if (announcedAppUrl) return;
-  angularOutput = `${angularOutput}${text}`.slice(-4000);
+  angularOutput = stripAnsi(`${angularOutput}${text}`).slice(-4000);
   const match = angularOutput.match(/http:\/\/(?:localhost|127\.0\.0\.1):\d+\//);
   if (match) {
     announcedAppUrl = true;
-    console.log(`\nOpen the app: ${match[0]}`);
+    console.log(`\nApp ready: ${match[0]}`);
   }
+}
+
+function stripAnsi(text) {
+  return text.replace(/\x1B\[[0-?]*[ -/]*[@-~]/g, '');
 }
 
 angular.stdout.on('data', (chunk) => handleAngularOutput(chunk, process.stdout));
