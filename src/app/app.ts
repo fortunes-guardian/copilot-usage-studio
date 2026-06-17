@@ -3,6 +3,7 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 
 import { AnalyticsPageComponent } from './analytics-page.component';
 import { ComparePageComponent } from './compare-page.component';
+import { CustomizationsPageComponent } from './customizations-page.component';
 import { MemoryPageComponent } from './memory-page.component';
 import { SessionDataService } from './session-data.service';
 import { SessionDataStatePanelComponent } from './session-data-state-panel.component';
@@ -33,7 +34,14 @@ import {
 } from './session-analysis';
 import { sessionUsageUsd } from './session-cost-utils';
 
-type ActiveView = 'sessions' | 'usage' | 'memory' | 'compare' | 'analytics' | 'pricing';
+type ActiveView =
+  | 'sessions'
+  | 'usage'
+  | 'memory'
+  | 'customizations'
+  | 'compare'
+  | 'analytics'
+  | 'pricing';
 type SelectedRunView = 'overview' | 'cost' | 'turns' | 'trace';
 type ThemeMode = 'light' | 'dark';
 type SessionTimeFilter = 'all' | '7d' | '30d' | '90d';
@@ -44,6 +52,7 @@ type SessionTimeFilter = 'all' | '7d' | '30d' | '90d';
     AnalyticsPageComponent,
     DecimalPipe,
     ComparePageComponent,
+    CustomizationsPageComponent,
     MemoryPageComponent,
     SessionDataStatePanelComponent,
     PricingPageComponent,
@@ -143,6 +152,7 @@ export class App {
 
   protected readonly sessions = computed(() => this.sessionData()?.sessions ?? []);
   protected readonly memories = computed(() => this.sessionData()?.memories ?? []);
+  protected readonly customizations = computed(() => this.sessionData()?.customizations ?? []);
   protected readonly warningOptions = computed(() => {
     const labels = new Set<string>();
 
@@ -455,6 +465,7 @@ export class App {
       return view === 'sessions' ||
         view === 'usage' ||
         view === 'memory' ||
+        view === 'customizations' ||
         view === 'compare' ||
         view === 'analytics' ||
         view === 'pricing'

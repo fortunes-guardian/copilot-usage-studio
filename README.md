@@ -122,6 +122,7 @@ The app is a local developer visibility tool. It shows what can be understood fr
 - [docs/scanner-api.md](docs/scanner-api.md): reusable Node scanner contract for local hosts, desktop packaging, and extensions.
 - [docs/data-ingestion.md](docs/data-ingestion.md): where the data comes from and what it means.
 - [docs/copilot-memory.md](docs/copilot-memory.md): observed Copilot memory storage, normalized fields, and evidence boundaries.
+- [docs/customization-evidence.md](docs/customization-evidence.md): how instruction/skill evidence is detected and what it proves.
 - [docs/debug-log-schema.md](docs/debug-log-schema.md): observed VS Code Agent Debug Log schema and generated app data contract.
 - [docs/schema-change-workflow.md](docs/schema-change-workflow.md): weekly VS Code/Copilot update audit, compatibility gates, and baseline procedure.
 - [docs/roadmap.md](docs/roadmap.md): current state, completed work, and planned build order.

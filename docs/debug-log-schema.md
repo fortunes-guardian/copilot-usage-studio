@@ -319,6 +319,26 @@ When a model call references `systemPromptFile` or `toolsFile`, the scanner also
 
 `modelLimits` answers a capacity question, not a billing question: did the run get expensive because a request was close to the model's prompt/context limit, or because many model calls repeatedly sent context? It compares observed raw `inputTokens` with `models.json` limits and keeps pricing separate. The app deliberately does not show model capability noise such as supported API endpoints in the main UI.
 
+Top-level `customizations` records local Copilot customization files and request evidence:
+
+| Field | Meaning |
+| --- | --- |
+| `kind` | `instruction`, `skill`, `prompt`, `hook`, or `other` |
+| `title`, `name`, `description`, `applyTo`, `triggers` | Local customization metadata derived from frontmatter, filename, and Markdown |
+| `sourcePath`, `relativePath` | Local file location |
+| `characterCount`, `lineCount`, `excerpt` | Bounded size/readability metadata; full content is not persisted |
+| `evidenceStatus` | `sent`, `listed`, `discovered`, or `not_seen` |
+| `matches[]` | Session/request evidence rows with status, session id, timestamp, event index, model-call number, source field/file, and matched chunk counts |
+
+The evidence ladder is intentionally conservative:
+
+- `sent`: a distinctive content chunk from the file was found in `llm_request.attrs.inputMessages`, `llm_request.attrs.userRequest`, or a referenced request side file such as `system_prompt_0.json`.
+- `listed`: metadata such as filename, path, description, trigger, or `applyTo` appeared in request payload evidence, but content chunks did not.
+- `discovered`: setup/discovery events mentioned the customization, but no request payload match was found.
+- `not_seen`: no imported evidence matched the file.
+
+This feature answers "did this customization reach the model request?" It does not claim the model obeyed it, and it does not create exact section-level cost attribution.
+
 ## Feature Boundaries
 
 Build confidently from:

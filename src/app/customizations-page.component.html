@@ -1,0 +1,194 @@
+<section class="customizations-page">
+  <header class="customizations-header">
+    <div>
+      <p class="eyebrow">Customizations</p>
+      <h2>Did Copilot get your rules?</h2>
+      <p>Instructions, skills, prompts, and hooks found locally, matched against imported model requests.</p>
+    </div>
+    <div class="customizations-header-meta" aria-label="Customization summary">
+      <span><strong>{{ summary().total | number }}</strong> files</span>
+      <span><strong>{{ summary().sent | number }}</strong> sent</span>
+      <span><strong>{{ summary().listed | number }}</strong> listed</span>
+      <span><strong>{{ summary().discovered | number }}</strong> discovered</span>
+    </div>
+  </header>
+
+  <section class="customizations-controls" aria-label="Customization filters">
+    <label class="customizations-search">
+      <span>Search customizations</span>
+      <input
+        type="search"
+        placeholder="Search filename, title, description, applyTo, trigger"
+        [ngModel]="query()"
+        (ngModelChange)="setQuery($event)"
+      />
+    </label>
+    <label>
+      <span>Type</span>
+      <select [ngModel]="kindFilter()" (ngModelChange)="setKindFilter($event)">
+        <option value="all">All types</option>
+        <option value="instruction">Instructions</option>
+        <option value="skill">Skills</option>
+        <option value="prompt">Prompts</option>
+        <option value="hook">Hooks</option>
+        <option value="other">Other</option>
+      </select>
+    </label>
+    <label>
+      <span>Evidence</span>
+      <select [ngModel]="statusFilter()" (ngModelChange)="setStatusFilter($event)">
+        <option value="all">All evidence</option>
+        <option value="sent">Sent to model</option>
+        <option value="listed">Listed only</option>
+        <option value="discovered">Discovered only</option>
+        <option value="not_seen">Not seen</option>
+      </select>
+    </label>
+    <label>
+      <span>Workspace</span>
+      <select [ngModel]="workspaceFilter()" (ngModelChange)="setWorkspaceFilter($event)">
+        @for (workspace of workspaceOptions(); track workspace) {
+          <option [value]="workspace">{{ workspace === 'all' ? 'All workspaces' : workspace }}</option>
+        }
+      </select>
+    </label>
+  </section>
+
+  @if (filteredCustomizations().length) {
+    <section class="customizations-workspace">
+      <aside class="customizations-list" aria-label="Local customizations">
+        <div class="customizations-list-heading">
+          <span>{{ filteredCustomizations().length | number }} shown</span>
+          @if (
+            query() || kindFilter() !== 'all' || statusFilter() !== 'all' || workspaceFilter() !== 'all'
+          ) {
+            <button type="button" (click)="resetFilters()">Reset</button>
+          }
+        </div>
+        @for (customization of filteredCustomizations(); track customization.id) {
+          <button
+            type="button"
+            class="customization-card"
+            [class.active]="selectedCustomizationId() === customization.id"
+            [class.sent]="customization.evidenceStatus === 'sent'"
+            [class.listed]="customization.evidenceStatus === 'listed'"
+            (click)="selectCustomization(customization)"
+          >
+            <span class="customization-file-icon" aria-hidden="true">
+              {{ kindLabel(customization.kind).slice(0, 1) }}
+            </span>
+            <span class="customization-card-main">
+              <small>{{ fileName(customization) }}</small>
+              <strong>{{ customization.title }}</strong>
+            </span>
+            <span class="customization-card-side">
+              <b>{{ statusLabel(customization.evidenceStatus) }}</b>
+              <em>{{ kindLabel(customization.kind) }}</em>
+            </span>
+          </button>
+        }
+      </aside>
+
+      @if (selectedCustomization(); as customization) {
+        <article class="customization-detail">
+          <header class="customization-detail-header">
+            <div>
+              <span class="customization-kicker">{{ kindLabel(customization.kind) }}</span>
+              <h3>{{ customization.title }}</h3>
+              <p>{{ customization.workspace || 'Local' }} · updated {{ customization.modifiedAt | date: 'medium' }}</p>
+            </div>
+            <span
+              class="evidence-badge"
+              [class.sent]="customization.evidenceStatus === 'sent'"
+              [class.listed]="customization.evidenceStatus === 'listed'"
+              [class.discovered]="customization.evidenceStatus === 'discovered'"
+            >
+              {{ statusLabel(customization.evidenceStatus) }}
+              <app-help-popover
+                [text]="statusHelp(customization.evidenceStatus)"
+                label="Explain customization evidence"
+              ></app-help-popover>
+            </span>
+          </header>
+
+          <div class="customization-facts">
+            <span><b>{{ fileName(customization) }}</b></span>
+            <span><b>{{ customization.characterCount | number }}</b> characters</span>
+            <span><b>{{ customization.lineCount | number }}</b> lines</span>
+            @if (customization.applyTo.length) {
+              <span><b>applyTo</b> {{ customization.applyTo.join(', ') }}</span>
+            }
+            @if (customization.triggers.length) {
+              <span><b>trigger</b> {{ customization.triggers.join(', ') }}</span>
+            }
+          </div>
+
+          <section class="evidence-summary">
+            <h4>{{ statusLabel(customization.evidenceStatus) }}</h4>
+            <p>{{ statusHelp(customization.evidenceStatus) }}</p>
+            @if (customization.description) {
+              <p class="description">{{ customization.description }}</p>
+            }
+          </section>
+
+          @if (customization.matches.length) {
+            <section class="match-list" aria-label="Customization evidence matches">
+              <header>
+                <span class="customization-kicker">Where evidence appeared</span>
+                <h4>{{ customization.matches.length | number }} match{{ customization.matches.length === 1 ? '' : 'es' }}</h4>
+              </header>
+              @for (match of customization.matches; track match.sessionId + '-' + match.eventIndex + '-' + match.source) {
+                <article
+                  class="match-row"
+                  [class.sent]="match.status === 'sent'"
+                  [class.listed]="match.status === 'listed'"
+                  [class.discovered]="match.status === 'discovered'"
+                >
+                  <div>
+                    <time>{{ match.timestamp | date: 'medium' }}</time>
+                    @if (sessionForMatch(match.sessionId); as session) {
+                      <button type="button" (click)="emitOpenSession(match.sessionId)">
+                        {{ session.title }}
+                      </button>
+                    } @else {
+                      <span>Session {{ match.sessionId.slice(0, 8) }}</span>
+                    }
+                  </div>
+                  <div class="match-facts">
+                    <strong>{{ statusLabel(match.status) }}</strong>
+                    @if (match.modelCallNumber) {
+                      <span>model request #{{ match.modelCallNumber }}</span>
+                    }
+                    <span>{{ match.source }}</span>
+                    @if (match.matchedChunks) {
+                      <span>{{ match.matchedChunks | number }} content chunks matched</span>
+                    }
+                  </div>
+                </article>
+              }
+            </section>
+          }
+
+          <footer class="customization-path">
+            <span>Local file</span>
+            <code>{{ customization.sourcePath }}</code>
+          </footer>
+        </article>
+      }
+    </section>
+  } @else {
+    <section class="customizations-empty">
+      <h3>{{ customizationsInput().length ? 'No customizations match these filters' : 'No Copilot customizations found' }}</h3>
+      <p>
+        {{
+          customizationsInput().length
+            ? 'Try a broader search or reset the filters.'
+            : 'Add instruction or skill files under .github, then refresh the local scan.'
+        }}
+      </p>
+      @if (customizationsInput().length) {
+        <button type="button" (click)="resetFilters()">Reset filters</button>
+      }
+    </section>
+  }
+</section>

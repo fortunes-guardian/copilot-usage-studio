@@ -16,6 +16,8 @@ The normalized `SessionData` object is the deeper boundary. `scanVsCodeSessions(
 
 The same contract now carries a sibling `memories` collection. Memories are not sessions and are not folded into session cost records. Session-scoped memory folders are linked by decoded session id when that relationship is present on disk.
 
+The contract also carries a sibling `customizations` collection for local Copilot customization files such as instructions and skills. Customizations are not cost rows. They answer a different developer question: did this local rule or skill merely exist, or did evidence show that its content reached a model request?
+
 ## Copilot memory sources
 
 The scanner reads Markdown files beneath two observed stores:
@@ -126,6 +128,32 @@ Why: this explains what kind of setup payload was available to the model request
 When `requestShape.hasPreviousResponseId` and `inputItemTypes: ["function_call_output"]` are present, the app can also identify a model request as a continuation after tool output rather than the initial request. This is request-flow evidence, not exact per-tool token attribution.
 
 Important boundary: these are source-backed size and presence signals. They are not exact per-section billing rows. Exact local cost is still calculated at the `llm_request` model-call level from logged token totals. Only show exact instruction/MCP cost if a future source exposes token counts for those specific sections.
+
+## Copilot customization evidence
+
+The scanner reads local workspace customizations from observed `.github` folders:
+
+```text
+<workspace>/.github/instructions/**/*.md
+<workspace>/.github/skills/**/*.md
+<workspace>/.github/prompts/**/*.md
+<workspace>/.github/hooks/**/*.md
+```
+
+The first implemented UI focuses on instructions and skills, but the data model already keeps a generic `kind` so prompts and hooks can be added without a new product concept.
+
+Each customization stores metadata only: title, name, description, `applyTo`, triggers, path, size, and an excerpt. The scanner reads the full file during the scan to build fingerprints, but it does not persist the full content into `sessions.json`.
+
+Evidence levels:
+
+- `sent`: distinctive content chunks from the customization were matched inside a model request payload or a referenced request side file.
+- `listed`: the model request listed the customization by path, filename, title, description, trigger, or `applyTo`, but full content was not matched.
+- `discovered`: VS Code setup/discovery events mentioned the customization, but request payload evidence was not found.
+- `not_seen`: the file exists locally, but imported sessions did not contain discovery or request evidence for it.
+
+Why: VS Code can resolve an instruction or skill without necessarily sending the full file content into the model. Developers need that distinction when debugging whether their AI-assisted-development customizations are actually active.
+
+Boundary: `sent` means the customization text appeared in the imported request evidence. It does not prove that the model followed the instruction, changed its output because of it, or that a provider billed a separate token bucket for it.
 
 See [debug-log-schema.md](debug-log-schema.md) for the observed VS Code Agent Debug Log fields and the generated app schema. That document exists so new features start from the real data model rather than from assumptions about what the logs probably contain.
 

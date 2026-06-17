@@ -18,6 +18,13 @@
       <button type="button" [class.active]="activeView() === 'memory'" (click)="activeView.set('memory')">
         Memory
       </button>
+      <button
+        type="button"
+        [class.active]="activeView() === 'customizations'"
+        (click)="activeView.set('customizations')"
+      >
+        Customizations
+      </button>
       <button type="button" [class.active]="activeView() === 'compare'" (click)="activeView.set('compare')">
         Compare
       </button>
@@ -129,6 +136,16 @@
         ></app-memory-page>
       } @placeholder {
         <p class="deferred-panel">Loading memories...</p>
+      }
+    } @else if (activeView() === 'customizations') {
+      @defer {
+        <app-customizations-page
+          [customizations]="customizations()"
+          [sessions]="sessions()"
+          (openSession)="openSession($event)"
+        ></app-customizations-page>
+      } @placeholder {
+        <p class="deferred-panel">Loading customizations...</p>
       }
     } @else if (activeView() === 'pricing') {
       @defer {

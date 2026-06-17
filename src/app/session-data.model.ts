@@ -286,6 +286,43 @@ export interface CopilotMemory {
   recalls?: MemoryRecall[];
 }
 
+export type CopilotCustomizationKind = 'instruction' | 'skill' | 'prompt' | 'hook' | 'other';
+export type CopilotCustomizationEvidenceStatus = 'sent' | 'listed' | 'discovered' | 'not_seen';
+
+export interface CopilotCustomizationMatch {
+  status: CopilotCustomizationEvidenceStatus;
+  sessionId: string;
+  workspace: string;
+  timestamp: string;
+  eventIndex: number;
+  modelCallNumber: number;
+  source: string;
+  matchedChunks: number;
+  matchedCharacters: number;
+}
+
+export interface CopilotCustomization {
+  id: string;
+  kind: CopilotCustomizationKind;
+  title: string;
+  name: string;
+  description: string;
+  applyTo: string[];
+  triggers: string[];
+  scope: string;
+  workspace: string;
+  sourcePath: string;
+  relativePath: string;
+  createdAt: string;
+  modifiedAt: string;
+  sizeBytes: number;
+  characterCount: number;
+  lineCount: number;
+  excerpt: string;
+  evidenceStatus: CopilotCustomizationEvidenceStatus;
+  matches: CopilotCustomizationMatch[];
+}
+
 export interface SessionData {
   schemaVersion: number;
   generatedAt: string;
@@ -304,8 +341,12 @@ export interface SessionData {
     scannedMemoryRoots?: number;
     importedMemories?: number;
     importedPlans?: number;
+    scannedCustomizationRoots?: number;
+    importedCustomizations?: number;
     skippedOversizedMemories?: number;
     skippedUnreadableMemories?: number;
+    skippedOversizedCustomizations?: number;
+    skippedUnreadableCustomizations?: number;
     skippedEmptyDebugLogs: number;
     skippedChatSnapshotsWithoutRequests: number;
     skippedDuplicateChatSnapshots: number;
@@ -314,5 +355,6 @@ export interface SessionData {
     warnings: string[];
   };
   memories?: CopilotMemory[];
+  customizations?: CopilotCustomization[];
   sessions: CopilotSession[];
 }

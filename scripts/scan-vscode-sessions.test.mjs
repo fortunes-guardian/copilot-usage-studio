@@ -12,6 +12,7 @@ import {
   mergeCacheTokenAudits,
   memoryRecallsFromDebugLog,
   modelBreakdownFromLlmRequests,
+  scanVsCodeSessions,
   sessionFromChatSnapshot,
   sessionFromDebugLog,
 } from './scan-vscode-sessions.mjs';
@@ -526,6 +527,89 @@ test('keeps chat snapshots visibly estimated and cache-empty', () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('indexes Copilot customizations and classifies request evidence', async () => {
+  const { root, sessionDir, workspaceDir } = tempSessionFixture('customization-evidence');
+  const workspaceFolder = join(root, 'example-workspace');
+  const instructionsDir = join(workspaceFolder, '.github', 'instructions');
+  const skillsDir = join(workspaceFolder, '.github', 'skills');
+
+  try {
+    mkdirSync(instructionsDir, { recursive: true });
+    mkdirSync(skillsDir, { recursive: true });
+    writeFileSync(
+      join(workspaceDir, 'workspace.json'),
+      JSON.stringify({ folder: pathToFileUrl(workspaceFolder) }),
+      'utf8',
+    );
+    writeFileSync(
+      join(instructionsDir, 'backend.instructions.md'),
+      [
+        '---',
+        'applyTo: src/**/*.cs',
+        'description: Backend aggregate rule.',
+        '---',
+        '',
+        'Always create aggregates with validators and domain events.',
+      ].join('\n'),
+      'utf8',
+    );
+    writeFileSync(
+      join(skillsDir, 'review.SKILL.md'),
+      [
+        '---',
+        'title: Review Skill',
+        'id: review-skill',
+        'description: Review code for release safety.',
+        '---',
+        '',
+        'When reviewing code, check migrations, rollback, and auth boundaries.',
+      ].join('\n'),
+      'utf8',
+    );
+    writeFileSync(
+      join(sessionDir, 'system_prompt_0.json'),
+      JSON.stringify({
+        content: [
+          {
+            type: 'text',
+            content:
+              '<instruction><file>backend.instructions.md</file><description>Backend aggregate rule.</description><applyTo>src/**/*.cs</applyTo></instruction>',
+          },
+        ],
+      }),
+      'utf8',
+    );
+    writeJsonl(join(sessionDir, 'main.jsonl'), [
+      event(1, 'user_message', 'user message', { attrs: { content: 'Review the backend.' } }),
+      event(2, 'llm_request', 'panel/editAgent', {
+        attrs: {
+          model: 'gpt-5.4',
+          inputTokens: 2_000,
+          outputTokens: 100,
+          systemPromptFile: 'system_prompt_0.json',
+          inputMessages:
+            'The active instruction says: Always create aggregates with validators and domain events.',
+        },
+      }),
+    ]);
+
+    const data = await scanVsCodeSessions({ roots: [workspaceDir], sqlite: false });
+    const instruction = data.customizations.find((item) => item.kind === 'instruction');
+    const skill = data.customizations.find((item) => item.kind === 'skill');
+
+    assert.equal(data.ingestion.importedCustomizations, 2);
+    assert.equal(instruction.evidenceStatus, 'sent');
+    assert.equal(instruction.matches.some((match) => match.status === 'sent'), true);
+    assert.equal(skill.evidenceStatus, 'not_seen');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+function pathToFileUrl(file) {
+  return `file://${file.replace(/\\/g, '/')}`;
+}
 
 function tempSessionFixture(name) {
   const fixture = tempWorkspaceFixture(name);

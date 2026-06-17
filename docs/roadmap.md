@@ -345,14 +345,25 @@ Still to improve:
 
 Why: the Trace view is currently good for scanning, but debugging needs selection. VS Code's own Agent Debug Logs let a user click an event and inspect details. This app should do the same, with cost fields added.
 
-## Phase 11: Input Attribution And MCP Impact
+## Phase 11: Customization Evidence And Input Attribution
 
-Status: started, needs careful evidence boundaries.
+Status: first customization-evidence slice built; broader attribution still needs careful evidence boundaries.
 
 Debugger questions:
 
-- What effect on token and cost did my GitHub/custom instructions have?
+- Did my instruction, skill, prompt, hook, or agent customization actually reach the model request?
+- Was it only discovered/listed, or was distinctive file content sent?
 - What effect on token and cost did MCP servers, skills, slash commands, agents, hooks, or other customizations have?
+
+Done:
+
+- Scan workspace `.github/instructions`, `.github/skills`, `.github/prompts`, and `.github/hooks` Markdown files as local Copilot customizations.
+- Classify customizations as instruction, skill, prompt, hook, or other.
+- Store metadata, path, `applyTo`, triggers, size, and excerpt without persisting full file content in generated app data.
+- Match customization evidence against `llm_request.attrs.inputMessages`, `llm_request.attrs.userRequest`, and referenced `system_prompt_*.json` side files.
+- Add conservative evidence states: `sent`, `listed`, `discovered`, and `not_seen`.
+- Add a top-level Customizations page with search/filtering, evidence explanation, match rows, and session links.
+- Verify the first slice against local pending `.github` instruction/skill files and recent VS Code Agent Debug Logs.
 
 Build:
 
@@ -367,6 +378,9 @@ Build:
 - Keep `cachedTokens` import covered in debug-log ingestion and add any future explicit numeric cache fields as they appear. Treat `cache_control` hints or prompt-cache metadata as evidence about cache behavior, but not as billable cached-token counts unless the event exposes numeric cached-token totals.
 - Keep the observed Agent Debug Log schema documented in [debug-log-schema.md](debug-log-schema.md) and add fixture coverage before building new cost claims from newly discovered fields.
 - Promote the compact Cost request-payload evidence into a deeper `Input attribution` panel only after the scanner preserves enough structured request sections.
+- Expand Customizations beyond workspace `.github` files into user-level Copilot customization locations once the source paths are observed and tested.
+- Add exact file-open/reveal actions for Customizations through the local runtime, reusing the guarded id-based pattern from Memory.
+- Add per-session "Customizations used" summaries, but keep the top-level Customizations page as the primary debugging surface.
 - Add per-model-call setup payload summaries from `systemPromptFile` and `toolsFile` references: system/custom instruction file size, tool schema file size, total tool count, MCP tool count, and largest schema descriptions. Show these as payload size evidence, not exact token bills.
 - Add user-request grouped call summaries: for each user prompt boundary, show the following model calls, biggest input request, repeated input load, setup payload files referenced, tool/MCP schema size, and large tool results observed after the prompt.
 - Add lightweight badges to the Calls timeline/table when reliable: `You` for a preceding user prompt and setup markers only when the referenced instructions/tools/MCP payload first appears or changes. Do not mark every call when the same setup payload is attached repeatedly.

@@ -21,6 +21,8 @@ const fallbackPricingModel = pricingData.fallbackModel;
 const traceEventLimit = 1000;
 const memoryFileLimit = 5000;
 const memoryFileSizeLimit = 1024 * 1024;
+const customizationFileLimit = 1000;
+const customizationFileSizeLimit = 1024 * 1024;
 
 const pricing = pricingData.models;
 
@@ -42,8 +44,12 @@ function createDiagnostics() {
     scannedMemoryRoots: 0,
     importedMemories: 0,
     importedPlans: 0,
+    scannedCustomizationRoots: 0,
+    importedCustomizations: 0,
     skippedOversizedMemories: 0,
     skippedUnreadableMemories: 0,
+    skippedOversizedCustomizations: 0,
+    skippedUnreadableCustomizations: 0,
     skippedEmptyDebugLogs: 0,
     skippedChatSnapshotsWithoutRequests: 0,
     skippedDuplicateChatSnapshots: 0,
@@ -363,6 +369,345 @@ function memoryExcerpt(content) {
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 280);
+}
+
+function parseSimpleFrontmatter(content) {
+  const text = String(content ?? '');
+  if (!text.startsWith('---')) {
+    return {};
+  }
+
+  const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!match) {
+    return {};
+  }
+
+  const result = {};
+  const lines = match[1].split(/\r?\n/);
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const scalar = line.match(/^([A-Za-z][\w-]*)\s*:\s*(.*)$/);
+    if (!scalar) {
+      continue;
+    }
+
+    const key = scalar[1];
+    let value = scalar[2].trim();
+    if (value === '|') {
+      const block = [];
+      index += 1;
+      while (index < lines.length && /^\s+/.test(lines[index])) {
+        block.push(lines[index].replace(/^\s{2}/, ''));
+        index += 1;
+      }
+      index -= 1;
+      result[key] = block.join('\n').trim();
+      continue;
+    }
+
+    const list = [];
+    while (index + 1 < lines.length && /^\s*-\s+/.test(lines[index + 1])) {
+      index += 1;
+      list.push(lines[index].replace(/^\s*-\s+/, '').replace(/^["']|["']$/g, '').trim());
+    }
+    result[key] = list.length ? list : value.replace(/^["']|["']$/g, '');
+  }
+
+  return result;
+}
+
+function markdownTitle(content, file) {
+  const frontmatter = parseSimpleFrontmatter(content);
+  if (frontmatter.title) {
+    return String(frontmatter.title).slice(0, 160);
+  }
+
+  return memoryTitle(content, file);
+}
+
+function titleFromFileName(file) {
+  return basename(file, extname(file))
+    .replace(/\.instructions$/i, '')
+    .replace(/\.skill$/i, '')
+    .replace(/[-_]+/g, ' ')
+    .replace(/\b\w/g, (character) => character.toUpperCase())
+    .slice(0, 160);
+}
+
+function customizationKind(file) {
+  const normalized = file.replace(/\\/g, '/').toLowerCase();
+  const name = basename(file).toLowerCase();
+
+  if (normalized.includes('/.github/instructions/') || name.endsWith('.instructions.md')) {
+    return 'instruction';
+  }
+  if (normalized.includes('/.github/skills/') || name === 'skill.md' || name.endsWith('.skill.md')) {
+    return 'skill';
+  }
+  if (normalized.includes('/.github/prompts/') || name.endsWith('.prompt.md')) {
+    return 'prompt';
+  }
+  if (normalized.includes('/.github/hooks/')) {
+    return 'hook';
+  }
+  return 'other';
+}
+
+function customizationFromFile(file, root, workspace) {
+  try {
+    const stats = statSync(file);
+    if (stats.size > customizationFileSizeLimit) {
+      diagnostics.skippedOversizedCustomizations += 1;
+      diagnostics.warnings.push(`${file}: customization skipped because it exceeds 1 MiB.`);
+      return null;
+    }
+
+    const content = readFileSync(file, 'utf8');
+    const frontmatter = parseSimpleFrontmatter(content);
+    const kind = customizationKind(file);
+    const relativePath = relative(root, file);
+    const description = String(frontmatter.description ?? '').trim();
+    const applyTo = Array.isArray(frontmatter.applyTo)
+      ? frontmatter.applyTo.map(String)
+      : String(frontmatter.applyTo ?? '')
+          .split(',')
+          .map((value) => value.trim())
+          .filter(Boolean);
+
+    return {
+      id: createHash('sha256').update(resolve(file)).digest('hex').slice(0, 24),
+      kind,
+      title: frontmatter.title ? markdownTitle(content, file) : titleFromFileName(file),
+      name: String(frontmatter.id ?? basename(file, extname(file))).trim(),
+      description: description || memoryExcerpt(content).slice(0, 180),
+      applyTo,
+      triggers: Array.isArray(frontmatter.triggers) ? frontmatter.triggers.map(String) : [],
+      scope: frontmatter.scope ? String(frontmatter.scope) : 'workspace',
+      workspace,
+      sourcePath: resolve(file),
+      relativePath,
+      createdAt: stats.birthtimeMs > 0 ? stats.birthtime.toISOString() : '',
+      modifiedAt: stats.mtime.toISOString(),
+      sizeBytes: stats.size,
+      characterCount: content.length,
+      lineCount: content ? content.split(/\r?\n/).length : 0,
+      excerpt: memoryExcerpt(content),
+      _content: content,
+    };
+  } catch (error) {
+    diagnostics.skippedUnreadableCustomizations += 1;
+    diagnostics.warnings.push(`${file}: customization skipped: ${error.message}`);
+    return null;
+  }
+}
+
+function customizationsFromWorkspace(workspaceDir) {
+  const folder = workspaceFolderPath(workspaceDir);
+  if (!folder) {
+    return [];
+  }
+
+  const roots = [
+    join(folder, '.github', 'instructions'),
+    join(folder, '.github', 'skills'),
+    join(folder, '.github', 'prompts'),
+    join(folder, '.github', 'hooks'),
+  ].filter(existsSync);
+
+  return roots.flatMap((root) => {
+    diagnostics.scannedCustomizationRoots += 1;
+    const files = listFilesRecursive(
+      root,
+      (file) => extname(file).toLowerCase() === '.md',
+      customizationFileLimit,
+    );
+    if (files.length >= customizationFileLimit) {
+      diagnostics.warnings.push(`${root}: customization scan capped at ${customizationFileLimit} files.`);
+    }
+
+    return files
+      .map((file) => customizationFromFile(file, folder, workspaceName(workspaceDir)))
+      .filter(Boolean);
+  });
+}
+
+function normalizeMatchText(value) {
+  return String(value ?? '')
+    .toLowerCase()
+    .replace(/\\r?\\n/g, '\n')
+    .replace(/\\\\/g, '/')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function customizationChunks(content) {
+  const lineChunks = String(content ?? '')
+    .split(/\r?\n/)
+    .map(normalizeMatchText)
+    .filter((chunk) => chunk.length >= 32 && /[a-z]/.test(chunk));
+  const normalized = normalizeMatchText(content);
+  const chunks = normalized
+    .split(/\n{2,}|(?<=\.)\s+/)
+    .map((chunk) => chunk.trim())
+    .filter((chunk) => chunk.length >= 48 && /[a-z]/.test(chunk))
+    .sort((a, b) => b.length - a.length);
+
+  if (normalized.length >= 80) {
+    chunks.unshift(normalized.slice(0, Math.min(normalized.length, 420)));
+  }
+
+  return [...new Set([...lineChunks, ...chunks])].slice(0, 24);
+}
+
+function requestTextParts(sessionDir, event) {
+  const parts = [
+    { source: 'inputMessages', text: event.attrs?.inputMessages },
+    { source: 'userRequest', text: event.attrs?.userRequest },
+  ];
+  const systemPromptFile = String(event.attrs?.systemPromptFile ?? '').trim();
+  if (systemPromptFile && existsSync(join(sessionDir, systemPromptFile))) {
+    parts.push({ source: systemPromptFile, text: readFileSync(join(sessionDir, systemPromptFile), 'utf8') });
+  }
+
+  return parts.map((part) => ({
+    ...part,
+    normalized: normalizeMatchText(part.text),
+  }));
+}
+
+function customizationTerms(customization) {
+  return [
+    customization.sourcePath,
+    customization.relativePath,
+    basename(customization.sourcePath),
+    customization.name,
+    customization.title,
+    customization.description,
+    ...customization.applyTo,
+    ...customization.triggers,
+  ]
+    .map(normalizeMatchText)
+    .filter((value) => value.length >= 4);
+}
+
+function evidenceStatus(rank) {
+  return ['not_seen', 'discovered', 'listed', 'sent'][rank] ?? 'not_seen';
+}
+
+function statusRank(status) {
+  return {
+    sent: 3,
+    listed: 2,
+    discovered: 1,
+    not_seen: 0,
+  }[status] ?? 0;
+}
+
+function recordCustomizationMatch(state, match) {
+  state.matches.push(match);
+  state.matches.sort(
+    (a, b) => statusRank(b.status) - statusRank(a.status) || b.timestamp.localeCompare(a.timestamp),
+  );
+  state.matches = state.matches.slice(0, 60);
+}
+
+function customizationEvidenceFromDebugLogs(debugRoot, customizations, workspace = '') {
+  if (!customizations.length || !existsSync(debugRoot)) {
+    return customizations.map((customization) => {
+      const { _content, ...publicCustomization } = customization;
+      return { ...publicCustomization, evidenceStatus: 'not_seen', matches: [] };
+    });
+  }
+
+  const matchState = new Map(
+    customizations.map((customization) => [
+      customization.id,
+      {
+        rank: 0,
+        matches: [],
+        chunks: customizationChunks(customization._content),
+        terms: customizationTerms(customization),
+      },
+    ]),
+  );
+
+  for (const sessionDir of listDirs(debugRoot)) {
+    const sessionId = basename(sessionDir);
+    const main = readJsonl(join(sessionDir, 'main.jsonl'));
+    const modelCallNumbers = new Map();
+    let modelCallNumber = 0;
+    main.forEach((event, index) => {
+      if (event.type === 'llm_request') {
+        modelCallNumber += 1;
+        modelCallNumbers.set(index, modelCallNumber);
+      }
+    });
+
+    for (const [index, event] of main.entries()) {
+      const eventText = normalizeMatchText(`${event.name ?? ''} ${event.attrs?.details ?? ''}`);
+      for (const customization of customizations) {
+        const state = matchState.get(customization.id);
+        if (!state) {
+          continue;
+        }
+
+        if (event.type === 'llm_request') {
+          const parts = requestTextParts(sessionDir, event);
+          for (const part of parts) {
+            const matchedChunks = state.chunks.filter((chunk) => part.normalized.includes(chunk));
+            const listed = !matchedChunks.length && state.terms.some((term) => part.normalized.includes(term));
+            if (!matchedChunks.length && !listed) {
+              continue;
+            }
+
+            const rank = matchedChunks.length ? 3 : 2;
+            state.rank = Math.max(state.rank, rank);
+            recordCustomizationMatch(state, {
+              status: evidenceStatus(rank),
+              sessionId,
+              workspace,
+              timestamp: timestampForEvent(event),
+              eventIndex: index,
+              modelCallNumber: modelCallNumbers.get(index) ?? 0,
+              source: part.source,
+              matchedChunks: matchedChunks.length,
+              matchedCharacters: matchedChunks.reduce((sum, chunk) => sum + chunk.length, 0),
+            });
+          }
+          continue;
+        }
+
+        if (state.rank < 2 && state.terms.some((term) => eventText.includes(term))) {
+          state.rank = Math.max(state.rank, 1);
+          recordCustomizationMatch(state, {
+            status: 'discovered',
+            sessionId,
+            workspace,
+            timestamp: timestampForEvent(event),
+            eventIndex: index,
+            modelCallNumber: 0,
+            source: String(event.name ?? event.type ?? 'event'),
+            matchedChunks: 0,
+            matchedCharacters: 0,
+          });
+        }
+      }
+    }
+  }
+
+  return customizations.map((customization) => {
+    const state = matchState.get(customization.id);
+    const matches = (state?.matches ?? []).sort(
+      (a, b) => statusRank(b.status) - statusRank(a.status) || b.timestamp.localeCompare(a.timestamp),
+    );
+    const { _content, ...publicCustomization } = customization;
+    return {
+      ...publicCustomization,
+      evidenceStatus: evidenceStatus(state?.rank ?? 0),
+      matches,
+    };
+  });
 }
 
 function memoryFromFile(file, root, source, workspace) {
@@ -1329,6 +1674,21 @@ function workspaceName(workspaceDir) {
   return folder ? basename(folder) : basename(workspaceDir);
 }
 
+function workspaceFolderPath(workspaceDir) {
+  const workspaceJson = join(workspaceDir, 'workspace.json');
+  const raw = existsSync(workspaceJson) ? safeJson(readFileSync(workspaceJson, 'utf8')) : null;
+  if (!raw?.folder) {
+    return '';
+  }
+
+  try {
+    const folder = decodeURIComponent(String(raw.folder).replace(/^file:\/+/, ''));
+    return platform() === 'win32' ? folder.replace(/^\//, '') : `/${folder.replace(/^\/+/, '')}`;
+  } catch {
+    return '';
+  }
+}
+
 function parseAssistantResponse(raw) {
   const parsed = typeof raw === 'string' ? safeJson(raw) : raw;
   if (!Array.isArray(parsed)) {
@@ -1772,6 +2132,13 @@ function parseWorkspace(workspaceDir) {
   const stateBySessionId = readWorkspaceState(workspaceDir);
   const workspace = workspaceName(workspaceDir);
   const debugRoot = join(workspaceDir, 'GitHub.copilot-chat', 'debug-logs');
+  const customizationInventory = customizationsFromWorkspace(workspaceDir);
+  const customizations = customizationEvidenceFromDebugLogs(
+    debugRoot,
+    customizationInventory,
+    workspace,
+  );
+  diagnostics.importedCustomizations += customizations.length;
   const debugSessions = listDirs(debugRoot)
     .map((sessionDir) => sessionFromDebugLog(sessionDir, workspaceDir))
     .filter(Boolean)
@@ -1798,6 +2165,7 @@ function parseWorkspace(workspaceDir) {
       'workspace',
       workspace,
     ),
+    customizations,
   };
 }
 
@@ -1884,6 +2252,15 @@ export async function scanVsCodeSessions(options = {}) {
     const memories = attachMemoryRecalls([...memoryMap.values()], sessions).sort((a, b) =>
       b.modifiedAt.localeCompare(a.modifiedAt),
     );
+    const customizationMap = new Map();
+    for (const customization of workspaceResults.flatMap((result) => result.customizations)) {
+      customizationMap.set(customization.id, customization);
+    }
+    const customizations = [...customizationMap.values()].sort(
+      (a, b) =>
+        statusRank(b.evidenceStatus) - statusRank(a.evidenceStatus) ||
+        b.modifiedAt.localeCompare(a.modifiedAt),
+    );
     const seenIds = new Set();
     for (const session of sessions) {
       if (seenIds.has(session.id)) {
@@ -1906,6 +2283,7 @@ export async function scanVsCodeSessions(options = {}) {
         ),
       },
       memories,
+      customizations,
       sessions,
     };
   } finally {
