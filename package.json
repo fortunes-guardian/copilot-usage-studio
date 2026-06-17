@@ -1,6 +1,6 @@
 {
   "name": "copilot-usage-studio",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Local VS Code GitHub Copilot usage, cost, and session insights.",
   "type": "module",
   "bin": {
