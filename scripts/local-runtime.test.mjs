@@ -85,6 +85,34 @@ test('keeps the last valid snapshot when a refresh fails', async () => {
   }
 });
 
+test('runs the default scanner in a child process', async () => {
+  const fixture = runtimeFixture('worker-scan');
+  const workspaceDir = join(fixture.root, 'workspace');
+  writeWorkspaceDebugSession(workspaceDir, 'worker-session');
+  const runtime = createLocalRuntime({
+    port: 0,
+    dataFile: fixture.dataFile,
+    seedDataFile: null,
+    staticDir: fixture.staticDir,
+    scanOnStart: false,
+    scanOptions: { roots: [workspaceDir], sqlite: false },
+    logger: silentLogger(),
+  });
+
+  try {
+    const address = await runtime.listen();
+    const origin = `http://127.0.0.1:${address.port}`;
+    const response = await jsonRequest(`${origin}/api/scan`, { method: 'POST' });
+
+    assert.equal(response.sessionData.sessions.length, 1);
+    assert.equal(response.sessionData.sessions[0].id, 'worker-session');
+    assert.equal(response.status.scanProgress.stage, 'complete');
+  } finally {
+    await runtime.close();
+    rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
 test('holds a fresh-install data request until the startup scan completes', async () => {
   const fixture = runtimeFixture('first-run');
   let finishScan;
@@ -223,6 +251,47 @@ function sessionData(id, generatedAt) {
     ingestion: { importedSessions: 1 },
     sessions: [{ id }],
   };
+}
+
+function writeWorkspaceDebugSession(workspaceDir, sessionId) {
+  mkdirSync(workspaceDir, { recursive: true });
+  writeFileSync(
+    join(workspaceDir, 'workspace.json'),
+    JSON.stringify({ folder: 'file:///tmp/copilot-usage-studio-worker-fixture' }),
+    'utf8',
+  );
+  const sessionDir = join(workspaceDir, 'GitHub.copilot-chat', 'debug-logs', sessionId);
+  mkdirSync(sessionDir, { recursive: true });
+  const records = [
+    {
+      ts: 1,
+      timestamp: '2026-06-18T08:00:00.000Z',
+      sid: sessionId,
+      type: 'user_message',
+      name: 'user message',
+      status: 'ok',
+      attrs: { content: 'Scan from worker.' },
+    },
+    {
+      ts: 2,
+      timestamp: '2026-06-18T08:00:01.000Z',
+      sid: sessionId,
+      type: 'llm_request',
+      name: 'panel/editAgent',
+      status: 'ok',
+      attrs: {
+        model: 'gpt-5.4',
+        inputTokens: 1000,
+        cachedTokens: 500,
+        outputTokens: 100,
+      },
+    },
+  ];
+  writeFileSync(
+    join(sessionDir, 'main.jsonl'),
+    records.map((record) => JSON.stringify(record)).join('\n'),
+    'utf8',
+  );
 }
 
 function silentLogger() {

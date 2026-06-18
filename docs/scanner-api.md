@@ -61,6 +61,8 @@ Only one scan may run at a time within one Node process. Hosts should debounce f
 
 `lib/local-runtime.mjs` is the first shared API host. It keeps the last valid `SessionData` snapshot in memory, serves it while scans run, and persists successful refreshes.
 
+The local runtime runs the scanner in a child process by default. This keeps the HTTP status/log endpoints responsive while large local VS Code profiles are being imported.
+
 The runtime intentionally keeps scanner and transport concerns separate:
 
 - the scanner knows how to read and normalize VS Code data

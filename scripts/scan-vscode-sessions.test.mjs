@@ -567,6 +567,12 @@ test('indexes Copilot customizations and classifies request evidence', async () 
       ].join('\n'),
       'utf8',
     );
+    mkdirSync(join(skillsDir, 'node_modules', 'accidental-package'), { recursive: true });
+    writeFileSync(
+      join(skillsDir, 'node_modules', 'accidental-package', 'SHOULD-NOT-SCAN.md'),
+      'This dependency markdown file must not be imported as a customization.',
+      'utf8',
+    );
     writeFileSync(
       join(sessionDir, 'system_prompt_0.json'),
       JSON.stringify({
@@ -599,6 +605,7 @@ test('indexes Copilot customizations and classifies request evidence', async () 
     const skill = data.customizations.find((item) => item.kind === 'skill');
 
     assert.equal(data.ingestion.importedCustomizations, 2);
+    assert.equal(data.customizations.some((item) => item.relativePath.includes('node_modules')), false);
     assert.equal(instruction.evidenceStatus, 'sent');
     assert.equal(instruction.matches.some((match) => match.status === 'sent'), true);
     assert.equal(skill.evidenceStatus, 'not_seen');

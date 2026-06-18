@@ -23,6 +23,28 @@ const memoryFileLimit = 5000;
 const memoryFileSizeLimit = 1024 * 1024;
 const customizationFileLimit = 1000;
 const customizationFileSizeLimit = 1024 * 1024;
+const skippedTraversalDirs = new Set([
+  '.angular',
+  '.cache',
+  '.git',
+  '.hg',
+  '.next',
+  '.nuxt',
+  '.pnpm-store',
+  '.svn',
+  '.turbo',
+  '.venv',
+  '__pycache__',
+  'bin',
+  'build',
+  'coverage',
+  'dist',
+  'node_modules',
+  'obj',
+  'out',
+  'target',
+  'venv',
+]);
 
 const pricing = pricingData.models;
 
@@ -260,9 +282,14 @@ function listDirs(dir) {
     return [];
   }
 
-  return readdirSync(dir)
-    .map((entry) => join(dir, entry))
-    .filter((path) => statSync(path).isDirectory());
+  try {
+    return readdirSync(dir, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && !entry.isSymbolicLink())
+      .map((entry) => join(dir, entry.name));
+  } catch (error) {
+    diagnostics.warnings.push(`${dir}: directory listing skipped: ${error.message}`);
+    return [];
+  }
 }
 
 function listFiles(dir, suffix) {
@@ -270,9 +297,14 @@ function listFiles(dir, suffix) {
     return [];
   }
 
-  return readdirSync(dir)
-    .map((entry) => join(dir, entry))
-    .filter((path) => statSync(path).isFile() && path.endsWith(suffix));
+  try {
+    return readdirSync(dir, { withFileTypes: true })
+      .filter((entry) => entry.isFile() && entry.name.endsWith(suffix))
+      .map((entry) => join(dir, entry.name));
+  } catch (error) {
+    diagnostics.warnings.push(`${dir}: file listing skipped: ${error.message}`);
+    return [];
+  }
 }
 
 function listDebugLogFiles(root) {
@@ -281,55 +313,84 @@ function listDebugLogFiles(root) {
   }
 
   const files = [];
-  const pending = [root];
+  const pending = [{ path: root, depth: 0 }];
+  let visitedDirs = 0;
+  const maxDirs = 2000;
 
-  while (pending.length) {
+  while (pending.length && visitedDirs < maxDirs) {
     const current = pending.pop();
-    for (const entry of readdirSync(current, { withFileTypes: true })) {
-      const path = join(current, entry.name);
-      if (entry.isDirectory()) {
-        pending.push(path);
+    visitedDirs += 1;
+    let entries = [];
+    try {
+      entries = readdirSync(current.path, { withFileTypes: true });
+    } catch (error) {
+      diagnostics.warnings.push(`${current.path}: debug-log side-file scan skipped: ${error.message}`);
+      continue;
+    }
+    for (const entry of entries) {
+      const path = join(current.path, entry.name);
+      if (entry.isSymbolicLink()) {
+        continue;
+      }
+      if (entry.isDirectory() && current.depth < 4 && !skippedTraversalDirs.has(entry.name)) {
+        pending.push({ path, depth: current.depth + 1 });
       } else if (entry.isFile() && entry.name.endsWith('.jsonl')) {
         files.push(path);
       }
     }
   }
+  if (pending.length) {
+    diagnostics.warnings.push(`${root}: debug-log side-file scan capped at ${maxDirs} directories.`);
+  }
 
   return files.sort();
 }
 
-function listFilesRecursive(root, predicate, limit = memoryFileLimit) {
+function listFilesRecursive(root, predicate, limit = memoryFileLimit, options = {}) {
   if (!existsSync(root)) {
     return [];
   }
 
+  const maxDepth = Number(options.maxDepth ?? 8);
+  const maxDirs = Number(options.maxDirs ?? 5000);
+  const label = options.label ?? 'recursive';
   const files = [];
-  const pending = [root];
+  const pending = [{ path: root, depth: 0 }];
+  let visitedDirs = 0;
 
-  while (pending.length && files.length < limit) {
+  while (pending.length && files.length < limit && visitedDirs < maxDirs) {
     const current = pending.pop();
+    visitedDirs += 1;
     let entries = [];
 
     try {
-      entries = readdirSync(current, { withFileTypes: true });
+      entries = readdirSync(current.path, { withFileTypes: true });
     } catch (error) {
       diagnostics.skippedUnreadableMemories += 1;
-      diagnostics.warnings.push(`${current}: memory directory skipped: ${error.message}`);
+      diagnostics.warnings.push(`${current.path}: ${label} directory skipped: ${error.message}`);
       continue;
     }
 
     for (const entry of entries) {
-      const path = join(current, entry.name);
+      const path = join(current.path, entry.name);
+      if (entry.isSymbolicLink()) {
+        continue;
+      }
       if (entry.isDirectory()) {
-        pending.push(path);
+        if (current.depth < maxDepth && !skippedTraversalDirs.has(entry.name)) {
+          pending.push({ path, depth: current.depth + 1 });
+        }
       } else if (entry.isFile() && predicate(path)) {
         files.push(path);
         if (files.length >= limit) {
-          diagnostics.warnings.push(`${root}: memory scan capped at ${limit} files.`);
+          diagnostics.warnings.push(`${root}: ${label} scan capped at ${limit} files.`);
           break;
         }
       }
     }
+  }
+  if (pending.length) {
+    diagnostics.warnings.push(`${root}: ${label} scan capped at ${maxDirs} directories.`);
   }
 
   return files;
@@ -520,6 +581,7 @@ function customizationsFromWorkspace(workspaceDir) {
       root,
       (file) => extname(file).toLowerCase() === '.md',
       customizationFileLimit,
+      { label: 'customization', maxDepth: 5, maxDirs: 300 },
     );
     if (files.length >= customizationFileLimit) {
       diagnostics.warnings.push(`${root}: customization scan capped at ${customizationFileLimit} files.`);
@@ -762,7 +824,12 @@ function memoriesFromRoot(root, source, workspace = '') {
   }
 
   diagnostics.scannedMemoryRoots += 1;
-  const memories = listFilesRecursive(root, (file) => extname(file).toLowerCase() === '.md')
+  const memories = listFilesRecursive(
+    root,
+    (file) => extname(file).toLowerCase() === '.md',
+    memoryFileLimit,
+    { label: 'memory', maxDepth: 8, maxDirs: 2500 },
+  )
     .map((file) => memoryFromFile(file, root, source, workspace))
     .filter(Boolean);
 

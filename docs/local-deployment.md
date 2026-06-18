@@ -198,6 +198,8 @@ It listens on `http://127.0.0.1:4312/` by default and exposes:
 
 The runtime seeds itself from `public/data/sessions.json` when needed, then keeps its live cache under `tmp/local-runtime/`. This avoids triggering an Angular development rebuild every time the user refreshes data. It serves cached data while a scan is running, and a failed scan does not replace the last valid snapshot.
 
+Runtime scans run in a child process. This keeps `/api/status` and `/api/logs` responsive even when a large VS Code profile is being imported or a workspace has unusually heavy local data.
+
 ### Startup Diagnostics
 
 If the app appears stuck on startup, there are three places to inspect:
@@ -217,6 +219,8 @@ For packaged `npx` runs, the runtime log file is stored beside the local session
 - Linux: `${XDG_DATA_HOME:-~/.local/share}/copilot-usage-studio/runtime.log`
 
 For repository development with `npm start`, the log is written to `tmp/local-runtime/runtime.log`.
+
+The scanner is intentionally bounded. It scans known VS Code Copilot storage locations plus targeted `.github/instructions`, `.github/skills`, `.github/prompts`, and `.github/hooks` folders for the workspace. Recursive Markdown scans have depth and directory-count caps and skip common dependency/build folders such as `node_modules`, `.git`, `dist`, `build`, `target`, and virtual environments. It should not crawl arbitrary project directories.
 
 To build the production UI and serve the complete local app with one command:
 
