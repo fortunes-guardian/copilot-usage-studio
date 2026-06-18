@@ -2127,10 +2127,16 @@ function enrichSessionFromWorkspaceState(session, stateBySessionId) {
   };
 }
 
-function parseWorkspace(workspaceDir) {
+function parseWorkspace(workspaceDir, onProgress = () => {}) {
   diagnostics.scannedWorkspaces += 1;
-  const stateBySessionId = readWorkspaceState(workspaceDir);
   const workspace = workspaceName(workspaceDir);
+  onProgress({
+    stage: 'workspace',
+    message: `Scanning workspace ${workspace}.`,
+    workspace,
+    workspaceDir,
+  });
+  const stateBySessionId = readWorkspaceState(workspaceDir);
   const debugRoot = join(workspaceDir, 'GitHub.copilot-chat', 'debug-logs');
   const customizationInventory = customizationsFromWorkspace(workspaceDir);
   const customizations = customizationEvidenceFromDebugLogs(
@@ -2139,24 +2145,66 @@ function parseWorkspace(workspaceDir) {
     workspace,
   );
   diagnostics.importedCustomizations += customizations.length;
-  const debugSessions = listDirs(debugRoot)
-    .map((sessionDir) => sessionFromDebugLog(sessionDir, workspaceDir))
-    .filter(Boolean)
-    .map((session) => enrichSessionFromWorkspaceState(session, stateBySessionId));
+  const debugSessionDirs = listDirs(debugRoot);
+  if (debugSessionDirs.length) {
+    onProgress({
+      stage: 'debug-logs',
+      message: `Scanning ${debugSessionDirs.length} debug-log folder${debugSessionDirs.length === 1 ? '' : 's'} in ${workspace}.`,
+      workspace,
+      workspaceDir,
+      total: debugSessionDirs.length,
+    });
+  }
+  const debugSessions = [];
+  for (const [index, sessionDir] of debugSessionDirs.entries()) {
+    if (index > 0 && index % 25 === 0) {
+      onProgress({
+        stage: 'debug-logs',
+        message: `Scanned ${index}/${debugSessionDirs.length} debug-log folders in ${workspace}.`,
+        workspace,
+        workspaceDir,
+        index,
+        total: debugSessionDirs.length,
+      });
+    }
+    const session = sessionFromDebugLog(sessionDir, workspaceDir);
+    if (session) {
+      debugSessions.push(enrichSessionFromWorkspaceState(session, stateBySessionId));
+    }
+  }
   const debugIds = new Set(debugSessions.map((session) => session.id));
   diagnostics.importedDebugLogSessions += debugSessions.length;
 
-  const chatSessions = listFiles(join(workspaceDir, 'chatSessions'), '.jsonl')
-    .map((file) => {
-      const session = sessionFromChatSnapshot(file, workspaceDir);
-      if (session && debugIds.has(session.id)) {
-        diagnostics.skippedDuplicateChatSnapshots += 1;
-        return null;
-      }
-      return session ? enrichSessionFromWorkspaceState(session, stateBySessionId) : null;
-    })
-    .filter(Boolean);
+  const chatSessionFiles = listFiles(join(workspaceDir, 'chatSessions'), '.jsonl');
+  if (chatSessionFiles.length) {
+    onProgress({
+      stage: 'chat-snapshots',
+      message: `Scanning ${chatSessionFiles.length} chat snapshot${chatSessionFiles.length === 1 ? '' : 's'} in ${workspace}.`,
+      workspace,
+      workspaceDir,
+      total: chatSessionFiles.length,
+    });
+  }
+  const chatSessions = [];
+  for (const file of chatSessionFiles) {
+    const session = sessionFromChatSnapshot(file, workspaceDir);
+    if (session && debugIds.has(session.id)) {
+      diagnostics.skippedDuplicateChatSnapshots += 1;
+      continue;
+    }
+    if (session) {
+      chatSessions.push(enrichSessionFromWorkspaceState(session, stateBySessionId));
+    }
+  }
   diagnostics.importedChatSnapshotSessions += chatSessions.length;
+
+  onProgress({
+    stage: 'workspace-complete',
+    message: `Workspace ${workspace}: imported ${debugSessions.length + chatSessions.length} session${debugSessions.length + chatSessions.length === 1 ? '' : 's'}.`,
+    workspace,
+    workspaceDir,
+    sessions: debugSessions.length + chatSessions.length,
+  });
 
   return {
     sessions: [...debugSessions, ...chatSessions],
@@ -2228,11 +2276,33 @@ export async function scanVsCodeSessions(options = {}) {
   diagnostics = createDiagnostics();
   diagnostics.scannedRoots = roots;
   usdToEur = conversionRate;
+  const onProgress = typeof options.onProgress === 'function' ? options.onProgress : () => {};
 
   try {
+    onProgress({
+      stage: 'roots',
+      message: `Scanning ${roots.length} VS Code root${roots.length === 1 ? '' : 's'}.`,
+      roots,
+    });
     DatabaseSync = options.sqlite === false ? null : await loadSqliteSupport();
     const workspaceDirs = [...new Set(roots.flatMap(workspaceDirsForRoot))];
-    const workspaceResults = workspaceDirs.map(parseWorkspace);
+    onProgress({
+      stage: 'workspaces',
+      message: `Found ${workspaceDirs.length} VS Code workspace storage folder${workspaceDirs.length === 1 ? '' : 's'}.`,
+      total: workspaceDirs.length,
+    });
+    const workspaceResults = [];
+    for (const [index, workspaceDir] of workspaceDirs.entries()) {
+      onProgress({
+        stage: 'workspace-queue',
+        message: `Scanning workspace ${index + 1}/${workspaceDirs.length}.`,
+        index: index + 1,
+        total: workspaceDirs.length,
+        workspaceDir,
+      });
+      workspaceResults.push(parseWorkspace(workspaceDir, onProgress));
+      await yieldToRuntime();
+    }
     const sessions = workspaceResults
       .flatMap((result) => result.sessions)
       .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
@@ -2243,6 +2313,11 @@ export async function scanVsCodeSessions(options = {}) {
         .map((userDir) => join(userDir, 'globalStorage', 'github.copilot-chat', 'memory-tool', 'memories')),
     )];
     const memoryMap = new Map();
+    onProgress({
+      stage: 'memories',
+      message: `Indexing memories from ${globalMemoryRoots.length} global root${globalMemoryRoots.length === 1 ? '' : 's'} and workspace storage.`,
+      total: globalMemoryRoots.length,
+    });
     for (const memory of [
       ...workspaceResults.flatMap((result) => result.memories),
       ...globalMemoryRoots.flatMap((root) => memoriesFromRoot(root, 'global')),
@@ -2269,6 +2344,13 @@ export async function scanVsCodeSessions(options = {}) {
       seenIds.add(session.id);
     }
 
+    onProgress({
+      stage: 'complete',
+      message: `Scan complete: imported ${sessions.length} session${sessions.length === 1 ? '' : 's'}.`,
+      sessions: sessions.length,
+      workspaces: workspaceDirs.length,
+    });
+
     return {
       schemaVersion: sessionDataSchemaVersion,
       generatedAt,
@@ -2292,6 +2374,10 @@ export async function scanVsCodeSessions(options = {}) {
     usdToEur = previousUsdToEur;
     scanInProgress = false;
   }
+}
+
+function yieldToRuntime() {
+  return new Promise((resolveYield) => setImmediate(resolveYield));
 }
 
 export function writeSessionData(sessionData, outputFile = 'public/data/sessions.json') {

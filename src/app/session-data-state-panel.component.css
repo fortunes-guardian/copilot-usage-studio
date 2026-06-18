@@ -41,6 +41,73 @@
   background: rgba(255, 107, 95, 0.08);
 }
 
+.runtime-diagnostics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+  text-align: left;
+}
+
+.runtime-diagnostics div {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+}
+
+.runtime-diagnostics span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.runtime-diagnostics strong {
+  display: block;
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--text-strong);
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runtime-log {
+  display: grid;
+  gap: 4px;
+  max-width: min(860px, 100%);
+  margin: 8px auto 0;
+  padding: 0;
+  color: var(--muted);
+  font-size: 12px;
+  list-style: none;
+  text-align: left;
+}
+
+.runtime-log li {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 7px 9px;
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runtime-log li.error {
+  border-color: rgba(255, 107, 95, 0.35);
+  color: var(--text-strong);
+}
+
+.runtime-log-file {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+
 .scan-button {
   justify-self: start;
   min-height: 36px;
@@ -70,6 +137,12 @@
   font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+@media (max-width: 760px) {
+  .runtime-diagnostics {
+    grid-template-columns: 1fr;
+  }
 }
 
 

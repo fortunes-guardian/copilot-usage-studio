@@ -8,7 +8,7 @@ Local-first usage, cost, and session insights for VS Code GitHub Copilot chat an
 
 Independent open-source developer tool. Not affiliated with or endorsed by GitHub or Microsoft.
 
-Status: early local developer preview. Version `0.1.0` is available on npm.
+Status: early local developer preview. Version `0.2.0` is available on npm.
 
 Supported scope today: VS Code GitHub Copilot Chat and Agent sessions on the local machine. This does not currently support Visual Studio, JetBrains IDEs, Copilot CLI, GitHub.com chat, or GitHub billing exports.
 
@@ -43,7 +43,7 @@ Then open `http://127.0.0.1:4312/`.
 `npx` downloads the latest published package from npm. To run this exact release:
 
 ```bash
-npx copilot-usage-studio@0.1.0
+npx copilot-usage-studio@0.2.0
 ```
 
 To contribute or run the current GitHub source:
@@ -66,6 +66,12 @@ Read [docs/how-to-read-the-app.md](docs/how-to-read-the-app.md) if the UI terms 
 `npm start` now launches both the Angular development UI and the local scanner runtime. It serves cached data immediately, refreshes from VS Code in the background, and enables the **Refresh** action in the app. The app stays local because the useful source data can contain prompts, file paths, repository context, and tool results.
 
 The packaged CLI stores its cache in the current user's application-data directory. It does not write session data into the npm installation and does not include the maintainer's generated session data in the package.
+
+If startup appears stuck, keep the terminal open and check the loading screen diagnostics. The runtime now reports the current scan step, recent log lines, and a local log-file path. You can also run:
+
+```bash
+npx copilot-usage-studio status
+```
 
 ## What Works Now
 

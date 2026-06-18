@@ -2,7 +2,42 @@
   <section class="state-panel loading" aria-live="polite">
     <p class="eyebrow">Loading</p>
     <h2>Reading local sessions</h2>
-    <p>Checking the local Copilot data imported by the runtime.</p>
+    <p>
+      {{
+        runtimeStatus?.scanProgress?.message ||
+          'Checking the local Copilot data imported by the runtime.'
+      }}
+    </p>
+    @if (runtimeStatusAvailable && runtimeStatus) {
+      <div class="runtime-diagnostics">
+        <div>
+          <span>Runtime</span>
+          <strong>{{ runtimeStatus.phase }}</strong>
+        </div>
+        <div>
+          <span>Sessions ready</span>
+          <strong>{{ runtimeStatus.sessionCount }}</strong>
+        </div>
+        @if (scanElapsedLabel) {
+          <div>
+            <span>Scan time</span>
+            <strong>{{ scanElapsedLabel }}</strong>
+          </div>
+        }
+      </div>
+      @if (recentLogs.length) {
+        <ol class="runtime-log">
+          @for (entry of recentLogs; track entry.at + entry.message) {
+            <li [class.error]="entry.level === 'error'">{{ entry.message }}</li>
+          }
+        </ol>
+      }
+      @if (runtimeStatus.logFile) {
+        <p class="runtime-log-file">Log file: {{ runtimeStatus.logFile }}</p>
+      }
+    } @else {
+      <p class="runtime-log-file">Waiting for local runtime status...</p>
+    }
   </section>
 } @else if (state === 'error') {
   <section class="state-panel" [class.danger]="!isEmptyState">
@@ -12,6 +47,35 @@
       <p>Scan this computer for local VS Code Copilot Chat and Agent sessions.</p>
     } @else {
       <p>{{ error || 'The local session data could not be loaded.' }}</p>
+    }
+    @if (runtimeStatusAvailable && runtimeStatus) {
+      <div class="runtime-diagnostics">
+        <div>
+          <span>Runtime</span>
+          <strong>{{ runtimeStatus.phase }}</strong>
+        </div>
+        <div>
+          <span>Last scan</span>
+          <strong>{{ scanElapsedLabel || 'n/a' }}</strong>
+        </div>
+        <div>
+          <span>Cached sessions</span>
+          <strong>{{ runtimeStatus.sessionCount }}</strong>
+        </div>
+      </div>
+      @if (runtimeStatus.scanProgress?.message) {
+        <p>{{ runtimeStatus.scanProgress?.message }}</p>
+      }
+      @if (recentLogs.length) {
+        <ol class="runtime-log">
+          @for (entry of recentLogs; track entry.at + entry.message) {
+            <li [class.error]="entry.level === 'error'">{{ entry.message }}</li>
+          }
+        </ol>
+      }
+      @if (runtimeStatus.logFile) {
+        <p class="runtime-log-file">Log file: {{ runtimeStatus.logFile }}</p>
+      }
     }
     <button
       type="button"

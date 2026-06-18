@@ -97,6 +97,27 @@ test('keeps diagnostics isolated between API scans', async () => {
   }
 });
 
+test('reports scanner progress for large local-runtime imports', async () => {
+  const fixture = createWorkspaceFixture('progress');
+  try {
+    writeDebugSession(fixture.workspaceDir, 'session-1', 1_000, 250, 50);
+    const events = [];
+
+    await scanVsCodeSessions({
+      roots: [fixture.workspaceDir],
+      sqlite: false,
+      onProgress: (event) => events.push(event),
+    });
+
+    assert.ok(events.some((event) => event.stage === 'roots'));
+    assert.ok(events.some((event) => event.stage === 'workspace'));
+    assert.ok(events.some((event) => event.stage === 'debug-logs'));
+    assert.ok(events.some((event) => event.stage === 'complete'));
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
 test('writes an API result only when the host explicitly requests persistence', async () => {
   const fixture = createWorkspaceFixture('writer');
   try {

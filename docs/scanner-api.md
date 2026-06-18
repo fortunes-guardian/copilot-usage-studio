@@ -43,6 +43,7 @@ const sessionData = await scanVsCodeSessions({
   roots: ['/custom/Code/User'],
   sqlite: true,
   generatedAt: new Date(),
+  onProgress: (event) => console.log(event.message),
 });
 ```
 
@@ -50,6 +51,7 @@ const sessionData = await scanVsCodeSessions({
 - `sqlite`: set to `false` to skip optional `state.vscdb` metadata enrichment. Debug-log token and usage import still works.
 - `generatedAt`: optional `Date` or date-compatible value, primarily for deterministic hosts and tests.
 - `usdToEur`: legacy generated-contract conversion value. The product UI is USD-first and callers should normally leave this unset.
+- `onProgress`: optional callback for host diagnostics. It receives scan-stage events such as root discovery, workspace discovery, debug-log folder counts, memory indexing, and completion. Hosts should treat these as user-facing diagnostics, not stable analytics data.
 
 Duplicate roots are normalized and scanned once. Each call receives fresh ingestion diagnostics; counters and warnings do not leak from earlier scans in a long-running process.
 

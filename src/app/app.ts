@@ -78,6 +78,8 @@ export class App {
   protected readonly sessionDataLoadError = this.sessionDataService.loadError;
   protected readonly sessionDataRefreshState = this.sessionDataService.refreshState;
   protected readonly sessionDataRefreshMessage = this.sessionDataService.refreshMessage;
+  protected readonly runtimeStatus = this.sessionDataService.runtimeStatus;
+  protected readonly runtimeStatusAvailable = this.sessionDataService.runtimeStatusAvailable;
   protected readonly selectedId = signal<string | null>(null);
   protected readonly compareA = signal<string | null>(null);
   protected readonly compareB = signal<string | null>(null);

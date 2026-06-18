@@ -33,6 +33,8 @@ test('serves cached data, refreshes through the scanner, and reports status', as
     const initialStatus = await jsonRequest(`${origin}/api/status`);
     assert.equal(initialStatus.phase, 'ready');
     assert.equal(initialStatus.sessionCount, 1);
+    assert.ok(Array.isArray(initialStatus.recentLogs));
+    assert.equal(typeof initialStatus.logFile, 'string');
     assert.equal((await jsonRequest(`${origin}/api/sessions`)).sessions[0].id, 'cached-session');
     assert.equal((await jsonRequest(`${origin}/data/sessions.json`)).sessions[0].id, 'cached-session');
 
@@ -40,8 +42,11 @@ test('serves cached data, refreshes through the scanner, and reports status', as
     assert.equal(scans, 1);
     assert.equal(refreshResponse.sessionData.sessions[0].id, 'new-session');
     assert.equal(refreshResponse.status.phase, 'ready');
+    assert.equal(refreshResponse.status.scanProgress.stage, 'complete');
     assert.equal((await jsonRequest(`${origin}/api/sessions`)).sessions[0].id, 'new-session');
     assert.equal(JSON.parse(readFileSync(fixture.dataFile, 'utf8')).sessions[0].id, 'new-session');
+    const logs = await jsonRequest(`${origin}/api/logs`);
+    assert.ok(logs.entries.some((entry) => entry.message.includes('Local data refresh')));
   } finally {
     await runtime.close();
     rmSync(fixture.root, { recursive: true, force: true });
@@ -99,6 +104,9 @@ test('holds a fresh-install data request until the startup scan completes', asyn
     const origin = `http://127.0.0.1:${address.port}`;
     const pendingData = fetch(`${origin}/data/sessions.json`);
     await new Promise((resolveWait) => setTimeout(resolveWait, 20));
+    const pendingStatus = await jsonRequest(`${origin}/api/status`);
+    assert.equal(pendingStatus.scanning, true);
+    assert.equal(pendingStatus.scanProgress.stage, 'starting');
     finishScan(sessionData('first-session', '2026-06-13T10:00:00.000Z'));
 
     const response = await pendingData;

@@ -2,7 +2,7 @@
 
 The app is intended to run locally, near the VS Code data it reads. It should not require a hosted SaaS backend for the core workflow.
 
-Current release posture: early local developer preview. Version `0.1.0` is published publicly on npm, while clone-and-run remains available for contributors and development builds.
+Current release posture: early local developer preview. Version `0.2.0` is published publicly on npm, while clone-and-run remains available for contributors and development builds.
 
 Packaging foundation now available: the scanner exposes an in-memory Node API through `lib/scanner-api.mjs`. The existing scan command uses that same API and only adds argument parsing plus JSON persistence. This is the common core for the next local host, an `npx` command, Electron packaging, and a future thin VS Code extension.
 
@@ -190,12 +190,33 @@ npm run runtime
 
 It listens on `http://127.0.0.1:4312/` by default and exposes:
 
-- `GET /api/status`: scan state, timestamps, last error, and session count
+- `GET /api/status`: scan state, timestamps, current progress, recent log lines, last error, and session count
+- `GET /api/logs`: bounded in-memory runtime logs and the local log-file path
 - `GET /api/sessions`: the current normalized in-memory `SessionData`
 - `POST /api/scan`: run a scan, persist the new snapshot, and return it
 - `GET /data/sessions.json`: compatibility route backed by the current in-memory snapshot
 
 The runtime seeds itself from `public/data/sessions.json` when needed, then keeps its live cache under `tmp/local-runtime/`. This avoids triggering an Angular development rebuild every time the user refreshes data. It serves cached data while a scan is running, and a failed scan does not replace the last valid snapshot.
+
+### Startup Diagnostics
+
+If the app appears stuck on startup, there are three places to inspect:
+
+1. The app loading screen shows the current scan step, recent runtime log messages, cached session count, and the runtime log-file path.
+2. The terminal running `npm start` or `npx copilot-usage-studio` prints scan progress such as discovered workspace folders and debug-log folder counts.
+3. The status endpoint can be queried directly:
+
+```bash
+npx copilot-usage-studio status
+```
+
+For packaged `npx` runs, the runtime log file is stored beside the local session cache:
+
+- Windows: `%LOCALAPPDATA%\Copilot Usage Studio\runtime.log`
+- macOS: `~/Library/Application Support/Copilot Usage Studio/runtime.log`
+- Linux: `${XDG_DATA_HOME:-~/.local/share}/copilot-usage-studio/runtime.log`
+
+For repository development with `npm start`, the log is written to `tmp/local-runtime/runtime.log`.
 
 To build the production UI and serve the complete local app with one command:
 
