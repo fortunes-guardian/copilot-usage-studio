@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { homedir, platform } from 'node:os';
-import { basename, dirname, extname, join, relative, resolve, sep } from 'node:path';
+import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
   costBreakdownUsdForTokens,
@@ -628,14 +628,26 @@ function requestTextParts(sessionDir, event) {
     { source: 'userRequest', text: event.attrs?.userRequest },
   ];
   const systemPromptFile = String(event.attrs?.systemPromptFile ?? '').trim();
-  if (systemPromptFile && existsSync(join(sessionDir, systemPromptFile))) {
-    parts.push({ source: systemPromptFile, text: readFileSync(join(sessionDir, systemPromptFile), 'utf8') });
+  const systemPromptPath = sessionSideFilePath(sessionDir, systemPromptFile);
+  if (systemPromptPath && existsSync(systemPromptPath)) {
+    parts.push({ source: systemPromptFile, text: readFileSync(systemPromptPath, 'utf8') });
   }
 
   return parts.map((part) => ({
     ...part,
     normalized: normalizeMatchText(part.text),
   }));
+}
+
+function sessionSideFilePath(sessionDir, file) {
+  const value = String(file ?? '').trim();
+  if (!value || isAbsolute(value)) {
+    return '';
+  }
+
+  const root = `${resolve(sessionDir)}${sep}`;
+  const candidate = resolve(sessionDir, value);
+  return candidate.startsWith(root) ? candidate : '';
 }
 
 function customizationTerms(customization) {
@@ -1345,11 +1357,13 @@ function requestPayloadSummary(sessionDir, llmRequests, toolEvents) {
     ...new Set(llmRequests.map((event) => event.attrs?.toolsFile).filter(Boolean)),
   ];
   const systemPrompts = systemPromptFiles
-    .map((file) => join(sessionDir, file))
+    .map((file) => sessionSideFilePath(sessionDir, file))
+    .filter(Boolean)
     .filter(existsSync)
     .map(parseContentFile);
   const toolFileSummaries = toolsFiles
-    .map((file) => join(sessionDir, file))
+    .map((file) => sessionSideFilePath(sessionDir, file))
+    .filter(Boolean)
     .filter(existsSync)
     .map(parseContentFile);
   const tools = toolFileSummaries.flatMap((summary) =>
@@ -1396,7 +1410,7 @@ function contentSummaryFromCache(sessionDir, cache, file) {
     return cache.get(file);
   }
 
-  const path = join(sessionDir, file);
+  const path = sessionSideFilePath(sessionDir, file);
   const summary = existsSync(path) ? parseContentFile(path) : null;
   cache.set(file, summary);
   return summary;
@@ -1749,8 +1763,13 @@ function workspaceFolderPath(workspaceDir) {
   }
 
   try {
-    const folder = decodeURIComponent(String(raw.folder).replace(/^file:\/+/, ''));
-    return platform() === 'win32' ? folder.replace(/^\//, '') : `/${folder.replace(/^\/+/, '')}`;
+    const value = String(raw.folder);
+    if (!value.startsWith('file:')) {
+      return '';
+    }
+    const folder = decodeURIComponent(value.replace(/^file:\/+/, ''));
+    const resolved = platform() === 'win32' ? folder.replace(/^\//, '') : `/${folder.replace(/^\/+/, '')}`;
+    return isAbsolute(resolved) && existsSync(resolved) ? resolved : '';
   } catch {
     return '';
   }
@@ -2196,23 +2215,37 @@ function enrichSessionFromWorkspaceState(session, stateBySessionId) {
 
 function parseWorkspace(workspaceDir, onProgress = () => {}) {
   diagnostics.scannedWorkspaces += 1;
+  const debugRoot = join(workspaceDir, 'GitHub.copilot-chat', 'debug-logs');
+  const debugSessionDirs = listDirs(debugRoot);
+  const chatSessionFiles = listFiles(join(workspaceDir, 'chatSessions'), '.jsonl');
+  const memoryRoot = join(workspaceDir, 'GitHub.copilot-chat', 'memory-tool', 'memories');
+  const hasMemoryRoot = existsSync(memoryRoot);
+
+  if (!debugSessionDirs.length && !chatSessionFiles.length && !hasMemoryRoot) {
+    return {
+      sessions: [],
+      memories: [],
+      customizations: [],
+    };
+  }
+
   const workspace = workspaceName(workspaceDir);
   onProgress({
     stage: 'workspace',
-    message: `Scanning workspace ${workspace}.`,
+    message: `Scanning Copilot data for ${workspace}.`,
     workspace,
     workspaceDir,
   });
-  const stateBySessionId = readWorkspaceState(workspaceDir);
-  const debugRoot = join(workspaceDir, 'GitHub.copilot-chat', 'debug-logs');
-  const customizationInventory = customizationsFromWorkspace(workspaceDir);
-  const customizations = customizationEvidenceFromDebugLogs(
-    debugRoot,
-    customizationInventory,
-    workspace,
-  );
+  const stateBySessionId =
+    debugSessionDirs.length || chatSessionFiles.length ? readWorkspaceState(workspaceDir) : new Map();
+  const customizationInventory = debugSessionDirs.length
+    ? customizationsFromWorkspace(workspaceDir)
+    : [];
+  const customizations = debugSessionDirs.length
+    ? customizationEvidenceFromDebugLogs(debugRoot, customizationInventory, workspace)
+    : [];
   diagnostics.importedCustomizations += customizations.length;
-  const debugSessionDirs = listDirs(debugRoot);
+
   if (debugSessionDirs.length) {
     onProgress({
       stage: 'debug-logs',
@@ -2242,7 +2275,6 @@ function parseWorkspace(workspaceDir, onProgress = () => {}) {
   const debugIds = new Set(debugSessions.map((session) => session.id));
   diagnostics.importedDebugLogSessions += debugSessions.length;
 
-  const chatSessionFiles = listFiles(join(workspaceDir, 'chatSessions'), '.jsonl');
   if (chatSessionFiles.length) {
     onProgress({
       stage: 'chat-snapshots',
@@ -2275,11 +2307,7 @@ function parseWorkspace(workspaceDir, onProgress = () => {}) {
 
   return {
     sessions: [...debugSessions, ...chatSessions],
-    memories: memoriesFromRoot(
-      join(workspaceDir, 'GitHub.copilot-chat', 'memory-tool', 'memories'),
-      'workspace',
-      workspace,
-    ),
+    memories: memoriesFromRoot(memoryRoot, 'workspace', workspace),
     customizations,
   };
 }
@@ -2360,13 +2388,14 @@ export async function scanVsCodeSessions(options = {}) {
     });
     const workspaceResults = [];
     for (const [index, workspaceDir] of workspaceDirs.entries()) {
-      onProgress({
-        stage: 'workspace-queue',
-        message: `Scanning workspace ${index + 1}/${workspaceDirs.length}.`,
-        index: index + 1,
-        total: workspaceDirs.length,
-        workspaceDir,
-      });
+      if (index > 0 && index % 50 === 0) {
+        onProgress({
+          stage: 'workspace-queue',
+          message: `Checked ${index}/${workspaceDirs.length} VS Code workspace storage folders.`,
+          index,
+          total: workspaceDirs.length,
+        });
+      }
       workspaceResults.push(parseWorkspace(workspaceDir, onProgress));
       await yieldToRuntime();
     }

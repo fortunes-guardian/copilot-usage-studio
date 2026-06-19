@@ -142,7 +142,7 @@ The scanner reads local workspace customizations from observed `.github` folders
 
 The first implemented UI focuses on instructions and skills, but the data model already keeps a generic `kind` so prompts and hooks can be added without a new product concept.
 
-These are targeted scans, not whole-repository crawls. The scanner only walks the listed `.github` customization roots, caps recursion and directory count, skips symlinks, and ignores common dependency/build folders.
+These are targeted scans, not whole-repository crawls. The scanner only walks the listed `.github` customization roots after the matching VS Code workspace-storage folder has Copilot debug/chat data. Stale VS Code workspace entries without Copilot data do not trigger repo-level customization scans. Recursion is capped by depth and directory count, skips symlinks, and ignores common dependency/build folders.
 
 Each customization stores metadata only: title, name, description, `applyTo`, triggers, path, size, and an excerpt. The scanner reads the full file during the scan to build fingerprints, but it does not persist the full content into `sessions.json`.
 

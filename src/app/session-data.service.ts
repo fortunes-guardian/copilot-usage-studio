@@ -28,10 +28,13 @@ export interface LocalRuntimeStatus {
   lastScanCompletedAt: string;
   lastScanDurationMs: number;
   lastError: string;
+  activeScanId?: number;
   logFile?: string;
   scanProgress?: {
     stage?: string;
     message?: string;
+    scanId?: number;
+    reason?: string;
     updatedAt?: string;
     workspace?: string;
     workspaceDir?: string;

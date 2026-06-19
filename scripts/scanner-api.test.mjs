@@ -82,6 +82,18 @@ test('keeps diagnostics isolated between API scans', async () => {
   const empty = createWorkspaceFixture('empty');
   try {
     writeDebugSession(populated.workspaceDir, 'session-1', 1_000, 250, 50);
+    const staleRepo = join(empty.root, 'stale-repo');
+    mkdirSync(join(staleRepo, '.github', 'skills'), { recursive: true });
+    writeFileSync(
+      join(staleRepo, '.github', 'skills', 'stale.SKILL.md'),
+      '# Stale skill\n\nThis workspace has no Copilot data and should not be scanned.',
+      'utf8',
+    );
+    writeFileSync(
+      join(empty.workspaceDir, 'workspace.json'),
+      JSON.stringify({ folder: pathToFileUrl(staleRepo) }),
+      'utf8',
+    );
 
     const first = await scanVsCodeSessions({ roots: [populated.workspaceDir], sqlite: false });
     const second = await scanVsCodeSessions({ roots: [empty.workspaceDir], sqlite: false });
@@ -89,6 +101,8 @@ test('keeps diagnostics isolated between API scans', async () => {
     assert.equal(first.ingestion.importedSessions, 1);
     assert.equal(second.ingestion.importedSessions, 0);
     assert.equal(second.ingestion.importedDebugLogSessions, 0);
+    assert.equal(second.ingestion.importedCustomizations, 0);
+    assert.equal(second.customizations.length, 0);
     assert.equal(second.ingestion.skippedEmptyDebugLogs, 0);
     assert.deepEqual(second.ingestion.scannedRoots, [empty.workspaceDir]);
   } finally {
@@ -183,6 +197,10 @@ function mkdirTemp(prefix) {
   const path = join(tmpdir(), `${prefix}${Date.now()}-${Math.random().toString(16).slice(2)}`);
   mkdirSync(path, { recursive: true });
   return path;
+}
+
+function pathToFileUrl(file) {
+  return `file://${file.replace(/\\/g, '/')}`;
 }
 
 function writeDebugSession(workspaceDir, sessionId, inputTokens, cachedTokens, outputTokens) {

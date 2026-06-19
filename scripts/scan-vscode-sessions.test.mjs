@@ -410,6 +410,31 @@ test('preserves current VS Code Copilot runtime and request-shape metadata', () 
   }
 });
 
+test('ignores debug-log side files outside the session folder', () => {
+  const { root, sessionDir, workspaceDir } = tempSessionFixture('side-file-boundary');
+  try {
+    writeFileSync(join(root, 'outside.json'), JSON.stringify({ content: 'must not read' }), 'utf8');
+    writeJsonl(join(sessionDir, 'main.jsonl'), [
+      event(1, 'user_message', 'user message', { attrs: { content: 'Check side file safety.' } }),
+      event(2, 'llm_request', 'panel/editAgent', {
+        attrs: {
+          model: 'gpt-5.4',
+          inputTokens: 100,
+          outputTokens: 10,
+          systemPromptFile: '..\\outside.json',
+        },
+      }),
+    ]);
+
+    const session = sessionFromDebugLog(sessionDir, workspaceDir);
+
+    assert.equal(session.traceEvents[1].setupPayload.systemPromptFile, '..\\outside.json');
+    assert.equal(session.traceEvents[1].setupPayload.systemPromptChars, 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('records optional transcript availability without using it for pricing', () => {
   const { root, sessionDir, workspaceDir } = tempSessionFixture('debug-log-with-transcript');
   const transcriptDir = join(workspaceDir, 'GitHub.copilot-chat', 'transcripts');
