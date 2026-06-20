@@ -12,6 +12,7 @@ import {
   mergeCacheTokenAudits,
   memoryRecallsFromDebugLog,
   modelBreakdownFromLlmRequests,
+  runScannerCli,
   scanVsCodeSessions,
   sessionFromChatSnapshot,
   sessionFromDebugLog,
@@ -726,6 +727,98 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
     assert(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'debug-reference'));
     assert.equal(externalSkill?.kind, 'skill');
     assert.equal(externalSkill?.evidenceStatus, 'sent');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('indexes VS Code user-level customizations and matches request side-file evidence', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'copilot-usage-studio-user-customizations-'));
+  const userDir = join(root, 'Code', 'User');
+  const workspaceDir = join(userDir, 'workspaceStorage', 'workspace-one');
+  const sessionDir = join(workspaceDir, 'GitHub.copilot-chat', 'debug-logs', 'user-customization-session');
+  const workspaceFolder = join(root, 'repo');
+  const promptFile = join(userDir, 'prompts', 'release.prompt.md');
+
+  try {
+    mkdirSync(sessionDir, { recursive: true });
+    mkdirSync(workspaceFolder, { recursive: true });
+    mkdirSync(join(userDir, 'prompts'), { recursive: true });
+    writeFileSync(
+      join(workspaceDir, 'workspace.json'),
+      JSON.stringify({ folder: pathToFileUrl(workspaceFolder) }),
+      'utf8',
+    );
+    writeFileSync(
+      promptFile,
+      'Before publishing a release, check package version, changelog notes, and VSIX artifacts.',
+      'utf8',
+    );
+    writeFileSync(
+      join(sessionDir, 'tools_0.json'),
+      JSON.stringify({
+        content: [
+          {
+            type: 'function',
+            name: 'release_prompt',
+            description:
+              'Before publishing a release, check package version, changelog notes, and VSIX artifacts.',
+          },
+        ],
+      }),
+      'utf8',
+    );
+    writeJsonl(join(sessionDir, 'main.jsonl'), [
+      event(1, 'llm_request', 'panel/editAgent', {
+        attrs: {
+          model: 'gpt-5.4',
+          inputTokens: 1_200,
+          outputTokens: 80,
+          toolsFile: 'tools_0.json',
+          inputMessages: 'Prepare the release.',
+        },
+      }),
+    ]);
+
+    const data = await scanVsCodeSessions({ roots: [workspaceDir], sqlite: false });
+    const prompt = data.customizations.find((item) => item.sourcePath === promptFile);
+
+    assert.equal(prompt?.kind, 'prompt');
+    assert.equal(prompt?.evidenceStatus, 'sent');
+    assert.equal(prompt?.matches.some((match) => match.source === 'tools_0.json'), true);
+    assert(data.ingestion.customizationEvidenceTextParts > 0);
+    assert(data.ingestion.customizationEvidenceMatchedCustomizations > 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('scanner CLI accepts explicit root and output flags', async () => {
+  const calls = [];
+  const logs = [];
+  const root = mkdtempSync(join(tmpdir(), 'copilot-usage-studio-cli-root-'));
+  const output = join(root, 'out.json');
+
+  try {
+    const result = await runScannerCli(
+      ['--root', root, '--output', output],
+      { log: (message) => logs.push(message) },
+      {
+        scanner: async (options) => {
+          calls.push(options);
+          return { sessions: [] };
+        },
+        writer: (data, outputFile) => {
+          calls.push({ data, outputFile });
+          return outputFile;
+        },
+      },
+    );
+
+    assert.deepEqual(result, { sessions: [] });
+    assert.deepEqual(calls[0], { roots: [root] });
+    assert.equal(calls[1].outputFile, output);
+    assert.match(logs[0], /Wrote 0 sessions/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

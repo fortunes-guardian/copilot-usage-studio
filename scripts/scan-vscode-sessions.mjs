@@ -68,6 +68,10 @@ function createDiagnostics() {
     importedPlans: 0,
     scannedCustomizationRoots: 0,
     scannedCustomizationLocations: [],
+    customizationEvidenceScannedSessions: 0,
+    customizationEvidenceModelCalls: 0,
+    customizationEvidenceTextParts: 0,
+    customizationEvidenceMatchedCustomizations: 0,
     importedCustomizations: 0,
     skippedOversizedMemories: 0,
     skippedUnreadableMemories: 0,
@@ -512,6 +516,16 @@ function looksLikeCopilotCustomizationPath(file) {
     normalized.includes('/.github/prompts/') ||
     normalized.includes('/.github/hooks/') ||
     normalized.includes('/.github/agents/') ||
+    normalized.includes('/.copilot/instructions/') ||
+    normalized.includes('/.copilot/skills/') ||
+    normalized.includes('/.copilot/prompts/') ||
+    normalized.includes('/.copilot/hooks/') ||
+    normalized.includes('/.copilot/agents/') ||
+    normalized.includes('/.agents/skills/') ||
+    normalized.includes('/.claude/rules/') ||
+    normalized.includes('/.claude/skills/') ||
+    normalized.includes('/.claude/agents/') ||
+    normalized.includes('/user/prompts/') ||
     name === 'copilot-instructions.md' ||
     name === 'agents.md' ||
     name === 'claude.md' ||
@@ -530,6 +544,8 @@ function customizationKind(file) {
 
   if (
     normalized.includes('/.github/instructions/') ||
+    normalized.includes('/.copilot/instructions/') ||
+    normalized.includes('/.claude/rules/') ||
     name === 'copilot-instructions.md' ||
     name === 'agents.md' ||
     name === 'claude.md' ||
@@ -538,16 +554,33 @@ function customizationKind(file) {
   ) {
     return 'instruction';
   }
-  if (normalized.includes('/.github/skills/') || name === 'skill.md' || name.endsWith('.skill.md')) {
+  if (
+    normalized.includes('/.github/skills/') ||
+    normalized.includes('/.copilot/skills/') ||
+    normalized.includes('/.agents/skills/') ||
+    normalized.includes('/.claude/skills/') ||
+    name === 'skill.md' ||
+    name.endsWith('.skill.md')
+  ) {
     return 'skill';
   }
-  if (normalized.includes('/.github/prompts/') || name.endsWith('.prompt.md')) {
+  if (
+    normalized.includes('/.github/prompts/') ||
+    normalized.includes('/.copilot/prompts/') ||
+    normalized.includes('/user/prompts/') ||
+    name.endsWith('.prompt.md')
+  ) {
     return 'prompt';
   }
-  if (normalized.includes('/.github/hooks/')) {
+  if (normalized.includes('/.github/hooks/') || normalized.includes('/.copilot/hooks/')) {
     return 'hook';
   }
-  if (normalized.includes('/.github/agents/') || name.endsWith('.agent.md')) {
+  if (
+    normalized.includes('/.github/agents/') ||
+    normalized.includes('/.copilot/agents/') ||
+    normalized.includes('/.claude/agents/') ||
+    name.endsWith('.agent.md')
+  ) {
     return 'agent';
   }
   return 'other';
@@ -670,6 +703,16 @@ function customizationFilesFromKnownRoots(base) {
     join(base, '.github', 'prompts'),
     join(base, '.github', 'hooks'),
     join(base, '.github', 'agents'),
+    join(base, '.copilot', 'instructions'),
+    join(base, '.copilot', 'skills'),
+    join(base, '.copilot', 'prompts'),
+    join(base, '.copilot', 'hooks'),
+    join(base, '.copilot', 'agents'),
+    join(base, '.agents', 'skills'),
+    join(base, '.claude', 'rules'),
+    join(base, '.claude', 'skills'),
+    join(base, '.claude', 'agents'),
+    join(base, 'prompts'),
   ].filter(existsSync);
 
   return roots.flatMap((root) => {
@@ -762,7 +805,10 @@ function customizationsFromWorkspace(workspaceDir) {
     return { customizations: [], bases: [] };
   }
 
-  const bases = customizationCandidateBases(folder);
+  const bases = [
+    ...customizationCandidateBases(folder),
+    ...customizationUserBases(workspaceDir),
+  ];
   const files = new Map();
 
   for (const base of bases) {
@@ -784,6 +830,12 @@ function customizationsFromWorkspace(workspaceDir) {
       .map(([file, base]) => customizationFromFile(file, base, workspace))
       .filter(Boolean),
   };
+}
+
+function customizationUserBases(workspaceDir) {
+  const userDir = userDirForRoot(workspaceDir);
+  return [...new Set([homedir(), userDir].filter(Boolean).map((base) => resolve(base)))]
+    .filter((base) => existsSync(base));
 }
 
 function recordCustomizationLocation(path, kind) {
@@ -826,15 +878,52 @@ function customizationChunks(content) {
   return [...new Set([...lineChunks, ...chunks])].slice(0, 24);
 }
 
+function extractPayloadText(value, depth = 0) {
+  if (value === null || value === undefined || depth > 8) {
+    return '';
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    const parsed = trimmed && /^[\[{"]/.test(trimmed) ? safeJson(trimmed) : null;
+    return parsed === null || parsed === value
+      ? value
+      : `${value}\n${extractPayloadText(parsed, depth + 1)}`;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => extractPayloadText(item, depth + 1)).filter(Boolean).join('\n');
+  }
+  if (typeof value === 'object') {
+    return Object.values(value)
+      .map((item) => extractPayloadText(item, depth + 1))
+      .filter(Boolean)
+      .join('\n');
+  }
+  return '';
+}
+
+function readRequestSideFile(sessionDir, file) {
+  const sideFilePath = sessionSideFilePath(sessionDir, String(file ?? '').trim());
+  if (!sideFilePath || !existsSync(sideFilePath)) {
+    return '';
+  }
+  return extractPayloadText(readFileSync(sideFilePath, 'utf8'));
+}
+
 function requestTextParts(sessionDir, event) {
   const parts = [
-    { source: 'inputMessages', text: event.attrs?.inputMessages },
-    { source: 'userRequest', text: event.attrs?.userRequest },
+    { source: 'inputMessages', text: extractPayloadText(event.attrs?.inputMessages) },
+    { source: 'userRequest', text: extractPayloadText(event.attrs?.userRequest) },
   ];
-  const systemPromptFile = String(event.attrs?.systemPromptFile ?? '').trim();
-  const systemPromptPath = sessionSideFilePath(sessionDir, systemPromptFile);
-  if (systemPromptPath && existsSync(systemPromptPath)) {
-    parts.push({ source: systemPromptFile, text: readFileSync(systemPromptPath, 'utf8') });
+
+  for (const fileField of ['systemPromptFile', 'toolsFile']) {
+    const file = String(event.attrs?.[fileField] ?? '').trim();
+    const text = readRequestSideFile(sessionDir, file);
+    if (text) {
+      parts.push({ source: file, text });
+    }
   }
 
   return parts.map((part) => ({
@@ -882,6 +971,37 @@ function statusRank(status) {
   }[status] ?? 0;
 }
 
+function mergeCustomizationRecords(existing, next) {
+  if (!existing) {
+    return next;
+  }
+
+  const status = statusRank(next.evidenceStatus) > statusRank(existing.evidenceStatus)
+    ? next.evidenceStatus
+    : existing.evidenceStatus;
+  const matchMap = new Map();
+  for (const match of [...(existing.matches ?? []), ...(next.matches ?? [])]) {
+    const key = [
+      match.sessionId,
+      match.eventIndex,
+      match.modelCallNumber,
+      match.source,
+      match.status,
+    ].join(':');
+    matchMap.set(key, match);
+  }
+  const matches = [...matchMap.values()]
+    .sort((a, b) => statusRank(b.status) - statusRank(a.status) || b.timestamp.localeCompare(a.timestamp))
+    .slice(0, 60);
+
+  return {
+    ...existing,
+    evidenceStatus: status,
+    matches,
+    modifiedAt: next.modifiedAt > existing.modifiedAt ? next.modifiedAt : existing.modifiedAt,
+  };
+}
+
 function recordCustomizationMatch(state, match) {
   state.matches.push(match);
   state.matches.sort(
@@ -912,6 +1032,7 @@ function customizationEvidenceFromDebugLogs(debugRoot, customizations, workspace
 
   const sessionDirs = listDirs(debugRoot);
   for (const [sessionIndex, sessionDir] of sessionDirs.entries()) {
+    diagnostics.customizationEvidenceScannedSessions += 1;
     if (sessionIndex > 0 && sessionIndex % 25 === 0) {
       onProgress({
         stage: 'customization-evidence',
@@ -941,7 +1062,9 @@ function customizationEvidenceFromDebugLogs(debugRoot, customizations, workspace
         }
 
         if (event.type === 'llm_request') {
+          diagnostics.customizationEvidenceModelCalls += 1;
           const parts = requestTextParts(sessionDir, event);
+          diagnostics.customizationEvidenceTextParts += parts.filter((part) => part.normalized).length;
           for (const part of parts) {
             const matchedChunks = state.chunks.filter((chunk) => part.normalized.includes(chunk));
             const listed = !matchedChunks.length && state.terms.some((term) => part.normalized.includes(term));
@@ -950,6 +1073,9 @@ function customizationEvidenceFromDebugLogs(debugRoot, customizations, workspace
             }
 
             const rank = matchedChunks.length ? 3 : 2;
+            if (rank === 3 && state.rank < 3) {
+              diagnostics.customizationEvidenceMatchedCustomizations += 1;
+            }
             state.rank = Math.max(state.rank, rank);
             recordCustomizationMatch(state, {
               status: evidenceStatus(rank),
@@ -2669,13 +2795,17 @@ export async function scanVsCodeSessions(options = {}) {
     );
     const customizationMap = new Map();
     for (const customization of workspaceResults.flatMap((result) => result.customizations)) {
-      customizationMap.set(customization.id, customization);
+      customizationMap.set(
+        customization.id,
+        mergeCustomizationRecords(customizationMap.get(customization.id), customization),
+      );
     }
     const customizations = [...customizationMap.values()].sort(
       (a, b) =>
         statusRank(b.evidenceStatus) - statusRank(a.evidenceStatus) ||
         b.modifiedAt.localeCompare(a.modifiedAt),
     );
+    diagnostics.importedCustomizations = customizations.length;
     const seenIds = new Set();
     for (const session of sessions) {
       if (seenIds.has(session.id)) {
@@ -2727,14 +2857,54 @@ export function writeSessionData(sessionData, outputFile = 'public/data/sessions
   return resolvedOutputFile;
 }
 
-export async function runScannerCli(args = process.argv.slice(2), logger = console) {
-  const outputFile = args[0] ?? 'public/data/sessions.json';
-  const roots = args.slice(1);
-  const sessionData = await scanVsCodeSessions(roots.length ? { roots } : {});
-  const resolvedOutputFile = writeSessionData(sessionData, outputFile);
+export async function runScannerCli(args = process.argv.slice(2), logger = console, dependencies = {}) {
+  const { outputFile, roots } = parseScannerCliArgs(args);
+  const scanner = dependencies.scanner ?? scanVsCodeSessions;
+  const writer = dependencies.writer ?? writeSessionData;
+  const sessionData = await scanner(roots.length ? { roots } : {});
+  const resolvedOutputFile = writer(sessionData, outputFile);
 
   logger.log(`Wrote ${sessionData.sessions.length} sessions to ${resolvedOutputFile}`);
   return sessionData;
+}
+
+function parseScannerCliArgs(args) {
+  let outputFile = '';
+  const roots = [];
+
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index];
+    const [flag, inlineValue] = argument.split('=', 2);
+    if (flag === '--output' || flag === '--root') {
+      const value = inlineValue ?? args[index + 1];
+      if (!value) {
+        throw new Error(`${flag} requires a value.`);
+      }
+      if (inlineValue === undefined) {
+        index += 1;
+      }
+      if (flag === '--output') {
+        outputFile = value;
+      } else {
+        roots.push(value);
+      }
+      continue;
+    }
+
+    if (argument.startsWith('-')) {
+      throw new Error(`Unknown option: ${argument}`);
+    }
+    if (!outputFile) {
+      outputFile = argument;
+    } else {
+      roots.push(argument);
+    }
+  }
+
+  return {
+    outputFile: outputFile || 'public/data/sessions.json',
+    roots,
+  };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
