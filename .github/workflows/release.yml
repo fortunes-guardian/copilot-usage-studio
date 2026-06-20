@@ -95,6 +95,9 @@ jobs:
       - name: Package VS Code extension
         run: npm run vscode:package
 
+      - name: Generate release notes
+        run: npm run release:notes -- --tag "$RELEASE_TAG" --out tmp/release-notes.md
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -104,12 +107,13 @@ jobs:
 
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             echo "GitHub Release $RELEASE_TAG already exists."
+            gh release edit "$RELEASE_TAG" --notes-file tmp/release-notes.md
             gh release upload "$RELEASE_TAG" "$vsix_asset" --clobber
             exit 0
           fi
 
           gh release create "$RELEASE_TAG" \
             --verify-tag \
-            --generate-notes \
+            --notes-file tmp/release-notes.md \
             --title "Copilot Usage Studio $RELEASE_TAG" \
             "$vsix_asset"

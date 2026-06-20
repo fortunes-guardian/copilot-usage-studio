@@ -119,7 +119,7 @@ npm version patch
 git push origin main --follow-tags
 ```
 
-Use `minor` or `major` instead of `patch` when appropriate. GitHub Actions then tests and packages that exact tagged commit, publishes the npm package, builds the VS Code extension VSIX, and creates the matching GitHub Release. See [docs/local-deployment.md](docs/local-deployment.md#automated-releases) for the one-time npm Trusted Publisher setup and the full release procedure.
+Use `minor` or `major` instead of `patch` when appropriate. GitHub Actions then tests and packages that exact tagged commit, publishes the npm package, builds the VS Code extension VSIX, and creates the matching GitHub Release from `CHANGELOG.md`. See [docs/local-deployment.md](docs/local-deployment.md#automated-releases) for the one-time npm Trusted Publisher setup and the full release procedure.
 
 ## Current Boundaries
 

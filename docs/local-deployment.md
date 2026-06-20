@@ -92,13 +92,23 @@ The npm tarball contains the compiled UI, scanner, pricing table, and runtime co
 
 GitHub Actions is the release control plane:
 
-- `.github/workflows/ci.yml` runs the full release gate for pull requests and pushes to `main`.
+- `.github/workflows/ci.yml` runs the full release gate and packages a VSIX artifact for every pushed branch, plus pull requests to `main`.
 - `.github/workflows/release.yml` runs automatically for version tags such as `v0.1.1`, with a manual existing-tag mode for repair and backfill.
-- The release workflow verifies that the tag matches `package.json`, publishes the exact tagged source to npm, packages the VS Code extension VSIX, and creates the matching GitHub Release with the VSIX attached.
+- The release workflow verifies that the tag matches `package.json`, publishes the exact tagged source to npm, packages the VS Code extension VSIX, generates release notes from `CHANGELOG.md`, and creates the matching GitHub Release with the VSIX attached.
 - A failed workflow can be rerun safely: an existing npm version is accepted only when its published `gitHead` matches the exact tagged commit. Conflicting or unverifiable versions are refused.
 - New versions must pass the full release gate before publication. An exact-commit backfill of an already-published historical version skips its old test suite and only repairs the missing GitHub Release.
 
-This keeps GitHub, npm, the VSIX asset, and the source tag tied to the same commit. Ordinary pushes never publish.
+This keeps GitHub, npm, the VSIX asset, release notes, and the source tag tied to the same commit. Ordinary pushes never publish.
+
+### Branch Validation
+
+For feature work, push the branch and let CI run:
+
+```bash
+git push -u origin your-branch
+```
+
+The CI run proves the npm app and VS Code extension package from that branch. Download the `copilot-usage-studio-vsix` artifact from the workflow run when you want to test exactly what GitHub built. For a solo-maintainer flow, a pull request is useful for review and history, but branch CI is enough for a pre-merge smoke test.
 
 ### One-Time npm Setup
 
@@ -117,6 +127,8 @@ The workflow uses GitHub's OIDC identity, so no long-lived `NPM_TOKEN` repositor
 
 Start from an up-to-date, clean `main` branch. Choose the semantic-version bump that matches the change:
 
+First, make sure `CHANGELOG.md` has a useful human summary under `Unreleased` or under the exact version heading you are about to publish. The GitHub Release body is generated from that curated changelog text, with commits included only as an audit trail.
+
 ```bash
 git switch main
 git pull --ff-only
@@ -132,7 +144,9 @@ After the tag is pushed:
 1. Watch the **Release** workflow in GitHub Actions.
 2. Confirm the new version appears on npm.
 3. Confirm GitHub created a Release for the same tag.
-4. Run `npx copilot-usage-studio@X.Y.Z --version` from a clean directory as a final smoke test.
+4. Confirm the release notes read well and include the curated highlights.
+5. Download the attached VSIX if the extension should be tested or shared.
+6. Run `npx copilot-usage-studio@X.Y.Z --version` from a clean directory as a final smoke test.
 
 If CI or release validation fails, fix the issue on `main` and publish a new version. Do not move or reuse a public release tag, and do not overwrite an npm version; both are immutable release coordinates.
 

@@ -45,6 +45,7 @@
     "vscode:vsix:dry-run": "npm run vscode:verify && cd vscode-extension && vsce ls --tree",
     "vscode:package": "npm run vscode:verify && node scripts/package-vscode-extension.mjs",
     "verify:package": "node scripts/verify-package.mjs",
+    "release:notes": "node scripts/generate-release-notes.mjs",
     "release:check": "npm run test:scripts && npm test -- --watch=false && npm run build && npm run verify:package",
     "prepack": "npm run build"
   },

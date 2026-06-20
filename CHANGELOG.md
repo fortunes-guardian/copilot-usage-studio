@@ -10,10 +10,14 @@ All notable changes to Copilot Usage Studio are recorded here.
 - Show source-backed memory recall history from explicit VS Code `memory view` events, linked to the following model request without inventing memory-only cost.
 - Compact the Memory page into an IDE-style file browser with filename search, copy-content action, collapsed source view, and scope help.
 - Make startup loading a stable page state and clarify that the runtime URL shown during `npm start` is backend-only.
-- Add GitHub Actions CI for pull requests and pushes to `main`.
+- Add GitHub Actions CI for pull requests, `main`, and pushed feature branches.
 - Add tag-driven npm Trusted Publishing with automatic provenance.
 - Create the matching GitHub Release from the same version tag.
 - Support safe workflow reruns and manual backfill of an existing tagged release.
+- Add a VS Code extension preview focused on Usage, Memory, and Prices.
+- Build and upload a VSIX artifact from CI for every pushed branch.
+- Attach the VSIX to GitHub Releases while keeping the npm package focused on the `npx` app.
+- Generate detailed release notes from the changelog and commits for tagged releases.
 
 ## 0.1.0 - 2026-06-14
 

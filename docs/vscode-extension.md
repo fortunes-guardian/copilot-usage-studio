@@ -67,7 +67,7 @@ First release target is a local VSIX preview attached to the GitHub Release.
 
 The extension is not part of the npm package. The npm package stays focused on `npx copilot-usage-studio`; the VSIX is built from the same source and attached as a separate release asset.
 
-CI runs the normal app release gate and also packages a VSIX artifact. Tag releases publish npm as before, then attach the matching VSIX to the GitHub Release.
+CI runs the normal app release gate and packages a VSIX artifact for pushed branches. Tag releases publish npm as before, then attach the matching VSIX to the GitHub Release with notes generated from `CHANGELOG.md`.
 
 Do not publish to the Marketplace until:
 
