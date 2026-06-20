@@ -35,3 +35,13 @@ jobs:
 
       - name: Run release gate
         run: npm run release:check
+
+      - name: Package VS Code extension preview
+        run: npm run vscode:package
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: copilot-usage-studio-vsix
+          path: tmp/*.vsix
+          if-no-files-found: error

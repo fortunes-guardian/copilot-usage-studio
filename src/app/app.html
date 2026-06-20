@@ -1,4 +1,9 @@
-<main class="shell" [class.theme-light]="theme() === 'light'" [class.theme-dark]="theme() === 'dark'">
+<main
+  class="shell"
+  [class.theme-light]="theme() === 'light'"
+  [class.theme-dark]="theme() === 'dark'"
+  [class.host-vscode]="hostMode === 'vscode'"
+>
   <header class="topbar">
     <div class="brand">
       <span class="brand-mark" aria-hidden="true">US</span>
@@ -9,15 +14,22 @@
     </div>
 
     <nav class="view-nav" aria-label="Application views">
+      @if (isViewAvailable('usage')) {
       <button type="button" [class.active]="activeView() === 'usage'" (click)="activeView.set('usage')">
         Usage
       </button>
+      }
+      @if (isViewAvailable('sessions')) {
       <button type="button" [class.active]="activeView() === 'sessions'" (click)="activeView.set('sessions')">
         Sessions
       </button>
+      }
+      @if (isViewAvailable('memory')) {
       <button type="button" [class.active]="activeView() === 'memory'" (click)="activeView.set('memory')">
         Memory
       </button>
+      }
+      @if (isViewAvailable('customizations')) {
       <button
         type="button"
         [class.active]="activeView() === 'customizations'"
@@ -25,15 +37,22 @@
       >
         Customizations
       </button>
+      }
+      @if (isViewAvailable('compare')) {
       <button type="button" [class.active]="activeView() === 'compare'" (click)="activeView.set('compare')">
         Compare
       </button>
+      }
+      @if (isViewAvailable('analytics')) {
       <button type="button" [class.active]="activeView() === 'analytics'" (click)="activeView.set('analytics')">
         Insights
       </button>
+      }
+      @if (isViewAvailable('pricing')) {
       <button type="button" [class.active]="activeView() === 'pricing'" (click)="activeView.set('pricing')">
         Prices
       </button>
+      }
     </nav>
 
     <div class="topbar-actions">
@@ -123,6 +142,7 @@
         <app-usage-page
           [sessions]="sessions()"
           [allowancePlan]="allowancePlan()"
+          [canOpenSession]="canOpenSessions"
           (allowancePlanChange)="setAllowancePlan($event)"
           (openSession)="openSession($event)"
         ></app-usage-page>
@@ -134,6 +154,7 @@
         <app-memory-page
           [memories]="memories()"
           [sessions]="sessions()"
+          [canOpenSession]="canOpenSessions"
           (openSession)="openSession($event)"
         ></app-memory-page>
       } @placeholder {

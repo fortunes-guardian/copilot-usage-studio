@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 
 import { SessionData } from './session-data.model';
+import { apiUrl } from './host-config';
 
 export type SessionDataLoadState = 'loading' | 'ready' | 'error';
 export type SessionDataRefreshState = 'idle' | 'refreshing' | 'success' | 'error';
@@ -74,7 +75,7 @@ export class SessionDataService {
       clearInterval(statusTimer);
     });
 
-    this.http.get<SessionData>('/data/sessions.json').subscribe({
+    this.http.get<SessionData>(apiUrl('/data/sessions.json')).subscribe({
       next: (sessionData) => {
         this.sessionData.set(sessionData);
         this.loadState.set('ready');
@@ -94,7 +95,7 @@ export class SessionDataService {
 
     this.refreshState.set('refreshing');
     this.refreshMessage.set('Scanning VS Code...');
-    this.http.post<LocalScanResponse>('/api/scan', {}).subscribe({
+    this.http.post<LocalScanResponse>(apiUrl('/api/scan'), {}).subscribe({
       next: ({ sessionData, status }) => {
         if (status) {
           this.runtimeStatus.set(status);
@@ -149,7 +150,7 @@ export class SessionDataService {
   }
 
   private pollRuntimeStatus(): void {
-    this.http.get<LocalRuntimeStatus>('/api/status').subscribe({
+    this.http.get<LocalRuntimeStatus>(apiUrl('/api/status')).subscribe({
       next: (status) => {
         this.runtimeStatus.set(status);
         this.runtimeStatusAvailable.set(true);

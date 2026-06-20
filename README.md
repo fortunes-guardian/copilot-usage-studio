@@ -101,6 +101,15 @@ npm run build
 
 See [docs/local-deployment.md](docs/local-deployment.md) for packaging options and why the app stays local-first.
 
+Experimental VS Code extension preview:
+
+```bash
+npm run vscode:package
+code --install-extension tmp/copilot-usage-studio-vscode-0.2.0.vsix --force
+```
+
+This preview opens a smaller VS Code webview focused on Usage, Memory, and Prices. It is intended for local VSIX smoke testing before Marketplace publishing.
+
 ## Releasing
 
 Releases are tag-driven. After a change is merged to `main`, the maintainer bumps the version and pushes the generated tag:
@@ -110,7 +119,7 @@ npm version patch
 git push origin main --follow-tags
 ```
 
-Use `minor` or `major` instead of `patch` when appropriate. GitHub Actions then tests and packages that exact tagged commit, publishes it to npm, and creates the matching GitHub Release. See [docs/local-deployment.md](docs/local-deployment.md#automated-releases) for the one-time npm Trusted Publisher setup and the full release procedure.
+Use `minor` or `major` instead of `patch` when appropriate. GitHub Actions then tests and packages that exact tagged commit, publishes the npm package, builds the VS Code extension VSIX, and creates the matching GitHub Release. See [docs/local-deployment.md](docs/local-deployment.md#automated-releases) for the one-time npm Trusted Publisher setup and the full release procedure.
 
 ## Current Boundaries
 
@@ -125,6 +134,7 @@ The app is a local developer visibility tool. It shows what can be understood fr
 - [docs/how-to-read-the-app.md](docs/how-to-read-the-app.md): plain-English guide to the UI.
 - [docs/pricing.md](docs/pricing.md): GitHub price source, calculation rules, AI-credit allowances, and real-world caveats.
 - [docs/local-deployment.md](docs/local-deployment.md): local run, build, and future packaging options.
+- [docs/vscode-extension.md](docs/vscode-extension.md): local VSIX preview architecture, build, and smoke-test flow.
 - [docs/scanner-api.md](docs/scanner-api.md): reusable Node scanner contract for local hosts, desktop packaging, and extensions.
 - [docs/data-ingestion.md](docs/data-ingestion.md): where the data comes from and what it means.
 - [docs/copilot-memory.md](docs/copilot-memory.md): observed Copilot memory storage, normalized fields, and evidence boundaries.

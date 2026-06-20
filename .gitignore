@@ -3,6 +3,7 @@
 .chrome-visual-pass
 # Compiled output
 /dist
+/vscode-extension/dist
 /tmp
 /out-tsc
 /bazel-out

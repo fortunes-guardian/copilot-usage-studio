@@ -479,10 +479,16 @@
 }
 
 .memory-path code {
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 9px;
+  background: var(--surface-soft);
   color: var(--muted);
   font-size: 11px;
   text-transform: none;
   overflow-wrap: anywhere;
+  user-select: text;
 }
 
 .memory-empty {

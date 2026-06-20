@@ -94,11 +94,11 @@ GitHub Actions is the release control plane:
 
 - `.github/workflows/ci.yml` runs the full release gate for pull requests and pushes to `main`.
 - `.github/workflows/release.yml` runs automatically for version tags such as `v0.1.1`, with a manual existing-tag mode for repair and backfill.
-- The release workflow verifies that the tag matches `package.json`, publishes the exact tagged source, and creates the matching GitHub Release.
+- The release workflow verifies that the tag matches `package.json`, publishes the exact tagged source to npm, packages the VS Code extension VSIX, and creates the matching GitHub Release with the VSIX attached.
 - A failed workflow can be rerun safely: an existing npm version is accepted only when its published `gitHead` matches the exact tagged commit. Conflicting or unverifiable versions are refused.
 - New versions must pass the full release gate before publication. An exact-commit backfill of an already-published historical version skips its old test suite and only repairs the missing GitHub Release.
 
-This keeps GitHub, npm, and the source tag tied to the same commit. Ordinary pushes never publish.
+This keeps GitHub, npm, the VSIX asset, and the source tag tied to the same commit. Ordinary pushes never publish.
 
 ### One-Time npm Setup
 
@@ -258,9 +258,25 @@ Why: this keeps the project local and scriptable without committing to a desktop
 
 The shared scanner API, runtime, and npm executable are complete. The same runtime can be embedded by Electron later.
 
-## Future Option: VS Code Companion Extension
+## VS Code Companion Extension Preview
 
-A thin VS Code extension can call the shared scanner from the local extension host and show the existing UI in a webview. It should remain a host, not a fork of the pricing and parsing logic.
+A thin VS Code extension now calls the shared scanner from the local extension host and shows the existing UI in a webview. It remains a host, not a fork of the pricing and parsing logic.
+
+Build a local preview VSIX:
+
+```bash
+npm run vscode:package
+```
+
+Install it locally:
+
+```bash
+code --install-extension tmp/copilot-usage-studio-vscode-0.2.0.vsix --force
+```
+
+The extension MVP exposes Usage, Memory, and Prices. It intentionally hides the heavier Sessions, Trace, Compare, Analytics, and Customizations views until those surfaces are proven as extension UX.
+
+The VSIX is a separate distribution artifact from the npm package. It is built from the same source tree and attached to GitHub Releases, while `npx copilot-usage-studio` continues to come from npm.
 
 Why not move the whole product into an extension: keeping the scanner and analysis core editor-independent preserves a path to a desktop app and possible Visual Studio support if Visual Studio exposes equivalent local evidence later.
 

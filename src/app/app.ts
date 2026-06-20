@@ -18,6 +18,7 @@ import { SessionTraceComponent } from './session-trace.component';
 import { SessionTurnsComponent } from './session-turns.component';
 import { SelectedRunHeaderComponent } from './selected-run-header.component';
 import { UsagePageComponent } from './usage-page.component';
+import { allowedHostViews, hostConfig } from './host-config';
 import {
   COPILOT_ALLOWANCE_PLANS,
   CopilotAllowancePlan,
@@ -94,6 +95,17 @@ export class App {
   protected readonly selectedTraceEventIndex = signal<number | null>(null);
   protected readonly traceOpenedFromTurns = signal(false);
   protected readonly modelCallSort = signal<ModelCallSort>('timeline');
+  protected readonly availableViews = allowedHostViews([
+    'usage',
+    'sessions',
+    'memory',
+    'customizations',
+    'compare',
+    'analytics',
+    'pricing',
+  ]);
+  protected readonly hostMode = hostConfig().mode;
+  protected readonly canOpenSessions = this.availableViews.includes('sessions');
   protected readonly activeView = signal<ActiveView>(this.readInitialView());
   protected readonly selectedRunView = signal<SelectedRunView>('overview');
   protected readonly sessionRailOpen = signal(false);
@@ -384,6 +396,10 @@ export class App {
       return;
     }
 
+    if (!this.isViewAvailable('sessions')) {
+      return;
+    }
+
     this.selectedId.set(session.id);
     this.activeView.set('sessions');
     this.selectedRunView.set('overview');
@@ -463,9 +479,9 @@ export class App {
 
   private readInitialView(): ActiveView {
     try {
-      const view = new URL(globalThis.location?.href ?? '').searchParams.get('view');
-
-      return view === 'sessions' ||
+      const configuredView = hostConfig().initialView;
+      const view = configuredView || new URL(globalThis.location?.href ?? '').searchParams.get('view');
+      const candidate = view === 'sessions' ||
         view === 'usage' ||
         view === 'memory' ||
         view === 'customizations' ||
@@ -474,9 +490,28 @@ export class App {
         view === 'pricing'
         ? view
         : 'usage';
+
+      return this.isViewAvailable(candidate) ? candidate : this.firstAvailableView();
     } catch {
-      return 'usage';
+      return this.firstAvailableView();
     }
+  }
+
+  protected isViewAvailable(view: ActiveView): boolean {
+    return this.availableViews.includes(view);
+  }
+
+  private firstAvailableView(): ActiveView {
+    const [first] = this.availableViews;
+    return first === 'sessions' ||
+      first === 'usage' ||
+      first === 'memory' ||
+      first === 'customizations' ||
+      first === 'compare' ||
+      first === 'analytics' ||
+      first === 'pricing'
+      ? first
+      : 'usage';
   }
 
   private persistTheme(theme: ThemeMode): void {

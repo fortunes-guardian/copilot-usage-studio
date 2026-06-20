@@ -38,6 +38,8 @@ export class UsagePageComponent {
     this.allowancePlanInput.set(value ?? 'business-standard');
   }
 
+  @Input() canOpenSession = true;
+
   @Output() readonly allowancePlanChange = new EventEmitter<CopilotAllowancePlan>();
   @Output() readonly openSession = new EventEmitter<CopilotSession>();
 
@@ -115,7 +117,7 @@ export class UsagePageComponent {
   }
 
   protected emitOpenSession(session: CopilotSession | null): void {
-    if (session) {
+    if (this.canOpenSession && session) {
       this.openSession.emit(session);
     }
   }
