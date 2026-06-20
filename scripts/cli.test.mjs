@@ -102,3 +102,19 @@ test('status, help, and version remain terminal-friendly', async () => {
   assert.match(status.url, /:4999\/api\/status$/);
   assert.match(helpText(), /npx|copilot-usage-studio|Usage:/);
 });
+
+test('status command fails clearly when the runtime is unavailable', async () => {
+  await assert.rejects(
+    () =>
+      runCli(['status'], {
+        fetch: async () => {
+          const error = new Error('timeout');
+          error.name = 'TimeoutError';
+          throw error;
+        },
+        statusTimeoutMs: 1,
+        logger: { log() {} },
+      }),
+    /did not respond/,
+  );
+});

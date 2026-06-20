@@ -720,6 +720,7 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
     assert(paths.includes('.github/instructions/parent.instructions.md'));
     assert(paths.includes('.github/agents/planner.agent.md'));
     assert.equal(data.customizations.some((item) => item.kind === 'agent'), true);
+    assert(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'candidate'));
     assert(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'root'));
     assert(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'file'));
     assert(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'debug-reference'));

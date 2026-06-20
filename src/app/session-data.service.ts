@@ -75,17 +75,7 @@ export class SessionDataService {
       clearInterval(statusTimer);
     });
 
-    this.http.get<SessionData>(apiUrl('/data/sessions.json')).subscribe({
-      next: (sessionData) => {
-        this.sessionData.set(sessionData);
-        this.loadState.set('ready');
-        this.loadError.set(null);
-      },
-      error: (error: unknown) => {
-        this.loadState.set('error');
-        this.loadError.set(this.errorMessage(error));
-      },
-    });
+    this.loadSessionData();
   }
 
   refresh(): void {
@@ -157,9 +147,26 @@ export class SessionDataService {
         if (status.scanning && status.scanProgress?.message) {
           this.refreshMessage.set(status.scanProgress.message);
         }
+        if (status.hasData && this.loadState() !== 'ready') {
+          this.loadSessionData();
+        }
       },
       error: () => {
         this.runtimeStatusAvailable.set(false);
+      },
+    });
+  }
+
+  private loadSessionData(): void {
+    this.http.get<SessionData>(apiUrl('/data/sessions.json')).subscribe({
+      next: (sessionData) => {
+        this.sessionData.set(sessionData);
+        this.loadState.set('ready');
+        this.loadError.set(null);
+      },
+      error: (error: unknown) => {
+        this.loadState.set('error');
+        this.loadError.set(this.errorMessage(error));
       },
     });
   }

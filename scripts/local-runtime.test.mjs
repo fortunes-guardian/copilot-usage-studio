@@ -146,6 +146,34 @@ test('holds a fresh-install data request until the startup scan completes', asyn
   }
 });
 
+test('returns runtime status instead of hanging when first startup scan is still running', async () => {
+  const fixture = runtimeFixture('first-run-timeout');
+  const runtime = createLocalRuntime({
+    port: 0,
+    dataFile: fixture.dataFile,
+    seedDataFile: null,
+    staticDir: fixture.staticDir,
+    firstDataWaitMs: 10,
+    scanner: () => new Promise(() => {}),
+    logger: silentLogger(),
+  });
+
+  try {
+    const address = await runtime.listen();
+    const origin = `http://127.0.0.1:${address.port}`;
+    const response = await fetch(`${origin}/data/sessions.json`);
+    const body = await response.json();
+
+    assert.equal(response.status, 503);
+    assert.equal(body.error, 'No session data is available yet.');
+    assert.equal(body.status.scanning, true);
+    assert.equal(body.status.scanProgress.stage, 'starting');
+  } finally {
+    await runtime.close();
+    rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
 test('serves the production UI and falls back to index for application routes', async () => {
   const fixture = runtimeFixture('static');
   const runtime = createLocalRuntime({

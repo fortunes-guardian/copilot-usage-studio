@@ -766,6 +766,7 @@ function customizationsFromWorkspace(workspaceDir) {
   const files = new Map();
 
   for (const base of bases) {
+    recordCustomizationLocation(base, 'candidate');
     const directFiles = directCustomizationFiles(base);
     if (directFiles.length) {
       diagnostics.scannedCustomizationRoots += 1;
@@ -889,7 +890,7 @@ function recordCustomizationMatch(state, match) {
   state.matches = state.matches.slice(0, 60);
 }
 
-function customizationEvidenceFromDebugLogs(debugRoot, customizations, workspace = '') {
+function customizationEvidenceFromDebugLogs(debugRoot, customizations, workspace = '', onProgress = () => {}) {
   if (!customizations.length || !existsSync(debugRoot)) {
     return customizations.map((customization) => {
       const { _content, ...publicCustomization } = customization;
@@ -909,7 +910,17 @@ function customizationEvidenceFromDebugLogs(debugRoot, customizations, workspace
     ]),
   );
 
-  for (const sessionDir of listDirs(debugRoot)) {
+  const sessionDirs = listDirs(debugRoot);
+  for (const [sessionIndex, sessionDir] of sessionDirs.entries()) {
+    if (sessionIndex > 0 && sessionIndex % 25 === 0) {
+      onProgress({
+        stage: 'customization-evidence',
+        message: `Checked customization evidence in ${sessionIndex}/${sessionDirs.length} debug-log folders for ${workspace}.`,
+        workspace,
+        index: sessionIndex,
+        total: sessionDirs.length,
+      });
+    }
     const sessionId = basename(sessionDir);
     const main = readJsonl(join(sessionDir, 'main.jsonl'));
     const modelCallNumbers = new Map();
@@ -2439,11 +2450,21 @@ function parseWorkspace(workspaceDir, onProgress = () => {}) {
     workspace,
     workspaceDir,
   });
+  onProgress({
+    stage: 'workspace-state',
+    message: `Reading workspace metadata for ${workspace}.`,
+    workspace,
+    workspaceDir,
+  });
   const stateBySessionId =
     debugSessionDirs.length || chatSessionFiles.length ? readWorkspaceState(workspaceDir) : new Map();
-  const customizationWorkspace = debugSessionDirs.length
-    ? customizationsFromWorkspace(workspaceDir)
-    : { customizations: [], bases: [] };
+  onProgress({
+    stage: 'customizations',
+    message: `Indexing customizations for ${workspace}.`,
+    workspace,
+    workspaceDir,
+  });
+  const customizationWorkspace = customizationsFromWorkspace(workspaceDir);
   const customizationMap = new Map();
   for (const customization of [
     ...customizationWorkspace.customizations,
@@ -2452,9 +2473,21 @@ function parseWorkspace(workspaceDir, onProgress = () => {}) {
     customizationMap.set(customization.id, customization);
   }
   const customizationInventory = [...customizationMap.values()];
-  const customizations = debugSessionDirs.length
-    ? customizationEvidenceFromDebugLogs(debugRoot, customizationInventory, workspace)
-    : [];
+  onProgress({
+    stage: 'customization-evidence',
+    message: debugSessionDirs.length
+      ? `Checking customization evidence in ${debugSessionDirs.length} debug-log folder${debugSessionDirs.length === 1 ? '' : 's'} for ${workspace}.`
+      : `No debug-log evidence available for ${workspace}; customizations are inventory-only.`,
+    workspace,
+    workspaceDir,
+    total: debugSessionDirs.length,
+  });
+  const customizations = customizationEvidenceFromDebugLogs(
+    debugRoot,
+    customizationInventory,
+    workspace,
+    onProgress,
+  );
   diagnostics.importedCustomizations += customizations.length;
 
   if (debugSessionDirs.length) {
