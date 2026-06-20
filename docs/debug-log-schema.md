@@ -323,7 +323,7 @@ Top-level `customizations` records local Copilot customization files and request
 
 | Field | Meaning |
 | --- | --- |
-| `kind` | `instruction`, `skill`, `prompt`, `hook`, or `other` |
+| `kind` | `instruction`, `skill`, `prompt`, `hook`, `agent`, or `other` |
 | `title`, `name`, `description`, `applyTo`, `triggers` | Local customization metadata derived from frontmatter, filename, and Markdown |
 | `sourcePath`, `relativePath` | Local file location |
 | `characterCount`, `lineCount`, `excerpt` | Bounded size/readability metadata; full content is not persisted |
@@ -338,6 +338,8 @@ The evidence ladder is intentionally conservative:
 - `not_seen`: no imported evidence matched the file.
 
 This feature answers "did this customization reach the model request?" It does not claim the model obeyed it, and it does not create exact section-level cost attribution.
+
+`ingestion.scannedCustomizationLocations` records bounded diagnostic rows for customization scan coverage. Rows are `{ kind, path }`, where `kind` is usually `root`, `file`, or `debug-reference`. The UI uses this for the collapsed Customizations scan-coverage diagnostic.
 
 ## Feature Boundaries
 

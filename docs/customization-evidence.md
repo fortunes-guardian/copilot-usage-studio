@@ -4,20 +4,31 @@ Copilot Usage Studio can inspect local Copilot customization files and compare t
 
 The goal is simple:
 
-> Did this instruction, skill, prompt, hook, or other customization actually reach the model request?
+> Did this instruction, skill, prompt, hook, agent, or other customization actually reach the model request?
 
 This is not a cost feature first. It is AI-assisted-development observability.
 
 ## Sources
 
-The first implementation scans Markdown files under:
+The scanner only looks in bounded Copilot customization locations for workspaces that have imported VS Code Copilot data. It does not crawl the whole repository.
+
+It checks:
 
 ```text
-<workspace>/.github/instructions/
-<workspace>/.github/skills/
-<workspace>/.github/prompts/
-<workspace>/.github/hooks/
+<workspace-or-parent-repo>/.github/copilot-instructions.md
+<workspace-or-parent-repo>/.github/instructions/**/*.md
+<workspace-or-parent-repo>/.github/skills/**/*.md
+<workspace-or-parent-repo>/.github/prompts/**/*.md
+<workspace-or-parent-repo>/.github/hooks/**/*.md
+<workspace-or-parent-repo>/.github/agents/**/*.md
+<workspace-or-parent-repo>/AGENTS.md
+<workspace-or-parent-repo>/CLAUDE.md
+<workspace-or-parent-repo>/GEMINI.md
 ```
+
+For monorepos, the app walks from the opened workspace folder up to the nearest Git repository root and checks those known locations at each level. It also imports exact Markdown customization files referenced by VS Code debug-log side files when the path looks like a Copilot customization file, such as `SKILL.md`, `.instructions.md`, or `.prompt.md`.
+
+The Customizations page includes a collapsed scan-coverage diagnostic that lists the recorded roots, direct files, and debug-referenced files checked during ingestion. This is primarily for debugging false negatives on machines with unusual workspace or monorepo layouts.
 
 The scanner stores metadata only in generated app data:
 
@@ -75,4 +86,3 @@ VS Code Copilot can resolve or list customizations without necessarily sending t
 That is useful, but it is not the same as proving the content was loaded.
 
 The Customizations page exists to make that distinction visible.
-

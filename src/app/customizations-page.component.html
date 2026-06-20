@@ -1,9 +1,9 @@
 <section class="customizations-page">
   <header class="customizations-header">
     <div>
-      <p class="eyebrow">Customizations</p>
-      <h2>Did Copilot get your rules?</h2>
-      <p>Instructions, skills, prompts, and hooks found locally, matched against imported model requests.</p>
+      <p class="eyebrow">Customization evidence</p>
+      <h2>Did Copilot send your rules?</h2>
+      <p>Browse local instructions, skills, prompts, hooks, and agents. Evidence comes from imported VS Code model requests.</p>
     </div>
     <div class="customizations-header-meta" aria-label="Customization summary">
       <span><strong>{{ summary().total | number }}</strong> files</span>
@@ -31,6 +31,7 @@
         <option value="skill">Skills</option>
         <option value="prompt">Prompts</option>
         <option value="hook">Hooks</option>
+        <option value="agent">Agents</option>
         <option value="other">Other</option>
       </select>
     </label>
@@ -54,6 +55,31 @@
     </label>
   </section>
 
+  <details class="customizations-diagnostics">
+    <summary>
+      <span>Scan coverage</span>
+      <strong>
+        {{ scanDiagnostics().roots | number }} folders/files checked ·
+        {{ scanDiagnostics().files | number }} customization{{ scanDiagnostics().files === 1 ? '' : 's' }} found
+      </strong>
+    </summary>
+    @if (scanDiagnostics().locations.length) {
+      <div class="diagnostic-list">
+        @for (location of scanDiagnostics().locations; track location.kind + ':' + location.path) {
+          <div>
+            <b>{{ diagnosticKindLabel(location.kind) }}</b>
+            <code>{{ location.path }}</code>
+          </div>
+        }
+      </div>
+      @if (scanDiagnostics().capped) {
+        <p class="diagnostic-note">Showing the first 80 recorded locations. Generated scan diagnostics are capped.</p>
+      }
+    } @else {
+      <p class="diagnostic-note">No customization scan locations were recorded. This usually means no VS Code Copilot debug-log folders were imported for the workspace.</p>
+    }
+  </details>
+
   @if (filteredCustomizations().length) {
     <section class="customizations-workspace">
       <aside class="customizations-list" aria-label="Local customizations">
@@ -72,18 +98,19 @@
             [class.active]="selectedCustomizationId() === customization.id"
             [class.sent]="customization.evidenceStatus === 'sent'"
             [class.listed]="customization.evidenceStatus === 'listed'"
+            [class.discovered]="customization.evidenceStatus === 'discovered'"
             (click)="selectCustomization(customization)"
           >
             <span class="customization-file-icon" aria-hidden="true">
               {{ kindLabel(customization.kind).slice(0, 1) }}
             </span>
             <span class="customization-card-main">
-              <small>{{ fileName(customization) }}</small>
               <strong>{{ customization.title }}</strong>
+              <small>{{ fileName(customization) }} · {{ kindLabel(customization.kind) }}</small>
             </span>
             <span class="customization-card-side">
               <b>{{ statusLabel(customization.evidenceStatus) }}</b>
-              <em>{{ kindLabel(customization.kind) }}</em>
+              <em>{{ customization.matches.length | number }} match{{ customization.matches.length === 1 ? '' : 'es' }}</em>
             </span>
           </button>
         }
@@ -95,7 +122,7 @@
             <div>
               <span class="customization-kicker">{{ kindLabel(customization.kind) }}</span>
               <h3>{{ customization.title }}</h3>
-              <p>{{ customization.workspace || 'Local' }} · updated {{ customization.modifiedAt | date: 'medium' }}</p>
+              <p>{{ customization.workspace || 'Local' }} · {{ fileName(customization) }}</p>
             </div>
             <span
               class="evidence-badge"
@@ -112,9 +139,9 @@
           </header>
 
           <div class="customization-facts">
-            <span><b>{{ fileName(customization) }}</b></span>
             <span><b>{{ customization.characterCount | number }}</b> characters</span>
             <span><b>{{ customization.lineCount | number }}</b> lines</span>
+            <span><b>updated</b> {{ customization.modifiedAt | date: 'mediumDate' }}</span>
             @if (customization.applyTo.length) {
               <span><b>applyTo</b> {{ customization.applyTo.join(', ') }}</span>
             }
@@ -124,7 +151,7 @@
           </div>
 
           <section class="evidence-summary">
-            <h4>{{ statusLabel(customization.evidenceStatus) }}</h4>
+            <h4>{{ statusHeadline(customization.evidenceStatus) }}</h4>
             <p>{{ statusHelp(customization.evidenceStatus) }}</p>
             @if (customization.description) {
               <p class="description">{{ customization.description }}</p>
@@ -183,7 +210,7 @@
         {{
           customizationsInput().length
             ? 'Try a broader search or reset the filters.'
-            : 'Add instruction or skill files under .github, then refresh the local scan.'
+            : 'No supported Copilot customization files were found for workspaces with imported VS Code debug logs. The scanner checks repo instructions, .github customization folders, parent repo customizations, and exact customization files referenced by debug logs.'
         }}
       </p>
       @if (customizationsInput().length) {

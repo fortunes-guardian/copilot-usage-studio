@@ -131,18 +131,23 @@ Important boundary: these are source-backed size and presence signals. They are 
 
 ## Copilot customization evidence
 
-The scanner reads local workspace customizations from observed `.github` folders:
+The scanner reads local Copilot customization files from known VS Code/GitHub Copilot locations for workspaces with imported Copilot data:
 
 ```text
-<workspace>/.github/instructions/**/*.md
-<workspace>/.github/skills/**/*.md
-<workspace>/.github/prompts/**/*.md
-<workspace>/.github/hooks/**/*.md
+<workspace-or-parent-repo>/.github/copilot-instructions.md
+<workspace-or-parent-repo>/.github/instructions/**/*.md
+<workspace-or-parent-repo>/.github/skills/**/*.md
+<workspace-or-parent-repo>/.github/prompts/**/*.md
+<workspace-or-parent-repo>/.github/hooks/**/*.md
+<workspace-or-parent-repo>/.github/agents/**/*.md
+<workspace-or-parent-repo>/AGENTS.md
+<workspace-or-parent-repo>/CLAUDE.md
+<workspace-or-parent-repo>/GEMINI.md
 ```
 
-The first implemented UI focuses on instructions and skills, but the data model already keeps a generic `kind` so prompts and hooks can be added without a new product concept.
+For monorepos, it walks from the opened workspace folder up to the nearest Git repository root and checks those known locations at each level. It also imports exact Markdown customization files referenced by VS Code debug-log side files when the path looks like a Copilot customization file, such as `SKILL.md`, `.instructions.md`, `.prompt.md`, or `.agent.md`.
 
-These are targeted scans, not whole-repository crawls. The scanner only walks the listed `.github` customization roots after the matching VS Code workspace-storage folder has Copilot debug/chat data. Stale VS Code workspace entries without Copilot data do not trigger repo-level customization scans. Recursion is capped by depth and directory count, skips symlinks, and ignores common dependency/build folders.
+These are targeted scans, not whole-repository crawls. The scanner only walks the listed customization roots after the matching VS Code workspace-storage folder has Copilot debug/chat data. Stale VS Code workspace entries without Copilot data do not trigger repo-level customization scans. Recursion is capped by depth and directory count, skips symlinks, and ignores common dependency/build folders.
 
 Each customization stores metadata only: title, name, description, `applyTo`, triggers, path, size, and an excerpt. The scanner reads the full file during the scan to build fingerprints, but it does not persist the full content into `sessions.json`.
 

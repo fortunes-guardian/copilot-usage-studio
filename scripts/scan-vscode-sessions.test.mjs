@@ -639,6 +639,97 @@ test('indexes Copilot customizations and classifies request evidence', async () 
   }
 });
 
+test('indexes repo-root, parent-repo, agent, and debug-referenced customizations', async () => {
+  const { root, sessionDir, workspaceDir } = tempSessionFixture('customization-expanded-sources');
+  const repoRoot = join(root, 'repo');
+  const workspaceFolder = join(repoRoot, 'apps', 'api');
+  const externalSkillDir = join(root, 'local-copilot-skill');
+  const externalSkillFile = join(externalSkillDir, 'SKILL.md');
+
+  try {
+    mkdirSync(join(repoRoot, '.git'), { recursive: true });
+    mkdirSync(join(repoRoot, '.github', 'instructions'), { recursive: true });
+    mkdirSync(join(repoRoot, '.github', 'agents'), { recursive: true });
+    mkdirSync(workspaceFolder, { recursive: true });
+    mkdirSync(externalSkillDir, { recursive: true });
+    writeFileSync(
+      join(workspaceDir, 'workspace.json'),
+      JSON.stringify({ folder: pathToFileUrl(workspaceFolder) }),
+      'utf8',
+    );
+    writeFileSync(
+      join(repoRoot, '.github', 'copilot-instructions.md'),
+      'Prefer repository aggregate rules and keep controllers thin.',
+      'utf8',
+    );
+    writeFileSync(
+      join(repoRoot, 'AGENTS.md'),
+      'Repository agents must ask one clarifying question before plans.',
+      'utf8',
+    );
+    writeFileSync(
+      join(repoRoot, '.github', 'instructions', 'parent.instructions.md'),
+      'Parent instruction: use bounded context and explicit domain language.',
+      'utf8',
+    );
+    writeFileSync(
+      join(repoRoot, '.github', 'agents', 'planner.agent.md'),
+      'Planner agent should produce small phases and visible risks.',
+      'utf8',
+    );
+    writeFileSync(
+      externalSkillFile,
+      'When pending git changes exist, summarize risk before editing.',
+      'utf8',
+    );
+    writeFileSync(
+      join(sessionDir, 'system_prompt_0.json'),
+      JSON.stringify({
+        content: [
+          {
+            type: 'text',
+            content: [
+              '<file>.github/copilot-instructions.md</file>',
+              `<file>${externalSkillFile}</file>`,
+              'Planner agent should produce small phases and visible risks.',
+              'When pending git changes exist, summarize risk before editing.',
+            ].join('\n'),
+          },
+        ],
+      }),
+      'utf8',
+    );
+    writeJsonl(join(sessionDir, 'main.jsonl'), [
+      event(1, 'llm_request', 'panel/editAgent', {
+        attrs: {
+          model: 'gpt-5.4',
+          inputTokens: 1_200,
+          outputTokens: 80,
+          systemPromptFile: 'system_prompt_0.json',
+          inputMessages: 'Prefer repository aggregate rules and keep controllers thin.',
+        },
+      }),
+    ]);
+
+    const data = await scanVsCodeSessions({ roots: [workspaceDir], sqlite: false });
+    const paths = data.customizations.map((item) => item.relativePath.replace(/\\/g, '/')).sort();
+    const externalSkill = data.customizations.find((item) => item.sourcePath === externalSkillFile);
+
+    assert(paths.includes('.github/copilot-instructions.md'));
+    assert(paths.includes('AGENTS.md'));
+    assert(paths.includes('.github/instructions/parent.instructions.md'));
+    assert(paths.includes('.github/agents/planner.agent.md'));
+    assert.equal(data.customizations.some((item) => item.kind === 'agent'), true);
+    assert(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'root'));
+    assert(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'file'));
+    assert(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'debug-reference'));
+    assert.equal(externalSkill?.kind, 'skill');
+    assert.equal(externalSkill?.evidenceStatus, 'sent');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 function pathToFileUrl(file) {
   return `file://${file.replace(/\\/g, '/')}`;
 }

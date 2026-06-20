@@ -155,6 +155,7 @@ export class App {
   protected readonly sessions = computed(() => this.sessionData()?.sessions ?? []);
   protected readonly memories = computed(() => this.sessionData()?.memories ?? []);
   protected readonly customizations = computed(() => this.sessionData()?.customizations ?? []);
+  protected readonly ingestion = computed(() => this.sessionData()?.ingestion ?? null);
   protected readonly warningOptions = computed(() => {
     const labels = new Set<string>();
 

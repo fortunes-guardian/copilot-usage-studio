@@ -286,7 +286,7 @@ export interface CopilotMemory {
   recalls?: MemoryRecall[];
 }
 
-export type CopilotCustomizationKind = 'instruction' | 'skill' | 'prompt' | 'hook' | 'other';
+export type CopilotCustomizationKind = 'instruction' | 'skill' | 'prompt' | 'hook' | 'agent' | 'other';
 export type CopilotCustomizationEvidenceStatus = 'sent' | 'listed' | 'discovered' | 'not_seen';
 
 export interface CopilotCustomizationMatch {
@@ -342,6 +342,7 @@ export interface SessionData {
     importedMemories?: number;
     importedPlans?: number;
     scannedCustomizationRoots?: number;
+    scannedCustomizationLocations?: Array<{ kind: string; path: string }>;
     importedCustomizations?: number;
     skippedOversizedMemories?: number;
     skippedUnreadableMemories?: number;

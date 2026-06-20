@@ -67,6 +67,7 @@ function createDiagnostics() {
     importedMemories: 0,
     importedPlans: 0,
     scannedCustomizationRoots: 0,
+    scannedCustomizationLocations: [],
     importedCustomizations: 0,
     skippedOversizedMemories: 0,
     skippedUnreadableMemories: 0,
@@ -490,16 +491,51 @@ function titleFromFileName(file) {
   return basename(file, extname(file))
     .replace(/\.instructions$/i, '')
     .replace(/\.skill$/i, '')
+    .replace(/\.agent$/i, '')
+    .replace(/^copilot-instructions$/i, 'Copilot Instructions')
     .replace(/[-_]+/g, ' ')
     .replace(/\b\w/g, (character) => character.toUpperCase())
     .slice(0, 160);
+}
+
+function isMarkdownFile(file) {
+  return extname(file).toLowerCase() === '.md';
+}
+
+function looksLikeCopilotCustomizationPath(file) {
+  const normalized = file.replace(/\\/g, '/').toLowerCase();
+  const name = basename(file).toLowerCase();
+
+  return (
+    normalized.includes('/.github/instructions/') ||
+    normalized.includes('/.github/skills/') ||
+    normalized.includes('/.github/prompts/') ||
+    normalized.includes('/.github/hooks/') ||
+    normalized.includes('/.github/agents/') ||
+    name === 'copilot-instructions.md' ||
+    name === 'agents.md' ||
+    name === 'claude.md' ||
+    name === 'gemini.md' ||
+    name.endsWith('.instructions.md') ||
+    name.endsWith('.prompt.md') ||
+    name.endsWith('.skill.md') ||
+    name.endsWith('.agent.md') ||
+    name === 'skill.md'
+  );
 }
 
 function customizationKind(file) {
   const normalized = file.replace(/\\/g, '/').toLowerCase();
   const name = basename(file).toLowerCase();
 
-  if (normalized.includes('/.github/instructions/') || name.endsWith('.instructions.md')) {
+  if (
+    normalized.includes('/.github/instructions/') ||
+    name === 'copilot-instructions.md' ||
+    name === 'agents.md' ||
+    name === 'claude.md' ||
+    name === 'gemini.md' ||
+    name.endsWith('.instructions.md')
+  ) {
     return 'instruction';
   }
   if (normalized.includes('/.github/skills/') || name === 'skill.md' || name.endsWith('.skill.md')) {
@@ -510,6 +546,9 @@ function customizationKind(file) {
   }
   if (normalized.includes('/.github/hooks/')) {
     return 'hook';
+  }
+  if (normalized.includes('/.github/agents/') || name.endsWith('.agent.md')) {
+    return 'agent';
   }
   return 'other';
 }
@@ -562,35 +601,199 @@ function customizationFromFile(file, root, workspace) {
   }
 }
 
-function customizationsFromWorkspace(workspaceDir) {
-  const folder = workspaceFolderPath(workspaceDir);
-  if (!folder) {
-    return [];
+function nearestGitRoot(folder) {
+  let current = resolve(folder);
+
+  while (true) {
+    if (existsSync(join(current, '.git'))) {
+      return current;
+    }
+
+    const parent = dirname(current);
+    if (parent === current) {
+      return '';
+    }
+    current = parent;
+  }
+}
+
+function customizationCandidateBases(folder) {
+  const resolvedFolder = resolve(folder);
+  const gitRoot = nearestGitRoot(resolvedFolder);
+  if (!gitRoot) {
+    return [resolvedFolder];
   }
 
+  const bases = [];
+  let current = resolvedFolder;
+  while (true) {
+    bases.push(current);
+    if (current === gitRoot) {
+      break;
+    }
+
+    const parent = dirname(current);
+    if (parent === current) {
+      break;
+    }
+    current = parent;
+  }
+
+  return [...new Set(bases)];
+}
+
+function containedByBase(candidate, base) {
+  const resolvedCandidate = resolve(candidate);
+  const resolvedBase = resolve(base);
+  return resolvedCandidate === resolvedBase || resolvedCandidate.startsWith(`${resolvedBase}${sep}`);
+}
+
+function directCustomizationFiles(base) {
+  const files = [
+    join(base, '.github', 'copilot-instructions.md'),
+    join(base, 'AGENTS.md'),
+    join(base, 'CLAUDE.md'),
+    join(base, 'GEMINI.md'),
+  ].filter((file) => existsSync(file) && isMarkdownFile(file));
+
+  for (const file of files) {
+    recordCustomizationLocation(file, 'file');
+  }
+
+  return files;
+}
+
+function customizationFilesFromKnownRoots(base) {
   const roots = [
-    join(folder, '.github', 'instructions'),
-    join(folder, '.github', 'skills'),
-    join(folder, '.github', 'prompts'),
-    join(folder, '.github', 'hooks'),
+    join(base, '.github', 'instructions'),
+    join(base, '.github', 'skills'),
+    join(base, '.github', 'prompts'),
+    join(base, '.github', 'hooks'),
+    join(base, '.github', 'agents'),
   ].filter(existsSync);
 
   return roots.flatMap((root) => {
     diagnostics.scannedCustomizationRoots += 1;
+    recordCustomizationLocation(root, 'root');
     const files = listFilesRecursive(
       root,
-      (file) => extname(file).toLowerCase() === '.md',
+      (file) => isMarkdownFile(file) && looksLikeCopilotCustomizationPath(file),
       customizationFileLimit,
       { label: 'customization', maxDepth: 5, maxDirs: 300 },
     );
     if (files.length >= customizationFileLimit) {
       diagnostics.warnings.push(`${root}: customization scan capped at ${customizationFileLimit} files.`);
     }
-
-    return files
-      .map((file) => customizationFromFile(file, folder, workspaceName(workspaceDir)))
-      .filter(Boolean);
+    return files;
   });
+}
+
+function localMarkdownPathCandidates(text, bases) {
+  const content = String(text ?? '');
+  const candidates = new Set();
+  const fileTagPattern = /<file>([^<>"']+?\.md)<\/file>/gi;
+  const windowsPathPattern = /[a-zA-Z]:[\\/][^<>"'\r\n]+?\.md/gi;
+  const posixPathPattern = /\/(?:[^<>"'\r\n]+\/)*[^<>"'\r\n]+?\.md/gi;
+
+  for (const pattern of [fileTagPattern, windowsPathPattern, posixPathPattern]) {
+    for (const match of content.matchAll(pattern)) {
+      candidates.add((match[1] ?? match[0]).trim().replace(/[),.;\]}]+$/g, ''));
+    }
+  }
+
+  const files = [];
+  for (const candidate of candidates) {
+    const possiblePaths = isAbsolute(candidate)
+      ? [candidate]
+      : bases.map((base) => resolve(base, candidate));
+
+    for (const possiblePath of possiblePaths) {
+      if (
+        existsSync(possiblePath) &&
+        isMarkdownFile(possiblePath) &&
+        looksLikeCopilotCustomizationPath(possiblePath) &&
+        (isAbsolute(candidate) || bases.some((base) => containedByBase(possiblePath, base)))
+      ) {
+        files.push(resolve(possiblePath));
+      }
+    }
+  }
+
+  return files;
+}
+
+function customizationsFromDebugReferences(debugRoot, bases, workspace) {
+  if (!existsSync(debugRoot) || !bases.length) {
+    return [];
+  }
+
+  const files = new Map();
+
+  for (const sessionDir of listDirs(debugRoot)) {
+    for (const file of readdirSync(sessionDir).map((entry) => join(sessionDir, entry))) {
+      if (!statSync(file).isFile()) {
+        continue;
+      }
+      const extension = extname(file).toLowerCase();
+      if (!['.json', '.txt'].includes(extension)) {
+        continue;
+      }
+      const stats = statSync(file);
+      if (stats.size > 2 * 1024 * 1024) {
+        continue;
+      }
+
+      for (const candidate of localMarkdownPathCandidates(readFileSync(file, 'utf8'), bases)) {
+        const base = bases.find((candidateBase) => containedByBase(candidate, candidateBase)) ?? dirname(candidate);
+        recordCustomizationLocation(candidate, 'debug-reference');
+        files.set(candidate, base);
+      }
+    }
+  }
+
+  return [...files.entries()]
+    .map(([file, base]) => customizationFromFile(file, base, workspace))
+    .filter(Boolean);
+}
+
+function customizationsFromWorkspace(workspaceDir) {
+  const folder = workspaceFolderPath(workspaceDir);
+  if (!folder) {
+    return { customizations: [], bases: [] };
+  }
+
+  const bases = customizationCandidateBases(folder);
+  const files = new Map();
+
+  for (const base of bases) {
+    const directFiles = directCustomizationFiles(base);
+    if (directFiles.length) {
+      diagnostics.scannedCustomizationRoots += 1;
+    }
+
+    for (const file of [...directFiles, ...customizationFilesFromKnownRoots(base)]) {
+      files.set(resolve(file), base);
+    }
+  }
+
+  const workspace = workspaceName(workspaceDir);
+  return {
+    bases,
+    customizations: [...files.entries()]
+      .map(([file, base]) => customizationFromFile(file, base, workspace))
+      .filter(Boolean),
+  };
+}
+
+function recordCustomizationLocation(path, kind) {
+  const location = { kind, path: resolve(path) };
+  const key = `${location.kind}:${location.path}`;
+  if (diagnostics.scannedCustomizationLocations.some((item) => `${item.kind}:${item.path}` === key)) {
+    return;
+  }
+  if (diagnostics.scannedCustomizationLocations.length < 200) {
+    diagnostics.scannedCustomizationLocations.push(location);
+  }
 }
 
 function normalizeMatchText(value) {
@@ -2238,9 +2441,17 @@ function parseWorkspace(workspaceDir, onProgress = () => {}) {
   });
   const stateBySessionId =
     debugSessionDirs.length || chatSessionFiles.length ? readWorkspaceState(workspaceDir) : new Map();
-  const customizationInventory = debugSessionDirs.length
+  const customizationWorkspace = debugSessionDirs.length
     ? customizationsFromWorkspace(workspaceDir)
-    : [];
+    : { customizations: [], bases: [] };
+  const customizationMap = new Map();
+  for (const customization of [
+    ...customizationWorkspace.customizations,
+    ...customizationsFromDebugReferences(debugRoot, customizationWorkspace.bases, workspace),
+  ]) {
+    customizationMap.set(customization.id, customization);
+  }
+  const customizationInventory = [...customizationMap.values()];
   const customizations = debugSessionDirs.length
     ? customizationEvidenceFromDebugLogs(debugRoot, customizationInventory, workspace)
     : [];

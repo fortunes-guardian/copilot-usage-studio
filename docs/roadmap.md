@@ -357,12 +357,15 @@ Debugger questions:
 
 Done:
 
-- Scan workspace `.github/instructions`, `.github/skills`, `.github/prompts`, and `.github/hooks` Markdown files as local Copilot customizations.
-- Classify customizations as instruction, skill, prompt, hook, or other.
+- Scan repo/workspace `.github/copilot-instructions.md`, `.github/instructions`, `.github/skills`, `.github/prompts`, `.github/hooks`, `.github/agents`, `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` as local Copilot customizations.
+- Walk from the opened workspace folder to the nearest Git repo root so monorepo parent customizations are included without scanning the whole repo.
+- Import exact Markdown customization files referenced by VS Code debug-log side files when they look like Copilot customization files.
+- Classify customizations as instruction, skill, prompt, hook, agent, or other.
 - Store metadata, path, `applyTo`, triggers, size, and excerpt without persisting full file content in generated app data.
 - Match customization evidence against `llm_request.attrs.inputMessages`, `llm_request.attrs.userRequest`, and referenced `system_prompt_*.json` side files.
 - Add conservative evidence states: `sent`, `listed`, `discovered`, and `not_seen`.
 - Add a top-level Customizations page with search/filtering, evidence explanation, match rows, and session links.
+- Compress the Customizations UI around the primary developer question: "did Copilot send this rule to the model?"
 - Verify the first slice against local pending `.github` instruction/skill files and recent VS Code Agent Debug Logs.
 
 Build:
@@ -378,7 +381,7 @@ Build:
 - Keep `cachedTokens` import covered in debug-log ingestion and add any future explicit numeric cache fields as they appear. Treat `cache_control` hints or prompt-cache metadata as evidence about cache behavior, but not as billable cached-token counts unless the event exposes numeric cached-token totals.
 - Keep the observed Agent Debug Log schema documented in [debug-log-schema.md](debug-log-schema.md) and add fixture coverage before building new cost claims from newly discovered fields.
 - Promote the compact Cost request-payload evidence into a deeper `Input attribution` panel only after the scanner preserves enough structured request sections.
-- Expand Customizations beyond workspace `.github` files into user-level Copilot customization locations once the source paths are observed and tested.
+- Expand Customizations into additional user/global Copilot customization locations only after their exact source paths are observed and tested.
 - Add exact file-open/reveal actions for Customizations through the local runtime, reusing the guarded id-based pattern from Memory.
 - Add per-session "Customizations used" summaries, but keep the top-level Customizations page as the primary debugging surface.
 - Add per-model-call setup payload summaries from `systemPromptFile` and `toolsFile` references: system/custom instruction file size, tool schema file size, total tool count, MCP tool count, and largest schema descriptions. Show these as payload size evidence, not exact token bills.

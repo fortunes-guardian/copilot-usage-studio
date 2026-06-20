@@ -7,6 +7,7 @@ import {
   CopilotCustomizationEvidenceStatus,
   CopilotCustomizationKind,
   CopilotSession,
+  SessionData,
 } from './session-data.model';
 import { HelpPopoverComponent } from './help-popover.component';
 
@@ -22,6 +23,7 @@ type CustomizationStatusFilter = 'all' | CopilotCustomizationEvidenceStatus;
 export class CustomizationsPageComponent {
   protected readonly customizationsInput = signal<CopilotCustomization[]>([]);
   protected readonly sessionsInput = signal<CopilotSession[]>([]);
+  protected readonly ingestionInput = signal<SessionData['ingestion'] | null>(null);
   protected readonly query = signal('');
   protected readonly kindFilter = signal<CustomizationKindFilter>('all');
   protected readonly statusFilter = signal<CustomizationStatusFilter>('all');
@@ -38,6 +40,10 @@ export class CustomizationsPageComponent {
 
   @Input() set sessions(value: CopilotSession[] | null | undefined) {
     this.sessionsInput.set(value ?? []);
+  }
+
+  @Input() set ingestion(value: SessionData['ingestion'] | null | undefined) {
+    this.ingestionInput.set(value ?? null);
   }
 
   @Output() readonly openSession = new EventEmitter<CopilotSession>();
@@ -98,6 +104,18 @@ export class CustomizationsPageComponent {
     };
   });
 
+  protected readonly scanDiagnostics = computed(() => {
+    const ingestion = this.ingestionInput();
+    const locations = ingestion?.scannedCustomizationLocations ?? [];
+    return {
+      roots: ingestion?.scannedCustomizationRoots ?? 0,
+      files: ingestion?.importedCustomizations ?? this.customizationsInput().length,
+      locations: locations.slice(0, 80),
+      locationCount: locations.length,
+      capped: locations.length >= 200,
+    };
+  });
+
   protected selectCustomization(customization: CopilotCustomization): void {
     this.selectedId.set(customization.id);
   }
@@ -143,26 +161,44 @@ export class CustomizationsPageComponent {
       skill: 'Skill',
       prompt: 'Prompt',
       hook: 'Hook',
+      agent: 'Agent',
       other: 'Other',
     }[kind];
   }
 
   protected statusLabel(status: CopilotCustomizationEvidenceStatus): string {
     return {
-      sent: 'Sent to model',
-      listed: 'Listed only',
-      discovered: 'Discovered only',
+      sent: 'Sent',
+      listed: 'Listed',
+      discovered: 'Discovered',
       not_seen: 'Not seen',
+    }[status];
+  }
+
+  protected statusHeadline(status: CopilotCustomizationEvidenceStatus): string {
+    return {
+      sent: 'Content found in a model request',
+      listed: 'Known to the request, content not matched',
+      discovered: 'Found during setup, not in a request',
+      not_seen: 'No evidence in imported sessions',
     }[status];
   }
 
   protected statusHelp(status: CopilotCustomizationEvidenceStatus): string {
     return {
-      sent: 'The scanner matched content from this file inside a model request payload or a request side file.',
-      listed: 'The model request listed this customization by name, path, description, trigger, or applyTo rule, but the full file content was not matched.',
-      discovered: 'VS Code resolved this customization in setup/discovery events, but request payload evidence was not found.',
-      not_seen: 'The file exists locally, but imported sessions did not show discovery or request evidence for it.',
+      sent: 'Text from this file appeared in the prompt material that VS Code sent to a model request.',
+      listed: 'VS Code mentioned this file or rule in request metadata, but the scanner did not find distinctive file text in the prompt.',
+      discovered: 'VS Code found the file during setup or discovery, but imported requests did not show it being sent.',
+      not_seen: 'The file exists locally, but the imported sessions do not show it being discovered, listed, or sent.',
     }[status];
+  }
+
+  protected diagnosticKindLabel(kind: string): string {
+    return {
+      root: 'Folder',
+      file: 'File',
+      'debug-reference': 'Debug reference',
+    }[kind] ?? kind;
   }
 
   protected sessionForMatch(sessionId: string): CopilotSession | null {

@@ -217,7 +217,7 @@ for (const customization of sessionData.customizations ?? []) {
   if (!customization.id) {
     fail('Customization missing id');
   }
-  if (!['instruction', 'skill', 'prompt', 'hook', 'other'].includes(customization.kind)) {
+  if (!['instruction', 'skill', 'prompt', 'hook', 'agent', 'other'].includes(customization.kind)) {
     fail(`${customization.id ?? 'unknown customization'} has invalid kind ${customization.kind}`);
   }
   if (!['sent', 'listed', 'discovered', 'not_seen'].includes(customization.evidenceStatus)) {
@@ -530,12 +530,28 @@ for (const field of [
   'importedPlans',
   'skippedOversizedMemories',
   'skippedUnreadableMemories',
+  'scannedCustomizationRoots',
+  'importedCustomizations',
+  'skippedOversizedCustomizations',
+  'skippedUnreadableCustomizations',
 ]) {
   if (
     sessionData.ingestion?.[field] !== undefined &&
     (!Number.isFinite(sessionData.ingestion[field]) || sessionData.ingestion[field] < 0)
   ) {
     fail(`ingestion.${field} is invalid`);
+  }
+}
+
+for (const location of sessionData.ingestion?.scannedCustomizationLocations ?? []) {
+  if (
+    !location ||
+    typeof location.kind !== 'string' ||
+    typeof location.path !== 'string' ||
+    !location.kind ||
+    !location.path
+  ) {
+    fail('ingestion.scannedCustomizationLocations contains an invalid location row');
   }
 }
 

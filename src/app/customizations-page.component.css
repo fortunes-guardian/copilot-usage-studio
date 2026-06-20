@@ -5,12 +5,13 @@
 .customizations-page {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
-  gap: 8px;
+  gap: 7px;
   min-height: calc(100vh - 96px);
 }
 
 .customizations-header,
 .customizations-controls,
+.customizations-diagnostics,
 .customizations-list,
 .customization-detail,
 .customizations-empty {
@@ -25,8 +26,8 @@
   justify-content: space-between;
   gap: 14px;
   border-color: color-mix(in srgb, var(--accent-2) 18%, var(--line));
-  border-radius: 14px;
-  padding: 12px 14px;
+  border-radius: 13px;
+  padding: 10px 12px;
   background: var(--header-gradient);
 }
 
@@ -49,7 +50,7 @@
 }
 
 .customizations-header h2 {
-  font-size: 21px;
+  font-size: 19px;
   line-height: 1.15;
 }
 
@@ -57,7 +58,7 @@
 .customization-detail-header p,
 .customizations-empty p,
 .evidence-summary p {
-  margin: 4px 0 0;
+  margin: 3px 0 0;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.35;
@@ -92,9 +93,9 @@
 .customizations-controls {
   display: grid;
   grid-template-columns: minmax(260px, 1.8fr) repeat(3, minmax(130px, 0.8fr));
-  gap: 7px;
+  gap: 6px;
   border-radius: 12px;
-  padding: 8px;
+  padding: 7px;
 }
 
 .customizations-controls label {
@@ -121,10 +122,85 @@
   font-size: 12px;
 }
 
+.customizations-diagnostics {
+  border-radius: 12px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.customizations-diagnostics summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 34px;
+  padding: 8px 10px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.customizations-diagnostics summary span {
+  color: var(--text-strong);
+  font-size: 12px;
+}
+
+.customizations-diagnostics summary strong {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.diagnostic-list {
+  display: grid;
+  gap: 1px;
+  max-height: 240px;
+  overflow: auto;
+  border-top: 1px solid var(--line);
+  padding: 6px;
+  background: var(--surface-soft);
+}
+
+.diagnostic-list div {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-height: 28px;
+  border-radius: 7px;
+  padding: 5px 7px;
+}
+
+.diagnostic-list div:nth-child(odd) {
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+
+.diagnostic-list b {
+  color: var(--muted-2);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.diagnostic-list code {
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 11px;
+}
+
+.diagnostic-note {
+  margin: 0;
+  border-top: 1px solid var(--line);
+  padding: 8px 10px;
+  color: var(--muted);
+  font-size: 11px;
+  background: var(--surface-soft);
+}
+
 .customizations-workspace {
   display: grid;
-  grid-template-columns: minmax(340px, 420px) minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: minmax(360px, 450px) minmax(0, 1fr);
+  gap: 8px;
   align-items: start;
   min-height: 0;
 }
@@ -137,13 +213,13 @@
 
 .customizations-list {
   position: sticky;
-  top: 70px;
+  top: 66px;
   display: grid;
   align-content: start;
-  gap: 3px;
-  max-height: calc(100vh - 150px);
+  gap: 2px;
+  max-height: calc(100vh - 138px);
   overflow: auto;
-  padding: 7px;
+  padding: 6px;
 }
 
 .customizations-list-heading {
@@ -177,12 +253,12 @@
   display: grid;
   grid-template-columns: 22px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   width: 100%;
-  min-height: 52px;
+  min-height: 44px;
   border: 1px solid transparent;
   border-radius: 9px;
-  padding: 7px 8px;
+  padding: 6px 7px;
   background: transparent;
   color: var(--text);
   text-align: left;
@@ -205,6 +281,11 @@
   background: color-mix(in srgb, var(--accent-2) 7%, var(--surface-soft));
 }
 
+.customization-card.discovered.active {
+  border-color: color-mix(in srgb, var(--warning) 38%, var(--line));
+  background: color-mix(in srgb, var(--warning) 7%, var(--surface-soft));
+}
+
 .customization-file-icon {
   display: grid;
   place-items: center;
@@ -219,7 +300,7 @@
 
 .customization-card-main {
   display: grid;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
 }
 
@@ -255,9 +336,9 @@
 
 .customization-detail {
   display: grid;
-  gap: 12px;
-  min-height: calc(100vh - 150px);
-  padding: 12px;
+  gap: 9px;
+  min-height: calc(100vh - 138px);
+  padding: 10px;
 }
 
 .customization-detail-header {
@@ -268,7 +349,7 @@
 }
 
 .customization-detail-header h3 {
-  font-size: 21px;
+  font-size: 19px;
   line-height: 1.15;
 }
 
@@ -317,8 +398,8 @@
 .match-list,
 .customization-path {
   border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 12px;
+  border-radius: 11px;
+  padding: 10px;
   background: var(--surface-soft);
 }
 
