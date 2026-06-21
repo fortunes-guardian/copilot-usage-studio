@@ -200,6 +200,7 @@ export class CustomizationsPageComponent {
       'debug-reference': 'Debug reference',
       'debug-discovery-root': 'VS Code discovery',
       'vscode-setting-root': 'VS Code setting',
+      'user-default-root': 'User default',
     }[kind] ?? kind;
   }
 

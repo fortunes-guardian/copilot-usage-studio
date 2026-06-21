@@ -829,6 +829,7 @@ function configuredCustomizationLocationEntries(workspaceDir, workspaceFolder) {
   const settingKinds = [
     ['chat.instructionsFilesLocations', 'instruction'],
     ['chat.promptFilesLocations', 'prompt'],
+    ['chat.agentFilesLocations', 'agent'],
     ['chat.agentSkillsLocations', 'skill'],
     ['chat.hookFilesLocations', 'hook'],
   ];
@@ -858,6 +859,47 @@ function configuredCustomizationLocationEntries(workspaceDir, workspaceFolder) {
   }
 
   return entries;
+}
+
+function defaultUserCustomizationLocationEntries() {
+  return [
+    {
+      path: join(homedir(), '.copilot', 'skills'),
+      kind: 'skill',
+      source: 'user-default',
+      settingKey: 'chat.agentSkillsLocations',
+    },
+    {
+      path: join(homedir(), '.claude', 'skills'),
+      kind: 'skill',
+      source: 'user-default',
+      settingKey: 'chat.agentSkillsLocations',
+    },
+    {
+      path: join(homedir(), '.agents', 'skills'),
+      kind: 'skill',
+      source: 'user-default',
+      settingKey: 'chat.agentSkillsLocations',
+    },
+    {
+      path: join(homedir(), '.copilot', 'hooks'),
+      kind: 'hook',
+      source: 'user-default',
+      settingKey: 'chat.hookFilesLocations',
+    },
+    {
+      path: join(homedir(), '.claude', 'settings.json'),
+      kind: 'hook',
+      source: 'user-default',
+      settingKey: 'chat.hookFilesLocations',
+    },
+    {
+      path: join(homedir(), '.claude', 'settings.local.json'),
+      kind: 'hook',
+      source: 'user-default',
+      settingKey: 'chat.hookFilesLocations',
+    },
+  ];
 }
 
 function configuredCustomizationFilePredicate(kind, file) {
@@ -892,13 +934,19 @@ function configuredCustomizationFilePredicate(kind, file) {
 
 function customizationsFromConfiguredSettings(workspaceDir, workspaceFolder, workspace) {
   const files = new Map();
-  for (const entry of configuredCustomizationLocationEntries(workspaceDir, workspaceFolder)) {
+  for (const entry of [
+    ...configuredCustomizationLocationEntries(workspaceDir, workspaceFolder),
+    ...defaultUserCustomizationLocationEntries(),
+  ]) {
     if (!existsSync(entry.path)) {
       continue;
     }
 
     diagnostics.scannedCustomizationRoots += 1;
-    recordCustomizationLocation(entry.path, 'vscode-setting-root');
+    recordCustomizationLocation(
+      entry.path,
+      entry.source === 'user-default' ? 'user-default-root' : 'vscode-setting-root',
+    );
     if (statSync(entry.path).isFile()) {
       if (configuredCustomizationFilePredicate(entry.kind, entry.path)) {
         files.set(resolve(entry.path), { base: dirname(entry.path), kind: entry.kind });

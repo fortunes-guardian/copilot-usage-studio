@@ -651,6 +651,8 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
   const configuredInstructionFile = join(configuredInstructionsDir, 'domain.instructions.md');
   const configuredSkillsDir = join(workspaceFolder, 'custom', 'copilot-skills');
   const configuredSkillFile = join(configuredSkillsDir, 'release-review', 'SKILL.md');
+  const configuredAgentsDir = join(workspaceFolder, 'custom', 'copilot-agents');
+  const configuredAgentFile = join(configuredAgentsDir, 'release-planner.agent.md');
 
   try {
     mkdirSync(join(repoRoot, '.git'), { recursive: true });
@@ -664,6 +666,7 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
     mkdirSync(discoveredSkillDir, { recursive: true });
     mkdirSync(configuredInstructionsDir, { recursive: true });
     mkdirSync(dirname(configuredSkillFile), { recursive: true });
+    mkdirSync(configuredAgentsDir, { recursive: true });
     writeFileSync(
       join(workspaceDir, 'workspace.json'),
       JSON.stringify({ folder: pathToFileUrl(workspaceFolder) }),
@@ -679,6 +682,9 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
         '  },',
         '  "chat.agentSkillsLocations": {',
         '    "custom/copilot-skills": true,',
+        '  },',
+        '  "chat.agentFilesLocations": {',
+        '    "custom/copilot-agents": true,',
         '  },',
         '}',
       ].join('\n'),
@@ -735,6 +741,11 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
       'utf8',
     );
     writeFileSync(
+      configuredAgentFile,
+      'Configured release planner agent: produce release checks before publishing.',
+      'utf8',
+    );
+    writeFileSync(
       join(sessionDir, 'system_prompt_0.json'),
       JSON.stringify({
         content: [
@@ -748,6 +759,7 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
               'Pending git changes skill: compare changed files and summarize risk first.',
               'Configured instruction: always explain aggregate invariants before coding.',
               'Configured release skill: inspect changelog, package metadata, and release risk.',
+              'Configured release planner agent: produce release checks before publishing.',
             ].join('\n'),
           },
         ],
@@ -777,6 +789,7 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
     const discoveredSkill = data.customizations.find((item) => item.sourcePath === discoveredSkillFile);
     const configuredInstruction = data.customizations.find((item) => item.sourcePath === configuredInstructionFile);
     const configuredSkill = data.customizations.find((item) => item.sourcePath === configuredSkillFile);
+    const configuredAgent = data.customizations.find((item) => item.sourcePath === configuredAgentFile);
 
     assert(paths.includes('.github/copilot-instructions.md'));
     assert(paths.includes('AGENTS.md'));
@@ -786,6 +799,7 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
     assert(paths.includes('.claude/rules/team.instructions.md'));
     assert(paths.includes('domain.instructions.md'));
     assert(paths.includes('release-review/SKILL.md'));
+    assert(paths.includes('release-planner.agent.md'));
     assert.equal(data.customizations.some((item) => item.kind === 'agent'), true);
     assert(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'root'));
     assert(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'file'));
@@ -801,6 +815,8 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
     assert.equal(configuredInstruction?.evidenceStatus, 'sent');
     assert.equal(configuredSkill?.kind, 'skill');
     assert.equal(configuredSkill?.evidenceStatus, 'sent');
+    assert.equal(configuredAgent?.kind, 'agent');
+    assert.equal(configuredAgent?.evidenceStatus, 'sent');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
