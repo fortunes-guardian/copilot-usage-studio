@@ -36,9 +36,9 @@ It checks:
 <workspace-or-parent-repo>/GEMINI.md
 ```
 
-For monorepos, the app walks from the opened workspace folder up to the nearest Git repository root and checks those known locations at each level. It also imports exact customization files referenced by VS Code debug-log side files and exact customization folders listed by VS Code discovery events. This matters for user-profile skills and prompts because VS Code can log folders such as `~/.copilot/skills`, `~/.claude/skills`, or the profile prompts folder even when those folders are outside the repository.
+For monorepos, the app walks from the opened workspace folder up to the nearest Git repository root and checks those known locations at each level. It also reads workspace/user VS Code settings such as `chat.instructionsFilesLocations`, `chat.promptFilesLocations`, `chat.agentSkillsLocations`, and `chat.hookFilesLocations` when those settings files are available locally. Finally, it imports exact customization files referenced by VS Code debug-log side files and exact customization folders listed by VS Code discovery events. This matters for user-profile skills and prompts because VS Code can log folders such as `~/.copilot/skills`, `~/.claude/skills`, or the profile prompts folder even when those folders are outside the repository.
 
-The Customizations page includes a collapsed scan-coverage diagnostic that lists the recorded roots, direct files, debug-referenced files, and debug-discovery folders checked during ingestion. This is primarily for debugging false negatives on machines with unusual workspace, profile, or monorepo layouts.
+The Customizations page includes a collapsed scan-coverage diagnostic that lists the recorded roots, direct files, VS Code setting roots, debug-referenced files, and debug-discovery folders checked during ingestion. This is primarily for debugging false negatives on machines with unusual workspace, profile, or monorepo layouts.
 
 The scanner stores metadata only in generated app data:
 

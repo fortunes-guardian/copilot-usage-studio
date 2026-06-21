@@ -155,7 +155,7 @@ The scanner reads local Copilot customization files from known VS Code/GitHub Co
 <workspace-or-parent-repo>/GEMINI.md
 ```
 
-For monorepos, it walks from the opened workspace folder up to the nearest Git repository root and checks those known locations at each level. It also imports exact customization files referenced by VS Code debug-log side files and exact customization folders listed by VS Code discovery events. This is how user-profile skills and prompts can be found without crawling arbitrary home or repository folders.
+For monorepos, it walks from the opened workspace folder up to the nearest Git repository root and checks those known locations at each level. It also reads workspace/user VS Code settings such as `chat.instructionsFilesLocations`, `chat.promptFilesLocations`, `chat.agentSkillsLocations`, and `chat.hookFilesLocations` when those settings files are available locally. Finally, it imports exact customization files referenced by VS Code debug-log side files and exact customization folders listed by VS Code discovery events. This is how custom workspace locations, user-profile skills, and prompts can be found without crawling arbitrary home or repository folders.
 
 These are targeted scans, not whole-repository crawls. The scanner only walks the listed customization roots after the matching VS Code workspace-storage folder has Copilot debug/chat data. Stale VS Code workspace entries without Copilot data do not trigger repo-level customization scans. Recursion is capped by depth and directory count, skips symlinks, and ignores common dependency/build folders.
 

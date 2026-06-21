@@ -278,6 +278,83 @@ function readJsonl(file) {
     .filter(Boolean);
 }
 
+function stripJsonComments(text) {
+  let output = '';
+  let inString = false;
+  let escaped = false;
+  let inLineComment = false;
+  let inBlockComment = false;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const character = text[index];
+    const next = text[index + 1];
+
+    if (inLineComment) {
+      if (character === '\n' || character === '\r') {
+        inLineComment = false;
+        output += character;
+      }
+      continue;
+    }
+
+    if (inBlockComment) {
+      if (character === '*' && next === '/') {
+        inBlockComment = false;
+        index += 1;
+      }
+      continue;
+    }
+
+    if (inString) {
+      output += character;
+      if (escaped) {
+        escaped = false;
+      } else if (character === '\\') {
+        escaped = true;
+      } else if (character === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (character === '"') {
+      inString = true;
+      output += character;
+      continue;
+    }
+
+    if (character === '/' && next === '/') {
+      inLineComment = true;
+      index += 1;
+      continue;
+    }
+
+    if (character === '/' && next === '*') {
+      inBlockComment = true;
+      index += 1;
+      continue;
+    }
+
+    output += character;
+  }
+
+  return output;
+}
+
+function readJsoncFile(file) {
+  if (!existsSync(file)) {
+    return {};
+  }
+
+  try {
+    const json = stripJsonComments(readFileSync(file, 'utf8')).replace(/,\s*([}\]])/g, '$1');
+    return safeJson(json) ?? {};
+  } catch (error) {
+    diagnostics.warnings.push(`${file}: settings file skipped: ${error.message}`);
+    return {};
+  }
+}
+
 function listDirs(dir) {
   if (!existsSync(dir)) {
     return [];
@@ -594,7 +671,7 @@ function customizationKind(file) {
   return 'other';
 }
 
-function customizationFromFile(file, root, workspace) {
+function customizationFromFile(file, root, workspace, forcedKind = '') {
   try {
     const stats = statSync(file);
     if (stats.size > customizationFileSizeLimit) {
@@ -605,7 +682,7 @@ function customizationFromFile(file, root, workspace) {
 
     const content = readFileSync(file, 'utf8');
     const frontmatter = parseSimpleFrontmatter(content);
-    const kind = customizationKind(file);
+    const kind = forcedKind || customizationKind(file);
     const relativePath = relative(root, file);
     const description = String(frontmatter.description ?? '').trim();
     const applyTo = Array.isArray(frontmatter.applyTo)
@@ -740,6 +817,112 @@ function customizationFilesFromKnownRoots(base) {
     }
     return files;
   });
+}
+
+function configuredCustomizationLocationEntries(workspaceDir, workspaceFolder) {
+  const entries = [];
+  const userDir = userDirForRoot(workspaceDir);
+  const settingsFiles = [
+    userDir ? { file: join(userDir, 'settings.json'), base: workspaceFolder, scope: 'user-settings' } : null,
+    { file: join(workspaceFolder, '.vscode', 'settings.json'), base: workspaceFolder, scope: 'workspace-settings' },
+  ].filter(Boolean);
+  const settingKinds = [
+    ['chat.instructionsFilesLocations', 'instruction'],
+    ['chat.promptFilesLocations', 'prompt'],
+    ['chat.agentSkillsLocations', 'skill'],
+    ['chat.hookFilesLocations', 'hook'],
+  ];
+
+  for (const settingsFile of settingsFiles) {
+    const settings = readJsoncFile(settingsFile.file);
+    for (const [settingKey, kind] of settingKinds) {
+      const configured = settings[settingKey];
+      if (!configured || typeof configured !== 'object' || Array.isArray(configured)) {
+        continue;
+      }
+
+      for (const [location, enabled] of Object.entries(configured)) {
+        if (enabled !== true) {
+          continue;
+        }
+
+        const normalized = normalizeLocalPathCandidate(location);
+        const path = normalized.startsWith('~/') || normalized.startsWith('~\\')
+          ? resolve(homedir(), normalized.slice(2))
+          : isAbsolute(normalized)
+            ? resolve(normalized)
+            : resolve(settingsFile.base, normalized);
+        entries.push({ path, kind, source: settingsFile.scope, settingKey });
+      }
+    }
+  }
+
+  return entries;
+}
+
+function configuredCustomizationFilePredicate(kind, file) {
+  const name = basename(file).toLowerCase();
+  const extension = extname(file).toLowerCase();
+
+  if (kind === 'instruction') {
+    return extension === '.md' && (
+      name === 'copilot-instructions.md' ||
+      name === 'agents.md' ||
+      name === 'claude.md' ||
+      name === 'claude.local.md' ||
+      name === 'gemini.md' ||
+      name.endsWith('.instructions.md')
+    );
+  }
+
+  if (kind === 'skill') {
+    return extension === '.md' && (name === 'skill.md' || name.endsWith('.skill.md'));
+  }
+
+  if (kind === 'prompt') {
+    return extension === '.md' && name.endsWith('.prompt.md');
+  }
+
+  if (kind === 'hook') {
+    return extension === '.json';
+  }
+
+  return isCustomizationSourceFile(file) && looksLikeCopilotCustomizationPath(file);
+}
+
+function customizationsFromConfiguredSettings(workspaceDir, workspaceFolder, workspace) {
+  const files = new Map();
+  for (const entry of configuredCustomizationLocationEntries(workspaceDir, workspaceFolder)) {
+    if (!existsSync(entry.path)) {
+      continue;
+    }
+
+    diagnostics.scannedCustomizationRoots += 1;
+    recordCustomizationLocation(entry.path, 'vscode-setting-root');
+    if (statSync(entry.path).isFile()) {
+      if (configuredCustomizationFilePredicate(entry.kind, entry.path)) {
+        files.set(resolve(entry.path), { base: dirname(entry.path), kind: entry.kind });
+      }
+      continue;
+    }
+
+    if (!statSync(entry.path).isDirectory()) {
+      continue;
+    }
+
+    for (const file of listFilesRecursive(
+      entry.path,
+      (candidate) => configuredCustomizationFilePredicate(entry.kind, candidate),
+      customizationFileLimit,
+      { label: 'customization', maxDepth: 5, maxDirs: 300 },
+    )) {
+      files.set(resolve(file), { base: entry.path, kind: entry.kind });
+    }
+  }
+
+  return [...files.entries()]
+    .map(([file, entry]) => customizationFromFile(file, entry.base, workspace, entry.kind))
+    .filter(Boolean);
 }
 
 function localMarkdownPathCandidates(text, bases) {
@@ -940,11 +1123,16 @@ function customizationsFromWorkspace(workspaceDir) {
   }
 
   const workspace = workspaceName(workspaceDir);
+  const knownCustomizations = [...files.entries()]
+    .map(([file, base]) => customizationFromFile(file, base, workspace))
+    .filter(Boolean);
+
   return {
     bases,
-    customizations: [...files.entries()]
-      .map(([file, base]) => customizationFromFile(file, base, workspace))
-      .filter(Boolean),
+    customizations: [
+      ...knownCustomizations,
+      ...customizationsFromConfiguredSettings(workspaceDir, folder, workspace),
+    ],
   };
 }
 
