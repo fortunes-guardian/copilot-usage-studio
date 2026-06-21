@@ -344,6 +344,10 @@ export interface SessionData {
     scannedCustomizationRoots?: number;
     scannedCustomizationLocations?: Array<{ kind: string; path: string }>;
     importedCustomizations?: number;
+    customizationEvidenceScannedSessions?: number;
+    customizationEvidenceModelCalls?: number;
+    customizationEvidenceTextParts?: number;
+    customizationEvidenceMatchedCustomizations?: number;
     skippedOversizedMemories?: number;
     skippedUnreadableMemories?: number;
     skippedOversizedCustomizations?: number;

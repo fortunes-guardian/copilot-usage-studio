@@ -168,6 +168,26 @@ export class App {
   protected readonly memories = computed(() => this.sessionData()?.memories ?? []);
   protected readonly customizations = computed(() => this.sessionData()?.customizations ?? []);
   protected readonly ingestion = computed(() => this.sessionData()?.ingestion ?? null);
+  protected readonly debugLogGuidance = computed(() => {
+    const sessionData = this.sessionData();
+    const ingestion = sessionData?.ingestion;
+    if (!ingestion || ingestion.importedDebugLogSessions > 0) {
+      return null;
+    }
+
+    const fileLogging = hostConfig().agentDebugLogFileLoggingEnabled;
+    const hasFallbackData = ingestion.importedChatSnapshotSessions > 0 || (sessionData?.sessions.length ?? 0) > 0;
+
+    return {
+      title: fileLogging === false
+        ? 'Agent Debug Log file logging is off'
+        : 'No Agent Debug Log sessions imported',
+      body: hasFallbackData
+        ? 'Some weaker local data was imported, but exact model-call usage needs VS Code Agent Debug Log file logging.'
+        : 'No exact model-call data was found. Enable VS Code Agent Debug Log file logging, run a Copilot chat or agent session, then refresh.',
+      setting: 'github.copilot.chat.agentDebugLog.fileLogging.enabled',
+    };
+  });
   protected readonly warningOptions = computed(() => {
     const labels = new Set<string>();
 

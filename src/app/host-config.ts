@@ -5,6 +5,7 @@ export interface CopilotUsageStudioHostConfig {
   apiBaseUrl?: string;
   initialView?: string;
   allowedViews?: string[];
+  agentDebugLogFileLoggingEnabled?: boolean;
 }
 
 declare global {

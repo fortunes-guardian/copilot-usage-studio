@@ -136,6 +136,15 @@
     ></app-session-data-state-panel>
 
     @if (sessionDataLoadState() === 'ready') {
+    @if (debugLogGuidance(); as guidance) {
+      <aside class="source-guidance" aria-label="Agent Debug Log guidance">
+        <div>
+          <strong>{{ guidance.title }}</strong>
+          <p>{{ guidance.body }}</p>
+        </div>
+        <code>{{ guidance.setting }}</code>
+      </aside>
+    }
 
     @if (activeView() === 'usage') {
       @defer {

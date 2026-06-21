@@ -138,7 +138,7 @@ function vsCodeUserDataRoot(context: vscode.ExtensionContext): string {
 
 function logDebugSettings(): void {
   const debugConfig = vscode.workspace.getConfiguration('github.copilot.chat.agentDebugLog');
-  const fileLogging = debugConfig.get<boolean>('fileLogging.enabled');
+  const fileLogging = agentDebugLogFileLoggingEnabled();
   const agentLogs = debugConfig.get<boolean>('enabled');
   output.appendLine(
     `VS Code root scan is limited to this VS Code user-data folder; customization indexing is disabled in the extension MVP.`,
@@ -183,6 +183,7 @@ function webviewHtml(
     apiBaseUrl,
     initialView: 'usage',
     allowedViews: ['usage', 'memory', 'pricing'],
+    agentDebugLogFileLoggingEnabled: agentDebugLogFileLoggingEnabled(),
   };
 
   html = html.replace(
@@ -202,6 +203,12 @@ function webviewHtml(
   );
 
   return html;
+}
+
+function agentDebugLogFileLoggingEnabled(): boolean | undefined {
+  return vscode.workspace
+    .getConfiguration('github.copilot.chat.agentDebugLog')
+    .get<boolean>('fileLogging.enabled');
 }
 
 function rewriteAssetUris(html: string, webview: vscode.Webview, root: vscode.Uri): string {
