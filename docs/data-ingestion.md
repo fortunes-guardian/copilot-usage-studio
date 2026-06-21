@@ -140,14 +140,28 @@ The scanner reads local Copilot customization files from known VS Code/GitHub Co
 <workspace-or-parent-repo>/.github/prompts/**/*.md
 <workspace-or-parent-repo>/.github/hooks/**/*.md
 <workspace-or-parent-repo>/.github/agents/**/*.md
+<workspace-or-parent-repo>/.copilot/instructions/**/*.md
+<workspace-or-parent-repo>/.copilot/skills/**/*.md
+<workspace-or-parent-repo>/.copilot/prompts/**/*.md
+<workspace-or-parent-repo>/.copilot/hooks/**/*.md
+<workspace-or-parent-repo>/.copilot/agents/**/*.md
+<workspace-or-parent-repo>/.agents/skills/**/*.md
+<workspace-or-parent-repo>/.claude/rules/**/*.md
+<workspace-or-parent-repo>/.claude/skills/**/*.md
+<workspace-or-parent-repo>/.claude/agents/**/*.md
 <workspace-or-parent-repo>/AGENTS.md
 <workspace-or-parent-repo>/CLAUDE.md
 <workspace-or-parent-repo>/GEMINI.md
+<VS Code User>/prompts/**/*.md
+~/.copilot/skills/**/*.md
+~/.claude/skills/**/*.md
 ```
 
 For monorepos, it walks from the opened workspace folder up to the nearest Git repository root and checks those known locations at each level. It also imports exact Markdown customization files referenced by VS Code debug-log side files when the path looks like a Copilot customization file, such as `SKILL.md`, `.instructions.md`, `.prompt.md`, or `.agent.md`.
 
 These are targeted scans, not whole-repository crawls. The scanner only walks the listed customization roots after the matching VS Code workspace-storage folder has Copilot debug/chat data. Stale VS Code workspace entries without Copilot data do not trigger repo-level customization scans. Recursion is capped by depth and directory count, skips symlinks, and ignores common dependency/build folders.
+
+The VS Code extension host currently passes `includeCustomizations: false` to the scanner. Why: the extension MVP exposes Usage, Memory, and Prices only, so customization indexing should not slow startup or make the extension feel stuck.
 
 Each customization stores metadata only: title, name, description, `applyTo`, triggers, path, size, and an excerpt. The scanner reads the full file during the scan to build fingerprints, but it does not persist the full content into `sessions.json`.
 

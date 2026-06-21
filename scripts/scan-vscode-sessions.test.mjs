@@ -640,6 +640,53 @@ test('indexes Copilot customizations and classifies request evidence', async () 
   }
 });
 
+test('can skip customization indexing for lightweight extension scans', async () => {
+  const { root, sessionDir, workspaceDir } = tempSessionFixture('skip-customization-evidence');
+  const workspaceFolder = join(root, 'example-workspace');
+  const instructionsDir = join(workspaceFolder, '.github', 'instructions');
+  const events = [];
+
+  try {
+    mkdirSync(instructionsDir, { recursive: true });
+    writeFileSync(
+      join(workspaceDir, 'workspace.json'),
+      JSON.stringify({ folder: pathToFileUrl(workspaceFolder) }),
+      'utf8',
+    );
+    writeFileSync(
+      join(instructionsDir, 'backend.instructions.md'),
+      'Always create aggregates with validators and domain events.',
+      'utf8',
+    );
+    writeJsonl(join(sessionDir, 'main.jsonl'), [
+      event(1, 'llm_request', 'panel/editAgent', {
+        attrs: {
+          model: 'gpt-5.4',
+          inputTokens: 2_000,
+          outputTokens: 100,
+          inputMessages:
+            'The active instruction says: Always create aggregates with validators and domain events.',
+        },
+      }),
+    ]);
+
+    const data = await scanVsCodeSessions({
+      roots: [workspaceDir],
+      sqlite: false,
+      includeCustomizations: false,
+      onProgress: (progress) => events.push(progress),
+    });
+
+    assert.equal(data.customizations.length, 0);
+    assert.equal(data.ingestion.importedCustomizations, 0);
+    assert.equal(data.ingestion.customizationEvidenceModelCalls, 0);
+    assert.equal(events.some((progress) => progress.stage === 'customizations'), false);
+    assert.equal(events.some((progress) => progress.stage === 'customization-evidence'), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('indexes repo-root, parent-repo, agent, and debug-referenced customizations', async () => {
   const { root, sessionDir, workspaceDir } = tempSessionFixture('customization-expanded-sources');
   const repoRoot = join(root, 'repo');

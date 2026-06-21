@@ -532,6 +532,10 @@ for (const field of [
   'skippedUnreadableMemories',
   'scannedCustomizationRoots',
   'importedCustomizations',
+  'customizationEvidenceScannedSessions',
+  'customizationEvidenceModelCalls',
+  'customizationEvidenceTextParts',
+  'customizationEvidenceMatchedCustomizations',
   'skippedOversizedCustomizations',
   'skippedUnreadableCustomizations',
 ]) {

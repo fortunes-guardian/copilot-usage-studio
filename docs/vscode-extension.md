@@ -10,6 +10,8 @@ The extension MVP is intentionally smaller than the full browser app:
 
 It does not expose the heavier Sessions, Trace, Compare, Analytics, or Customizations views yet. Customizations should be enabled only after the customization-evidence branch has been merged and tested on real machines.
 
+The extension also disables customization indexing in its scanner options. That is deliberate for the MVP: Usage, Memory, and Prices should open quickly even on machines with many historical workspaces. Customization evidence remains a full-app feature until its source coverage and UX are proven on large real machines.
+
 ## Architecture
 
 The extension does not implement a second scanner.
@@ -23,6 +25,8 @@ Instead, it:
 5. writes scan/runtime logs to a VS Code Output Channel.
 
 This keeps the npm path and the extension path on the same scanner/runtime code.
+
+For performance, the extension scans only the VS Code user-data root that owns the installed extension. The standalone app may scan both Stable and Insiders roots by default; the extension should not do that because it is already running inside one VS Code installation.
 
 ## Commands
 
@@ -60,6 +64,19 @@ npm run vscode:package
 6. Confirm Memory and Prices load.
 7. Confirm scan progress/errors appear in the `Copilot Usage Studio` Output Channel.
 8. Confirm debugger-heavy views are not visible in the extension UI.
+9. Confirm startup logs do not include `Indexing customizations` or `Checking customization evidence`.
+
+## Source Requirements
+
+The extension relies on the same local VS Code data as the standalone app.
+
+Exact usage and model-call data comes from VS Code Agent Debug Logs when file logging is enabled. VS Code documents the Agent Debug Log panel as preview, and the setting that writes debug events to disk is:
+
+```text
+github.copilot.chat.agentDebugLog.fileLogging.enabled
+```
+
+If that setting is off, the extension may still show older cached scans or weaker chat-snapshot data, but it should not promise exact new-session usage. The Output Channel logs the current setting value at startup so support/debugging can quickly tell whether the required local source is enabled.
 
 ## Release Posture
 

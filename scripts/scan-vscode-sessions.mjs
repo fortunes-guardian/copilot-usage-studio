@@ -2553,7 +2553,8 @@ function enrichSessionFromWorkspaceState(session, stateBySessionId) {
   };
 }
 
-function parseWorkspace(workspaceDir, onProgress = () => {}) {
+function parseWorkspace(workspaceDir, options = {}, onProgress = () => {}) {
+  const includeCustomizations = options.includeCustomizations !== false;
   diagnostics.scannedWorkspaces += 1;
   const debugRoot = join(workspaceDir, 'GitHub.copilot-chat', 'debug-logs');
   const debugSessionDirs = listDirs(debugRoot);
@@ -2584,37 +2585,40 @@ function parseWorkspace(workspaceDir, onProgress = () => {}) {
   });
   const stateBySessionId =
     debugSessionDirs.length || chatSessionFiles.length ? readWorkspaceState(workspaceDir) : new Map();
-  onProgress({
-    stage: 'customizations',
-    message: `Indexing customizations for ${workspace}.`,
-    workspace,
-    workspaceDir,
-  });
-  const customizationWorkspace = customizationsFromWorkspace(workspaceDir);
-  const customizationMap = new Map();
-  for (const customization of [
-    ...customizationWorkspace.customizations,
-    ...customizationsFromDebugReferences(debugRoot, customizationWorkspace.bases, workspace),
-  ]) {
-    customizationMap.set(customization.id, customization);
+  let customizations = [];
+  if (includeCustomizations) {
+    onProgress({
+      stage: 'customizations',
+      message: `Indexing customizations for ${workspace}.`,
+      workspace,
+      workspaceDir,
+    });
+    const customizationWorkspace = customizationsFromWorkspace(workspaceDir);
+    const customizationMap = new Map();
+    for (const customization of [
+      ...customizationWorkspace.customizations,
+      ...customizationsFromDebugReferences(debugRoot, customizationWorkspace.bases, workspace),
+    ]) {
+      customizationMap.set(customization.id, customization);
+    }
+    const customizationInventory = [...customizationMap.values()];
+    onProgress({
+      stage: 'customization-evidence',
+      message: debugSessionDirs.length
+        ? `Checking customization evidence in ${debugSessionDirs.length} debug-log folder${debugSessionDirs.length === 1 ? '' : 's'} for ${workspace}.`
+        : `No debug-log evidence available for ${workspace}; customizations are inventory-only.`,
+      workspace,
+      workspaceDir,
+      total: debugSessionDirs.length,
+    });
+    customizations = customizationEvidenceFromDebugLogs(
+      debugRoot,
+      customizationInventory,
+      workspace,
+      onProgress,
+    );
+    diagnostics.importedCustomizations += customizations.length;
   }
-  const customizationInventory = [...customizationMap.values()];
-  onProgress({
-    stage: 'customization-evidence',
-    message: debugSessionDirs.length
-      ? `Checking customization evidence in ${debugSessionDirs.length} debug-log folder${debugSessionDirs.length === 1 ? '' : 's'} for ${workspace}.`
-      : `No debug-log evidence available for ${workspace}; customizations are inventory-only.`,
-    workspace,
-    workspaceDir,
-    total: debugSessionDirs.length,
-  });
-  const customizations = customizationEvidenceFromDebugLogs(
-    debugRoot,
-    customizationInventory,
-    workspace,
-    onProgress,
-  );
-  diagnostics.importedCustomizations += customizations.length;
 
   if (debugSessionDirs.length) {
     onProgress({
@@ -2742,6 +2746,9 @@ export async function scanVsCodeSessions(options = {}) {
   diagnostics.scannedRoots = roots;
   usdToEur = conversionRate;
   const onProgress = typeof options.onProgress === 'function' ? options.onProgress : () => {};
+  const workspaceOptions = {
+    includeCustomizations: options.includeCustomizations !== false,
+  };
 
   try {
     onProgress({
@@ -2766,7 +2773,7 @@ export async function scanVsCodeSessions(options = {}) {
           total: workspaceDirs.length,
         });
       }
-      workspaceResults.push(parseWorkspace(workspaceDir, onProgress));
+      workspaceResults.push(parseWorkspace(workspaceDir, workspaceOptions, onProgress));
       await yieldToRuntime();
     }
     const sessions = workspaceResults

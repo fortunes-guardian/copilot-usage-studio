@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { mkdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 type LocalRuntime = {
@@ -113,8 +113,13 @@ async function startRuntime(context: vscode.ExtensionContext): Promise<RuntimeHa
     dataFile: join(context.globalStorageUri.fsPath, 'sessions.json'),
     seedDataFile: null,
     logFile: join(context.globalStorageUri.fsPath, 'runtime.log'),
+    scanOptions: {
+      roots: [vsCodeUserDataRoot(context)],
+      includeCustomizations: false,
+    },
     logger: extensionLogger(),
   });
+  logDebugSettings();
   const address = await runtime.listen();
   const port = typeof address === 'object' ? address.port : runtime.address()?.toString();
 
@@ -125,6 +130,27 @@ async function startRuntime(context: vscode.ExtensionContext): Promise<RuntimeHa
   const baseUrl = `http://127.0.0.1:${Number(port)}`;
   output.appendLine(`Copilot Usage Studio webview API: ${baseUrl}`);
   return { runtime, baseUrl };
+}
+
+function vsCodeUserDataRoot(context: vscode.ExtensionContext): string {
+  return dirname(dirname(context.globalStorageUri.fsPath));
+}
+
+function logDebugSettings(): void {
+  const debugConfig = vscode.workspace.getConfiguration('github.copilot.chat.agentDebugLog');
+  const fileLogging = debugConfig.get<boolean>('fileLogging.enabled');
+  const agentLogs = debugConfig.get<boolean>('enabled');
+  output.appendLine(
+    `VS Code root scan is limited to this VS Code user-data folder; customization indexing is disabled in the extension MVP.`,
+  );
+  output.appendLine(
+    `Agent debug log settings: enabled=${String(agentLogs)}, fileLogging.enabled=${String(fileLogging)}.`,
+  );
+  if (fileLogging === false) {
+    output.appendLine(
+      `Agent debug file logging is off. Existing cached sessions may still show, but new exact usage requires github.copilot.chat.agentDebugLog.fileLogging.enabled.`,
+    );
+  }
 }
 
 function extensionLogger(): Pick<Console, 'log' | 'warn' | 'error'> {

@@ -332,7 +332,7 @@ Top-level `customizations` records local Copilot customization files and request
 
 The evidence ladder is intentionally conservative:
 
-- `sent`: a distinctive content chunk from the file was found in `llm_request.attrs.inputMessages`, `llm_request.attrs.userRequest`, or a referenced request side file such as `system_prompt_0.json`.
+- `sent`: a distinctive content chunk from the file was found in `llm_request.attrs.inputMessages`, `llm_request.attrs.userRequest`, or a referenced request side file such as `system_prompt_0.json` or `tools_0.json`.
 - `listed`: metadata such as filename, path, description, trigger, or `applyTo` appeared in request payload evidence, but content chunks did not.
 - `discovered`: setup/discovery events mentioned the customization, but no request payload match was found.
 - `not_seen`: no imported evidence matched the file.
@@ -340,6 +340,10 @@ The evidence ladder is intentionally conservative:
 This feature answers "did this customization reach the model request?" It does not claim the model obeyed it, and it does not create exact section-level cost attribution.
 
 `ingestion.scannedCustomizationLocations` records bounded diagnostic rows for customization scan coverage. Rows are `{ kind, path }`, where `kind` is usually `root`, `file`, or `debug-reference`. The UI uses this for the collapsed Customizations scan-coverage diagnostic.
+
+`ingestion.customizationEvidenceScannedSessions`, `customizationEvidenceModelCalls`, `customizationEvidenceTextParts`, and `customizationEvidenceMatchedCustomizations` are scanner diagnostics. They explain whether a zero-usage customization result came from no model-call evidence, no payload text, or payloads that simply did not match local customization content.
+
+The VS Code extension preview disables customization indexing with `includeCustomizations: false`; those fields remain zero in extension-mode scans until that view is enabled.
 
 ## Feature Boundaries
 

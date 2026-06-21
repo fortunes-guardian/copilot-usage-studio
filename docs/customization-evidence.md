@@ -21,14 +21,28 @@ It checks:
 <workspace-or-parent-repo>/.github/prompts/**/*.md
 <workspace-or-parent-repo>/.github/hooks/**/*.md
 <workspace-or-parent-repo>/.github/agents/**/*.md
+<workspace-or-parent-repo>/.copilot/instructions/**/*.md
+<workspace-or-parent-repo>/.copilot/skills/**/*.md
+<workspace-or-parent-repo>/.copilot/prompts/**/*.md
+<workspace-or-parent-repo>/.copilot/hooks/**/*.md
+<workspace-or-parent-repo>/.copilot/agents/**/*.md
+<workspace-or-parent-repo>/.agents/skills/**/*.md
+<workspace-or-parent-repo>/.claude/rules/**/*.md
+<workspace-or-parent-repo>/.claude/skills/**/*.md
+<workspace-or-parent-repo>/.claude/agents/**/*.md
 <workspace-or-parent-repo>/AGENTS.md
 <workspace-or-parent-repo>/CLAUDE.md
 <workspace-or-parent-repo>/GEMINI.md
+<VS Code User>/prompts/**/*.md
+~/.copilot/skills/**/*.md
+~/.claude/skills/**/*.md
 ```
 
 For monorepos, the app walks from the opened workspace folder up to the nearest Git repository root and checks those known locations at each level. It also imports exact Markdown customization files referenced by VS Code debug-log side files when the path looks like a Copilot customization file, such as `SKILL.md`, `.instructions.md`, or `.prompt.md`.
 
 The Customizations page includes a collapsed scan-coverage diagnostic that lists the recorded roots, direct files, and debug-referenced files checked during ingestion. This is primarily for debugging false negatives on machines with unusual workspace or monorepo layouts.
+
+The VS Code extension preview does not run this indexing yet. It passes `includeCustomizations: false` to keep the extension focused on Usage, Memory, and Prices while this feature is still being hardened in the full app.
 
 The scanner stores metadata only in generated app data:
 
