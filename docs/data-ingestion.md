@@ -136,28 +136,31 @@ The scanner reads local Copilot customization files from known VS Code/GitHub Co
 ```text
 <workspace-or-parent-repo>/.github/copilot-instructions.md
 <workspace-or-parent-repo>/.github/instructions/**/*.md
-<workspace-or-parent-repo>/.github/skills/**/*.md
-<workspace-or-parent-repo>/.github/prompts/**/*.md
-<workspace-or-parent-repo>/.github/hooks/**/*.md
-<workspace-or-parent-repo>/.github/agents/**/*.md
-<workspace-or-parent-repo>/.copilot/instructions/**/*.md
-<workspace-or-parent-repo>/.copilot/skills/**/*.md
-<workspace-or-parent-repo>/.copilot/prompts/**/*.md
-<workspace-or-parent-repo>/.copilot/hooks/**/*.md
-<workspace-or-parent-repo>/.copilot/agents/**/*.md
-<workspace-or-parent-repo>/.agents/skills/**/*.md
 <workspace-or-parent-repo>/.claude/rules/**/*.md
-<workspace-or-parent-repo>/.claude/skills/**/*.md
+<workspace-or-parent-repo>/.copilot/instructions/**/*.md
+<workspace-or-parent-repo>/.github/skills/**/*.md
+<workspace-or-parent-repo>/.claude/skills/**/SKILL.md
+<workspace-or-parent-repo>/.agents/skills/**/SKILL.md
+<workspace-or-parent-repo>/.copilot/skills/**/SKILL.md
+<workspace-or-parent-repo>/.github/prompts/**/*.md
+<workspace-or-parent-repo>/.copilot/prompts/**/*.md
+<workspace-or-parent-repo>/.github/hooks/**/*.json
+<workspace-or-parent-repo>/.copilot/hooks/**/*.json
+<workspace-or-parent-repo>/.github/agents/**/*.md
 <workspace-or-parent-repo>/.claude/agents/**/*.md
+<workspace-or-parent-repo>/.copilot/agents/**/*.md
 <workspace-or-parent-repo>/AGENTS.md
 <workspace-or-parent-repo>/CLAUDE.md
+<workspace-or-parent-repo>/.claude/CLAUDE.md
 <workspace-or-parent-repo>/GEMINI.md
 <VS Code User>/prompts/**/*.md
 ~/.copilot/skills/**/*.md
 ~/.claude/skills/**/*.md
 ```
 
-For monorepos, it walks from the opened workspace folder up to the nearest Git repository root and checks those known locations at each level. It also imports exact Markdown customization files referenced by VS Code debug-log side files when the path looks like a Copilot customization file, such as `SKILL.md`, `.instructions.md`, `.prompt.md`, or `.agent.md`.
+For monorepos, it walks from the opened workspace folder up to the nearest Git repository root and checks those known locations at each level. It also reads workspace/user VS Code settings such as `chat.instructionsFilesLocations`, `chat.promptFilesLocations`, `chat.agentFilesLocations`, `chat.agentSkillsLocations`, and `chat.hookFilesLocations` when those settings files are available locally. Finally, it imports exact customization files referenced by VS Code debug-log side files and exact customization folders listed by VS Code discovery events.
+
+The scanner also checks bounded user-default roots for personal skills/hooks, including `~/.copilot/skills`, `~/.claude/skills`, `~/.agents/skills`, `~/.copilot/hooks`, and Claude settings files. This is how custom workspace locations, user-profile skills, and prompts can be found without crawling arbitrary home or repository folders.
 
 These are targeted scans, not whole-repository crawls. The scanner only walks the listed customization roots after the matching VS Code workspace-storage folder has Copilot debug/chat data. Stale VS Code workspace entries without Copilot data do not trigger repo-level customization scans. Recursion is capped by depth and directory count, skips symlinks, and ignores common dependency/build folders.
 

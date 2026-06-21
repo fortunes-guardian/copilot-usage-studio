@@ -115,7 +115,7 @@ async function startRuntime(context: vscode.ExtensionContext): Promise<RuntimeHa
     logFile: join(context.globalStorageUri.fsPath, 'runtime.log'),
     scanOptions: {
       roots: [vsCodeUserDataRoot(context)],
-      includeCustomizations: false,
+      includeCustomizations: true,
     },
     logger: extensionLogger(),
   });
@@ -141,16 +141,36 @@ function logDebugSettings(): void {
   const fileLogging = agentDebugLogFileLoggingEnabled();
   const agentLogs = debugConfig.get<boolean>('enabled');
   output.appendLine(
-    `VS Code root scan is limited to this VS Code user-data folder; customization indexing is disabled in the extension MVP.`,
+    `VS Code root scan is limited to this VS Code user-data folder; customization evidence is enabled.`,
   );
   output.appendLine(
     `Agent debug log settings: enabled=${String(agentLogs)}, fileLogging.enabled=${String(fileLogging)}.`,
   );
+  logCustomizationSettings();
   if (fileLogging === false) {
     output.appendLine(
       `Agent debug file logging is off. Existing cached sessions may still show, but new exact usage requires github.copilot.chat.agentDebugLog.fileLogging.enabled.`,
     );
   }
+}
+
+function logCustomizationSettings(): void {
+  const chatConfig = vscode.workspace.getConfiguration('chat');
+  const settingKeys = [
+    'instructionsFilesLocations',
+    'promptFilesLocations',
+    'agentFilesLocations',
+    'agentSkillsLocations',
+    'hookFilesLocations',
+  ];
+  const summary = settingKeys.map((key) => {
+    const value = chatConfig.get<Record<string, boolean>>(key) ?? {};
+    const enabled = Object.entries(value)
+      .filter(([, isEnabled]) => isEnabled === true)
+      .map(([location]) => location);
+    return `${key}=${enabled.length}`;
+  });
+  output.appendLine(`Effective Copilot customization location settings: ${summary.join(', ')}.`);
 }
 
 function extensionLogger(): Pick<Console, 'log' | 'warn' | 'error'> {
@@ -182,7 +202,7 @@ function webviewHtml(
     mode: 'vscode',
     apiBaseUrl,
     initialView: 'usage',
-    allowedViews: ['usage', 'memory', 'pricing'],
+    allowedViews: ['usage', 'memory', 'customizations', 'pricing'],
     agentDebugLogFileLoggingEnabled: agentDebugLogFileLoggingEnabled(),
   };
 

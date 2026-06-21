@@ -1,6 +1,6 @@
 # Copilot Usage Studio
 
-Local-first usage, cost, and session insights for VS Code GitHub Copilot chat and agent sessions.
+Extension-first usage, memory, customization, and cost insights for VS Code GitHub Copilot chat and agent sessions.
 
 [![npm version](https://img.shields.io/npm/v/copilot-usage-studio.svg)](https://www.npmjs.com/package/copilot-usage-studio)
 [![CI](https://github.com/fortunes-guardian/copilot-usage-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/fortunes-guardian/copilot-usage-studio/actions/workflows/ci.yml)
@@ -8,7 +8,7 @@ Local-first usage, cost, and session insights for VS Code GitHub Copilot chat an
 
 Independent open-source developer tool. Not affiliated with or endorsed by GitHub or Microsoft.
 
-Status: early local developer preview. Version `0.2.0` is available on npm.
+Status: early local developer preview. The VS Code extension is the primary product path; the npm/browser app remains available as a development and fallback host.
 
 Supported scope today: VS Code GitHub Copilot Chat and Agent sessions on the local machine. This does not currently support Visual Studio, JetBrains IDEs, Copilot CLI, GitHub.com chat, or GitHub billing exports.
 
@@ -20,19 +20,31 @@ Supported local VS Code storage locations:
 
 VS Code Insiders paths are scanned too.
 
-The app helps answer two practical questions:
+The app helps answer three practical questions:
 
 > How much GitHub Copilot usage did I burn today, this week, and this month?
 >
+> Did Copilot actually send my local instructions, skills, prompts, hooks, or agents to the model?
+>
 > Why did this Copilot run cost what it cost?
 
-It scans local VS Code data, uses GitHub source usage when VS Code logs it, falls back to GitHub published model prices when it has to, and shows which models, token categories, and model calls drove the usage. It also indexes Copilot's locally saved memories and plans so they are no longer hidden in VS Code storage.
+It scans local VS Code data, uses GitHub source usage when VS Code logs it, falls back to GitHub published model prices when it has to, and shows which models, token categories, and model calls drove the usage. It also indexes Copilot's locally saved memories/plans and local Copilot customizations so they are no longer hidden in VS Code storage.
 
 ## Start Here
 
-Requirements: Node.js 22.5 or newer, npm, and local VS Code GitHub Copilot session data.
+Recommended path: install the local VS Code extension preview.
 
-Run the released app:
+Requirements for building the preview: Node.js 22.5 or newer, npm, VS Code, and local VS Code GitHub Copilot session data.
+
+```bash
+npm install
+npm run vscode:package
+code --install-extension tmp/copilot-usage-studio-vscode-0.2.0.vsix --force
+```
+
+Then run `Copilot Usage Studio: Open` from the VS Code command palette.
+
+The npm/browser host remains useful for development and fallback testing:
 
 ```bash
 npx copilot-usage-studio
@@ -101,14 +113,14 @@ npm run build
 
 See [docs/local-deployment.md](docs/local-deployment.md) for packaging options and why the app stays local-first.
 
-Experimental VS Code extension preview:
+Build the VS Code extension preview:
 
 ```bash
 npm run vscode:package
 code --install-extension tmp/copilot-usage-studio-vscode-0.2.0.vsix --force
 ```
 
-This preview opens a smaller VS Code webview focused on Usage, Memory, and Prices. It is intended for local VSIX smoke testing before Marketplace publishing.
+The extension opens a focused VS Code webview for Usage, Memory, Customizations, and Prices. Sessions, Trace, Compare, and Insights remain available in the browser/dev host while the extension UI is hardened.
 
 ## Releasing
 

@@ -1,11 +1,12 @@
 # Copilot Usage Studio
 
-Local GitHub Copilot usage and memory insights for VS Code.
+Local GitHub Copilot usage, memory, and customization evidence for VS Code.
 
-This extension is a local preview host for Copilot Usage Studio. It opens the existing app inside VS Code and focuses on the most useful day-to-day views:
+This extension is the primary local host for Copilot Usage Studio. It opens the app inside VS Code and focuses on the most useful day-to-day views:
 
 - Usage
 - Memory
+- Customizations
 - Prices
 
 The extension starts a local runtime on `127.0.0.1`, scans local VS Code Copilot data, and stores its generated cache in VS Code extension storage. No SaaS backend is used.
@@ -21,7 +22,7 @@ The extension starts a local runtime on `127.0.0.1`, scans local VS Code Copilot
 
 Early local VSIX preview. Test locally before relying on it for daily use.
 
-The full browser app remains available with:
+The npm/browser app remains available as a development and fallback host:
 
 ```bash
 npx copilot-usage-studio

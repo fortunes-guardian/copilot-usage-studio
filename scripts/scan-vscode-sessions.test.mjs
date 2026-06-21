@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import test from 'node:test';
 
 import {
@@ -693,16 +693,49 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
   const workspaceFolder = join(repoRoot, 'apps', 'api');
   const externalSkillDir = join(root, 'local-copilot-skill');
   const externalSkillFile = join(externalSkillDir, 'SKILL.md');
+  const discoveredSkillDir = join(root, '.copilot', 'skills', 'pending-git');
+  const discoveredSkillFile = join(discoveredSkillDir, 'SKILL.md');
+  const configuredInstructionsDir = join(workspaceFolder, 'custom', 'copilot-rules');
+  const configuredInstructionFile = join(configuredInstructionsDir, 'domain.instructions.md');
+  const configuredSkillsDir = join(workspaceFolder, 'custom', 'copilot-skills');
+  const configuredSkillFile = join(configuredSkillsDir, 'release-review', 'SKILL.md');
+  const configuredAgentsDir = join(workspaceFolder, 'custom', 'copilot-agents');
+  const configuredAgentFile = join(configuredAgentsDir, 'release-planner.agent.md');
 
   try {
     mkdirSync(join(repoRoot, '.git'), { recursive: true });
     mkdirSync(join(repoRoot, '.github', 'instructions'), { recursive: true });
     mkdirSync(join(repoRoot, '.github', 'agents'), { recursive: true });
+    mkdirSync(join(repoRoot, '.agents', 'skills', 'local-review'), { recursive: true });
+    mkdirSync(join(repoRoot, '.claude', 'rules'), { recursive: true });
     mkdirSync(workspaceFolder, { recursive: true });
+    mkdirSync(join(workspaceFolder, '.vscode'), { recursive: true });
     mkdirSync(externalSkillDir, { recursive: true });
+    mkdirSync(discoveredSkillDir, { recursive: true });
+    mkdirSync(configuredInstructionsDir, { recursive: true });
+    mkdirSync(dirname(configuredSkillFile), { recursive: true });
+    mkdirSync(configuredAgentsDir, { recursive: true });
     writeFileSync(
       join(workspaceDir, 'workspace.json'),
       JSON.stringify({ folder: pathToFileUrl(workspaceFolder) }),
+      'utf8',
+    );
+    writeFileSync(
+      join(workspaceFolder, '.vscode', 'settings.json'),
+      [
+        '{',
+        '  // Customization locations can be configured outside the defaults.',
+        '  "chat.instructionsFilesLocations": {',
+        '    "custom/copilot-rules": true,',
+        '  },',
+        '  "chat.agentSkillsLocations": {',
+        '    "custom/copilot-skills": true,',
+        '  },',
+        '  "chat.agentFilesLocations": {',
+        '    "custom/copilot-agents": true,',
+        '  },',
+        '}',
+      ].join('\n'),
       'utf8',
     );
     writeFileSync(
@@ -726,8 +759,38 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
       'utf8',
     );
     writeFileSync(
+      join(repoRoot, '.agents', 'skills', 'local-review', 'SKILL.md'),
+      'Review pending local changes before making risky edits.',
+      'utf8',
+    );
+    writeFileSync(
+      join(repoRoot, '.claude', 'rules', 'team.instructions.md'),
+      'Team rule: state repository assumptions before changing behavior.',
+      'utf8',
+    );
+    writeFileSync(
       externalSkillFile,
       'When pending git changes exist, summarize risk before editing.',
+      'utf8',
+    );
+    writeFileSync(
+      discoveredSkillFile,
+      'Pending git changes skill: compare changed files and summarize risk first.',
+      'utf8',
+    );
+    writeFileSync(
+      configuredInstructionFile,
+      'Configured instruction: always explain aggregate invariants before coding.',
+      'utf8',
+    );
+    writeFileSync(
+      configuredSkillFile,
+      'Configured release skill: inspect changelog, package metadata, and release risk.',
+      'utf8',
+    );
+    writeFileSync(
+      configuredAgentFile,
+      'Configured release planner agent: produce release checks before publishing.',
       'utf8',
     );
     writeFileSync(
@@ -741,6 +804,10 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
               `<file>${externalSkillFile}</file>`,
               'Planner agent should produce small phases and visible risks.',
               'When pending git changes exist, summarize risk before editing.',
+              'Pending git changes skill: compare changed files and summarize risk first.',
+              'Configured instruction: always explain aggregate invariants before coding.',
+              'Configured release skill: inspect changelog, package metadata, and release risk.',
+              'Configured release planner agent: produce release checks before publishing.',
             ].join('\n'),
           },
         ],
@@ -748,6 +815,11 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
       'utf8',
     );
     writeJsonl(join(sessionDir, 'main.jsonl'), [
+      event(0, 'discovery', 'Skill Discovery', {
+        attrs: {
+          details: `Resolved 1 skills in 10ms | loaded: [pending-git] | folders: [${dirname(discoveredSkillFile)}]`,
+        },
+      }),
       event(1, 'llm_request', 'panel/editAgent', {
         attrs: {
           model: 'gpt-5.4',
@@ -762,18 +834,38 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
     const data = await scanVsCodeSessions({ roots: [workspaceDir], sqlite: false });
     const paths = data.customizations.map((item) => item.relativePath.replace(/\\/g, '/')).sort();
     const externalSkill = data.customizations.find((item) => item.sourcePath === externalSkillFile);
+    const discoveredSkill = data.customizations.find((item) => item.sourcePath === discoveredSkillFile);
+    const configuredInstruction = data.customizations.find((item) => item.sourcePath === configuredInstructionFile);
+    const configuredSkill = data.customizations.find((item) => item.sourcePath === configuredSkillFile);
+    const configuredAgent = data.customizations.find((item) => item.sourcePath === configuredAgentFile);
 
     assert(paths.includes('.github/copilot-instructions.md'));
     assert(paths.includes('AGENTS.md'));
     assert(paths.includes('.github/instructions/parent.instructions.md'));
     assert(paths.includes('.github/agents/planner.agent.md'));
+    assert(paths.includes('.agents/skills/local-review/SKILL.md'));
+    assert(paths.includes('.claude/rules/team.instructions.md'));
+    assert(paths.includes('domain.instructions.md'));
+    assert(paths.includes('release-review/SKILL.md'));
+    assert(paths.includes('release-planner.agent.md'));
     assert.equal(data.customizations.some((item) => item.kind === 'agent'), true);
     assert(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'candidate'));
     assert(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'root'));
     assert(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'file'));
     assert(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'debug-reference'));
+    assert(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'debug-discovery-root'));
+    assert(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'vscode-setting-root'));
+    assert.equal(data.ingestion.importedCustomizations, data.customizations.length);
     assert.equal(externalSkill?.kind, 'skill');
     assert.equal(externalSkill?.evidenceStatus, 'sent');
+    assert.equal(discoveredSkill?.kind, 'skill');
+    assert.equal(discoveredSkill?.evidenceStatus, 'sent');
+    assert.equal(configuredInstruction?.kind, 'instruction');
+    assert.equal(configuredInstruction?.evidenceStatus, 'sent');
+    assert.equal(configuredSkill?.kind, 'skill');
+    assert.equal(configuredSkill?.evidenceStatus, 'sent');
+    assert.equal(configuredAgent?.kind, 'agent');
+    assert.equal(configuredAgent?.evidenceStatus, 'sent');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

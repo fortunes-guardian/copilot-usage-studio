@@ -198,6 +198,9 @@ export class CustomizationsPageComponent {
       root: 'Folder',
       file: 'File',
       'debug-reference': 'Debug reference',
+      'debug-discovery-root': 'VS Code discovery',
+      'vscode-setting-root': 'VS Code setting',
+      'user-default-root': 'User default',
     }[kind] ?? kind;
   }
 

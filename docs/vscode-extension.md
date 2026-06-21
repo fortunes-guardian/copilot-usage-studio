@@ -1,16 +1,17 @@
 # VS Code extension preview
 
-Copilot Usage Studio's VS Code extension is a thin local host for the existing app.
+Copilot Usage Studio's VS Code extension is the primary local host for the app.
 
-The extension MVP is intentionally smaller than the full browser app:
+The extension MVP is intentionally smaller than the full browser app, but it includes the views that benefit most from running inside VS Code:
 
 - Usage
 - Memory
+- Customizations
 - Prices
 
-It does not expose the heavier Sessions, Trace, Compare, Analytics, or Customizations views yet. Customizations should be enabled only after the customization-evidence branch has been merged and tested on real machines.
+It does not expose the heavier Sessions, Trace, Compare, or Analytics views yet. Those remain debugger-style surfaces until the extension UI proves it can carry that complexity cleanly.
 
-The extension also disables customization indexing in its scanner options. That is deliberate for the MVP: Usage, Memory, and Prices should open quickly even on machines with many historical workspaces. Customization evidence remains a full-app feature until its source coverage and UX are proven on large real machines.
+Customization evidence is enabled in the extension because the extension can inspect effective VS Code settings and keep the feature close to the editor where instructions, skills, prompts, hooks, and agents are authored.
 
 ## Architecture
 
@@ -61,10 +62,10 @@ npm run vscode:package
 3. Run `Copilot Usage Studio: Open`.
 4. Confirm Usage loads first.
 5. Run `Copilot Usage Studio: Refresh Data`.
-6. Confirm Memory and Prices load.
+6. Confirm Memory, Customizations, and Prices load.
 7. Confirm scan progress/errors appear in the `Copilot Usage Studio` Output Channel.
 8. Confirm debugger-heavy views are not visible in the extension UI.
-9. Confirm startup logs do not include `Indexing customizations` or `Checking customization evidence`.
+9. Confirm startup logs include customization scan progress and do not hang on large workspaces.
 
 ## Source Requirements
 
