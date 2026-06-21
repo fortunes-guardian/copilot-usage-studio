@@ -2,6 +2,31 @@
 
 First make one selected run excellent, then make comparisons useful, then aggregate across sessions.
 
+## Product Direction
+
+Status: extension-first pivot under evaluation.
+
+Decision:
+
+- Treat the VS Code extension as the likely primary product surface for VS Code users.
+- Keep the standalone/npm app as a development host, fallback preview, and shared-runtime package while the extension matures.
+- Keep scanner, runtime, pricing, schema-audit, and data-normalization code host-neutral so a future Visual Studio extension can reuse the same core model if Visual Studio exposes comparable local Copilot data.
+- Do not build a SaaS-hosted product around local VS Code Copilot logs. The value is local, private, and close to the editor.
+
+Why:
+
+- The extension can read effective VS Code settings through the VS Code API, including Agent Debug Log settings and Copilot customization location settings.
+- The standalone app can only infer from files on disk, which is useful but weaker for user/profile/workspace settings.
+- A VS Code extension removes clone/npm friction and can eventually expose safe editor-native actions such as opening customization files, revealing scan logs, and refreshing local data.
+
+Near-term migration path:
+
+- Finish hardening the `codex/vscode-extension-mvp` and `codex/customization-evidence` branches independently.
+- Merge customization evidence only after real-machine testing proves location discovery and sent/listed/discovered matching are reliable.
+- Rebase/refresh the extension branch after customization evidence is stable, then enable Customizations inside the extension.
+- Keep the extension MVP focused on Usage, Memory, Prices, and Customizations. Avoid exposing the heavier Sessions debugger until the extension UI proves it can carry that complexity cleanly.
+- Preserve the npm/local runtime as the shared scanner package used by the extension, not as the main user-facing path.
+
 ## Phase 1: Selected Run Cost Debugger
 
 Status: built, still needs polish.
@@ -139,12 +164,15 @@ Status: pruned back, with stronger source-backed fields now available.
 Done:
 
 - Import `ttft`, `maxTokens`, reasoning-text presence, request reasoning effort when `llm_request.attrs.requestOptions.reasoning.effort` is present, and max observed input tokens from VS Code debug logs.
+- Audited VS Code 1.125.1 / Copilot Chat 0.53.1 Agent Debug Logs: no breaking drift; observed `requestOptions.thinking.type`, `requestOptions.thinking.budget_tokens`, `requestShape.messageCount`, and model-catalogue cache-write price fields.
 - Removed weak advanced evidence cards from the primary UI.
 - Keep reasoning text presence, request reasoning effort, and request-cap comparison in the generated data contract for future investigation.
 
 Build:
 
-- Reasoning/thinking level display now has a source-backed path from Agent Debug Logs. Keep it secondary unless it clearly helps explain a specific run.
+- Preserve `requestOptions.thinking` as source-backed request metadata when present. Treat it as the current strong path for thinking/reasoning display, while keeping older `requestOptions.reasoning.effort` compatibility.
+- Keep thinking level/budget secondary unless it clearly helps explain a specific run. Do not turn it into cost attribution.
+- Review the new model-catalogue `cache_write_price` fields before changing pricing behavior. The app already uses the GitHub public rate-card snapshot as canonical pricing, so runtime catalogue prices should be diagnostics until reconciled deliberately.
 - Context-window usage only after the app stores reliable model context-window sizes and can compare max observed input tokens against that window.
 
 Why: these may become useful cost-debugging signals, but they must earn their place in the UI. The app should not turn weak or overly technical clues into top-level product concepts.
