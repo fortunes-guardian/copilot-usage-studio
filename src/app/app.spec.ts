@@ -195,6 +195,27 @@ describe('App', () => {
     expect(fixture.nativeElement.textContent).toContain('Loading usage');
   });
 
+  it('explains when no Agent Debug Log sessions were imported', async () => {
+    const fixture = TestBed.createComponent(App);
+    TestBed.inject(HttpTestingController)
+      .expectOne('/data/sessions.json')
+      .flush({
+        ...sessionDataFixture,
+        ingestion: {
+          ...sessionDataFixture.ingestion,
+          importedDebugLogSessions: 0,
+          importedChatSnapshotSessions: 1,
+        },
+      });
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('No Agent Debug Log sessions imported');
+    expect(fixture.nativeElement.textContent).toContain(
+      'github.copilot.chat.agentDebugLog.fileLogging.enabled',
+    );
+  });
+
   it('opens Memory from the view query parameter', async () => {
     globalThis.history.pushState(null, '', '/?view=memory');
     const fixture = TestBed.createComponent(App);

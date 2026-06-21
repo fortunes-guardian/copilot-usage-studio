@@ -17,18 +17,28 @@ It checks:
 ```text
 <workspace-or-parent-repo>/.github/copilot-instructions.md
 <workspace-or-parent-repo>/.github/instructions/**/*.md
+<workspace-or-parent-repo>/.claude/rules/**/*.md
+<workspace-or-parent-repo>/.copilot/instructions/**/*.md
 <workspace-or-parent-repo>/.github/skills/**/*.md
+<workspace-or-parent-repo>/.claude/skills/**/SKILL.md
+<workspace-or-parent-repo>/.agents/skills/**/SKILL.md
+<workspace-or-parent-repo>/.copilot/skills/**/SKILL.md
 <workspace-or-parent-repo>/.github/prompts/**/*.md
-<workspace-or-parent-repo>/.github/hooks/**/*.md
+<workspace-or-parent-repo>/.copilot/prompts/**/*.md
+<workspace-or-parent-repo>/.github/hooks/**/*.json
+<workspace-or-parent-repo>/.copilot/hooks/**/*.json
 <workspace-or-parent-repo>/.github/agents/**/*.md
+<workspace-or-parent-repo>/.claude/agents/**/*.md
+<workspace-or-parent-repo>/.copilot/agents/**/*.md
 <workspace-or-parent-repo>/AGENTS.md
 <workspace-or-parent-repo>/CLAUDE.md
+<workspace-or-parent-repo>/.claude/CLAUDE.md
 <workspace-or-parent-repo>/GEMINI.md
 ```
 
-For monorepos, the app walks from the opened workspace folder up to the nearest Git repository root and checks those known locations at each level. It also imports exact Markdown customization files referenced by VS Code debug-log side files when the path looks like a Copilot customization file, such as `SKILL.md`, `.instructions.md`, or `.prompt.md`.
+For monorepos, the app walks from the opened workspace folder up to the nearest Git repository root and checks those known locations at each level. It also imports exact customization files referenced by VS Code debug-log side files and exact customization folders listed by VS Code discovery events. This matters for user-profile skills and prompts because VS Code can log folders such as `~/.copilot/skills`, `~/.claude/skills`, or the profile prompts folder even when those folders are outside the repository.
 
-The Customizations page includes a collapsed scan-coverage diagnostic that lists the recorded roots, direct files, and debug-referenced files checked during ingestion. This is primarily for debugging false negatives on machines with unusual workspace or monorepo layouts.
+The Customizations page includes a collapsed scan-coverage diagnostic that lists the recorded roots, direct files, debug-referenced files, and debug-discovery folders checked during ingestion. This is primarily for debugging false negatives on machines with unusual workspace, profile, or monorepo layouts.
 
 The scanner stores metadata only in generated app data:
 
