@@ -202,7 +202,7 @@ function webviewHtml(
     mode: 'vscode',
     apiBaseUrl,
     initialView: 'usage',
-    allowedViews: ['usage', 'memory', 'customizations', 'pricing'],
+    allowedViews: ['usage', 'sessions', 'memory', 'customizations', 'compare', 'analytics', 'pricing'],
     agentDebugLogFileLoggingEnabled: agentDebugLogFileLoggingEnabled(),
   };
 

@@ -8,7 +8,7 @@ Extension-first usage, memory, customization, and cost insights for VS Code GitH
 
 Independent open-source developer tool. Not affiliated with or endorsed by GitHub or Microsoft.
 
-Status: early local developer preview. The VS Code extension is the primary product path; the npm/browser app remains available as a development and fallback host.
+Status: early local developer preview. The VS Code extension is the product path; the npm/browser app remains available as a development and fallback host.
 
 Supported scope today: VS Code GitHub Copilot Chat and Agent sessions on the local machine. This does not currently support Visual Studio, JetBrains IDEs, Copilot CLI, GitHub.com chat, or GitHub billing exports.
 
@@ -44,7 +44,7 @@ code --install-extension tmp/copilot-usage-studio-vscode-0.2.0.vsix --force
 
 Then run `Copilot Usage Studio: Open` from the VS Code command palette.
 
-The npm/browser host remains useful for development and fallback testing:
+The npm/browser host remains useful for development and fallback testing, but it is no longer the main user path:
 
 ```bash
 npx copilot-usage-studio
@@ -120,7 +120,7 @@ npm run vscode:package
 code --install-extension tmp/copilot-usage-studio-vscode-0.2.0.vsix --force
 ```
 
-The extension opens a focused VS Code webview for Usage, Memory, Customizations, and Prices. Sessions, Trace, Compare, and Insights remain available in the browser/dev host while the extension UI is hardened.
+The extension opens the full app inside VS Code: Usage, Sessions, Memory, Customizations, Compare, Insights, and Prices.
 
 ## Releasing
 

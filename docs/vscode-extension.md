@@ -1,17 +1,18 @@
-# VS Code extension preview
+# VS Code extension
 
-Copilot Usage Studio's VS Code extension is the primary local host for the app.
+Copilot Usage Studio's VS Code extension is the primary product.
 
-The extension MVP is intentionally smaller than the full browser app, but it includes the views that benefit most from running inside VS Code:
+The extension exposes the full app inside VS Code:
 
 - Usage
+- Sessions
 - Memory
 - Customizations
+- Compare
+- Insights
 - Prices
 
-It does not expose the heavier Sessions, Trace, Compare, or Analytics views yet. Those remain debugger-style surfaces until the extension UI proves it can carry that complexity cleanly.
-
-Customization evidence is enabled in the extension because the extension can inspect effective VS Code settings and keep the feature close to the editor where instructions, skills, prompts, hooks, and agents are authored.
+Selected-run Sessions includes Overview, Cost, Calls, and Trace. Customization evidence is enabled because the extension keeps the feature close to the editor where instructions, skills, prompts, hooks, and agents are authored.
 
 ## Architecture
 
@@ -25,9 +26,9 @@ Instead, it:
 4. injects a tiny host config so the webview calls the extension-started runtime;
 5. writes scan/runtime logs to a VS Code Output Channel.
 
-This keeps the npm path and the extension path on the same scanner/runtime code.
+This keeps the extension, scanner, and npm development host on the same runtime code.
 
-For performance, the extension scans only the VS Code user-data root that owns the installed extension. The standalone app may scan both Stable and Insiders roots by default; the extension should not do that because it is already running inside one VS Code installation.
+For performance, the extension scans only the VS Code user-data root that owns the installed extension. The npm development host may scan both Stable and Insiders roots by default; the extension should not do that because it is already running inside one VS Code installation.
 
 ## Commands
 
@@ -62,14 +63,14 @@ npm run vscode:package
 3. Run `Copilot Usage Studio: Open`.
 4. Confirm Usage loads first.
 5. Run `Copilot Usage Studio: Refresh Data`.
-6. Confirm Memory, Customizations, and Prices load.
+6. Confirm Usage, Sessions, Memory, Customizations, Compare, Insights, and Prices load.
 7. Confirm scan progress/errors appear in the `Copilot Usage Studio` Output Channel.
-8. Confirm debugger-heavy views are not visible in the extension UI.
+8. Confirm selected-run Overview, Cost, Calls, and Trace work inside Sessions.
 9. Confirm startup logs include customization scan progress and do not hang on large workspaces.
 
 ## Source Requirements
 
-The extension relies on the same local VS Code data as the standalone app.
+The extension relies on local VS Code data.
 
 Exact usage and model-call data comes from VS Code Agent Debug Logs when file logging is enabled. VS Code documents the Agent Debug Log panel as preview, and the setting that writes debug events to disk is:
 
@@ -83,7 +84,7 @@ If that setting is off, the extension may still show older cached scans or weake
 
 First release target is a local VSIX preview attached to the GitHub Release.
 
-The extension is not part of the npm package. The npm package stays focused on `npx copilot-usage-studio`; the VSIX is built from the same source and attached as a separate release asset.
+The extension is not part of the npm package. The VSIX is built from the same source and attached as a separate release asset. The npm package remains useful as a development/runtime fallback, but the extension is the user-facing product path.
 
 CI runs the normal app release gate and packages a VSIX artifact for pushed branches. Tag releases publish npm as before, then attach the matching VSIX to the GitHub Release with notes generated from `CHANGELOG.md`.
 
