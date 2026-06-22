@@ -1242,6 +1242,83 @@ function customizationChunks(content) {
   return [...new Set([...lineChunks, ...chunks])].slice(0, 24);
 }
 
+function escapeRegExpLiteral(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function buildCustomizationChunkMatchers(matchState) {
+  const chunkOwners = new Map();
+  for (const [customizationId, state] of matchState.entries()) {
+    for (const chunk of state.chunks) {
+      if (!chunkOwners.has(chunk)) {
+        chunkOwners.set(chunk, []);
+      }
+      chunkOwners.get(chunk).push(customizationId);
+    }
+  }
+
+  const chunks = [...chunkOwners.keys()].sort((a, b) => b.length - a.length);
+  const matchers = [];
+  let patternParts = [];
+  let patternLength = 0;
+  const maxPatternLength = 150_000;
+
+  const flush = () => {
+    if (!patternParts.length) {
+      return;
+    }
+    matchers.push({
+      regex: new RegExp(patternParts.join('|'), 'g'),
+      chunkOwners,
+    });
+    patternParts = [];
+    patternLength = 0;
+  };
+
+  for (const chunk of chunks) {
+    const escaped = escapeRegExpLiteral(chunk);
+    if (patternParts.length && patternLength + escaped.length > maxPatternLength) {
+      flush();
+    }
+    patternParts.push(escaped);
+    patternLength += escaped.length + 1;
+  }
+  flush();
+
+  return matchers;
+}
+
+function matchedChunksByCustomization(text, chunkMatchers) {
+  if (!text || !chunkMatchers.length) {
+    return new Map();
+  }
+
+  const matchesByCustomization = new Map();
+  for (const matcher of chunkMatchers) {
+    matcher.regex.lastIndex = 0;
+    let match;
+    while ((match = matcher.regex.exec(text)) !== null) {
+      const chunk = match[0];
+      for (const customizationId of matcher.chunkOwners.get(chunk) ?? []) {
+        if (!matchesByCustomization.has(customizationId)) {
+          matchesByCustomization.set(customizationId, new Set());
+        }
+        matchesByCustomization.get(customizationId).add(chunk);
+      }
+      if (match[0] === '') {
+        matcher.regex.lastIndex += 1;
+      }
+    }
+  }
+
+  return new Map(
+    [...matchesByCustomization.entries()].map(([customizationId, chunks]) => [
+      customizationId,
+      [...chunks],
+    ]),
+  );
+}
+
 function extractPayloadText(value, depth = 0) {
   if (value === null || value === undefined || depth > 8) {
     return '';
@@ -1268,15 +1345,20 @@ function extractPayloadText(value, depth = 0) {
   return '';
 }
 
-function readRequestSideFile(sessionDir, file) {
+function readRequestSideFile(sessionDir, file, sideFileCache = new Map()) {
   const sideFilePath = sessionSideFilePath(sessionDir, String(file ?? '').trim());
   if (!sideFilePath || !existsSync(sideFilePath)) {
     return '';
   }
-  return extractPayloadText(readFileSync(sideFilePath, 'utf8'));
+  if (sideFileCache.has(sideFilePath)) {
+    return sideFileCache.get(sideFilePath);
+  }
+  const text = extractPayloadText(readFileSync(sideFilePath, 'utf8'));
+  sideFileCache.set(sideFilePath, text);
+  return text;
 }
 
-function requestTextParts(sessionDir, event) {
+function requestTextParts(sessionDir, event, sideFileCache = new Map()) {
   const parts = [
     { source: 'inputMessages', text: extractPayloadText(event.attrs?.inputMessages) },
     { source: 'userRequest', text: extractPayloadText(event.attrs?.userRequest) },
@@ -1284,7 +1366,7 @@ function requestTextParts(sessionDir, event) {
 
   for (const fileField of ['systemPromptFile', 'toolsFile']) {
     const file = String(event.attrs?.[fileField] ?? '').trim();
-    const text = readRequestSideFile(sessionDir, file);
+    const text = readRequestSideFile(sessionDir, file, sideFileCache);
     if (text) {
       parts.push({ source: file, text });
     }
@@ -1399,6 +1481,7 @@ function customizationEvidenceFromDebugLogs(
       },
     ]),
   );
+  const chunkMatchers = buildCustomizationChunkMatchers(matchState);
 
   const sessionDirs = listDirs(debugRoot);
   for (const [sessionIndex, sessionDir] of sessionDirs.entries()) {
@@ -1415,6 +1498,7 @@ function customizationEvidenceFromDebugLogs(
     }
     const sessionId = basename(sessionDir);
     const main = readJsonl(join(sessionDir, 'main.jsonl'));
+    const sideFileCache = new Map();
     const modelCallNumbers = new Map();
     let modelCallNumber = 0;
     main.forEach((event, index) => {
@@ -1426,6 +1510,13 @@ function customizationEvidenceFromDebugLogs(
 
     for (const [index, event] of main.entries()) {
       const eventText = normalizeMatchText(`${event.name ?? ''} ${event.attrs?.details ?? ''}`);
+      const requestParts =
+        event.type === 'llm_request' ? requestTextParts(sessionDir, event, sideFileCache) : [];
+      if (event.type === 'llm_request') {
+        diagnostics.customizationEvidenceModelCalls += 1;
+        diagnostics.customizationEvidenceTextParts += requestParts.filter((part) => part.normalized).length;
+      }
+      const matchedChunksForParts = new Map();
       for (const customization of customizations) {
         const state = matchState.get(customization.id);
         if (!state) {
@@ -1433,11 +1524,13 @@ function customizationEvidenceFromDebugLogs(
         }
 
         if (event.type === 'llm_request') {
-          diagnostics.customizationEvidenceModelCalls += 1;
-          const parts = requestTextParts(sessionDir, event);
-          diagnostics.customizationEvidenceTextParts += parts.filter((part) => part.normalized).length;
-          for (const part of parts) {
-            const matchedChunks = state.chunks.filter((chunk) => part.normalized.includes(chunk));
+          for (const part of requestParts) {
+            let allPartMatches = matchedChunksForParts.get(part.source);
+            if (!allPartMatches) {
+              allPartMatches = matchedChunksByCustomization(part.normalized, chunkMatchers);
+              matchedChunksForParts.set(part.source, allPartMatches);
+            }
+            const matchedChunks = allPartMatches.get(customization.id) ?? [];
             const listed = !matchedChunks.length && state.terms.some((term) => part.normalized.includes(term));
             if (!matchedChunks.length && !listed) {
               continue;
