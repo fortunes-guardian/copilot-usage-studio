@@ -486,7 +486,7 @@
 }
 
 .match-group-status,
-.match-event div {
+.call-event-sources {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -498,8 +498,7 @@
 }
 
 .match-group-status strong,
-.match-event strong,
-.match-event span {
+.call-event-sources span {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -512,8 +511,7 @@
   font-weight: 720;
 }
 
-.match-group-status strong,
-.match-event strong {
+.match-group-status strong {
   color: var(--accent);
 }
 
@@ -610,10 +608,30 @@
   border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
 }
 
-.match-event p {
+.call-event-main {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.call-event-main strong {
+  color: var(--accent-2);
+  font-size: 11px;
+  font-weight: 780;
+}
+
+.call-event.sent .call-event-main strong {
+  color: var(--accent-strong, var(--accent));
+}
+
+.call-event-main p {
   margin: 0;
   color: var(--muted);
   font-size: 11px;
+}
+
+.call-event-sources {
+  justify-content: flex-end;
 }
 
 .customization-path {

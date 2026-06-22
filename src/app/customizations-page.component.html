@@ -40,7 +40,7 @@
       <select [ngModel]="statusFilter()" (ngModelChange)="setStatusFilter($event)">
         <option value="all">All evidence</option>
         <option value="sent">Sent to model</option>
-        <option value="listed">Referenced only</option>
+        <option value="listed">Name/path only</option>
         <option value="discovered">Discovered only</option>
         <option value="not_seen">Not seen</option>
       </select>
@@ -165,7 +165,7 @@
                 <h4>{{ selectedSessionEvidence().length | number }} session{{ selectedSessionEvidence().length === 1 ? '' : 's' }}</h4>
               </header>
               <p class="match-list-help">
-                Each row is one Copilot session. The strip shows the model calls where this customization was found or referenced.
+                Each row is one Copilot session. The strip shows which model calls contained file text, or only mentioned the file name/path.
               </p>
               @for (group of selectedSessionEvidence(); track group.sessionId) {
                 <details
@@ -202,27 +202,25 @@
                   </summary>
                   <div class="match-group-detail-header">
                     <p>
-                      Technical evidence from the imported VS Code debug log. Use this when you need to inspect the exact
-                      request source.
+                      One row per model call. Content found means actual text from this file matched request material.
+                      Name/path only means the file was named but its text was not proved.
                     </p>
                     @if (group.session) {
                       <button type="button" (click)="emitOpenSession(group.sessionId)">Open run</button>
                     }
                   </div>
-                  <div class="match-events">
-                    @for (match of group.matches; track match.eventIndex + '-' + match.source + '-' + match.status) {
-                      <article class="match-event">
-                        <div>
-                          <strong>{{ requestEvidenceLabel(match) }}</strong>
-                          <span>
-                            {{ sourceLabel(match.source) }}
-                            <app-help-popover
-                              [text]="sourceHelp(match.source)"
-                              label="Explain evidence source"
-                            ></app-help-popover>
-                          </span>
+                  <div class="match-events call-events">
+                    @for (call of callEvidence(group); track call.key) {
+                      <article class="match-event call-event" [class.sent]="call.status === 'sent'">
+                        <div class="call-event-main">
+                          <strong>{{ callEvidenceTitle(call) }}</strong>
+                          <p>{{ callEvidenceSummary(call) }}</p>
                         </div>
-                        <p>{{ matchedContentLabel(match) }}</p>
+                        <div class="call-event-sources">
+                          @for (source of call.sourceLabels; track source) {
+                            <span>{{ source }}</span>
+                          }
+                        </div>
                       </article>
                     }
                   </div>

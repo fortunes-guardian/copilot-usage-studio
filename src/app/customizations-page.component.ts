@@ -18,6 +18,16 @@ type EvidenceTimelineMarker = {
   callNumber: number;
   status: CopilotCustomizationEvidenceStatus;
 };
+type CustomizationCallEvidence = {
+  key: string;
+  callNumber: number;
+  eventIndex: number;
+  status: CopilotCustomizationEvidenceStatus;
+  matches: CopilotCustomization['matches'];
+  sourceLabels: string[];
+  matchedChunks: number;
+  matchedCharacters: number;
+};
 
 type CustomizationSessionEvidence = {
   sessionId: string;
@@ -194,7 +204,7 @@ export class CustomizationsPageComponent {
   protected statusLabel(status: CopilotCustomizationEvidenceStatus): string {
     return {
       sent: 'Sent to model',
-      listed: 'Referenced only',
+      listed: 'Name/path only',
       discovered: 'Discovered',
       not_seen: 'Not seen',
     }[status];
@@ -203,7 +213,7 @@ export class CustomizationsPageComponent {
   protected statusHeadline(status: CopilotCustomizationEvidenceStatus): string {
     return {
       sent: 'This content reached the model',
-      listed: 'VS Code mentioned it, content was not verified',
+      listed: 'Only the name or path was seen',
       discovered: 'Found during setup, not seen in a request',
       not_seen: 'No evidence in imported sessions',
     }[status];
@@ -212,7 +222,7 @@ export class CustomizationsPageComponent {
   protected statusHelp(status: CopilotCustomizationEvidenceStatus): string {
     return {
       sent: 'Distinctive text from this file appeared inside the material VS Code sent to a model. This is the strongest local evidence.',
-      listed: 'VS Code referenced this customization near a request, but imported payload text did not prove the file content was sent.',
+      listed: 'VS Code request material contained an identifier such as the file name, path, title, applyTo, or trigger, but the scanner did not find distinctive file text.',
       discovered: 'VS Code found the file during setup or discovery, but imported model requests did not show it being used.',
       not_seen: 'The file exists locally, but the imported sessions do not show it being discovered, listed, or sent.',
     }[status];
@@ -235,8 +245,8 @@ export class CustomizationsPageComponent {
     }
     if (group.bestStatus === 'listed') {
       return calls
-        ? `Referenced around ${calls.toLocaleString()} model call${calls === 1 ? '' : 's'}`
-        : 'Referenced by VS Code, content not proved';
+        ? `Name/path seen in ${calls.toLocaleString()} model call${calls === 1 ? '' : 's'}`
+        : 'Name/path seen, content not proved';
     }
     if (group.bestStatus === 'discovered') {
       return 'Found during setup or discovery';
@@ -251,23 +261,6 @@ export class CustomizationsPageComponent {
     }[source] ?? source;
   }
 
-  protected sourceHelp(source: MatchSource): string {
-    return {
-      inputMessages: 'The larger prompt payload VS Code assembled for the model request.',
-      userRequest: 'The user-facing request object attached to the model call.',
-    }[source] ?? 'Source field from the imported VS Code debug log.';
-  }
-
-  protected matchedContentLabel(match: CopilotCustomization['matches'][number]): string {
-    if (match.status !== 'sent') {
-      return 'content not verified';
-    }
-    if (!match.matchedChunks) {
-      return 'content found';
-    }
-    return `${match.matchedChunks.toLocaleString()} text part${match.matchedChunks === 1 ? '' : 's'} found`;
-  }
-
   protected sessionEvidenceLabel(group: CustomizationSessionEvidence): string {
     const calls = group.modelCallNumbers.length;
     if (!calls) {
@@ -276,7 +269,7 @@ export class CustomizationsPageComponent {
     const label = calls === 1 ? 'model call' : 'model calls';
     return group.bestStatus === 'sent'
       ? `Found in ${calls.toLocaleString()} ${label}`
-      : `Referenced near ${calls.toLocaleString()} ${label}`;
+      : `Name/path in ${calls.toLocaleString()} ${label}`;
   }
 
   protected timelineMarkers(group: CustomizationSessionEvidence): EvidenceTimelineMarker[] {
@@ -302,21 +295,67 @@ export class CustomizationsPageComponent {
   protected timelineMarkerLabel(marker: EvidenceTimelineMarker): string {
     return marker.status === 'sent'
       ? `Model call #${marker.callNumber}: content found in prompt material`
-      : `Model call #${marker.callNumber}: referenced only`;
+      : `Model call #${marker.callNumber}: name or path only`;
   }
 
-  protected requestEvidenceLabel(match: CopilotCustomization['matches'][number]): string {
-    if (match.status === 'sent') {
-      return match.modelCallNumber
-        ? `Model call #${match.modelCallNumber}: content found`
-        : 'Content found in prompt material';
+  protected callEvidence(group: CustomizationSessionEvidence): CustomizationCallEvidence[] {
+    const calls = new Map<string, CustomizationCallEvidence>();
+    for (const match of group.matches) {
+      const key = match.modelCallNumber ? `call:${match.modelCallNumber}` : `event:${match.eventIndex}`;
+      const existing = calls.get(key);
+      const call =
+        existing ??
+        {
+          key,
+          callNumber: match.modelCallNumber,
+          eventIndex: match.eventIndex,
+          status: match.status,
+          matches: [],
+          sourceLabels: [],
+          matchedChunks: 0,
+          matchedCharacters: 0,
+        };
+      call.matches.push(match);
+      call.status = this.strongerStatus(call.status, match.status);
+      call.matchedChunks += match.matchedChunks ?? 0;
+      call.matchedCharacters += match.matchedCharacters ?? 0;
+      const source = this.sourceLabel(match.source);
+      if (!call.sourceLabels.includes(source)) {
+        call.sourceLabels.push(source);
+      }
+      calls.set(key, call);
     }
-    if (match.status === 'listed') {
-      return match.modelCallNumber
-        ? `Model call #${match.modelCallNumber}: referenced only`
-        : 'Referenced by VS Code';
+
+    return [...calls.values()].sort((a, b) => {
+      if (a.callNumber !== b.callNumber) {
+        return b.callNumber - a.callNumber;
+      }
+      return b.eventIndex - a.eventIndex;
+    });
+  }
+
+  protected callEvidenceTitle(call: CustomizationCallEvidence): string {
+    const target = call.callNumber ? `Model call #${call.callNumber}` : `Event #${call.eventIndex}`;
+    if (call.status === 'sent') {
+      return `${target}: content found`;
     }
-    return this.statusLabel(match.status);
+    if (call.status === 'listed') {
+      return `${target}: name/path only`;
+    }
+    return `${target}: ${this.statusLabel(call.status).toLowerCase()}`;
+  }
+
+  protected callEvidenceSummary(call: CustomizationCallEvidence): string {
+    if (call.status === 'sent') {
+      const parts = call.matchedChunks || call.matchedCharacters
+        ? `${call.matchedChunks.toLocaleString()} text part${call.matchedChunks === 1 ? '' : 's'}`
+        : 'distinctive text';
+      return `${parts} from the customization file matched request material.`;
+    }
+    if (call.status === 'listed') {
+      return 'Only an identifier was seen here. This does not prove the instruction or skill text reached the model.';
+    }
+    return 'No request payload content was verified for this event.';
   }
 
   protected diagnosticKindLabel(kind: string): string {
