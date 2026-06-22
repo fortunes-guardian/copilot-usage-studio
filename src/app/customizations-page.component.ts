@@ -14,6 +14,10 @@ import { HelpPopoverComponent } from './help-popover.component';
 type CustomizationKindFilter = 'all' | CopilotCustomizationKind;
 type CustomizationStatusFilter = 'all' | CopilotCustomizationEvidenceStatus;
 type MatchSource = 'inputMessages' | 'userRequest' | string;
+type EvidenceTimelineMarker = {
+  callNumber: number;
+  status: CopilotCustomizationEvidenceStatus;
+};
 
 type CustomizationSessionEvidence = {
   sessionId: string;
@@ -190,7 +194,7 @@ export class CustomizationsPageComponent {
   protected statusLabel(status: CopilotCustomizationEvidenceStatus): string {
     return {
       sent: 'Sent to model',
-      listed: 'Mentioned',
+      listed: 'Referenced only',
       discovered: 'Discovered',
       not_seen: 'Not seen',
     }[status];
@@ -223,17 +227,21 @@ export class CustomizationsPageComponent {
   }
 
   protected evidenceGroupSubtitle(group: CustomizationSessionEvidence): string {
-    const parts = [];
-    if (group.sentCount) {
-      parts.push(`${group.sentCount} sent hit${group.sentCount === 1 ? '' : 's'}`);
+    const calls = group.modelCallNumbers.length;
+    if (group.bestStatus === 'sent') {
+      return calls
+        ? `Content found in ${calls.toLocaleString()} model call${calls === 1 ? '' : 's'}`
+        : 'Content found in model material';
     }
-    if (group.listedCount) {
-      parts.push(`${group.listedCount} mention${group.listedCount === 1 ? '' : 's'}`);
+    if (group.bestStatus === 'listed') {
+      return calls
+        ? `Referenced around ${calls.toLocaleString()} model call${calls === 1 ? '' : 's'}`
+        : 'Referenced by VS Code, content not proved';
     }
-    if (group.discoveredCount) {
-      parts.push(`${group.discoveredCount} discovery hit${group.discoveredCount === 1 ? '' : 's'}`);
+    if (group.bestStatus === 'discovered') {
+      return 'Found during setup or discovery';
     }
-    return parts.join(' · ') || 'Evidence recorded';
+    return 'No imported evidence';
   }
 
   protected sourceLabel(source: MatchSource): string {
@@ -260,15 +268,55 @@ export class CustomizationsPageComponent {
     return `${match.matchedChunks.toLocaleString()} text part${match.matchedChunks === 1 ? '' : 's'} found`;
   }
 
-  protected modelRequestsLabel(group: CustomizationSessionEvidence): string {
-    const calls = group.modelCallNumbers;
-    if (!calls.length) {
-      return '';
+  protected sessionEvidenceLabel(group: CustomizationSessionEvidence): string {
+    const calls = group.modelCallNumbers.length;
+    if (!calls) {
+      return group.bestStatus === 'sent' ? 'Content found' : this.statusLabel(group.bestStatus);
     }
-    if (calls.length <= 4) {
-      return `request${calls.length === 1 ? '' : 's'} #${calls.join(', #')}`;
+    const label = calls === 1 ? 'model call' : 'model calls';
+    return group.bestStatus === 'sent'
+      ? `Found in ${calls.toLocaleString()} ${label}`
+      : `Referenced near ${calls.toLocaleString()} ${label}`;
+  }
+
+  protected timelineMarkers(group: CustomizationSessionEvidence): EvidenceTimelineMarker[] {
+    const markers = new Map<number, CopilotCustomizationEvidenceStatus>();
+    for (const match of group.matches) {
+      if (!match.modelCallNumber) {
+        continue;
+      }
+      const current = markers.get(match.modelCallNumber) ?? 'not_seen';
+      markers.set(match.modelCallNumber, this.strongerStatus(current, match.status));
     }
-    return `${calls.length} model requests (#${calls[0]}-#${calls.at(-1)})`;
+    return [...markers.entries()]
+      .sort(([a], [b]) => a - b)
+      .slice(0, 18)
+      .map(([callNumber, status]) => ({ callNumber, status }));
+  }
+
+  protected timelineOverflow(group: CustomizationSessionEvidence): number {
+    const distinctCalls = new Set(group.matches.map((match) => match.modelCallNumber).filter(Boolean));
+    return Math.max(0, distinctCalls.size - 18);
+  }
+
+  protected timelineMarkerLabel(marker: EvidenceTimelineMarker): string {
+    return marker.status === 'sent'
+      ? `Model call #${marker.callNumber}: content found in prompt material`
+      : `Model call #${marker.callNumber}: referenced only`;
+  }
+
+  protected requestEvidenceLabel(match: CopilotCustomization['matches'][number]): string {
+    if (match.status === 'sent') {
+      return match.modelCallNumber
+        ? `Model call #${match.modelCallNumber}: content found`
+        : 'Content found in prompt material';
+    }
+    if (match.status === 'listed') {
+      return match.modelCallNumber
+        ? `Model call #${match.modelCallNumber}: referenced only`
+        : 'Referenced by VS Code';
+    }
+    return this.statusLabel(match.status);
   }
 
   protected diagnosticKindLabel(kind: string): string {
