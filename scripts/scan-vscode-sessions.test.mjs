@@ -701,6 +701,8 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
   const configuredSkillFile = join(configuredSkillsDir, 'release-review', 'SKILL.md');
   const configuredAgentsDir = join(workspaceFolder, 'custom', 'copilot-agents');
   const configuredAgentFile = join(configuredAgentsDir, 'release-planner.agent.md');
+  const systemSkillDir = join(root, '.vscode', 'extensions', 'publisher.extension-1.0.0', 'skills', 'system-skill');
+  const systemSkillFile = join(systemSkillDir, 'SKILL.md');
 
   try {
     mkdirSync(join(repoRoot, '.git'), { recursive: true });
@@ -715,6 +717,7 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
     mkdirSync(configuredInstructionsDir, { recursive: true });
     mkdirSync(dirname(configuredSkillFile), { recursive: true });
     mkdirSync(configuredAgentsDir, { recursive: true });
+    mkdirSync(systemSkillDir, { recursive: true });
     writeFileSync(
       join(workspaceDir, 'workspace.json'),
       JSON.stringify({ folder: pathToFileUrl(workspaceFolder) }),
@@ -722,20 +725,22 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
     );
     writeFileSync(
       join(workspaceFolder, '.vscode', 'settings.json'),
-      [
-        '{',
-        '  // Customization locations can be configured outside the defaults.',
-        '  "chat.instructionsFilesLocations": {',
-        '    "custom/copilot-rules": true,',
-        '  },',
-        '  "chat.agentSkillsLocations": {',
-        '    "custom/copilot-skills": true,',
-        '  },',
-        '  "chat.agentFilesLocations": {',
-        '    "custom/copilot-agents": true,',
-        '  },',
-        '}',
-      ].join('\n'),
+      JSON.stringify(
+        {
+          'chat.instructionsFilesLocations': {
+            'custom/copilot-rules': true,
+          },
+          'chat.agentSkillsLocations': {
+            'custom/copilot-skills': true,
+            [systemSkillDir]: true,
+          },
+          'chat.agentFilesLocations': {
+            'custom/copilot-agents': true,
+          },
+        },
+        null,
+        2,
+      ),
       'utf8',
     );
     writeFileSync(
@@ -794,6 +799,11 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
       'utf8',
     );
     writeFileSync(
+      systemSkillFile,
+      'System extension skill: this is useful but should not appear in default customization scans.',
+      'utf8',
+    );
+    writeFileSync(
       join(sessionDir, 'system_prompt_0.json'),
       JSON.stringify({
         content: [
@@ -808,6 +818,7 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
               'Configured instruction: always explain aggregate invariants before coding.',
               'Configured release skill: inspect changelog, package metadata, and release risk.',
               'Configured release planner agent: produce release checks before publishing.',
+              'System extension skill: this is useful but should not appear in default customization scans.',
             ].join('\n'),
           },
         ],
@@ -838,6 +849,7 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
     const configuredInstruction = data.customizations.find((item) => item.sourcePath === configuredInstructionFile);
     const configuredSkill = data.customizations.find((item) => item.sourcePath === configuredSkillFile);
     const configuredAgent = data.customizations.find((item) => item.sourcePath === configuredAgentFile);
+    const systemSkill = data.customizations.find((item) => item.sourcePath === systemSkillFile);
 
     assert(paths.includes('.github/copilot-instructions.md'));
     assert(paths.includes('AGENTS.md'));
@@ -856,6 +868,8 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
     assert(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'debug-discovery-root'));
     assert(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'vscode-setting-root'));
     assert.equal(data.ingestion.importedCustomizations, data.customizations.length);
+    assert.equal(systemSkill, undefined);
+    assert.equal(data.ingestion.skippedSystemCustomizations > 0, true);
     assert.equal(externalSkill?.kind, 'skill');
     assert.equal(externalSkill?.evidenceStatus, 'sent');
     assert.equal(discoveredSkill?.kind, 'skill');
@@ -866,6 +880,15 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
     assert.equal(configuredSkill?.evidenceStatus, 'sent');
     assert.equal(configuredAgent?.kind, 'agent');
     assert.equal(configuredAgent?.evidenceStatus, 'sent');
+
+    const dataWithSystem = await scanVsCodeSessions({
+      roots: [workspaceDir],
+      sqlite: false,
+      includeSystemCustomizations: true,
+    });
+    const includedSystemSkill = dataWithSystem.customizations.find((item) => item.sourcePath === systemSkillFile);
+    assert.equal(includedSystemSkill?.kind, 'skill');
+    assert.equal(includedSystemSkill?.evidenceStatus, 'sent');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

@@ -166,6 +166,8 @@ These are targeted scans, not whole-repository crawls. The scanner only walks th
 
 The VS Code extension host now runs customization indexing because the extension is the primary product surface and exposes the Customizations view. Scanner progress reports workspace phase, debug-log folder counts, customization inventory counts, and elapsed time so slow machines can be diagnosed instead of appearing silently stuck.
 
+Installed VS Code extension customizations are excluded from the default scan. Files under paths such as `.vscode/extensions/...` can be useful for deep debugging, but they are not usually the developer's own repo or user rules, and evidence matching them can slow startup. Hosts can opt in with `includeSystemCustomizations: true` when a future system-customization view needs that data.
+
 Each customization stores metadata only: title, name, description, `applyTo`, triggers, path, size, and an excerpt. The scanner reads the full file during the scan to build fingerprints, but it does not persist the full content into `sessions.json`.
 
 Evidence levels:

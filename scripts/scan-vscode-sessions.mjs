@@ -74,6 +74,7 @@ function createDiagnostics() {
     customizationEvidenceMatchedCustomizations: 0,
     importedCustomizations: 0,
     workspaceScans: [],
+    skippedSystemCustomizations: 0,
     skippedOversizedMemories: 0,
     skippedUnreadableMemories: 0,
     skippedOversizedCustomizations: 0,
@@ -940,12 +941,15 @@ function configuredCustomizationFilePredicate(kind, file) {
   return isCustomizationSourceFile(file) && looksLikeCopilotCustomizationPath(file);
 }
 
-function customizationsFromConfiguredSettings(workspaceDir, workspaceFolder, workspace) {
+function customizationsFromConfiguredSettings(workspaceDir, workspaceFolder, workspace, options = {}) {
   const files = new Map();
   for (const entry of [
     ...configuredCustomizationLocationEntries(workspaceDir, workspaceFolder),
     ...defaultUserCustomizationLocationEntries(),
   ]) {
+    if (!includeCustomizationPath(entry.path, options)) {
+      continue;
+    }
     if (!existsSync(entry.path)) {
       continue;
     }
@@ -956,7 +960,7 @@ function customizationsFromConfiguredSettings(workspaceDir, workspaceFolder, wor
       entry.source === 'user-default' ? 'user-default-root' : 'vscode-setting-root',
     );
     if (statSync(entry.path).isFile()) {
-      if (configuredCustomizationFilePredicate(entry.kind, entry.path)) {
+      if (configuredCustomizationFilePredicate(entry.kind, entry.path) && includeCustomizationPath(entry.path, options)) {
         files.set(resolve(entry.path), { base: dirname(entry.path), kind: entry.kind });
       }
       continue;
@@ -968,7 +972,9 @@ function customizationsFromConfiguredSettings(workspaceDir, workspaceFolder, wor
 
     for (const file of listFilesRecursive(
       entry.path,
-      (candidate) => configuredCustomizationFilePredicate(entry.kind, candidate),
+      (candidate) =>
+        configuredCustomizationFilePredicate(entry.kind, candidate) &&
+        includeCustomizationPath(candidate, options),
       customizationFileLimit,
       { label: 'customization', maxDepth: 5, maxDirs: 300 },
     )) {
@@ -1085,7 +1091,7 @@ function looksLikeCustomizationRoot(folder) {
   );
 }
 
-function customizationsFromDiscoveryFolders(debugRoot, workspace) {
+function customizationsFromDiscoveryFolders(debugRoot, workspace, options = {}) {
   if (!existsSync(debugRoot)) {
     return [];
   }
@@ -1107,11 +1113,17 @@ function customizationsFromDiscoveryFolders(debugRoot, workspace) {
 
   const files = new Map();
   for (const folder of folders) {
+    if (!includeCustomizationPath(folder, options)) {
+      continue;
+    }
     diagnostics.scannedCustomizationRoots += 1;
     recordCustomizationLocation(folder, 'debug-discovery-root');
     for (const file of listFilesRecursive(
       folder,
-      (candidate) => isCustomizationSourceFile(candidate) && looksLikeCopilotCustomizationPath(candidate),
+      (candidate) =>
+        isCustomizationSourceFile(candidate) &&
+        looksLikeCopilotCustomizationPath(candidate) &&
+        includeCustomizationPath(candidate, options),
       customizationFileLimit,
       { label: 'customization', maxDepth: 5, maxDirs: 300 },
     )) {
@@ -1124,7 +1136,7 @@ function customizationsFromDiscoveryFolders(debugRoot, workspace) {
     .filter(Boolean);
 }
 
-function customizationsFromDebugReferences(debugRoot, bases, workspace) {
+function customizationsFromDebugReferences(debugRoot, bases, workspace, options = {}) {
   if (!existsSync(debugRoot) || !bases.length) {
     return [];
   }
@@ -1146,6 +1158,9 @@ function customizationsFromDebugReferences(debugRoot, bases, workspace) {
       }
 
       for (const candidate of localMarkdownPathCandidates(readFileSync(file, 'utf8'), bases)) {
+        if (!includeCustomizationPath(candidate, options)) {
+          continue;
+        }
         const base = bases.find((candidateBase) => containedByBase(candidate, candidateBase)) ?? dirname(candidate);
         recordCustomizationLocation(candidate, 'debug-reference');
         files.set(candidate, base);
@@ -1158,7 +1173,7 @@ function customizationsFromDebugReferences(debugRoot, bases, workspace) {
     .filter(Boolean);
 }
 
-function customizationsFromWorkspace(workspaceDir) {
+function customizationsFromWorkspace(workspaceDir, options = {}) {
   const folder = workspaceFolderPath(workspaceDir);
   if (!folder) {
     return { customizations: [], bases: [] };
@@ -1191,7 +1206,7 @@ function customizationsFromWorkspace(workspaceDir) {
     bases,
     customizations: [
       ...knownCustomizations,
-      ...customizationsFromConfiguredSettings(workspaceDir, folder, workspace),
+      ...customizationsFromConfiguredSettings(workspaceDir, folder, workspace, options),
     ],
   };
 }
@@ -1240,6 +1255,22 @@ function customizationChunks(content) {
   }
 
   return [...new Set([...lineChunks, ...chunks])].slice(0, 24);
+}
+
+function isSystemCustomizationPath(file) {
+  const normalized = resolve(file).replace(/\\/g, '/').toLowerCase();
+  return (
+    /(^|\/)\.vscode(?:-insiders)?\/extensions\//.test(normalized) ||
+    normalized.includes('/resources/app/extensions/')
+  );
+}
+
+function includeCustomizationPath(file, options = {}) {
+  if (options.includeSystemCustomizations === true || !isSystemCustomizationPath(file)) {
+    return true;
+  }
+  diagnostics.skippedSystemCustomizations += 1;
+  return false;
 }
 
 function escapeRegExpLiteral(value) {
@@ -3019,6 +3050,9 @@ function enrichSessionFromWorkspaceState(session, stateBySessionId) {
 
 function parseWorkspace(workspaceDir, options = {}, onProgress = () => {}) {
   const includeCustomizations = options.includeCustomizations !== false;
+  const customizationOptions = {
+    includeSystemCustomizations: options.includeSystemCustomizations === true,
+  };
   diagnostics.scannedWorkspaces += 1;
   const workspace = workspaceName(workspaceDir);
   const workspaceStartedAt = Date.now();
@@ -3087,12 +3121,12 @@ function parseWorkspace(workspaceDir, options = {}, onProgress = () => {}) {
   let customizations = [];
   if (includeCustomizations) {
     progress('customizations', `Indexing customizations for ${workspace}.`);
-    const customizationWorkspace = customizationsFromWorkspace(workspaceDir);
+    const customizationWorkspace = customizationsFromWorkspace(workspaceDir, customizationOptions);
     const customizationMap = new Map();
     for (const customization of [
       ...customizationWorkspace.customizations,
-      ...customizationsFromDiscoveryFolders(debugRoot, workspace),
-      ...customizationsFromDebugReferences(debugRoot, customizationWorkspace.bases, workspace),
+      ...customizationsFromDiscoveryFolders(debugRoot, workspace, customizationOptions),
+      ...customizationsFromDebugReferences(debugRoot, customizationWorkspace.bases, workspace, customizationOptions),
     ]) {
       customizationMap.set(customization.id, customization);
     }
@@ -3235,6 +3269,7 @@ export async function scanVsCodeSessions(options = {}) {
   const onProgress = typeof options.onProgress === 'function' ? options.onProgress : () => {};
   const workspaceOptions = {
     includeCustomizations: options.includeCustomizations !== false,
+    includeSystemCustomizations: options.includeSystemCustomizations === true,
   };
 
   try {

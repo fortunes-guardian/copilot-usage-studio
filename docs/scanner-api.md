@@ -51,6 +51,7 @@ const sessionData = await scanVsCodeSessions({
 - `roots`: optional array of VS Code `User` directories or individual workspace-storage directories. Defaults to stable VS Code and VS Code Insiders paths for the current operating system.
 - `sqlite`: set to `false` to skip optional `state.vscdb` metadata enrichment. Debug-log token and usage import still works.
 - `includeCustomizations`: set to `false` to skip instruction/skill/prompt/hook/agent inventory and evidence matching. The VS Code extension normally leaves this enabled because it exposes the Customizations view.
+- `includeSystemCustomizations`: set to `true` to include customizations contributed by installed VS Code extensions or VS Code application extension folders. The default is `false` so startup focuses on user/repo customizations and avoids expensive evidence matching for system-provided skills.
 - `generatedAt`: optional `Date` or date-compatible value, primarily for deterministic hosts and tests.
 - `usdToEur`: legacy generated-contract conversion value. The product UI is USD-first and callers should normally leave this unset.
 - `onProgress`: optional callback for host diagnostics. It receives scan-stage events such as root discovery, workspace discovery, debug-log folder counts, memory indexing, and completion. Hosts should treat these as user-facing diagnostics, not stable analytics data.
