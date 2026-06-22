@@ -299,6 +299,7 @@ export interface CopilotCustomizationMatch {
   source: string;
   matchedChunks: number;
   matchedCharacters: number;
+  matchedPreview?: string[];
 }
 
 export interface CopilotCustomization {

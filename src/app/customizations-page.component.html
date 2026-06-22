@@ -40,7 +40,7 @@
       <select [ngModel]="statusFilter()" (ngModelChange)="setStatusFilter($event)">
         <option value="all">All evidence</option>
         <option value="sent">Sent to model</option>
-        <option value="listed">Name/path only</option>
+        <option value="listed">Not proved sent</option>
         <option value="discovered">Discovered only</option>
         <option value="not_seen">Not seen</option>
       </select>
@@ -165,7 +165,7 @@
                 <h4>{{ selectedSessionEvidence().length | number }} session{{ selectedSessionEvidence().length === 1 ? '' : 's' }}</h4>
               </header>
               <p class="match-list-help">
-                Each row is one Copilot session. The strip shows which model calls contained file text, or only mentioned the file name/path.
+                Each row is one Copilot session. A call strip appears only when actual file text was found in model request material.
               </p>
               @for (group of selectedSessionEvidence(); track group.sessionId) {
                 <details
@@ -180,50 +180,66 @@
                       <b>{{ group.title }}</b>
                       <em>{{ evidenceGroupSubtitle(group) }}</em>
                     </span>
-                    <span class="match-group-timeline" [attr.aria-label]="sessionEvidenceLabel(group)">
-                      @for (marker of timelineMarkers(group); track marker.callNumber) {
-                        <span
-                          class="timeline-marker"
-                          [class.sent]="marker.status === 'sent'"
-                          [class.listed]="marker.status === 'listed'"
-                          [class.discovered]="marker.status === 'discovered'"
-                          [attr.aria-label]="timelineMarkerLabel(marker)"
-                        >
-                          #{{ marker.callNumber }}
-                        </span>
-                      }
-                      @if (timelineOverflow(group)) {
-                        <span class="timeline-overflow">+{{ timelineOverflow(group) }}</span>
-                      }
-                    </span>
+                    @if (group.bestStatus === 'sent') {
+                      <span class="match-group-timeline" [attr.aria-label]="sessionEvidenceLabel(group)">
+                        @for (marker of timelineMarkers(group); track marker.callNumber) {
+                          <span
+                            class="timeline-marker"
+                            [class.sent]="marker.status === 'sent'"
+                            [class.listed]="marker.status === 'listed'"
+                            [class.discovered]="marker.status === 'discovered'"
+                            [attr.aria-label]="timelineMarkerLabel(marker)"
+                          >
+                            #{{ marker.callNumber }}
+                          </span>
+                        }
+                        @if (timelineOverflow(group)) {
+                          <span class="timeline-overflow">+{{ timelineOverflow(group) }}</span>
+                        }
+                      </span>
+                    } @else {
+                      <span class="match-group-weak">No file text found</span>
+                    }
                     <span class="match-group-status">
                       <strong>{{ sessionEvidenceLabel(group) }}</strong>
                     </span>
                   </summary>
                   <div class="match-group-detail-header">
                     <p>
-                      One row per model call. Content found means actual text from this file matched request material.
-                      Name/path only means the file was named but its text was not proved.
+                      Content found means actual text from this file matched request material. If no file text was found,
+                      this panel keeps the weak signal short.
                     </p>
                     @if (group.session) {
                       <button type="button" (click)="emitOpenSession(group.sessionId)">Open run</button>
                     }
                   </div>
-                  <div class="match-events call-events">
-                    @for (call of callEvidence(group); track call.key) {
-                      <article class="match-event call-event" [class.sent]="call.status === 'sent'">
-                        <div class="call-event-main">
-                          <strong>{{ callEvidenceTitle(call) }}</strong>
-                          <p>{{ callEvidenceSummary(call) }}</p>
-                        </div>
-                        <div class="call-event-sources">
-                          @for (source of call.sourceLabels; track source) {
-                            <span>{{ source }}</span>
-                          }
-                        </div>
-                      </article>
-                    }
-                  </div>
+                  @if (group.bestStatus === 'sent') {
+                    <div class="match-events call-events">
+                      @for (call of sentCallEvidence(group); track call.key) {
+                        <article class="match-event call-event" [class.sent]="call.status === 'sent'">
+                          <div class="call-event-main">
+                            <strong>{{ callEvidenceTitle(call) }}</strong>
+                            <p>{{ callEvidenceSummary(call) }}</p>
+                            @if (call.matchedPreview.length) {
+                              <blockquote>
+                                {{ call.matchedPreview[0] }}
+                              </blockquote>
+                            }
+                          </div>
+                          <div class="call-event-sources">
+                            @for (source of call.sourceLabels; track source) {
+                              <span>{{ source }}</span>
+                            }
+                          </div>
+                        </article>
+                      }
+                    </div>
+                  } @else {
+                    <div class="weak-evidence-note">
+                      <strong>Not proved sent</strong>
+                      <p>{{ weakEvidenceSummary(group) }}</p>
+                    </div>
+                  }
                 </details>
               }
             </section>

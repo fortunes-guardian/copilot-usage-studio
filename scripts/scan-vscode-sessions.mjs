@@ -1350,6 +1350,12 @@ function matchedChunksByCustomization(text, chunkMatchers) {
   );
 }
 
+function matchedChunkPreview(chunks) {
+  return [...new Set(chunks)]
+    .slice(0, 2)
+    .map((chunk) => chunk.length > 220 ? `${chunk.slice(0, 217)}...` : chunk);
+}
+
 function extractPayloadText(value, depth = 0) {
   if (value === null || value === undefined || depth > 8) {
     return '';
@@ -1582,6 +1588,7 @@ function customizationEvidenceFromDebugLogs(
               source: part.source,
               matchedChunks: matchedChunks.length,
               matchedCharacters: matchedChunks.reduce((sum, chunk) => sum + chunk.length, 0),
+              matchedPreview: matchedChunkPreview(matchedChunks),
             });
           }
           continue;

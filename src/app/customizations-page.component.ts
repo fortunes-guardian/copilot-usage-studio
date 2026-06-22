@@ -27,6 +27,7 @@ type CustomizationCallEvidence = {
   sourceLabels: string[];
   matchedChunks: number;
   matchedCharacters: number;
+  matchedPreview: string[];
 };
 
 type CustomizationSessionEvidence = {
@@ -204,7 +205,7 @@ export class CustomizationsPageComponent {
   protected statusLabel(status: CopilotCustomizationEvidenceStatus): string {
     return {
       sent: 'Sent to model',
-      listed: 'Name/path only',
+      listed: 'Not proved sent',
       discovered: 'Discovered',
       not_seen: 'Not seen',
     }[status];
@@ -213,7 +214,7 @@ export class CustomizationsPageComponent {
   protected statusHeadline(status: CopilotCustomizationEvidenceStatus): string {
     return {
       sent: 'This content reached the model',
-      listed: 'Only the name or path was seen',
+      listed: 'Not proved sent',
       discovered: 'Found during setup, not seen in a request',
       not_seen: 'No evidence in imported sessions',
     }[status];
@@ -222,7 +223,7 @@ export class CustomizationsPageComponent {
   protected statusHelp(status: CopilotCustomizationEvidenceStatus): string {
     return {
       sent: 'Distinctive text from this file appeared inside the material VS Code sent to a model. This is the strongest local evidence.',
-      listed: 'VS Code request material contained an identifier such as the file name, path, title, applyTo, or trigger, but the scanner did not find distinctive file text.',
+      listed: 'VS Code request material named this file or one of its labels, but the scanner did not find distinctive file text.',
       discovered: 'VS Code found the file during setup or discovery, but imported model requests did not show it being used.',
       not_seen: 'The file exists locally, but the imported sessions do not show it being discovered, listed, or sent.',
     }[status];
@@ -239,14 +240,15 @@ export class CustomizationsPageComponent {
   protected evidenceGroupSubtitle(group: CustomizationSessionEvidence): string {
     const calls = group.modelCallNumbers.length;
     if (group.bestStatus === 'sent') {
-      return calls
-        ? `Content found in ${calls.toLocaleString()} model call${calls === 1 ? '' : 's'}`
+      const sentCalls = this.sentModelCallCount(group);
+      return sentCalls
+        ? `File text found in ${sentCalls.toLocaleString()} model call${sentCalls === 1 ? '' : 's'}`
         : 'Content found in model material';
     }
     if (group.bestStatus === 'listed') {
       return calls
-        ? `Name/path seen in ${calls.toLocaleString()} model call${calls === 1 ? '' : 's'}`
-        : 'Name/path seen, content not proved';
+        ? `No file text found; only names/paths appeared`
+        : 'No file text found';
     }
     if (group.bestStatus === 'discovered') {
       return 'Found during setup or discovery';
@@ -266,10 +268,12 @@ export class CustomizationsPageComponent {
     if (!calls) {
       return group.bestStatus === 'sent' ? 'Content found' : this.statusLabel(group.bestStatus);
     }
-    const label = calls === 1 ? 'model call' : 'model calls';
-    return group.bestStatus === 'sent'
-      ? `Found in ${calls.toLocaleString()} ${label}`
-      : `Name/path in ${calls.toLocaleString()} ${label}`;
+    if (group.bestStatus !== 'sent') {
+      return 'Not proved sent';
+    }
+    const sentCalls = this.sentModelCallCount(group);
+    const label = sentCalls === 1 ? 'model call' : 'model calls';
+    return `File text found in ${sentCalls.toLocaleString()} ${label}`;
   }
 
   protected timelineMarkers(group: CustomizationSessionEvidence): EvidenceTimelineMarker[] {
@@ -283,19 +287,25 @@ export class CustomizationsPageComponent {
     }
     return [...markers.entries()]
       .sort(([a], [b]) => a - b)
+      .filter(([, status]) => group.bestStatus !== 'sent' || status === 'sent')
       .slice(0, 18)
       .map(([callNumber, status]) => ({ callNumber, status }));
   }
 
   protected timelineOverflow(group: CustomizationSessionEvidence): number {
-    const distinctCalls = new Set(group.matches.map((match) => match.modelCallNumber).filter(Boolean));
+    const distinctCalls = new Set(
+      group.matches
+        .filter((match) => group.bestStatus !== 'sent' || match.status === 'sent')
+        .map((match) => match.modelCallNumber)
+        .filter(Boolean),
+    );
     return Math.max(0, distinctCalls.size - 18);
   }
 
   protected timelineMarkerLabel(marker: EvidenceTimelineMarker): string {
     return marker.status === 'sent'
       ? `Model call #${marker.callNumber}: content found in prompt material`
-      : `Model call #${marker.callNumber}: name or path only`;
+      : `Model call #${marker.callNumber}: file text not proved`;
   }
 
   protected callEvidence(group: CustomizationSessionEvidence): CustomizationCallEvidence[] {
@@ -314,11 +324,17 @@ export class CustomizationsPageComponent {
           sourceLabels: [],
           matchedChunks: 0,
           matchedCharacters: 0,
+          matchedPreview: [],
         };
       call.matches.push(match);
       call.status = this.strongerStatus(call.status, match.status);
       call.matchedChunks += match.matchedChunks ?? 0;
       call.matchedCharacters += match.matchedCharacters ?? 0;
+      for (const preview of match.matchedPreview ?? []) {
+        if (preview && !call.matchedPreview.includes(preview)) {
+          call.matchedPreview.push(preview);
+        }
+      }
       const source = this.sourceLabel(match.source);
       if (!call.sourceLabels.includes(source)) {
         call.sourceLabels.push(source);
@@ -334,28 +350,47 @@ export class CustomizationsPageComponent {
     });
   }
 
+  protected sentCallEvidence(group: CustomizationSessionEvidence): CustomizationCallEvidence[] {
+    return this.callEvidence(group).filter((call) => call.status === 'sent');
+  }
+
   protected callEvidenceTitle(call: CustomizationCallEvidence): string {
     const target = call.callNumber ? `Model call #${call.callNumber}` : `Event #${call.eventIndex}`;
     if (call.status === 'sent') {
       return `${target}: content found`;
     }
     if (call.status === 'listed') {
-      return `${target}: name/path only`;
+      return `${target}: not proved sent`;
     }
     return `${target}: ${this.statusLabel(call.status).toLowerCase()}`;
   }
 
   protected callEvidenceSummary(call: CustomizationCallEvidence): string {
     if (call.status === 'sent') {
-      const parts = call.matchedChunks || call.matchedCharacters
-        ? `${call.matchedChunks.toLocaleString()} text part${call.matchedChunks === 1 ? '' : 's'}`
-        : 'distinctive text';
-      return `${parts} from the customization file matched request material.`;
+      return 'Actual text from this customization file was present in the model request material.';
     }
     if (call.status === 'listed') {
-      return 'Only an identifier was seen here. This does not prove the instruction or skill text reached the model.';
+      return 'Only the file name/path or one of its labels was seen. Treat this as not proved sent.';
     }
     return 'No request payload content was verified for this event.';
+  }
+
+  protected weakEvidenceSummary(group: CustomizationSessionEvidence): string {
+    const calls = group.modelCallNumbers.length;
+    const sources = group.sources.map((source) => this.sourceLabel(source));
+    const sourceText = sources.length ? ` Sources: ${sources.join(', ')}.` : '';
+    return calls
+      ? `Checked ${calls.toLocaleString()} model call${calls === 1 ? '' : 's'} in this session. The scanner did not find distinctive text from this file in those requests.${sourceText}`
+      : `The scanner did not find distinctive text from this file in imported request material.${sourceText}`;
+  }
+
+  private sentModelCallCount(group: CustomizationSessionEvidence): number {
+    return new Set(
+      group.matches
+        .filter((match) => match.status === 'sent')
+        .map((match) => match.modelCallNumber)
+        .filter(Boolean),
+    ).size;
   }
 
   protected diagnosticKindLabel(kind: string): string {
