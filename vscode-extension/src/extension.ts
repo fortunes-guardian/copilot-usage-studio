@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { mkdirSync, readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -8,6 +8,7 @@ type LocalRuntime = {
   close(): Promise<void>;
   listen(): Promise<string | { port?: number }>;
   refresh(reason?: string): Promise<unknown>;
+  diagnostics?(): unknown;
 };
 
 type LocalRuntimeModule = {
@@ -31,6 +32,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('copilotUsageStudio.open', () => openStudio(context)),
     vscode.commands.registerCommand('copilotUsageStudio.refresh', () => refreshData(context)),
     vscode.commands.registerCommand('copilotUsageStudio.showLogs', () => output.show(true)),
+    vscode.commands.registerCommand('copilotUsageStudio.exportDiagnostics', () => exportDiagnostics(context)),
     vscode.commands.registerCommand('copilotUsageStudio.openInBrowser', () => openInBrowser(context)),
   );
 }
@@ -91,6 +93,30 @@ async function refreshData(context: vscode.ExtensionContext): Promise<void> {
 async function openInBrowser(context: vscode.ExtensionContext): Promise<void> {
   const handle = await ensureRuntime(context);
   await vscode.env.openExternal(vscode.Uri.parse(handle.baseUrl));
+}
+
+async function exportDiagnostics(context: vscode.ExtensionContext): Promise<void> {
+  const handle = await ensureRuntime(context);
+  const diagnostics = typeof handle.runtime.diagnostics === 'function'
+    ? handle.runtime.diagnostics()
+    : { status: 'Runtime diagnostics are unavailable in this build.' };
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const diagnosticsPath = vscode.Uri.joinPath(
+    context.globalStorageUri,
+    `copilot-usage-studio-diagnostics-${timestamp}.json`,
+  );
+  mkdirSync(context.globalStorageUri.fsPath, { recursive: true });
+  writeFileSync(diagnosticsPath.fsPath, JSON.stringify(diagnostics, null, 2), 'utf8');
+  output.appendLine(`Exported Copilot Usage Studio diagnostics: ${diagnosticsPath.fsPath}`);
+  const open = 'Open diagnostics';
+  const choice = await vscode.window.showInformationMessage(
+    'Copilot Usage Studio diagnostics exported.',
+    open,
+  );
+  if (choice === open) {
+    const document = await vscode.workspace.openTextDocument(diagnosticsPath);
+    await vscode.window.showTextDocument(document, { preview: true });
+  }
 }
 
 function ensureRuntime(context: vscode.ExtensionContext): Promise<RuntimeHandle> {

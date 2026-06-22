@@ -35,7 +35,10 @@ For performance, the extension scans only the VS Code user-data root that owns t
 - `Copilot Usage Studio: Open`
 - `Copilot Usage Studio: Refresh Data`
 - `Copilot Usage Studio: Show Logs`
+- `Copilot Usage Studio: Export Diagnostics`
 - `Copilot Usage Studio: Open in Browser`
+
+`Export Diagnostics` writes a local JSON report into the extension global-storage folder. Use it when a scan appears stuck or a machine behaves differently from local development. The report includes runtime status, bounded scan progress history, per-workspace phase summaries, and recent runtime logs.
 
 ## Build And Verify
 

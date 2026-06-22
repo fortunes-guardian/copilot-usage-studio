@@ -73,6 +73,7 @@ function createDiagnostics() {
     customizationEvidenceTextParts: 0,
     customizationEvidenceMatchedCustomizations: 0,
     importedCustomizations: 0,
+    workspaceScans: [],
     skippedOversizedMemories: 0,
     skippedUnreadableMemories: 0,
     skippedOversizedCustomizations: 0,
@@ -1373,7 +1374,13 @@ function recordCustomizationMatch(state, match) {
   state.matches = state.matches.slice(0, 60);
 }
 
-function customizationEvidenceFromDebugLogs(debugRoot, customizations, workspace = '', onProgress = () => {}) {
+function customizationEvidenceFromDebugLogs(
+  debugRoot,
+  customizations,
+  workspace = '',
+  workspaceDir = '',
+  onProgress = () => {},
+) {
   if (!customizations.length || !existsSync(debugRoot)) {
     return customizations.map((customization) => {
       const { _content, ...publicCustomization } = customization;
@@ -1401,6 +1408,7 @@ function customizationEvidenceFromDebugLogs(debugRoot, customizations, workspace
         stage: 'customization-evidence',
         message: `Checked customization evidence in ${sessionIndex}/${sessionDirs.length} debug-log folders for ${workspace}.`,
         workspace,
+        workspaceDir,
         index: sessionIndex,
         total: sessionDirs.length,
       });
@@ -2919,13 +2927,55 @@ function enrichSessionFromWorkspaceState(session, stateBySessionId) {
 function parseWorkspace(workspaceDir, options = {}, onProgress = () => {}) {
   const includeCustomizations = options.includeCustomizations !== false;
   diagnostics.scannedWorkspaces += 1;
+  const workspace = workspaceName(workspaceDir);
+  const workspaceStartedAt = Date.now();
+  const workspaceStartedAtIso = new Date(workspaceStartedAt).toISOString();
+  const workspaceProgressBase = {
+    workspace,
+    workspaceDir,
+    workspaceIndex: options.workspaceIndex ?? null,
+    workspaceTotal: options.workspaceTotal ?? null,
+  };
+  const workspaceScan = {
+    ...workspaceProgressBase,
+    startedAt: workspaceStartedAtIso,
+    completedAt: '',
+    durationMs: 0,
+    debugLogFolders: 0,
+    chatSnapshots: 0,
+    hasMemoryRoot: false,
+    customizationInventory: 0,
+    importedSessions: 0,
+    importedMemories: 0,
+    importedCustomizations: 0,
+    lastStage: 'starting',
+  };
+  if (diagnostics.workspaceScans.length < 500) {
+    diagnostics.workspaceScans.push(workspaceScan);
+  }
+  const progress = (stage, message, extra = {}) => {
+    workspaceScan.lastStage = stage;
+    onProgress({
+      stage,
+      message,
+      ...workspaceProgressBase,
+      elapsedMs: Date.now() - workspaceStartedAt,
+      ...extra,
+    });
+  };
   const debugRoot = join(workspaceDir, 'GitHub.copilot-chat', 'debug-logs');
   const debugSessionDirs = listDirs(debugRoot);
   const chatSessionFiles = listFiles(join(workspaceDir, 'chatSessions'), '.jsonl');
   const memoryRoot = join(workspaceDir, 'GitHub.copilot-chat', 'memory-tool', 'memories');
   const hasMemoryRoot = existsSync(memoryRoot);
+  workspaceScan.debugLogFolders = debugSessionDirs.length;
+  workspaceScan.chatSnapshots = chatSessionFiles.length;
+  workspaceScan.hasMemoryRoot = hasMemoryRoot;
 
   if (!debugSessionDirs.length && !chatSessionFiles.length && !hasMemoryRoot) {
+    workspaceScan.completedAt = new Date().toISOString();
+    workspaceScan.durationMs = Date.now() - workspaceStartedAt;
+    workspaceScan.lastStage = 'empty';
     return {
       sessions: [],
       memories: [],
@@ -2933,29 +2983,17 @@ function parseWorkspace(workspaceDir, options = {}, onProgress = () => {}) {
     };
   }
 
-  const workspace = workspaceName(workspaceDir);
-  onProgress({
-    stage: 'workspace',
-    message: `Scanning Copilot data for ${workspace}.`,
-    workspace,
-    workspaceDir,
+  progress('workspace', `Scanning Copilot data for ${workspace}.`, {
+    debugLogFolders: debugSessionDirs.length,
+    chatSnapshots: chatSessionFiles.length,
+    hasMemoryRoot,
   });
-  onProgress({
-    stage: 'workspace-state',
-    message: `Reading workspace metadata for ${workspace}.`,
-    workspace,
-    workspaceDir,
-  });
+  progress('workspace-state', `Reading workspace metadata for ${workspace}.`);
   const stateBySessionId =
     debugSessionDirs.length || chatSessionFiles.length ? readWorkspaceState(workspaceDir) : new Map();
   let customizations = [];
   if (includeCustomizations) {
-    onProgress({
-      stage: 'customizations',
-      message: `Indexing customizations for ${workspace}.`,
-      workspace,
-      workspaceDir,
-    });
+    progress('customizations', `Indexing customizations for ${workspace}.`);
     const customizationWorkspace = customizationsFromWorkspace(workspaceDir);
     const customizationMap = new Map();
     for (const customization of [
@@ -2966,41 +3004,33 @@ function parseWorkspace(workspaceDir, options = {}, onProgress = () => {}) {
       customizationMap.set(customization.id, customization);
     }
     const customizationInventory = [...customizationMap.values()];
-    onProgress({
-      stage: 'customization-evidence',
-      message: debugSessionDirs.length
-        ? `Checking customization evidence in ${debugSessionDirs.length} debug-log folder${debugSessionDirs.length === 1 ? '' : 's'} for ${workspace}.`
-        : `No debug-log evidence available for ${workspace}; customizations are inventory-only.`,
-      workspace,
-      workspaceDir,
+    workspaceScan.customizationInventory = customizationInventory.length;
+    progress('customization-evidence', debugSessionDirs.length
+      ? `Checking customization evidence in ${debugSessionDirs.length} debug-log folder${debugSessionDirs.length === 1 ? '' : 's'} for ${workspace}.`
+      : `No debug-log evidence available for ${workspace}; customizations are inventory-only.`, {
       total: debugSessionDirs.length,
+      customizationInventory: customizationInventory.length,
     });
     customizations = customizationEvidenceFromDebugLogs(
       debugRoot,
       customizationInventory,
       workspace,
+      workspaceDir,
       onProgress,
     );
+    workspaceScan.importedCustomizations = customizations.length;
     diagnostics.importedCustomizations += customizations.length;
   }
 
   if (debugSessionDirs.length) {
-    onProgress({
-      stage: 'debug-logs',
-      message: `Scanning ${debugSessionDirs.length} debug-log folder${debugSessionDirs.length === 1 ? '' : 's'} in ${workspace}.`,
-      workspace,
-      workspaceDir,
+    progress('debug-logs', `Scanning ${debugSessionDirs.length} debug-log folder${debugSessionDirs.length === 1 ? '' : 's'} in ${workspace}.`, {
       total: debugSessionDirs.length,
     });
   }
   const debugSessions = [];
   for (const [index, sessionDir] of debugSessionDirs.entries()) {
     if (index > 0 && index % 25 === 0) {
-      onProgress({
-        stage: 'debug-logs',
-        message: `Scanned ${index}/${debugSessionDirs.length} debug-log folders in ${workspace}.`,
-        workspace,
-        workspaceDir,
+      progress('debug-logs', `Scanned ${index}/${debugSessionDirs.length} debug-log folders in ${workspace}.`, {
         index,
         total: debugSessionDirs.length,
       });
@@ -3014,11 +3044,7 @@ function parseWorkspace(workspaceDir, options = {}, onProgress = () => {}) {
   diagnostics.importedDebugLogSessions += debugSessions.length;
 
   if (chatSessionFiles.length) {
-    onProgress({
-      stage: 'chat-snapshots',
-      message: `Scanning ${chatSessionFiles.length} chat snapshot${chatSessionFiles.length === 1 ? '' : 's'} in ${workspace}.`,
-      workspace,
-      workspaceDir,
+    progress('chat-snapshots', `Scanning ${chatSessionFiles.length} chat snapshot${chatSessionFiles.length === 1 ? '' : 's'} in ${workspace}.`, {
       total: chatSessionFiles.length,
     });
   }
@@ -3034,18 +3060,22 @@ function parseWorkspace(workspaceDir, options = {}, onProgress = () => {}) {
     }
   }
   diagnostics.importedChatSnapshotSessions += chatSessions.length;
+  const memories = memoriesFromRoot(memoryRoot, 'workspace', workspace);
+  workspaceScan.importedSessions = debugSessions.length + chatSessions.length;
+  workspaceScan.importedMemories = memories.length;
+  workspaceScan.completedAt = new Date().toISOString();
+  workspaceScan.durationMs = Date.now() - workspaceStartedAt;
 
-  onProgress({
-    stage: 'workspace-complete',
-    message: `Workspace ${workspace}: imported ${debugSessions.length + chatSessions.length} session${debugSessions.length + chatSessions.length === 1 ? '' : 's'}.`,
-    workspace,
-    workspaceDir,
+  progress('workspace-complete', `Workspace ${workspace}: imported ${debugSessions.length + chatSessions.length} session${debugSessions.length + chatSessions.length === 1 ? '' : 's'} in ${workspaceScan.durationMs}ms.`, {
     sessions: debugSessions.length + chatSessions.length,
+    memories: memories.length,
+    customizations: customizations.length,
+    durationMs: workspaceScan.durationMs,
   });
 
   return {
     sessions: [...debugSessions, ...chatSessions],
-    memories: memoriesFromRoot(memoryRoot, 'workspace', workspace),
+    memories,
     customizations,
   };
 }
@@ -3137,7 +3167,11 @@ export async function scanVsCodeSessions(options = {}) {
           total: workspaceDirs.length,
         });
       }
-      workspaceResults.push(parseWorkspace(workspaceDir, workspaceOptions, onProgress));
+      workspaceResults.push(parseWorkspace(workspaceDir, {
+        ...workspaceOptions,
+        workspaceIndex: index + 1,
+        workspaceTotal: workspaceDirs.length,
+      }, onProgress));
       await yieldToRuntime();
     }
     const sessions = workspaceResults

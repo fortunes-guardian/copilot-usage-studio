@@ -343,7 +343,7 @@ This feature answers "did this customization reach the model request?" It does n
 
 `ingestion.customizationEvidenceScannedSessions`, `customizationEvidenceModelCalls`, `customizationEvidenceTextParts`, and `customizationEvidenceMatchedCustomizations` are scanner diagnostics. They explain whether a zero-usage customization result came from no model-call evidence, no payload text, or payloads that simply did not match local customization content.
 
-The VS Code extension preview disables customization indexing with `includeCustomizations: false`; those fields remain zero in extension-mode scans until that view is enabled.
+The VS Code extension runs customization indexing. These diagnostics are therefore meaningful in extension-mode scans, especially when investigating why a customization was inventoried but not matched inside model-call evidence.
 
 ## Feature Boundaries
 

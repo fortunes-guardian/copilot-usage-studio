@@ -19,6 +19,7 @@ The extension starts a local runtime on `127.0.0.1`, scans local VS Code Copilot
 - `Copilot Usage Studio: Open`
 - `Copilot Usage Studio: Refresh Data`
 - `Copilot Usage Studio: Show Logs`
+- `Copilot Usage Studio: Export Diagnostics`
 - `Copilot Usage Studio: Open in Browser`
 
 ## Status

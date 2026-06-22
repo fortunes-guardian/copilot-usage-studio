@@ -19,8 +19,16 @@ test('serves cached data, refreshes through the scanner, and reports status', as
     seedDataFile: null,
     staticDir: fixture.staticDir,
     scanOnStart: false,
-    scanner: async () => {
+    scanner: async ({ onProgress }) => {
       scans += 1;
+      onProgress({
+        stage: 'workspace',
+        message: 'Scanning fixture workspace.',
+        workspace: 'fixture',
+        workspaceDir: fixture.root,
+        elapsedMs: 12,
+        debugLogFolders: 2,
+      });
       return refreshed;
     },
     logger: silentLogger(),
@@ -43,10 +51,17 @@ test('serves cached data, refreshes through the scanner, and reports status', as
     assert.equal(refreshResponse.sessionData.sessions[0].id, 'new-session');
     assert.equal(refreshResponse.status.phase, 'ready');
     assert.equal(refreshResponse.status.scanProgress.stage, 'complete');
+    assert.equal(refreshResponse.status.progressHistory.at(-1).stage, 'complete');
+    assert.equal(refreshResponse.status.workspaceProgress[0].workspace, 'fixture');
+    assert.equal(refreshResponse.status.workspaceProgress[0].debugLogFolders, 2);
     assert.equal((await jsonRequest(`${origin}/api/sessions`)).sessions[0].id, 'new-session');
     assert.equal(JSON.parse(readFileSync(fixture.dataFile, 'utf8')).sessions[0].id, 'new-session');
     const logs = await jsonRequest(`${origin}/api/logs`);
     assert.ok(logs.entries.some((entry) => entry.message.includes('Local data refresh')));
+    const diagnostics = await jsonRequest(`${origin}/api/diagnostics`);
+    assert.equal(diagnostics.status.phase, 'ready');
+    assert.equal(diagnostics.workspaceProgress[0].workspace, 'fixture');
+    assert.deepEqual(diagnostics.scanOptions, { roots: [], includeCustomizations: true, sqlite: true });
   } finally {
     await runtime.close();
     rmSync(fixture.root, { recursive: true, force: true });

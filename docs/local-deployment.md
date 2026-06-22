@@ -288,7 +288,7 @@ Install it locally:
 code --install-extension tmp/copilot-usage-studio-vscode-0.2.0.vsix --force
 ```
 
-The extension MVP exposes Usage, Memory, and Prices. It intentionally hides the heavier Sessions, Trace, Compare, Analytics, and Customizations views until those surfaces are proven as extension UX.
+The extension exposes the full app inside VS Code: Usage, Sessions, Memory, Customizations, Compare, Insights, and Prices. The npm/browser host remains useful for development and fallback testing, but the extension is the primary product surface.
 
 The VSIX is a separate distribution artifact from the npm package. It is built from the same source tree and attached to GitHub Releases, while `npx copilot-usage-studio` continues to come from npm.
 

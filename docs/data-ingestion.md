@@ -164,7 +164,7 @@ The scanner also checks bounded user-default roots for personal skills/hooks, in
 
 These are targeted scans, not whole-repository crawls. The scanner only walks the listed customization roots after the matching VS Code workspace-storage folder has Copilot debug/chat data. Stale VS Code workspace entries without Copilot data do not trigger repo-level customization scans. Recursion is capped by depth and directory count, skips symlinks, and ignores common dependency/build folders.
 
-The VS Code extension host currently passes `includeCustomizations: false` to the scanner. Why: the extension MVP exposes Usage, Memory, and Prices only, so customization indexing should not slow startup or make the extension feel stuck.
+The VS Code extension host now runs customization indexing because the extension is the primary product surface and exposes the Customizations view. Scanner progress reports workspace phase, debug-log folder counts, customization inventory counts, and elapsed time so slow machines can be diagnosed instead of appearing silently stuck.
 
 Each customization stores metadata only: title, name, description, `applyTo`, triggers, path, size, and an excerpt. The scanner reads the full file during the scan to build fingerprints, but it does not persist the full content into `sessions.json`.
 

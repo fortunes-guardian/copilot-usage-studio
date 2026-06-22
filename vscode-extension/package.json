@@ -20,6 +20,7 @@
     "onCommand:copilotUsageStudio.open",
     "onCommand:copilotUsageStudio.refresh",
     "onCommand:copilotUsageStudio.showLogs",
+    "onCommand:copilotUsageStudio.exportDiagnostics",
     "onCommand:copilotUsageStudio.openInBrowser"
   ],
   "main": "./dist/extension.cjs",
@@ -36,6 +37,10 @@
       {
         "command": "copilotUsageStudio.showLogs",
         "title": "Copilot Usage Studio: Show Logs"
+      },
+      {
+        "command": "copilotUsageStudio.exportDiagnostics",
+        "title": "Copilot Usage Studio: Export Diagnostics"
       },
       {
         "command": "copilotUsageStudio.openInBrowser",

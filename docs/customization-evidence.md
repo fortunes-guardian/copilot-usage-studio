@@ -54,7 +54,7 @@ The scanner also checks bounded user-default roots that VS Code documents or com
 
 The Customizations page includes a collapsed scan-coverage diagnostic that lists the recorded roots, direct files, VS Code setting roots, debug-referenced files, and debug-discovery folders checked during ingestion. This is primarily for debugging false negatives on machines with unusual workspace, profile, or monorepo layouts.
 
-The VS Code extension preview does not run this indexing yet. It passes `includeCustomizations: false` to keep the extension focused on Usage, Memory, and Prices while this feature is still being hardened in the full app.
+The VS Code extension runs this indexing because it is the primary product surface and can read effective VS Code settings. If a machine appears slow or stuck, use `Copilot Usage Studio: Show Logs` or `Copilot Usage Studio: Export Diagnostics` to inspect the current workspace phase and customization-evidence progress.
 
 The scanner stores metadata only in generated app data:
 
