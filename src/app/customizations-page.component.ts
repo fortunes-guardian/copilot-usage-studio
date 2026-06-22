@@ -13,6 +13,23 @@ import { HelpPopoverComponent } from './help-popover.component';
 
 type CustomizationKindFilter = 'all' | CopilotCustomizationKind;
 type CustomizationStatusFilter = 'all' | CopilotCustomizationEvidenceStatus;
+type MatchSource = 'inputMessages' | 'userRequest' | string;
+
+type CustomizationSessionEvidence = {
+  sessionId: string;
+  session: CopilotSession | null;
+  title: string;
+  timestamp: string;
+  bestStatus: CopilotCustomizationEvidenceStatus;
+  matches: CopilotCustomization['matches'];
+  sentCount: number;
+  listedCount: number;
+  discoveredCount: number;
+  modelCallNumbers: number[];
+  sources: string[];
+  matchedChunks: number;
+  matchedCharacters: number;
+};
 
 @Component({
   selector: 'app-customizations-page',
@@ -93,6 +110,10 @@ export class CustomizationsPageComponent {
     return filtered.find((item) => item.id === this.selectedId()) ?? filtered[0] ?? null;
   });
   protected readonly selectedCustomizationId = computed(() => this.selectedCustomization()?.id ?? '');
+  protected readonly selectedSessionEvidence = computed(() => {
+    const customization = this.selectedCustomization();
+    return customization ? this.groupMatchesBySession(customization) : [];
+  });
 
   protected readonly summary = computed(() => {
     const items = this.customizationsInput();
@@ -168,8 +189,8 @@ export class CustomizationsPageComponent {
 
   protected statusLabel(status: CopilotCustomizationEvidenceStatus): string {
     return {
-      sent: 'Sent',
-      listed: 'Listed',
+      sent: 'Sent to model',
+      listed: 'Mentioned',
       discovered: 'Discovered',
       not_seen: 'Not seen',
     }[status];
@@ -177,20 +198,77 @@ export class CustomizationsPageComponent {
 
   protected statusHeadline(status: CopilotCustomizationEvidenceStatus): string {
     return {
-      sent: 'Content found in a model request',
-      listed: 'Known to the request, content not matched',
-      discovered: 'Found during setup, not in a request',
+      sent: 'This content reached the model',
+      listed: 'VS Code mentioned it, content was not verified',
+      discovered: 'Found during setup, not seen in a request',
       not_seen: 'No evidence in imported sessions',
     }[status];
   }
 
   protected statusHelp(status: CopilotCustomizationEvidenceStatus): string {
     return {
-      sent: 'Text from this file appeared in the prompt material that VS Code sent to a model request.',
-      listed: 'VS Code mentioned this file or rule in request metadata, but the scanner did not find distinctive file text in the prompt.',
-      discovered: 'VS Code found the file during setup or discovery, but imported requests did not show it being sent.',
+      sent: 'Distinctive text from this file appeared inside the material VS Code sent to a model. This is the strongest local evidence.',
+      listed: 'VS Code referenced this customization near a request, but imported payload text did not prove the file content was sent.',
+      discovered: 'VS Code found the file during setup or discovery, but imported model requests did not show it being used.',
       not_seen: 'The file exists locally, but the imported sessions do not show it being discovered, listed, or sent.',
     }[status];
+  }
+
+  protected evidenceCountLabel(customization: CopilotCustomization): string {
+    const sessions = new Set(customization.matches.map((match) => match.sessionId)).size;
+    if (!customization.matches.length) {
+      return 'No sessions';
+    }
+    return `${sessions.toLocaleString()} session${sessions === 1 ? '' : 's'}`;
+  }
+
+  protected evidenceGroupSubtitle(group: CustomizationSessionEvidence): string {
+    const parts = [];
+    if (group.sentCount) {
+      parts.push(`${group.sentCount} sent hit${group.sentCount === 1 ? '' : 's'}`);
+    }
+    if (group.listedCount) {
+      parts.push(`${group.listedCount} mention${group.listedCount === 1 ? '' : 's'}`);
+    }
+    if (group.discoveredCount) {
+      parts.push(`${group.discoveredCount} discovery hit${group.discoveredCount === 1 ? '' : 's'}`);
+    }
+    return parts.join(' · ') || 'Evidence recorded';
+  }
+
+  protected sourceLabel(source: MatchSource): string {
+    return {
+      inputMessages: 'Request payload',
+      userRequest: 'User request',
+    }[source] ?? source;
+  }
+
+  protected sourceHelp(source: MatchSource): string {
+    return {
+      inputMessages: 'The larger prompt payload VS Code assembled for the model request.',
+      userRequest: 'The user-facing request object attached to the model call.',
+    }[source] ?? 'Source field from the imported VS Code debug log.';
+  }
+
+  protected matchedContentLabel(match: CopilotCustomization['matches'][number]): string {
+    if (match.status !== 'sent') {
+      return 'content not verified';
+    }
+    if (!match.matchedChunks) {
+      return 'content found';
+    }
+    return `${match.matchedChunks.toLocaleString()} text part${match.matchedChunks === 1 ? '' : 's'} found`;
+  }
+
+  protected modelRequestsLabel(group: CustomizationSessionEvidence): string {
+    const calls = group.modelCallNumbers;
+    if (!calls.length) {
+      return '';
+    }
+    if (calls.length <= 4) {
+      return `request${calls.length === 1 ? '' : 's'} #${calls.join(', #')}`;
+    }
+    return `${calls.length} model requests (#${calls[0]}-#${calls.at(-1)})`;
   }
 
   protected diagnosticKindLabel(kind: string): string {
@@ -213,6 +291,69 @@ export class CustomizationsPageComponent {
     if (session) {
       this.openSession.emit(session);
     }
+  }
+
+  private groupMatchesBySession(customization: CopilotCustomization): CustomizationSessionEvidence[] {
+    const groups = new Map<string, CustomizationSessionEvidence>();
+    for (const match of customization.matches) {
+      const session = this.sessionForMatch(match.sessionId);
+      const existing = groups.get(match.sessionId);
+      const group =
+        existing ??
+        {
+          sessionId: match.sessionId,
+          session,
+          title: session?.title ?? `Session ${match.sessionId.slice(0, 8)}`,
+          timestamp: match.timestamp,
+          bestStatus: match.status,
+          matches: [],
+          sentCount: 0,
+          listedCount: 0,
+          discoveredCount: 0,
+          modelCallNumbers: [],
+          sources: [],
+          matchedChunks: 0,
+          matchedCharacters: 0,
+        };
+      group.matches.push(match);
+      group.bestStatus = this.strongerStatus(group.bestStatus, match.status);
+      group.timestamp = [group.timestamp, match.timestamp].filter(Boolean).sort().at(-1) ?? group.timestamp;
+      group.sentCount += match.status === 'sent' ? 1 : 0;
+      group.listedCount += match.status === 'listed' ? 1 : 0;
+      group.discoveredCount += match.status === 'discovered' ? 1 : 0;
+      group.matchedChunks += match.matchedChunks ?? 0;
+      group.matchedCharacters += match.matchedCharacters ?? 0;
+      if (match.modelCallNumber && !group.modelCallNumbers.includes(match.modelCallNumber)) {
+        group.modelCallNumbers.push(match.modelCallNumber);
+      }
+      if (match.source && !group.sources.includes(match.source)) {
+        group.sources.push(match.source);
+      }
+      groups.set(match.sessionId, group);
+    }
+
+    return [...groups.values()]
+      .map((group) => ({
+        ...group,
+        modelCallNumbers: [...group.modelCallNumbers].sort((a, b) => a - b),
+        matches: [...group.matches].sort((a, b) =>
+          b.timestamp.localeCompare(a.timestamp) || b.eventIndex - a.eventIndex,
+        ),
+      }))
+      .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+  }
+
+  private strongerStatus(
+    current: CopilotCustomizationEvidenceStatus,
+    next: CopilotCustomizationEvidenceStatus,
+  ): CopilotCustomizationEvidenceStatus {
+    const rank: Record<CopilotCustomizationEvidenceStatus, number> = {
+      not_seen: 0,
+      discovered: 1,
+      listed: 2,
+      sent: 3,
+    };
+    return rank[next] > rank[current] ? next : current;
   }
 
   private ensureVisibleSelection(): void {

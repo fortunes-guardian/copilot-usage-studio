@@ -8,7 +8,7 @@
     <div class="customizations-header-meta" aria-label="Customization summary">
       <span><strong>{{ summary().total | number }}</strong> files</span>
       <span><strong>{{ summary().sent | number }}</strong> sent</span>
-      <span><strong>{{ summary().listed | number }}</strong> listed</span>
+      <span><strong>{{ summary().listed | number }}</strong> mentioned</span>
       <span><strong>{{ summary().discovered | number }}</strong> discovered</span>
     </div>
   </header>
@@ -40,7 +40,7 @@
       <select [ngModel]="statusFilter()" (ngModelChange)="setStatusFilter($event)">
         <option value="all">All evidence</option>
         <option value="sent">Sent to model</option>
-        <option value="listed">Listed only</option>
+        <option value="listed">Mentioned only</option>
         <option value="discovered">Discovered only</option>
         <option value="not_seen">Not seen</option>
       </select>
@@ -110,7 +110,7 @@
             </span>
             <span class="customization-card-side">
               <b>{{ statusLabel(customization.evidenceStatus) }}</b>
-              <em>{{ customization.matches.length | number }} match{{ customization.matches.length === 1 ? '' : 'es' }}</em>
+              <em>{{ evidenceCountLabel(customization) }}</em>
             </span>
           </button>
         }
@@ -161,37 +161,60 @@
           @if (customization.matches.length) {
             <section class="match-list" aria-label="Customization evidence matches">
               <header>
-                <span class="customization-kicker">Where evidence appeared</span>
-                <h4>{{ customization.matches.length | number }} match{{ customization.matches.length === 1 ? '' : 'es' }}</h4>
+                <span class="customization-kicker">Where it appeared</span>
+                <h4>{{ selectedSessionEvidence().length | number }} session{{ selectedSessionEvidence().length === 1 ? '' : 's' }}</h4>
               </header>
-              @for (match of customization.matches; track match.sessionId + '-' + match.eventIndex + '-' + match.source) {
-                <article
-                  class="match-row"
-                  [class.sent]="match.status === 'sent'"
-                  [class.listed]="match.status === 'listed'"
-                  [class.discovered]="match.status === 'discovered'"
+              <p class="match-list-help">
+                Grouped by session so repeated model requests do not flood the page. Open a group for request-level evidence.
+              </p>
+              @for (group of selectedSessionEvidence(); track group.sessionId) {
+                <details
+                  class="match-group"
+                  [class.sent]="group.bestStatus === 'sent'"
+                  [class.listed]="group.bestStatus === 'listed'"
+                  [class.discovered]="group.bestStatus === 'discovered'"
                 >
-                  <div>
-                    <time>{{ match.timestamp | date: 'medium' }}</time>
-                    @if (sessionForMatch(match.sessionId); as session) {
-                      <button type="button" (click)="emitOpenSession(match.sessionId)">
-                        {{ session.title }}
-                      </button>
-                    } @else {
-                      <span>Session {{ match.sessionId.slice(0, 8) }}</span>
+                  <summary>
+                    <span class="match-group-title">
+                      <time>{{ group.timestamp | date: 'medium' }}</time>
+                      @if (group.session) {
+                        <button type="button" (click)="emitOpenSession(group.sessionId); $event.preventDefault()">
+                          {{ group.title }}
+                        </button>
+                      } @else {
+                        <b>{{ group.title }}</b>
+                      }
+                      <em>{{ evidenceGroupSubtitle(group) }}</em>
+                    </span>
+                    <span class="match-group-facts">
+                      <strong>{{ statusLabel(group.bestStatus) }}</strong>
+                      <span>{{ group.matches.length | number }} request hit{{ group.matches.length === 1 ? '' : 's' }}</span>
+                      @if (group.modelCallNumbers.length) {
+                        <span>{{ modelRequestsLabel(group) }}</span>
+                      }
+                    </span>
+                  </summary>
+                  <div class="match-events">
+                    @for (match of group.matches; track match.eventIndex + '-' + match.source + '-' + match.status) {
+                      <article class="match-event">
+                        <div>
+                          <strong>{{ statusLabel(match.status) }}</strong>
+                          @if (match.modelCallNumber) {
+                            <span>model request #{{ match.modelCallNumber }}</span>
+                          }
+                          <span>
+                            {{ sourceLabel(match.source) }}
+                            <app-help-popover
+                              [text]="sourceHelp(match.source)"
+                              label="Explain evidence source"
+                            ></app-help-popover>
+                          </span>
+                        </div>
+                        <p>{{ matchedContentLabel(match) }}</p>
+                      </article>
                     }
                   </div>
-                  <div class="match-facts">
-                    <strong>{{ statusLabel(match.status) }}</strong>
-                    @if (match.modelCallNumber) {
-                      <span>model request #{{ match.modelCallNumber }}</span>
-                    }
-                    <span>{{ match.source }}</span>
-                    @if (match.matchedChunks) {
-                      <span>{{ match.matchedChunks | number }} content chunks matched</span>
-                    }
-                  </div>
-                </article>
+                </details>
               }
             </section>
           }
