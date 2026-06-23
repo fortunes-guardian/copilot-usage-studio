@@ -17,6 +17,9 @@
     "docs/scanner-api.md",
     "lib/",
     "scripts/pricing-utils.mjs",
+    "scripts/scanner-customization-evidence.mjs",
+    "scripts/scanner-customization-inventory.mjs",
+    "scripts/scanner-memory.mjs",
     "scripts/scanner-traversal.mjs",
     "scripts/scanner-workspace.mjs",
     "scripts/scan-vscode-sessions.mjs"

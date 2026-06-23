@@ -68,6 +68,9 @@ Current internal split:
 
 - `scripts/scanner-traversal.mjs`: VS Code user-data root discovery, workspace-storage entry discovery, bounded recursive file traversal, dependency/build-folder skips, and root normalization.
 - `scripts/scanner-workspace.mjs`: per-storage-entry orchestration for state DB enrichment, customization inventory/evidence, debug-log imports, chat-snapshot imports, memory imports, progress events, and per-entry diagnostics.
+- `scripts/scanner-customization-inventory.mjs`: bounded discovery of user, workspace, repo, and configured Copilot customization files without crawling arbitrary repositories.
+- `scripts/scanner-customization-evidence.mjs`: request-payload and side-file evidence matching for whether customization text reached model requests.
+- `scripts/scanner-memory.mjs`: Copilot memory/plan Markdown import plus memory recall linking from debug-log tool events.
 - `scripts/scan-vscode-sessions.mjs`: normalized session-data assembly plus the remaining parser/importer implementation.
 
 Traversal is intentionally separate because broad filesystem walking is the highest-risk performance path. The scanner should scan known VS Code Copilot storage plus targeted Copilot customization/memory roots; it must not crawl arbitrary repositories or home directories.
@@ -75,8 +78,6 @@ Traversal is intentionally separate because broad filesystem walking is the high
 Next decomposition targets:
 
 - debug-log and chat-snapshot session import
-- Copilot memory import
-- customization inventory and request-evidence matching
 - pricing/token normalization
 
 ## Local Runtime Host
