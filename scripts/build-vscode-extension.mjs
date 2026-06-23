@@ -49,6 +49,10 @@ function copyRequiredRuntimeAssets() {
     join(extensionDist, 'runtime', 'scripts', 'scanner-traversal.mjs'),
   );
   cpSync(
+    join(repoRoot, 'scripts', 'scanner-workspace.mjs'),
+    join(extensionDist, 'runtime', 'scripts', 'scanner-workspace.mjs'),
+  );
+  cpSync(
     join(repoRoot, 'scripts', 'pricing-utils.mjs'),
     join(extensionDist, 'runtime', 'scripts', 'pricing-utils.mjs'),
   );

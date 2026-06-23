@@ -67,6 +67,7 @@ The public host boundary remains `lib/scanner-api.mjs`, but the scanner implemen
 Current internal split:
 
 - `scripts/scanner-traversal.mjs`: VS Code user-data root discovery, workspace-storage entry discovery, bounded recursive file traversal, dependency/build-folder skips, and root normalization.
+- `scripts/scanner-workspace.mjs`: per-storage-entry orchestration for state DB enrichment, customization inventory/evidence, debug-log imports, chat-snapshot imports, memory imports, progress events, and per-entry diagnostics.
 - `scripts/scan-vscode-sessions.mjs`: normalized session-data assembly plus the remaining parser/importer implementation.
 
 Traversal is intentionally separate because broad filesystem walking is the highest-risk performance path. The scanner should scan known VS Code Copilot storage plus targeted Copilot customization/memory roots; it must not crawl arbitrary repositories or home directories.
