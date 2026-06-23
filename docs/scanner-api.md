@@ -60,6 +60,24 @@ Duplicate roots are normalized and scanned once. Each call receives fresh ingest
 
 Only one scan may run at a time within one Node process. Hosts should debounce filesystem events and await the current scan instead of starting overlapping work.
 
+## Internal Scanner Modules
+
+The public host boundary remains `lib/scanner-api.mjs`, but the scanner implementation is being decomposed so large-profile performance issues are easier to diagnose.
+
+Current internal split:
+
+- `scripts/scanner-traversal.mjs`: VS Code user-data root discovery, workspace-storage entry discovery, bounded recursive file traversal, dependency/build-folder skips, and root normalization.
+- `scripts/scan-vscode-sessions.mjs`: normalized session-data assembly plus the remaining parser/importer implementation.
+
+Traversal is intentionally separate because broad filesystem walking is the highest-risk performance path. The scanner should scan known VS Code Copilot storage plus targeted Copilot customization/memory roots; it must not crawl arbitrary repositories or home directories.
+
+Next decomposition targets:
+
+- debug-log and chat-snapshot session import
+- Copilot memory import
+- customization inventory and request-evidence matching
+- pricing/token normalization
+
 ## Local Runtime Host
 
 `lib/local-runtime.mjs` is the first shared API host. It keeps the last valid `SessionData` snapshot in memory, serves it while scans run, and persists successful refreshes.

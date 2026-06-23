@@ -17,6 +17,7 @@
     "docs/scanner-api.md",
     "lib/",
     "scripts/pricing-utils.mjs",
+    "scripts/scanner-traversal.mjs",
     "scripts/scan-vscode-sessions.mjs"
   ],
   "scripts": {

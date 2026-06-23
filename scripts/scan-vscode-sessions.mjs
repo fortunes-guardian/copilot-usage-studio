@@ -10,6 +10,18 @@ import {
   normalizeModel,
   pricingModelForModel,
 } from './pricing-utils.mjs';
+import {
+  defaultCodeUserDirs,
+  listDebugLogFiles as traverseDebugLogFiles,
+  listDirs as traverseDirs,
+  listFiles as traverseFiles,
+  listFilesRecursive as traverseFilesRecursive,
+  uniqueResolvedRoots,
+  userDirForRoot,
+  workspaceDirsForRoot,
+} from './scanner-traversal.mjs';
+
+export { defaultCodeUserDirs } from './scanner-traversal.mjs';
 
 const sessionDataSchemaVersion = 1;
 const pricingData = JSON.parse(
@@ -23,28 +35,6 @@ const memoryFileLimit = 5000;
 const memoryFileSizeLimit = 1024 * 1024;
 const customizationFileLimit = 1000;
 const customizationFileSizeLimit = 1024 * 1024;
-const skippedTraversalDirs = new Set([
-  '.angular',
-  '.cache',
-  '.git',
-  '.hg',
-  '.next',
-  '.nuxt',
-  '.pnpm-store',
-  '.svn',
-  '.turbo',
-  '.venv',
-  '__pycache__',
-  'bin',
-  'build',
-  'coverage',
-  'dist',
-  'node_modules',
-  'obj',
-  'out',
-  'target',
-  'venv',
-]);
 
 const pricing = pricingData.models;
 
@@ -84,24 +74,6 @@ function createDiagnostics() {
     skippedDuplicateChatSnapshots: 0,
     warnings: [],
   };
-}
-
-export function defaultCodeUserDirs() {
-  const home = homedir();
-
-  if (platform() === 'win32') {
-    const appData = process.env.APPDATA ?? join(home, 'AppData', 'Roaming');
-    return [join(appData, 'Code', 'User'), join(appData, 'Code - Insiders', 'User')];
-  }
-
-  if (platform() === 'darwin') {
-    return [
-      join(home, 'Library', 'Application Support', 'Code', 'User'),
-      join(home, 'Library', 'Application Support', 'Code - Insiders', 'User'),
-    ];
-  }
-
-  return [join(home, '.config', 'Code', 'User'), join(home, '.config', 'Code - Insiders', 'User')];
 }
 
 function safeJson(text) {
@@ -362,122 +334,33 @@ function readJsoncFile(file) {
 }
 
 function listDirs(dir) {
-  if (!existsSync(dir)) {
-    return [];
-  }
-
-  try {
-    return readdirSync(dir, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory() && !entry.isSymbolicLink())
-      .map((entry) => join(dir, entry.name));
-  } catch (error) {
-    diagnostics.warnings.push(`${dir}: directory listing skipped: ${error.message}`);
-    return [];
-  }
+  return traverseDirs(dir, traversalOptions());
 }
 
 function listFiles(dir, suffix) {
-  if (!existsSync(dir)) {
-    return [];
-  }
-
-  try {
-    return readdirSync(dir, { withFileTypes: true })
-      .filter((entry) => entry.isFile() && entry.name.endsWith(suffix))
-      .map((entry) => join(dir, entry.name));
-  } catch (error) {
-    diagnostics.warnings.push(`${dir}: file listing skipped: ${error.message}`);
-    return [];
-  }
+  return traverseFiles(dir, suffix, traversalOptions());
 }
 
 function listDebugLogFiles(root) {
-  if (!existsSync(root)) {
-    return [];
-  }
-
-  const files = [];
-  const pending = [{ path: root, depth: 0 }];
-  let visitedDirs = 0;
-  const maxDirs = 2000;
-
-  while (pending.length && visitedDirs < maxDirs) {
-    const current = pending.pop();
-    visitedDirs += 1;
-    let entries = [];
-    try {
-      entries = readdirSync(current.path, { withFileTypes: true });
-    } catch (error) {
-      diagnostics.warnings.push(`${current.path}: debug-log side-file scan skipped: ${error.message}`);
-      continue;
-    }
-    for (const entry of entries) {
-      const path = join(current.path, entry.name);
-      if (entry.isSymbolicLink()) {
-        continue;
-      }
-      if (entry.isDirectory() && current.depth < 4 && !skippedTraversalDirs.has(entry.name)) {
-        pending.push({ path, depth: current.depth + 1 });
-      } else if (entry.isFile() && entry.name.endsWith('.jsonl')) {
-        files.push(path);
-      }
-    }
-  }
-  if (pending.length) {
-    diagnostics.warnings.push(`${root}: debug-log side-file scan capped at ${maxDirs} directories.`);
-  }
-
-  return files.sort();
+  return traverseDebugLogFiles(root, traversalOptions());
 }
 
 function listFilesRecursive(root, predicate, limit = memoryFileLimit, options = {}) {
-  if (!existsSync(root)) {
-    return [];
-  }
+  return traverseFilesRecursive(root, predicate, limit, traversalOptions(options));
+}
 
-  const maxDepth = Number(options.maxDepth ?? 8);
-  const maxDirs = Number(options.maxDirs ?? 5000);
-  const label = options.label ?? 'recursive';
-  const files = [];
-  const pending = [{ path: root, depth: 0 }];
-  let visitedDirs = 0;
-
-  while (pending.length && files.length < limit && visitedDirs < maxDirs) {
-    const current = pending.pop();
-    visitedDirs += 1;
-    let entries = [];
-
-    try {
-      entries = readdirSync(current.path, { withFileTypes: true });
-    } catch (error) {
-      diagnostics.skippedUnreadableMemories += 1;
-      diagnostics.warnings.push(`${current.path}: ${label} directory skipped: ${error.message}`);
-      continue;
-    }
-
-    for (const entry of entries) {
-      const path = join(current.path, entry.name);
-      if (entry.isSymbolicLink()) {
-        continue;
+function traversalOptions(options = {}) {
+  return {
+    ...options,
+    onWarning: (message) => diagnostics.warnings.push(message),
+    onUnreadable: options.onUnreadable ?? (() => {
+      if (options.label === 'customization') {
+        diagnostics.skippedUnreadableCustomizations += 1;
+      } else {
+        diagnostics.skippedUnreadableMemories += 1;
       }
-      if (entry.isDirectory()) {
-        if (current.depth < maxDepth && !skippedTraversalDirs.has(entry.name)) {
-          pending.push({ path, depth: current.depth + 1 });
-        }
-      } else if (entry.isFile() && predicate(path)) {
-        files.push(path);
-        if (files.length >= limit) {
-          diagnostics.warnings.push(`${root}: ${label} scan capped at ${limit} files.`);
-          break;
-        }
-      }
-    }
-  }
-  if (pending.length) {
-    diagnostics.warnings.push(`${root}: ${label} scan capped at ${maxDirs} directories.`);
-  }
-
-  return files;
+    }),
+  };
 }
 
 function decodeMemorySessionId(value) {
@@ -3117,7 +3000,7 @@ function parseWorkspace(workspaceDir, options = {}, onProgress = () => {}) {
     };
   }
 
-  progress('workspace', `Scanning Copilot data for ${workspace}.`, {
+  progress('workspace', `Checking VS Code storage entry for ${workspace}.`, {
     debugLogFolders: debugSessionDirs.length,
     chatSnapshots: chatSessionFiles.length,
     hasMemoryRoot,
@@ -3200,7 +3083,7 @@ function parseWorkspace(workspaceDir, options = {}, onProgress = () => {}) {
   workspaceScan.completedAt = new Date().toISOString();
   workspaceScan.durationMs = Date.now() - workspaceStartedAt;
 
-  progress('workspace-complete', `Workspace ${workspace}: imported ${debugSessions.length + chatSessions.length} session${debugSessions.length + chatSessions.length === 1 ? '' : 's'} in ${workspaceScan.durationMs}ms.`, {
+  progress('workspace-complete', `VS Code storage entry for ${workspace}: imported ${debugSessions.length + chatSessions.length} session${debugSessions.length + chatSessions.length === 1 ? '' : 's'} in ${workspaceScan.durationMs}ms.`, {
     sessions: debugSessions.length + chatSessions.length,
     memories: memories.length,
     customizations: customizations.length,
@@ -3212,34 +3095,6 @@ function parseWorkspace(workspaceDir, options = {}, onProgress = () => {}) {
     memories,
     customizations,
   };
-}
-
-function workspaceDirsFromUserDir(userDir) {
-  const workspaceStorage = join(userDir, 'workspaceStorage');
-  return listDirs(workspaceStorage);
-}
-
-function workspaceDirsForRoot(root) {
-  if (existsSync(join(root, 'workspace.json'))) {
-    return [root];
-  }
-  if (basename(root) === 'workspaceStorage') {
-    return listDirs(root);
-  }
-  return workspaceDirsFromUserDir(root);
-}
-
-function userDirForRoot(root) {
-  if (existsSync(join(root, 'workspaceStorage'))) {
-    return root;
-  }
-  if (basename(root) === 'workspaceStorage') {
-    return dirname(root);
-  }
-  if (basename(dirname(root)) === 'workspaceStorage') {
-    return dirname(dirname(root));
-  }
-  return null;
 }
 
 /**
@@ -3256,7 +3111,7 @@ export async function scanVsCodeSessions(options = {}) {
   if (!Array.isArray(configuredRoots)) {
     throw new TypeError('roots must be an array of VS Code user-data or workspace-storage paths.');
   }
-  const roots = [...new Set(configuredRoots.map((root) => resolve(String(root))))];
+  const roots = uniqueResolvedRoots(configuredRoots);
   const conversionRate = Number(options.usdToEur ?? process.env.USD_TO_EUR ?? 1);
   if (!Number.isFinite(conversionRate) || conversionRate <= 0) {
     throw new TypeError('usdToEur must be a positive number.');
@@ -3286,10 +3141,12 @@ export async function scanVsCodeSessions(options = {}) {
       roots,
     });
     DatabaseSync = options.sqlite === false ? null : await loadSqliteSupport();
-    const workspaceDirs = [...new Set(roots.flatMap(workspaceDirsForRoot))];
+    const workspaceDirs = [
+      ...new Set(roots.flatMap((root) => workspaceDirsForRoot(root, traversalOptions()))),
+    ];
     onProgress({
       stage: 'workspaces',
-      message: `Found ${workspaceDirs.length} VS Code workspace storage folder${workspaceDirs.length === 1 ? '' : 's'}.`,
+      message: `Found ${workspaceDirs.length} VS Code storage entr${workspaceDirs.length === 1 ? 'y' : 'ies'}.`,
       total: workspaceDirs.length,
     });
     const workspaceResults = [];
@@ -3297,7 +3154,7 @@ export async function scanVsCodeSessions(options = {}) {
       if (index > 0 && index % 50 === 0) {
         onProgress({
           stage: 'workspace-queue',
-          message: `Checked ${index}/${workspaceDirs.length} VS Code workspace storage folders.`,
+          message: `Checked ${index}/${workspaceDirs.length} VS Code storage entries.`,
           index,
           total: workspaceDirs.length,
         });
@@ -3321,7 +3178,7 @@ export async function scanVsCodeSessions(options = {}) {
     const memoryMap = new Map();
     onProgress({
       stage: 'memories',
-      message: `Indexing memories from ${globalMemoryRoots.length} global root${globalMemoryRoots.length === 1 ? '' : 's'} and workspace storage.`,
+      message: `Indexing memories from ${globalMemoryRoots.length} global root${globalMemoryRoots.length === 1 ? '' : 's'} and VS Code storage.`,
       total: globalMemoryRoots.length,
     });
     for (const memory of [
