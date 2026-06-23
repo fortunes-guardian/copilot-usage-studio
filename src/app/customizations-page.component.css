@@ -71,6 +71,14 @@
   gap: 5px;
 }
 
+.customizations-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .customizations-header-meta span {
   display: inline-flex;
   align-items: center;
@@ -88,6 +96,23 @@
 .customizations-header-meta strong {
   margin-right: 4px;
   color: var(--text-strong);
+}
+
+.evidence-scan-button {
+  min-height: 30px;
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--line));
+  border-radius: 999px;
+  padding: 6px 11px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 780;
+  cursor: pointer;
+}
+
+.evidence-scan-button:disabled {
+  cursor: wait;
+  opacity: 0.68;
 }
 
 .customizations-controls {

@@ -5,7 +5,7 @@ import { AnalyticsPageComponent } from './analytics-page.component';
 import { ComparePageComponent } from './compare-page.component';
 import { CustomizationsPageComponent } from './customizations-page.component';
 import { MemoryPageComponent } from './memory-page.component';
-import { SessionDataService } from './session-data.service';
+import { SessionDataScanMode, SessionDataService } from './session-data.service';
 import { SessionDataStatePanelComponent } from './session-data-state-panel.component';
 import { CopilotSession, TraceEvent } from './session-data.model';
 import { PricingPageComponent } from './pricing-page.component';
@@ -309,8 +309,12 @@ export class App {
     return this.theme() === 'light' ? 'Light' : 'Dark';
   }
 
-  protected refreshSessionData(): void {
-    this.sessionDataService.refresh();
+  protected refreshSessionData(mode: SessionDataScanMode = 'quick'): void {
+    this.sessionDataService.refresh(mode);
+  }
+
+  protected cancelScan(): void {
+    this.sessionDataService.cancelScan();
   }
 
   protected dataUpdatedLabel(): string {

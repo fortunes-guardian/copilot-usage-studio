@@ -5,9 +5,10 @@ import { pathToFileURL } from 'node:url';
 
 type LocalRuntime = {
   address(): string | { port?: number } | null;
+  cancelScan?(): boolean;
   close(): Promise<void>;
   listen(): Promise<string | { port?: number }>;
-  refresh(reason?: string): Promise<unknown>;
+  refresh(reason?: string, options?: { mode?: 'quick' | 'full' | 'customizations' }): Promise<unknown>;
   diagnostics?(): unknown;
 };
 
@@ -78,10 +79,11 @@ async function refreshData(context: vscode.ExtensionContext): Promise<void> {
     {
       location: vscode.ProgressLocation.Notification,
       title: 'Refreshing Copilot Usage Studio data',
-      cancellable: false,
+      cancellable: true,
     },
-    async () => {
-      await handle.runtime.refresh('vscode-command');
+    async (_progress, token) => {
+      token.onCancellationRequested(() => handle.runtime.cancelScan?.());
+      await handle.runtime.refresh('vscode-command', { mode: 'quick' });
     },
   );
 
@@ -141,8 +143,9 @@ async function startRuntime(context: vscode.ExtensionContext): Promise<RuntimeHa
     logFile: join(context.globalStorageUri.fsPath, 'runtime.log'),
     scanOptions: {
       roots: [vsCodeUserDataRoot(context)],
-      includeCustomizations: true,
+      includeCustomizations: false,
     },
+    startupScanMode: 'quick',
     logger: extensionLogger(),
   });
   logDebugSettings();
@@ -167,7 +170,7 @@ function logDebugSettings(): void {
   const fileLogging = agentDebugLogFileLoggingEnabled();
   const agentLogs = debugConfig.get<boolean>('enabled');
   output.appendLine(
-    `VS Code root scan is limited to this VS Code user-data folder; customization evidence is enabled.`,
+    `VS Code root scan is limited to this VS Code user-data folder; startup scans skip customization evidence for speed.`,
   );
   output.appendLine(
     `Agent debug log settings: enabled=${String(agentLogs)}, fileLogging.enabled=${String(fileLogging)}.`,

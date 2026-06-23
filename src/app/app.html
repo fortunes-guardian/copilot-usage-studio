@@ -65,7 +65,7 @@
           (click)="refreshSessionData()"
         >
           <span class="refresh-icon" [class.spinning]="sessionDataRefreshState() === 'refreshing'" aria-hidden="true">↻</span>
-          <span>{{ sessionDataRefreshState() === 'refreshing' ? 'Scanning' : 'Refresh' }}</span>
+          <span>{{ sessionDataRefreshState() === 'refreshing' ? 'Scanning' : 'Scan' }}</span>
         </button>
         <span class="data-refresh-status" aria-live="polite">
           {{ sessionDataRefreshMessage() || dataUpdatedLabel() }}
@@ -133,6 +133,7 @@
       [runtimeStatus]="runtimeStatus()"
       [runtimeStatusAvailable]="runtimeStatusAvailable()"
       (refresh)="refreshSessionData()"
+      (cancelScan)="cancelScan()"
     ></app-session-data-state-panel>
 
     @if (sessionDataLoadState() === 'ready') {
@@ -175,6 +176,8 @@
           [customizations]="customizations()"
           [sessions]="sessions()"
           [ingestion]="ingestion()"
+          [refreshState]="sessionDataRefreshState()"
+          (scanEvidence)="refreshSessionData('customizations')"
           (openSession)="openSession($event)"
         ></app-customizations-page>
       } @placeholder {

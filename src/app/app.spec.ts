@@ -240,7 +240,7 @@ describe('App', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    clickButtonContaining(fixture.nativeElement, 'Refresh');
+    clickButtonContaining(fixture.nativeElement, 'Scan');
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Scanning');
 
@@ -254,6 +254,7 @@ describe('App', () => {
     };
     const request = http.expectOne('/api/scan');
     expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ mode: 'quick' });
     request.flush({ sessionData: refreshedData });
     fixture.detectChanges();
 

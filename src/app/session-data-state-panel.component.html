@@ -1,92 +1,79 @@
-@if (state === 'loading') {
-  <section class="state-panel loading" aria-live="polite">
-    <p class="eyebrow">Loading</p>
-    <h2>Reading local sessions</h2>
-    <p>
-      {{
-        runtimeStatus?.scanProgress?.message ||
-          'Checking the local Copilot data imported by the runtime.'
-      }}
-    </p>
+@if (state === 'loading' || state === 'error' || refreshState === 'refreshing') {
+  <section
+    class="state-panel"
+    [class.loading]="state === 'loading'"
+    [class.danger]="state === 'error' && !isEmptyState"
+    aria-live="polite"
+  >
+    <div class="state-panel-main">
+      <p class="eyebrow">{{ isScanning ? 'Scan in progress' : (isEmptyState ? 'Get started' : 'Local data') }}</p>
+      <h2>{{ statusTitle }}</h2>
+      <p>{{ statusBody }}</p>
+    </div>
+
     @if (runtimeStatusAvailable && runtimeStatus) {
-      <div class="runtime-diagnostics">
+      <div class="runtime-summary">
         <div>
-          <span>Runtime</span>
-          <strong>{{ runtimeStatus.phase }}</strong>
+          <span>Status</span>
+          <strong>{{ isScanning ? scanModeLabel : runtimeStatus.phase }}</strong>
+          <small>{{ scanStatusLabel }}</small>
         </div>
         <div>
-          <span>Sessions ready</span>
-          <strong>{{ runtimeStatus.sessionCount }}</strong>
+          <span>Sessions</span>
+          <strong>{{ foundSoFar.sessions | number }}</strong>
+          <small>{{ foundSoFar.debugLogFolders | number }} debug-log folders</small>
         </div>
-        @if (scanElapsedLabel) {
+        <div>
+          <span>Memory</span>
+          <strong>{{ foundSoFar.memories | number }}</strong>
+          <small>{{ foundSoFar.chatSnapshots | number }} chat snapshots</small>
+        </div>
+      </div>
+
+      @if (isScanning) {
+        <div class="scan-progress">
           <div>
-            <span>Scan time</span>
-            <strong>{{ scanElapsedLabel }}</strong>
+            <strong>{{ progressLabel }}</strong>
+            @if (currentWorkspaceLabel) {
+              <span>{{ currentWorkspaceLabel }}</span>
+            }
           </div>
+          <span>{{ progressPercent ? (progressPercent + '%') : 'Working' }}</span>
+          <progress [value]="progressPercent || null" max="100"></progress>
+        </div>
+      }
+
+      <div class="scan-actions">
+        <button
+          type="button"
+          class="scan-button"
+          [disabled]="refreshState === 'refreshing'"
+          [attr.aria-busy]="refreshState === 'refreshing'"
+          (click)="refresh.emit()"
+        >
+          {{ refreshState === 'refreshing' ? 'Scanning...' : (isEmptyState ? 'Scan local Copilot data' : 'Scan again') }}
+        </button>
+        @if (isScanning) {
+          <button type="button" class="scan-button secondary" (click)="cancelScan.emit()">Stop scan</button>
         }
       </div>
-      @if (recentLogs.length) {
-        <ol class="runtime-log">
-          @for (entry of recentLogs; track entry.at + entry.message) {
-            <li [class.error]="entry.level === 'error'">{{ entry.message }}</li>
-          }
-        </ol>
-      }
-      @if (runtimeStatus.logFile) {
-        <p class="runtime-log-file">Log file: {{ runtimeStatus.logFile }}</p>
-      }
+
+      <details class="runtime-advanced">
+        <summary>Advanced details</summary>
+        @if (recentLogs.length) {
+          <ol class="runtime-log">
+            @for (entry of recentLogs; track entry.at + entry.message) {
+              <li [class.error]="entry.level === 'error'">{{ entry.message }}</li>
+            }
+          </ol>
+        }
+        @if (runtimeStatus.logFile) {
+          <p class="runtime-log-file">Log file: {{ runtimeStatus.logFile }}</p>
+        }
+      </details>
     } @else {
       <p class="runtime-log-file">Waiting for local runtime status...</p>
+      <button type="button" class="scan-button" (click)="refresh.emit()">Scan local Copilot data</button>
     }
-  </section>
-} @else if (state === 'error') {
-  <section class="state-panel" [class.danger]="!isEmptyState">
-    <p class="eyebrow">{{ isEmptyState ? 'Get started' : 'Data issue' }}</p>
-    <h2>{{ isEmptyState ? 'Import your first sessions' : 'Could not load local session data' }}</h2>
-    @if (isEmptyState) {
-      <p>Scan this computer for local VS Code Copilot Chat and Agent sessions.</p>
-    } @else {
-      <p>{{ error || 'The local session data could not be loaded.' }}</p>
-    }
-    @if (runtimeStatusAvailable && runtimeStatus) {
-      <div class="runtime-diagnostics">
-        <div>
-          <span>Runtime</span>
-          <strong>{{ runtimeStatus.phase }}</strong>
-        </div>
-        <div>
-          <span>Last scan</span>
-          <strong>{{ scanElapsedLabel || 'n/a' }}</strong>
-        </div>
-        <div>
-          <span>Cached sessions</span>
-          <strong>{{ runtimeStatus.sessionCount }}</strong>
-        </div>
-      </div>
-      @if (runtimeStatus.scanProgress?.message) {
-        <p>{{ runtimeStatus.scanProgress?.message }}</p>
-      }
-      @if (recentLogs.length) {
-        <ol class="runtime-log">
-          @for (entry of recentLogs; track entry.at + entry.message) {
-            <li [class.error]="entry.level === 'error'">{{ entry.message }}</li>
-          }
-        </ol>
-      }
-      @if (runtimeStatus.logFile) {
-        <p class="runtime-log-file">Log file: {{ runtimeStatus.logFile }}</p>
-      }
-    }
-    <button
-      type="button"
-      class="scan-button"
-      [disabled]="refreshState === 'refreshing'"
-      [attr.aria-busy]="refreshState === 'refreshing'"
-      (click)="refresh.emit()"
-    >
-      {{ refreshState === 'refreshing' ? 'Scanning VS Code...' : (isEmptyState ? 'Scan VS Code' : 'Try again') }}
-    </button>
   </section>
 }
-
-

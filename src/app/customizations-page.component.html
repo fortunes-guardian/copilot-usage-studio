@@ -5,11 +5,20 @@
       <h2>Did Copilot send your rules?</h2>
       <p>Browse local instructions, skills, prompts, hooks, and agents. Evidence comes from imported VS Code model requests.</p>
     </div>
-    <div class="customizations-header-meta" aria-label="Customization summary">
-      <span><strong>{{ summary().total | number }}</strong> files</span>
-      <span><strong>{{ summary().sent | number }}</strong> sent</span>
-      <span><strong>{{ summary().listed | number }}</strong> referenced</span>
-      <span><strong>{{ summary().discovered | number }}</strong> discovered</span>
+    <div class="customizations-header-actions" aria-label="Customization evidence scan">
+      <div class="customizations-header-meta" aria-label="Customization summary">
+        <span><strong>{{ summary().total | number }}</strong> files</span>
+        <span><strong>{{ customizationEvidenceSummary().label }}</strong></span>
+      </div>
+      <button
+        type="button"
+        class="evidence-scan-button"
+        [disabled]="refreshState === 'refreshing'"
+        [attr.aria-busy]="refreshState === 'refreshing'"
+        (click)="scanEvidence.emit()"
+      >
+        {{ refreshState === 'refreshing' ? 'Scanning evidence...' : 'Scan evidence' }}
+      </button>
     </div>
   </header>
 

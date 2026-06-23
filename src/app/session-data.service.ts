@@ -6,6 +6,7 @@ import { apiUrl } from './host-config';
 
 export type SessionDataLoadState = 'loading' | 'ready' | 'error';
 export type SessionDataRefreshState = 'idle' | 'refreshing' | 'success' | 'error';
+export type SessionDataScanMode = 'quick' | 'full' | 'customizations';
 
 interface LocalScanResponse {
   sessionData: SessionData;
@@ -30,6 +31,7 @@ export interface LocalRuntimeStatus {
   lastScanDurationMs: number;
   lastError: string;
   activeScanId?: number;
+  activeScanMode?: SessionDataScanMode | string;
   logFile?: string;
   scanProgress?: {
     stage?: string;
@@ -39,11 +41,30 @@ export interface LocalRuntimeStatus {
     updatedAt?: string;
     workspace?: string;
     workspaceDir?: string;
+    workspaceIndex?: number;
+    workspaceTotal?: number;
     index?: number;
     total?: number;
     sessions?: number;
   } | null;
   recentLogs?: LocalRuntimeLogEntry[];
+  progressHistory?: Array<LocalRuntimeStatus['scanProgress']>;
+  workspaceProgress?: Array<{
+    workspace?: string;
+    workspaceDir?: string;
+    workspaceIndex?: number | null;
+    workspaceTotal?: number | null;
+    lastStage?: string;
+    message?: string;
+    debugLogFolders?: number | null;
+    chatSnapshots?: number | null;
+    hasMemoryRoot?: boolean | null;
+    customizationInventory?: number | null;
+    sessions?: number | null;
+    memories?: number | null;
+    customizations?: number | null;
+    completed?: boolean;
+  }>;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -78,14 +99,14 @@ export class SessionDataService {
     this.loadSessionData();
   }
 
-  refresh(): void {
+  refresh(mode: SessionDataScanMode = 'quick'): void {
     if (this.refreshState() === 'refreshing') {
       return;
     }
 
     this.refreshState.set('refreshing');
-    this.refreshMessage.set('Scanning VS Code...');
-    this.http.post<LocalScanResponse>(apiUrl('/api/scan'), {}).subscribe({
+    this.refreshMessage.set(mode === 'customizations' ? 'Scanning customization evidence...' : 'Scanning local Copilot data...');
+    this.http.post<LocalScanResponse>(apiUrl('/api/scan'), { mode }).subscribe({
       next: ({ sessionData, status }) => {
         if (status) {
           this.runtimeStatus.set(status);
@@ -100,12 +121,35 @@ export class SessionDataService {
         );
       },
       error: (error: unknown) => {
+        const message = this.errorMessage(error);
+        if (message.toLowerCase().includes('scan stopped by user')) {
+          this.refreshState.set('idle');
+          this.refreshMessage.set('Scan stopped. Existing data was kept.');
+          return;
+        }
         this.refreshState.set('error');
         this.refreshMessage.set(
           this.isMissingRuntime(error)
             ? 'Refresh is unavailable in static-only mode'
-            : this.errorMessage(error),
+            : message,
         );
+      },
+    });
+  }
+
+  cancelScan(): void {
+    this.http.post<{ status?: LocalRuntimeStatus }>(apiUrl('/api/scan/cancel'), {}).subscribe({
+      next: ({ status }) => {
+        if (status) {
+          this.runtimeStatus.set(status);
+          this.runtimeStatusAvailable.set(true);
+        }
+        this.refreshState.set('idle');
+        this.refreshMessage.set('Scan stopped. Existing data was kept.');
+      },
+      error: (error: unknown) => {
+        this.refreshState.set('error');
+        this.refreshMessage.set(this.errorMessage(error));
       },
     });
   }

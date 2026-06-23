@@ -19,8 +19,8 @@ describe('SessionDataStatePanelComponent', () => {
     fixture.detectChanges();
 
     const text = fixture.nativeElement.textContent;
-    expect(text).toContain('Import your first sessions');
-    expect(text).toContain('Scan VS Code');
+    expect(text).toContain('No local sessions imported yet');
+    expect(text).toContain('Scan local Copilot data');
     expect(text).not.toContain('npm run scan');
   });
 
@@ -50,8 +50,11 @@ describe('SessionDataStatePanelComponent', () => {
       lastError: '',
       logFile: 'C:\\local\\Copilot Usage Studio\\runtime.log',
       scanProgress: {
-        stage: 'debug-logs',
+        stage: 'workspace',
         message: 'Scanning 140 debug-log folders in work-repo.',
+        workspace: 'work-repo',
+        workspaceIndex: 8,
+        workspaceTotal: 111,
         updatedAt: new Date().toISOString(),
       },
       recentLogs: [
@@ -65,8 +68,10 @@ describe('SessionDataStatePanelComponent', () => {
     fixture.detectChanges();
 
     const text = fixture.nativeElement.textContent;
-    expect(text).toContain('Scanning 140 debug-log folders in work-repo.');
-    expect(text).toContain('Sessions ready');
+    expect(text).toContain('Scanning local Copilot data');
+    expect(text).toContain('Workspace 8 of 111');
+    expect(text).toContain('work-repo');
     expect(text).toContain('runtime.log');
+    expect(text).toContain('Stop scan');
   });
 });

@@ -10,6 +10,7 @@ import {
   SessionData,
 } from './session-data.model';
 import { HelpPopoverComponent } from './help-popover.component';
+import { SessionDataRefreshState } from './session-data.service';
 
 type CustomizationKindFilter = 'all' | CopilotCustomizationKind;
 type CustomizationStatusFilter = 'all' | CopilotCustomizationEvidenceStatus;
@@ -78,6 +79,9 @@ export class CustomizationsPageComponent {
     this.ingestionInput.set(value ?? null);
   }
 
+  @Input() refreshState: SessionDataRefreshState = 'idle';
+
+  @Output() readonly scanEvidence = new EventEmitter<void>();
   @Output() readonly openSession = new EventEmitter<CopilotSession>();
 
   protected readonly workspaceOptions = computed(() => [
@@ -149,6 +153,22 @@ export class CustomizationsPageComponent {
       locations: locations.slice(0, 80),
       locationCount: locations.length,
       capped: locations.length >= 200,
+    };
+  });
+
+  protected readonly customizationEvidenceSummary = computed(() => {
+    const ingestion = this.ingestionInput();
+    const customizations = this.customizationsInput();
+    const sent = customizations.filter((item) => item.evidenceStatus === 'sent').length;
+    const notProved = customizations.filter((item) => item.evidenceStatus === 'listed').length;
+    const hasScannedEvidence = (ingestion?.customizationEvidenceScannedSessions ?? 0) > 0;
+    return {
+      sent,
+      notProved,
+      hasScannedEvidence,
+      label: hasScannedEvidence
+        ? `${sent.toLocaleString()} proved sent · ${notProved.toLocaleString()} not proved`
+        : 'Evidence not scanned in quick mode',
     };
   });
 
