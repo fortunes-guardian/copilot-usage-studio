@@ -57,6 +57,10 @@ function copyRequiredRuntimeAssets() {
     join(extensionDist, 'runtime', 'scripts', 'scanner-memory.mjs'),
   );
   cpSync(
+    join(repoRoot, 'scripts', 'scanner-session-parser.mjs'),
+    join(extensionDist, 'runtime', 'scripts', 'scanner-session-parser.mjs'),
+  );
+  cpSync(
     join(repoRoot, 'scripts', 'scanner-traversal.mjs'),
     join(extensionDist, 'runtime', 'scripts', 'scanner-traversal.mjs'),
   );
