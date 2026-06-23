@@ -15,6 +15,10 @@ import { SessionDataRefreshState } from './session-data.service';
 type CustomizationKindFilter = 'all' | CopilotCustomizationKind;
 type CustomizationStatusFilter = 'all' | CopilotCustomizationEvidenceStatus;
 type MatchSource = 'inputMessages' | 'userRequest' | string;
+type EvidenceSource = {
+  label: string;
+  raw: string;
+};
 type EvidenceTimelineMarker = {
   callNumber: number;
   status: CopilotCustomizationEvidenceStatus;
@@ -25,7 +29,7 @@ type CustomizationCallEvidence = {
   eventIndex: number;
   status: CopilotCustomizationEvidenceStatus;
   matches: CopilotCustomization['matches'];
-  sourceLabels: string[];
+  sources: EvidenceSource[];
   matchedChunks: number;
   matchedCharacters: number;
   matchedPreview: string[];
@@ -277,10 +281,20 @@ export class CustomizationsPageComponent {
   }
 
   protected sourceLabel(source: MatchSource): string {
+    if (/^system_prompt/i.test(source)) {
+      return 'System instructions';
+    }
+    if (/^tools/i.test(source)) {
+      return 'Tool definitions';
+    }
     return {
-      inputMessages: 'Request payload',
-      userRequest: 'User request',
+      inputMessages: 'Full model request',
+      userRequest: 'User message',
     }[source] ?? source;
+  }
+
+  protected rawSourceLabel(source: MatchSource): string {
+    return String(source);
   }
 
   protected sessionEvidenceLabel(group: CustomizationSessionEvidence): string {
@@ -341,7 +355,7 @@ export class CustomizationsPageComponent {
           eventIndex: match.eventIndex,
           status: match.status,
           matches: [],
-          sourceLabels: [],
+          sources: [],
           matchedChunks: 0,
           matchedCharacters: 0,
           matchedPreview: [],
@@ -355,9 +369,12 @@ export class CustomizationsPageComponent {
           call.matchedPreview.push(preview);
         }
       }
-      const source = this.sourceLabel(match.source);
-      if (!call.sourceLabels.includes(source)) {
-        call.sourceLabels.push(source);
+      const source = {
+        label: this.sourceLabel(match.source),
+        raw: this.rawSourceLabel(match.source),
+      };
+      if (!call.sources.some((existingSource) => existingSource.label === source.label && existingSource.raw === source.raw)) {
+        call.sources.push(source);
       }
       calls.set(key, call);
     }
@@ -387,7 +404,7 @@ export class CustomizationsPageComponent {
 
   protected callEvidenceSummary(call: CustomizationCallEvidence): string {
     if (call.status === 'sent') {
-      return 'Actual text from this customization file was present in the model request material.';
+      return `Actual text from this customization file appeared in ${this.sourcePhrase(call.sources)}.`;
     }
     if (call.status === 'listed') {
       return 'Only the file name/path or one of its labels was seen. Treat this as not proved sent.';
@@ -397,11 +414,61 @@ export class CustomizationsPageComponent {
 
   protected weakEvidenceSummary(group: CustomizationSessionEvidence): string {
     const calls = group.modelCallNumbers.length;
-    const sources = group.sources.map((source) => this.sourceLabel(source));
-    const sourceText = sources.length ? ` Sources: ${sources.join(', ')}.` : '';
+    const sources = this.uniqueSources(group.sources.map((source) => ({
+      label: this.sourceLabel(source),
+      raw: this.rawSourceLabel(source),
+    })));
+    const sourceText = sources.length ? ` Checked ${this.sourcePhrase(sources)}.` : '';
     return calls
       ? `Checked ${calls.toLocaleString()} model call${calls === 1 ? '' : 's'} in this session. The scanner did not find distinctive text from this file in those requests.${sourceText}`
       : `The scanner did not find distinctive text from this file in imported request material.${sourceText}`;
+  }
+
+  protected evidenceSourceLabels(call: CustomizationCallEvidence): string[] {
+    return this.uniqueSources(call.sources).map((source) => source.label);
+  }
+
+  protected rawEvidenceSources(call: CustomizationCallEvidence): EvidenceSource[] {
+    return this.uniqueSources(call.sources);
+  }
+
+  protected evidenceDetailsSummary(call: CustomizationCallEvidence): string {
+    const parts = [];
+    if (call.callNumber) {
+      parts.push(`model call #${call.callNumber}`);
+    }
+    if (call.matchedCharacters) {
+      parts.push(`${call.matchedCharacters.toLocaleString()} matched characters`);
+    }
+    return parts.join(' · ') || 'raw matching details';
+  }
+
+  private sourcePhrase(sources: EvidenceSource[]): string {
+    const labels = this.uniqueSources(sources).map((source) => source.label);
+    if (!labels.length) {
+      return 'the model request';
+    }
+    if (labels.length === 1) {
+      return labels[0].toLowerCase();
+    }
+    if (labels.length === 2) {
+      return `${labels[0].toLowerCase()} and ${labels[1].toLowerCase()}`;
+    }
+    return `${labels.slice(0, -1).map((label) => label.toLowerCase()).join(', ')}, and ${labels.at(-1)?.toLowerCase()}`;
+  }
+
+  private uniqueSources(sources: EvidenceSource[]): EvidenceSource[] {
+    const seen = new Set<string>();
+    const unique = [];
+    for (const source of sources) {
+      const key = `${source.label}:${source.raw}`;
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      unique.push(source);
+    }
+    return unique;
   }
 
   private sentModelCallCount(group: CustomizationSessionEvidence): number {

@@ -234,9 +234,23 @@
                                 {{ call.matchedPreview[0] }}
                               </blockquote>
                             }
+                            <details class="raw-evidence-details">
+                              <summary>Evidence details · {{ evidenceDetailsSummary(call) }}</summary>
+                              <div>
+                                <span>Raw VS Code sources</span>
+                                <ul>
+                                  @for (source of rawEvidenceSources(call); track source.raw + source.label) {
+                                    <li>
+                                      <b>{{ source.label }}</b>
+                                      <code>{{ source.raw }}</code>
+                                    </li>
+                                  }
+                                </ul>
+                              </div>
+                            </details>
                           </div>
                           <div class="call-event-sources">
-                            @for (source of call.sourceLabels; track source) {
+                            @for (source of evidenceSourceLabels(call); track source) {
                               <span>{{ source }}</span>
                             }
                           </div>

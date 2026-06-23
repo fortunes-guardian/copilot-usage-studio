@@ -674,6 +674,60 @@
   line-height: 1.35;
 }
 
+.raw-evidence-details {
+  margin-top: 6px;
+}
+
+.raw-evidence-details summary {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.raw-evidence-details div {
+  display: grid;
+  gap: 5px;
+  margin-top: 6px;
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  border-radius: 8px;
+  padding: 7px 8px;
+  background: color-mix(in srgb, var(--surface) 76%, transparent);
+}
+
+.raw-evidence-details span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 820;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.raw-evidence-details ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.raw-evidence-details li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.raw-evidence-details code {
+  border-radius: 999px;
+  padding: 2px 6px;
+  background: color-mix(in srgb, var(--surface-soft) 80%, transparent);
+  color: var(--muted);
+  font-size: 10px;
+}
+
 .call-event-sources {
   justify-content: flex-end;
 }
