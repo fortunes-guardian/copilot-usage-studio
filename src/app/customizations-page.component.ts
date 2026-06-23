@@ -172,9 +172,24 @@ export class CustomizationsPageComponent {
       hasScannedEvidence,
       label: hasScannedEvidence
         ? `${sent.toLocaleString()} proved sent · ${notProved.toLocaleString()} not proved`
-        : 'Evidence not scanned in quick mode',
+        : 'Detailed evidence skipped',
     };
   });
+
+  protected scanActionLabel(): string {
+    if (this.refreshState === 'refreshing') {
+      return 'Scanning Copilot data...';
+    }
+    return this.customizationEvidenceSummary().hasScannedEvidence
+      ? 'Rescan Copilot data'
+      : 'Run detailed scan';
+  }
+
+  protected scanActionHelp(): string {
+    return this.customizationEvidenceSummary().hasScannedEvidence
+      ? 'Refreshes local VS Code data and checks whether customization file text appears in imported model requests.'
+      : 'Detailed evidence was skipped to keep the last scan fast. Run this when you want to verify whether instruction or skill text actually reached the model.';
+  }
 
   protected selectCustomization(customization: CopilotCustomization): void {
     this.selectedId.set(customization.id);

@@ -137,7 +137,7 @@ export class App {
     priceRow:
       'The GitHub model pricing row used to estimate this model. Unknown models keep their display label and show any pricing fallback separately.',
     pricingFallback:
-      'The raw model name from VS Code did not match a GitHub price row in the local pricing table, so the estimate uses the displayed fallback price row. Treat this as an explicit estimate assumption.',
+      'Some imported model names do not exactly match a GitHub pricing row. Those runs keep their original model label, but their estimate uses this pricing row as an explicit fallback assumption.',
   };
   protected readonly sessionTriageHelp =
     'Fast read derived from imported tokens and model mix. These are cost-debugging signals, not billing rows.';

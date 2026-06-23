@@ -1,4 +1,4 @@
-@if (state === 'loading' || state === 'error' || refreshState === 'refreshing') {
+@if (state === 'loading' || state === 'error' || refreshState === 'refreshing' || refreshState === 'success') {
   <section
     class="state-panel"
     [class.loading]="state === 'loading'"
@@ -24,9 +24,14 @@
           <small>{{ foundSoFar.debugLogFolders | number }} debug-log folders</small>
         </div>
         <div>
-          <span>Memory</span>
-          <strong>{{ foundSoFar.memories | number }}</strong>
-          <small>{{ foundSoFar.chatSnapshots | number }} chat snapshots</small>
+          <span>Chat snapshots</span>
+          <strong>{{ foundSoFar.chatSnapshots | number }}</strong>
+          <small>Weaker fallback source</small>
+        </div>
+        <div>
+          <span>Copilot files</span>
+          <strong>{{ foundSoFar.memories + foundSoFar.customizations | number }}</strong>
+          <small>{{ foundSoFar.memories | number }} memories · {{ foundSoFar.customizations | number }} customizations</small>
         </div>
       </div>
 

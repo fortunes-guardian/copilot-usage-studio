@@ -10,6 +10,7 @@
 }
 
 .customizations-header,
+.customizations-scan-note,
 .customizations-controls,
 .customizations-diagnostics,
 .customizations-list,
@@ -113,6 +114,43 @@
 .evidence-scan-button:disabled {
   cursor: wait;
   opacity: 0.68;
+}
+
+.customizations-scan-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-color: color-mix(in srgb, var(--accent-2) 26%, var(--line));
+  border-radius: 12px;
+  padding: 9px 11px;
+  background: color-mix(in srgb, var(--accent-2) 7%, var(--surface));
+}
+
+.customizations-scan-note strong {
+  color: var(--text-strong);
+  font-size: 12px;
+}
+
+.customizations-scan-note p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.customizations-scan-note button {
+  flex: 0 0 auto;
+  min-height: 30px;
+  border: 1px solid color-mix(in srgb, var(--accent-2) 42%, var(--line));
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: color-mix(in srgb, var(--accent-2) 10%, var(--surface));
+  color: var(--accent-2);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 780;
+  cursor: pointer;
 }
 
 .customizations-controls {
@@ -767,8 +805,8 @@
 .customizations-empty {
   display: grid;
   place-items: center;
-  min-height: 360px;
-  padding: 24px;
+  min-height: 190px;
+  padding: 18px;
   text-align: center;
 }
 
@@ -786,6 +824,7 @@
 
 @media (max-width: 700px) {
   .customizations-header,
+  .customizations-scan-note,
   .customization-detail-header {
     display: grid;
   }

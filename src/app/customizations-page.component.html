@@ -17,10 +17,26 @@
         [attr.aria-busy]="refreshState === 'refreshing'"
         (click)="scanEvidence.emit()"
       >
-        {{ refreshState === 'refreshing' ? 'Scanning evidence...' : 'Scan evidence' }}
+        {{ scanActionLabel() }}
       </button>
     </div>
   </header>
+  @if (!customizationEvidenceSummary().hasScannedEvidence) {
+    <section class="customizations-scan-note">
+      <div>
+        <strong>Detailed evidence was skipped</strong>
+        <p>{{ scanActionHelp() }}</p>
+      </div>
+      <button
+        type="button"
+        [disabled]="refreshState === 'refreshing'"
+        [attr.aria-busy]="refreshState === 'refreshing'"
+        (click)="scanEvidence.emit()"
+      >
+        {{ scanActionLabel() }}
+      </button>
+    </section>
+  }
 
   <section class="customizations-controls" aria-label="Customization filters">
     <label class="customizations-search">
@@ -66,7 +82,7 @@
 
   <details class="customizations-diagnostics">
     <summary>
-      <span>Scan coverage</span>
+      <span>Advanced scan coverage</span>
       <strong>
         {{ scanDiagnostics().roots | number }} folders/files checked ·
         {{ scanDiagnostics().files | number }} customization{{ scanDiagnostics().files === 1 ? '' : 's' }} found
@@ -85,7 +101,7 @@
         <p class="diagnostic-note">Showing the first 80 recorded locations. Generated scan diagnostics are capped.</p>
       }
     } @else {
-      <p class="diagnostic-note">No customization scan locations were recorded. This usually means no VS Code Copilot debug-log folders were imported for the workspace.</p>
+      <p class="diagnostic-note">No detailed scan locations were recorded yet. Run a detailed scan if you want source-location diagnostics.</p>
     }
   </details>
 

@@ -188,7 +188,7 @@
           @if (price.usedByImportedSessions) {
             @if (price.usedDirectly && price.usedAsFallback) {
               <span class="used-pill fallback-used">
-                Direct + fallback
+                Used by imports
                 <app-help-popover
                   [text]="help.pricingFallback"
                   label="Explain fallback pricing"
@@ -196,14 +196,14 @@
               </span>
             } @else if (price.usedAsFallback) {
               <span class="used-pill fallback-used">
-                Fallback row
+                Estimate fallback
                 <app-help-popover
                   [text]="help.pricingFallback"
                   label="Explain fallback pricing"
                 ></app-help-popover>
               </span>
             } @else {
-              <span class="used-pill">Direct match</span>
+              <span class="used-pill">Direct pricing</span>
             }
           } @else {
             <span class="muted">Not yet</span>
