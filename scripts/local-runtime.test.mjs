@@ -61,7 +61,12 @@ test('serves cached data, refreshes through the scanner, and reports status', as
     const diagnostics = await jsonRequest(`${origin}/api/diagnostics`);
     assert.equal(diagnostics.status.phase, 'ready');
     assert.equal(diagnostics.workspaceProgress[0].workspace, 'fixture');
-    assert.deepEqual(diagnostics.scanOptions, { roots: [], includeCustomizations: true, sqlite: true });
+    assert.deepEqual(diagnostics.scanOptions, {
+      roots: [],
+      customizationWorkspaceFolders: [],
+      includeCustomizations: true,
+      sqlite: true,
+    });
   } finally {
     await runtime.close();
     rmSync(fixture.root, { recursive: true, force: true });

@@ -178,11 +178,11 @@ export class CustomizationsPageComponent {
 
   protected scanActionLabel(): string {
     if (this.refreshState === 'refreshing') {
-      return 'Verifying rule usage...';
+      return 'Finding usage...';
     }
     return this.customizationEvidenceSummary().hasScannedEvidence
-      ? 'Verify rule usage again'
-      : 'Verify rule usage';
+      ? 'Find usage again'
+      : 'Find usage evidence';
   }
 
   protected scanActionHelp(): string {

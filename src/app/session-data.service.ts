@@ -105,7 +105,7 @@ export class SessionDataService {
     }
 
     this.refreshState.set('refreshing');
-    this.refreshMessage.set(mode === 'customizations' ? 'Scanning customization evidence...' : 'Scanning local Copilot data...');
+    this.refreshMessage.set(mode === 'customizations' ? 'Finding customization usage evidence...' : 'Scanning local Copilot data...');
     this.http.post<LocalScanResponse>(apiUrl('/api/scan'), { mode }).subscribe({
       next: ({ sessionData, status }) => {
         if (status) {

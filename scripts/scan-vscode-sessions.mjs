@@ -469,6 +469,24 @@ function workspaceFolderPath(workspaceDir) {
   }
 }
 
+function normalizedWorkspaceFolderScope(workspaceFolders) {
+  if (!Array.isArray(workspaceFolders)) {
+    return new Set();
+  }
+  return new Set(workspaceFolders.map(normalizeWorkspacePath).filter(Boolean));
+}
+
+function normalizeWorkspacePath(path) {
+  if (!path) {
+    return '';
+  }
+  try {
+    return resolve(String(path)).toLowerCase();
+  } catch {
+    return '';
+  }
+}
+
 function enrichSessionFromWorkspaceState(session, stateBySessionId) {
   const state = stateBySessionId.get(session.id);
   if (!state) {
@@ -607,9 +625,28 @@ export async function scanVsCodeSessions(options = {}) {
       roots,
     });
     DatabaseSync = options.sqlite === false ? null : await loadSqliteSupport();
-    const workspaceDirs = [
+    let workspaceDirs = [
       ...new Set(roots.flatMap((root) => workspaceDirsForRoot(root, traversalOptions()))),
     ];
+    const workspaceFolderScope = normalizedWorkspaceFolderScope(options.workspaceFolders);
+    if (workspaceFolderScope.size) {
+      const scopedWorkspaceDirs = workspaceDirs.filter((workspaceDir) =>
+        workspaceFolderScope.has(normalizeWorkspacePath(workspaceFolderPath(workspaceDir))),
+      );
+      onProgress({
+        stage: 'workspace-scope',
+        message: `Current workspace scope matched ${scopedWorkspaceDirs.length} VS Code storage entr${scopedWorkspaceDirs.length === 1 ? 'y' : 'ies'}.`,
+        total: scopedWorkspaceDirs.length,
+      });
+      workspaceDirs = scopedWorkspaceDirs;
+    } else if (options.requireWorkspaceFolders === true) {
+      onProgress({
+        stage: 'workspace-scope',
+        message: 'No current VS Code workspace folder was provided; skipping broad customization evidence scan.',
+        total: 0,
+      });
+      workspaceDirs = [];
+    }
     onProgress({
       stage: 'workspaces',
       message: `Found ${workspaceDirs.length} VS Code storage entr${workspaceDirs.length === 1 ? 'y' : 'ies'}.`,

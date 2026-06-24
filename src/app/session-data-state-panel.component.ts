@@ -120,6 +120,14 @@ export class SessionDataStatePanelComponent {
     const progress = this.runtimeStatus?.scanProgress;
     const index = Number(progress?.workspaceIndex ?? progress?.index ?? 0);
     const total = Number(progress?.workspaceTotal ?? progress?.total ?? 0);
+    if (this.runtimeStatus?.activeScanMode === 'customizations') {
+      if (this.currentWorkspaceLabel) {
+        return total > 1 ? `Current workspace storage ${index.toLocaleString()} of ${total.toLocaleString()}` : 'Current workspace';
+      }
+      if (progress?.stage === 'workspace-scope' && total === 0) {
+        return 'No current workspace matched';
+      }
+    }
     if (index > 0 && total > 0) {
       return `Workspace ${index.toLocaleString()} of ${total.toLocaleString()}`;
     }
@@ -163,7 +171,7 @@ export class SessionDataStatePanelComponent {
   protected get scanModeLabel(): string {
     const mode = this.runtimeStatus?.activeScanMode;
     return mode === 'customizations'
-      ? 'Customization evidence'
+      ? 'Customization usage'
       : mode === 'full'
         ? 'Full scan'
         : 'Quick scan';
@@ -203,6 +211,11 @@ export class SessionDataStatePanelComponent {
 
   protected get scanAdvice(): string {
     if (this.isScanning) {
+      if (this.runtimeStatus?.activeScanMode === 'customizations') {
+        return this.currentWorkspaceLabel
+          ? 'Checking whether current-workspace customizations appeared in recent model requests.'
+          : 'Looking for the current VS Code workspace before checking customization usage.';
+      }
       return this.foundSoFar.totalWorkspaces > 20
         ? 'Large VS Code profiles can take a few minutes. You can stop the scan and keep the last imported snapshot.'
         : 'The page will update when the scan finishes.';

@@ -27,14 +27,6 @@
         <strong>Rule-usage proof was skipped</strong>
         <p>{{ scanActionHelp() }}</p>
       </div>
-      <button
-        type="button"
-        [disabled]="refreshState === 'refreshing'"
-        [attr.aria-busy]="refreshState === 'refreshing'"
-        (click)="scanEvidence.emit()"
-      >
-        {{ scanActionLabel() }}
-      </button>
     </section>
   }
 

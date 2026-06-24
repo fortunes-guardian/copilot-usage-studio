@@ -143,6 +143,7 @@ async function startRuntime(context: vscode.ExtensionContext): Promise<RuntimeHa
     logFile: join(context.globalStorageUri.fsPath, 'runtime.log'),
     scanOptions: {
       roots: [vsCodeUserDataRoot(context)],
+      customizationWorkspaceFolders: currentWorkspaceFolders(),
       includeCustomizations: false,
     },
     startupScanMode: 'quick',
@@ -165,12 +166,24 @@ function vsCodeUserDataRoot(context: vscode.ExtensionContext): string {
   return dirname(dirname(context.globalStorageUri.fsPath));
 }
 
+function currentWorkspaceFolders(): string[] {
+  return vscode.workspace.workspaceFolders
+    ?.filter((folder) => folder.uri.scheme === 'file')
+    .map((folder) => folder.uri.fsPath) ?? [];
+}
+
 function logDebugSettings(): void {
   const debugConfig = vscode.workspace.getConfiguration('github.copilot.chat.agentDebugLog');
   const fileLogging = agentDebugLogFileLoggingEnabled();
   const agentLogs = debugConfig.get<boolean>('enabled');
   output.appendLine(
     `VS Code root scan is limited to this VS Code user-data folder; startup scans skip customization evidence for speed.`,
+  );
+  const workspaceFolders = currentWorkspaceFolders();
+  output.appendLine(
+    workspaceFolders.length
+      ? `Customization evidence scans are limited to the current VS Code workspace folder${workspaceFolders.length === 1 ? '' : 's'}: ${workspaceFolders.join('; ')}.`
+      : 'No current VS Code workspace folder is open; customization evidence scans will not scan every historical workspace by default.',
   );
   output.appendLine(
     `Agent debug log settings: enabled=${String(agentLogs)}, fileLogging.enabled=${String(fileLogging)}.`,
