@@ -313,7 +313,14 @@ export class App {
     this.sessionDataService.refresh(mode);
   }
 
+  protected refreshActiveViewData(): void {
+    this.refreshSessionData(this.activeView() === 'customizations' ? 'customizations' : 'quick');
+  }
+
   protected topbarScanLabel(): string {
+    if (this.activeView() === 'customizations' && !this.isRuntimeScanning()) {
+      return 'Find usage';
+    }
     return this.isRuntimeScanning() ? 'Scanning' : 'Refresh';
   }
 

@@ -192,6 +192,10 @@ export class CustomizationsPageComponent {
     return this.refreshState === 'refreshing' && this.runtimeStatus?.activeScanMode === 'customizations';
   }
 
+  protected isAnyScanActive(): boolean {
+    return this.refreshState === 'refreshing';
+  }
+
   protected currentWorkspaceLabel(): string {
     const progressWorkspace = this.runtimeStatus?.scanProgress?.workspace || '';
     if (progressWorkspace) {
@@ -217,6 +221,12 @@ export class CustomizationsPageComponent {
     if (this.refreshMessage?.toLowerCase().includes('stopped')) {
       return 'Scan stopped';
     }
+    if (this.customizationScanTimedOut()) {
+      return 'Scan timed out';
+    }
+    if (this.customizationScanCapped()) {
+      return 'Partial results';
+    }
     if (this.customizationEvidenceSummary().hasScannedEvidence) {
       return this.customizationEvidenceSummary().sent > 0 ? 'Usage evidence found' : 'No usage evidence found';
     }
@@ -233,6 +243,12 @@ export class CustomizationsPageComponent {
     if (this.refreshMessage?.toLowerCase().includes('stopped')) {
       return 'Scan stopped. Existing customization data was kept.';
     }
+    if (this.customizationScanTimedOut()) {
+      return 'The usage evidence scan reached its time limit. Partial results were kept so the app does not hang.';
+    }
+    if (this.customizationScanCapped()) {
+      return 'The usage evidence scan reached its safety budget. Partial results are shown; run a deeper scan later if needed.';
+    }
     if (this.customizationEvidenceSummary().hasScannedEvidence) {
       const sent = this.customizationEvidenceSummary().sent;
       const sessions = this.evidenceSessionCount();
@@ -241,6 +257,32 @@ export class CustomizationsPageComponent {
         : `Checked recent Copilot requests. No customization file text was found.`;
     }
     return 'Run Find usage evidence to check whether these files appeared inside recent Copilot model requests.';
+  }
+
+  protected evidenceMetricLabel(): string {
+    return this.isEvidenceScanActive() ? 'Matches so far' : 'Last result';
+  }
+
+  protected evidenceMetricText(): string {
+    const matches = this.isEvidenceScanActive()
+      ? Number(this.runtimeStatus?.scanProgress?.matches ?? this.evidenceMatchCount())
+      : this.evidenceMatchCount();
+    return `${matches.toLocaleString()} text match${matches === 1 ? '' : 'es'}`;
+  }
+
+  protected activeScanStats(): string {
+    if (!this.isEvidenceScanActive()) {
+      return '';
+    }
+    const progress = this.runtimeStatus?.scanProgress;
+    const sessions = Number(progress?.sessions ?? 0);
+    const calls = Number(progress?.modelCalls ?? 0);
+    const parts = [
+      sessions > 0 ? `${sessions.toLocaleString()} session${sessions === 1 ? '' : 's'} checked` : '',
+      calls > 0 ? `${calls.toLocaleString()} model call${calls === 1 ? '' : 's'} checked` : '',
+      this.evidenceMetricText(),
+    ].filter(Boolean);
+    return parts.join(' · ');
   }
 
   protected currentScanStep(): string {
@@ -301,6 +343,22 @@ export class CustomizationsPageComponent {
     return this.customizationsInput().reduce(
       (sum, customization) => sum + customization.matches.filter((match) => match.status === 'sent').length,
       0,
+    );
+  }
+
+  private customizationScanWarnings(): string[] {
+    return (this.ingestionInput()?.warnings ?? []).filter((warning) =>
+      String(warning).toLowerCase().includes('customization evidence scan'),
+    );
+  }
+
+  private customizationScanTimedOut(): boolean {
+    return this.customizationScanWarnings().some((warning) => warning.toLowerCase().includes('stopped after'));
+  }
+
+  private customizationScanCapped(): boolean {
+    return this.customizationScanWarnings().some((warning) =>
+      /limited to|stopped early|stopped after/i.test(warning),
     );
   }
 
@@ -376,19 +434,19 @@ export class CustomizationsPageComponent {
 
   protected statusHeadline(status: CopilotCustomizationEvidenceStatus): string {
     return {
-      sent: 'This content reached the model',
-      listed: 'Not proved sent',
-      discovered: 'Found during setup, not seen in a request',
+      sent: 'File text was sent to the model',
+      listed: 'Only the file name was seen',
+      discovered: 'Found locally, not seen in a request',
       not_seen: 'No evidence in imported sessions',
     }[status];
   }
 
   protected statusHelp(status: CopilotCustomizationEvidenceStatus): string {
     return {
-      sent: 'Distinctive text from this file appeared inside the material VS Code sent to a model. This is the strongest local evidence.',
-      listed: 'VS Code request material named this file or one of its labels, but the scanner did not find distinctive file text.',
-      discovered: 'VS Code found the file during setup or discovery, but imported model requests did not show it being used.',
-      not_seen: 'The file exists locally, but the imported sessions do not show it being discovered, listed, or sent.',
+      sent: 'We found distinctive text from this customization inside a VS Code model request. That is the strongest local proof that Copilot used it.',
+      listed: 'A request mentioned the file name or label, but we did not find the actual customization text in the material sent to the model.',
+      discovered: 'The file exists in a known customization location, but imported model requests did not show it being used.',
+      not_seen: 'The file exists locally, but the imported sessions do not show it being discovered, mentioned, or sent.',
     }[status];
   }
 
@@ -621,6 +679,7 @@ export class CustomizationsPageComponent {
 
   protected diagnosticKindLabel(kind: string): string {
     return {
+      candidate: 'Workspace folder',
       root: 'Folder',
       file: 'File',
       'debug-reference': 'Debug reference',

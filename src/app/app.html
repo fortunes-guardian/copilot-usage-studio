@@ -62,7 +62,7 @@
           class="data-refresh-button"
           [disabled]="sessionDataRefreshState() === 'refreshing'"
           [attr.aria-busy]="sessionDataRefreshState() === 'refreshing'"
-          (click)="refreshSessionData()"
+          (click)="refreshActiveViewData()"
         >
           <span class="refresh-icon" [class.spinning]="sessionDataRefreshState() === 'refreshing'" aria-hidden="true">↻</span>
           <span>{{ topbarScanLabel() }}</span>

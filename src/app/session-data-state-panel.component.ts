@@ -122,14 +122,15 @@ export class SessionDataStatePanelComponent {
     const total = Number(progress?.workspaceTotal ?? progress?.total ?? 0);
     if (this.runtimeStatus?.activeScanMode === 'customizations') {
       if (this.currentWorkspaceLabel) {
-        return total > 1 ? `Current workspace storage ${index.toLocaleString()} of ${total.toLocaleString()}` : 'Current workspace';
+        return 'Current workspace';
       }
       if (progress?.stage === 'workspace-scope' && total === 0) {
         return 'No current workspace matched';
       }
+      return 'Checking current workspace';
     }
     if (index > 0 && total > 0) {
-      return `Workspace ${index.toLocaleString()} of ${total.toLocaleString()}`;
+      return `VS Code storage entry ${index.toLocaleString()} of ${total.toLocaleString()}`;
     }
     return this.friendlyStageLabel(progress?.stage);
   }
@@ -175,6 +176,13 @@ export class SessionDataStatePanelComponent {
       : mode === 'full'
         ? 'Full scan'
         : 'Quick scan';
+  }
+
+  protected get scanProgressCountLabel(): string {
+    if (this.runtimeStatus?.activeScanMode === 'customizations') {
+      return this.currentWorkspaceLabel ? 'Current workspace' : 'Current workspace not detected';
+    }
+    return `${this.foundSoFar.checkedWorkspaces.toLocaleString()} of ${this.foundSoFar.totalWorkspaces.toLocaleString()} VS Code storage entries checked`;
   }
 
   protected get recentLogs() {
@@ -242,7 +250,7 @@ export class SessionDataStatePanelComponent {
       customizations: 'Finding Copilot customization files',
       'customization-evidence': 'Checking whether customization text reached the model',
       'chat-snapshots': 'Checking chat snapshots',
-      'workspace-complete': 'Storage entry complete',
+      'workspace-complete': 'VS Code storage entry complete',
       complete: 'Scan complete',
       failed: 'Scan failed',
     }[stage ?? ''] ?? 'Preparing scan';

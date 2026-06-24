@@ -22,14 +22,17 @@
         <strong>{{ evidenceStateLabel() }}</strong>
       </div>
       <div>
-        <span>Last result</span>
-        <strong>{{ evidenceMatchCount() | number }} text match{{ evidenceMatchCount() === 1 ? '' : 'es' }}</strong>
+        <span>{{ evidenceMetricLabel() }}</span>
+        <strong>{{ evidenceMetricText() }}</strong>
       </div>
     </div>
     <div class="scan-status-body">
       <div>
         <p>{{ evidenceResultText() }}</p>
         @if (isEvidenceScanActive()) {
+          @if (activeScanStats()) {
+            <p class="scan-progress-stats">{{ activeScanStats() }}</p>
+          }
           <p class="scan-progress-line">
             @if (elapsedScanLabel()) {
               <span>Running {{ elapsedScanLabel() }}</span>
@@ -47,7 +50,7 @@
         }
       </div>
       <div class="scan-status-actions">
-        @if (isEvidenceScanActive()) {
+        @if (isAnyScanActive()) {
           <button type="button" class="secondary-scan-button" (click)="cancelScan.emit()">Stop scan</button>
         }
         <button
@@ -57,7 +60,7 @@
           [attr.aria-busy]="refreshState === 'refreshing'"
           (click)="scanEvidence.emit()"
         >
-          @if (isEvidenceScanActive()) {
+          @if (isAnyScanActive()) {
             <span class="button-spinner" aria-hidden="true"></span>
           }
           {{ scanActionLabel() }}
@@ -204,10 +207,16 @@
           </div>
 
           <section class="evidence-summary">
-            <h4>{{ statusHeadline(customization.evidenceStatus) }}</h4>
-            <p>{{ statusHelp(customization.evidenceStatus) }}</p>
+            <div>
+              <span class="customization-kicker">Detection result</span>
+              <h4>{{ statusHeadline(customization.evidenceStatus) }}</h4>
+              <p>{{ statusHelp(customization.evidenceStatus) }}</p>
+            </div>
             @if (customization.description) {
-              <p class="description">{{ customization.description }}</p>
+              <div class="matched-customization-text">
+                <span class="customization-kicker">Matched customization text</span>
+                <p class="description">{{ customization.description }}</p>
+              </div>
             }
           </section>
 

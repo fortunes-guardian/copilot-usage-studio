@@ -46,6 +46,9 @@ export interface LocalRuntimeStatus {
     index?: number;
     total?: number;
     sessions?: number;
+    modelCalls?: number;
+    matches?: number;
+    capped?: boolean;
   } | null;
   recentLogs?: LocalRuntimeLogEntry[];
   progressHistory?: Array<LocalRuntimeStatus['scanProgress']>;
@@ -117,7 +120,9 @@ export class SessionDataService {
         this.loadError.set(null);
         this.refreshState.set('success');
         this.refreshMessage.set(
-          `${sessionData.sessions.length.toLocaleString()} sessions imported`,
+          mode === 'customizations'
+            ? 'Usage evidence checked.'
+            : `${sessionData.sessions.length.toLocaleString()} sessions imported`,
         );
       },
       error: (error: unknown) => {

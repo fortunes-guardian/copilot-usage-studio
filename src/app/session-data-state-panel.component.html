@@ -53,7 +53,7 @@
           <div class="workspace-outcomes-heading">
             <strong>What has been found</strong>
             <span>
-              {{ foundSoFar.checkedWorkspaces | number }} of {{ foundSoFar.totalWorkspaces | number }} workspaces checked
+              {{ scanProgressCountLabel }}
             </span>
           </div>
           @for (workspace of workspaceOutcomes; track workspace.title + workspace.subtitle) {

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { homedir, tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
 import test from 'node:test';
 
 import {
@@ -907,6 +907,19 @@ test('indexes VS Code user-level customizations and matches request side-file ev
     mkdirSync(workspaceFolder, { recursive: true });
     mkdirSync(join(userDir, 'prompts'), { recursive: true });
     writeFileSync(
+      join(userDir, 'settings.json'),
+      JSON.stringify(
+        {
+          'chat.promptFilesLocations': {
+            [promptFile]: true,
+          },
+        },
+        null,
+        2,
+      ),
+      'utf8',
+    );
+    writeFileSync(
       join(workspaceDir, 'workspace.json'),
       JSON.stringify({ folder: pathToFileUrl(workspaceFolder) }),
       'utf8',
@@ -950,6 +963,54 @@ test('indexes VS Code user-level customizations and matches request side-file ev
     assert.equal(prompt?.matches.some((match) => match.source === 'tools_0.json'), true);
     assert(data.ingestion.customizationEvidenceTextParts > 0);
     assert(data.ingestion.customizationEvidenceMatchedCustomizations > 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('does not treat the whole user profile as a customization root', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'copilot-usage-studio-no-home-customizations-'));
+  const userDir = join(root, 'Code', 'User');
+  const workspaceDir = join(userDir, 'workspaceStorage', 'workspace-one');
+  const sessionDir = join(workspaceDir, 'GitHub.copilot-chat', 'debug-logs', 'home-profile-session');
+  const workspaceFolder = join(root, 'repo');
+  const profileInstruction = join(root, 'AGENTS.md');
+
+  try {
+    mkdirSync(sessionDir, { recursive: true });
+    mkdirSync(workspaceFolder, { recursive: true });
+    writeFileSync(
+      join(workspaceDir, 'workspace.json'),
+      JSON.stringify({ folder: pathToFileUrl(workspaceFolder) }),
+      'utf8',
+    );
+    writeFileSync(
+      profileInstruction,
+      'This user-profile instruction should not be imported unless a setting points at it.',
+      'utf8',
+    );
+    writeJsonl(join(sessionDir, 'main.jsonl'), [
+      event(1, 'llm_request', 'panel/editAgent', {
+        attrs: {
+          model: 'gpt-5.4',
+          inputTokens: 1_200,
+          outputTokens: 80,
+          inputMessages: 'Inspect this workspace.',
+        },
+      }),
+    ]);
+
+    const data = await scanVsCodeSessions({ roots: [workspaceDir], sqlite: false });
+
+    assert.equal(data.customizations.some((item) => item.sourcePath === profileInstruction), false);
+    assert.equal(
+      data.ingestion.scannedCustomizationLocations.some((location) => location.path === resolve(homedir())),
+      false,
+    );
+    assert.equal(
+      data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'candidate' && location.path === resolve(userDir)),
+      false,
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

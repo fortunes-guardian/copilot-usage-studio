@@ -99,6 +99,13 @@
   font-size: 11px !important;
 }
 
+.scan-progress-stats {
+  margin-top: 3px !important;
+  color: var(--text) !important;
+  font-size: 11px !important;
+  font-weight: 720;
+}
+
 .scan-warning {
   margin-top: 4px !important;
   color: var(--warning) !important;
@@ -438,6 +445,7 @@
 
 .customization-detail {
   display: grid;
+  align-content: start;
   gap: 9px;
   min-height: calc(100vh - 138px);
   padding: 10px;
@@ -488,8 +496,15 @@
 
 .customization-facts {
   display: flex;
+  align-items: flex-start;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.customization-facts span {
+  flex: 0 0 auto;
+  min-height: 24px;
+  padding: 3px 8px;
 }
 
 .customization-facts b {
@@ -505,6 +520,11 @@
   background: var(--surface-soft);
 }
 
+.evidence-summary {
+  display: grid;
+  gap: 10px;
+}
+
 .evidence-summary h4,
 .match-list h4 {
   margin: 0;
@@ -514,6 +534,11 @@
 
 .evidence-summary .description {
   color: var(--text);
+}
+
+.matched-customization-text {
+  border-top: 1px solid var(--line);
+  padding-top: 9px;
 }
 
 .match-list {

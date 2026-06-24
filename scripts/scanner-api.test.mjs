@@ -139,8 +139,10 @@ test('can scope a scan to the current VS Code workspace folder', async () => {
     const currentProject = join(root, 'projects', 'current');
     const oldProject = join(root, 'projects', 'old');
     const currentStorage = createStoredWorkspace(userDir, 'current-storage', currentProject);
+    const duplicateCurrentStorage = createStoredWorkspace(userDir, 'current-storage-duplicate', currentProject);
     const oldStorage = createStoredWorkspace(userDir, 'old-storage', oldProject);
     writeDebugSession(currentStorage, 'current-session', 1_000, 100, 50);
+    writeDebugSession(duplicateCurrentStorage, 'duplicate-current-session', 3_000, 300, 70);
     writeDebugSession(oldStorage, 'old-session', 2_000, 200, 60);
 
     const result = await scanVsCodeSessions({
@@ -153,6 +155,7 @@ test('can scope a scan to the current VS Code workspace folder', async () => {
     assert.equal(result.sessions[0].id, 'current-session');
     assert.equal(result.ingestion.scannedWorkspaces, 1);
     assert.equal(result.ingestion.workspaceScans[0].workspace, 'current');
+    assert.ok(result.ingestion.warnings.some((warning) => warning.includes('Duplicate VS Code storage entry skipped')));
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

@@ -639,8 +639,10 @@ export async function scanVsCodeSessions(options = {}) {
     ];
     const workspaceFolderScope = normalizedWorkspaceFolderScope(options.workspaceFolders);
     if (workspaceFolderScope.size) {
-      const scopedWorkspaceDirs = workspaceDirs.filter((workspaceDir) =>
-        workspaceFolderScope.has(normalizeWorkspacePath(workspaceFolderPath(workspaceDir))),
+      const scopedWorkspaceDirs = dedupeWorkspaceDirsByFolder(
+        workspaceDirs.filter((workspaceDir) =>
+          workspaceFolderScope.has(normalizeWorkspacePath(workspaceFolderPath(workspaceDir))),
+        ),
       );
       onProgress({
         stage: 'workspace-scope',
@@ -762,6 +764,22 @@ export async function scanVsCodeSessions(options = {}) {
 
 function yieldToRuntime() {
   return new Promise((resolveYield) => setImmediate(resolveYield));
+}
+
+function dedupeWorkspaceDirsByFolder(workspaceDirs) {
+  const seen = new Set();
+  const deduped = [];
+  for (const workspaceDir of workspaceDirs) {
+    const folder = normalizeWorkspacePath(workspaceFolderPath(workspaceDir));
+    const key = folder || normalizeWorkspacePath(workspaceDir);
+    if (seen.has(key)) {
+      diagnostics.warnings.push(`Duplicate VS Code storage entry skipped for current workspace: ${workspaceDir}`);
+      continue;
+    }
+    seen.add(key);
+    deduped.push(workspaceDir);
+  }
+  return deduped;
 }
 
 export function writeSessionData(sessionData, outputFile = 'public/data/sessions.json') {

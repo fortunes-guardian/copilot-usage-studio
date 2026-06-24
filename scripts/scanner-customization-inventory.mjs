@@ -804,10 +804,7 @@ function parseSimpleFrontmatter(content) {
       return { customizations: [], bases: [] };
     }
   
-    const bases = [
-      ...customizationCandidateBases(folder),
-      ...customizationUserBases(workspaceDir),
-    ];
+    const bases = customizationCandidateBases(folder);
     const files = new Map();
   
     for (const base of bases) {
@@ -834,12 +831,6 @@ function parseSimpleFrontmatter(content) {
         ...customizationsFromConfiguredSettings(workspaceDir, folder, workspace, options),
       ],
     };
-  }
-  
-  function customizationUserBases(workspaceDir) {
-    const userDir = userDirForRoot(workspaceDir);
-    return [...new Set([homedir(), userDir].filter(Boolean).map((base) => resolve(base)))]
-      .filter((base) => existsSync(base));
   }
   
   function recordCustomizationLocation(path, kind) {
