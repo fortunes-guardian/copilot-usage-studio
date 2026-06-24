@@ -112,7 +112,12 @@ export class SessionDataService {
     this.http.post<LocalScanResponse>(apiUrl('/api/scan'), { mode }).subscribe({
       next: ({ sessionData, status }) => {
         if (status) {
-          this.runtimeStatus.set(status);
+          this.runtimeStatus.set({
+            ...status,
+            scanning: false,
+            activeScanId: 0,
+            activeScanMode: '',
+          });
           this.runtimeStatusAvailable.set(true);
         }
         this.sessionData.set(sessionData);

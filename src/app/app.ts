@@ -318,17 +318,20 @@ export class App {
   }
 
   protected topbarScanLabel(): string {
-    if (this.activeView() === 'customizations' && !this.isRuntimeScanning()) {
+    if (this.sessionDataRefreshState() === 'refreshing') {
+      return 'Scanning';
+    }
+    if (this.activeView() === 'customizations') {
       return 'Find usage';
     }
-    return this.isRuntimeScanning() ? 'Scanning' : 'Refresh';
+    return 'Refresh';
   }
 
   protected topbarScanStatus(): string {
     const status = this.runtimeStatus();
     const message = this.sessionDataRefreshMessage();
 
-    if (this.isRuntimeScanning()) {
+    if (this.sessionDataRefreshState() === 'refreshing') {
       const progress = status?.scanProgress;
       const workspaceIndex = Number(progress?.workspaceIndex ?? progress?.index ?? 0);
       const workspaceTotal = Number(progress?.workspaceTotal ?? progress?.total ?? 0);
@@ -346,6 +349,12 @@ export class App {
       }
 
       return message || 'Scanning local VS Code data';
+    }
+
+    if (status?.scanning === true) {
+      return status.activeScanMode === 'customizations'
+        ? 'Checking customization evidence in the background'
+        : 'Background scan running';
     }
 
     if (this.sessionDataRefreshState() === 'error') {
