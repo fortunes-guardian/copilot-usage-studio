@@ -313,8 +313,46 @@ export class App {
     this.sessionDataService.refresh(mode);
   }
 
+  protected topbarScanLabel(): string {
+    return this.isRuntimeScanning() ? 'Scanning' : 'Refresh';
+  }
+
+  protected topbarScanStatus(): string {
+    const status = this.runtimeStatus();
+    const message = this.sessionDataRefreshMessage();
+
+    if (this.isRuntimeScanning()) {
+      const progress = status?.scanProgress;
+      const workspaceIndex = Number(progress?.workspaceIndex ?? progress?.index ?? 0);
+      const workspaceTotal = Number(progress?.workspaceTotal ?? progress?.total ?? 0);
+      const workspace = progress?.workspace || progress?.workspaceDir || '';
+
+      if (workspaceIndex > 0 && workspaceTotal > 0) {
+        return workspace
+          ? `Workspace ${workspaceIndex.toLocaleString()} of ${workspaceTotal.toLocaleString()}: ${workspace}`
+          : `Workspace ${workspaceIndex.toLocaleString()} of ${workspaceTotal.toLocaleString()}`;
+      }
+
+      return message || 'Scanning local VS Code data';
+    }
+
+    if (this.sessionDataRefreshState() === 'error') {
+      return message || 'Scan failed';
+    }
+
+    if (this.sessionDataRefreshState() === 'success' && message) {
+      return message;
+    }
+
+    return this.dataUpdatedLabel();
+  }
+
   protected cancelScan(): void {
     this.sessionDataService.cancelScan();
+  }
+
+  private isRuntimeScanning(): boolean {
+    return this.runtimeStatus()?.scanning === true || this.sessionDataRefreshState() === 'refreshing';
   }
 
   protected dataUpdatedLabel(): string {

@@ -14,22 +14,22 @@
     @if (runtimeStatusAvailable && runtimeStatus) {
       <div class="runtime-summary">
         <div>
-          <span>Status</span>
-          <strong>{{ isScanning ? scanModeLabel : runtimeStatus.phase }}</strong>
+          <span>{{ isScanning ? 'Scanning now' : 'Last scan' }}</span>
+          <strong>{{ isScanning ? scanModeLabel : (runtimeStatus.lastScanCompletedAt ? 'Complete' : runtimeStatus.phase) }}</strong>
           <small>{{ scanStatusLabel }}</small>
         </div>
         <div>
-          <span>Sessions</span>
+          <span>Imported sessions</span>
           <strong>{{ foundSoFar.sessions | number }}</strong>
-          <small>{{ foundSoFar.debugLogFolders | number }} debug-log folders</small>
+          <small>{{ foundSoFar.debugLogFolders | number }} exact debug-log folders</small>
         </div>
         <div>
-          <span>Chat snapshots</span>
+          <span>Fallback chats</span>
           <strong>{{ foundSoFar.chatSnapshots | number }}</strong>
-          <small>Weaker fallback source</small>
+          <small>Used only when exact logs are absent</small>
         </div>
         <div>
-          <span>Copilot files</span>
+          <span>Memory and rules</span>
           <strong>{{ foundSoFar.memories + foundSoFar.customizations | number }}</strong>
           <small>{{ foundSoFar.memories | number }} memories · {{ foundSoFar.customizations | number }} customizations</small>
         </div>
@@ -48,20 +48,50 @@
         </div>
       }
 
-      <div class="scan-actions">
-        <button
-          type="button"
-          class="scan-button"
-          [disabled]="refreshState === 'refreshing'"
-          [attr.aria-busy]="refreshState === 'refreshing'"
-          (click)="refresh.emit()"
-        >
-          {{ refreshState === 'refreshing' ? 'Scanning...' : (isEmptyState ? 'Scan local Copilot data' : 'Scan again') }}
-        </button>
-        @if (isScanning) {
-          <button type="button" class="scan-button secondary" (click)="cancelScan.emit()">Stop scan</button>
-        }
-      </div>
+      @if (workspaceOutcomes.length) {
+        <div class="workspace-outcomes" aria-label="Scan findings by workspace">
+          <div class="workspace-outcomes-heading">
+            <strong>What has been found</strong>
+            <span>
+              {{ foundSoFar.checkedWorkspaces | number }} of {{ foundSoFar.totalWorkspaces | number }} workspaces checked
+            </span>
+          </div>
+          @for (workspace of workspaceOutcomes; track workspace.title + workspace.subtitle) {
+            <article
+              class="workspace-outcome"
+              [class.scanning]="workspace.status === 'scanning'"
+              [class.warning]="workspace.status === 'warning'"
+            >
+              <div>
+                <strong>{{ workspace.title }}</strong>
+                <small>{{ workspace.subtitle }}</small>
+              </div>
+              <span>{{ workspace.findings }}</span>
+            </article>
+          }
+        </div>
+      }
+
+      <p class="runtime-advice">{{ scanAdvice }}</p>
+
+      @if (showPanelActions) {
+        <div class="scan-actions">
+          @if (!isScanning) {
+            <button
+              type="button"
+              class="scan-button"
+              [disabled]="refreshState === 'refreshing'"
+              [attr.aria-busy]="refreshState === 'refreshing'"
+              (click)="refresh.emit()"
+            >
+              {{ isEmptyState ? 'Scan local Copilot data' : 'Try scan again' }}
+            </button>
+          }
+          @if (isScanning) {
+            <button type="button" class="scan-button secondary" (click)="cancelScan.emit()">Stop scan</button>
+          }
+        </div>
+      }
 
       <details class="runtime-advanced">
         <summary>Advanced details</summary>

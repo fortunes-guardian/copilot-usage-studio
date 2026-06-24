@@ -66,6 +66,7 @@
 
 .runtime-summary div,
 .scan-progress,
+.workspace-outcomes,
 .runtime-advanced {
   border: 1px solid var(--line);
   border-radius: 11px;
@@ -151,6 +152,76 @@
   background: linear-gradient(90deg, var(--accent), var(--accent-2));
 }
 
+.workspace-outcomes {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+.workspace-outcomes-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.workspace-outcomes-heading strong {
+  color: var(--text-strong);
+  font-size: 13px;
+}
+
+.workspace-outcomes-heading span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.workspace-outcome {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.72fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--accent-2) 24%, var(--line));
+  border-radius: 9px;
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--accent-2) 5%, var(--surface-soft));
+}
+
+.workspace-outcome.scanning {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--line));
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface-soft));
+}
+
+.workspace-outcome.warning {
+  border-color: color-mix(in srgb, var(--warning) 32%, var(--line));
+  background: color-mix(in srgb, var(--warning) 6%, var(--surface-soft));
+}
+
+.workspace-outcome div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.workspace-outcome strong,
+.workspace-outcome small,
+.workspace-outcome > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-outcome strong {
+  color: var(--text-strong);
+  font-size: 12px;
+}
+
+.workspace-outcome small,
+.workspace-outcome > span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
 .scan-actions {
   display: flex;
   flex-wrap: wrap;
@@ -207,6 +278,13 @@
   text-align: left;
 }
 
+.runtime-advice {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .runtime-log li {
   overflow: hidden;
   border: 1px solid var(--line);
@@ -236,6 +314,12 @@
 
 @media (max-width: 520px) {
   .runtime-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-outcomes-heading,
+  .workspace-outcome {
+    display: grid;
     grid-template-columns: 1fr;
   }
 }

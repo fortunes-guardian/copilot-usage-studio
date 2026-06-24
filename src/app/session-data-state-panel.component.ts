@@ -7,6 +7,13 @@ import {
   SessionDataRefreshState,
 } from './session-data.service';
 
+interface WorkspaceOutcome {
+  title: string;
+  subtitle: string;
+  status: 'scanning' | 'complete' | 'pending' | 'warning';
+  findings: string;
+}
+
 @Component({
   selector: 'app-session-data-state-panel',
   imports: [DecimalPipe],
@@ -50,6 +57,10 @@ export class SessionDataStatePanelComponent {
     return this.runtimeStatus?.scanning === true || this.refreshState === 'refreshing';
   }
 
+  protected get showPanelActions(): boolean {
+    return this.isScanning || this.state !== 'ready';
+  }
+
   protected get statusTitle(): string {
     if (this.isScanning) {
       return 'Scanning VS Code Copilot data';
@@ -72,11 +83,11 @@ export class SessionDataStatePanelComponent {
   protected get statusBody(): string {
     if (this.isScanning) {
       return this.currentWorkspaceLabel
-        ? `Checking local VS Code history for ${this.currentWorkspaceLabel}. You can stop the scan and keep existing data.`
-        : 'Checking local VS Code history, debug logs, chat snapshots, memories, and Copilot files. You can stop the scan and keep existing data.';
+        ? `Checking ${this.currentWorkspaceLabel}. Existing imported data stays visible while the scan runs.`
+        : 'Checking local VS Code Copilot usage, memories, and customization files. Existing imported data stays visible while the scan runs.';
     }
     if (this.refreshState === 'success') {
-      return 'The page data was refreshed from local VS Code Copilot files.';
+      return 'Local VS Code Copilot data was refreshed.';
     }
     if (this.refreshState === 'error') {
       return this.runtimeStatus?.lastError || this.error || 'The scan stopped before fresh data was imported.';
@@ -89,7 +100,7 @@ export class SessionDataStatePanelComponent {
 
   protected get scanStatusLabel(): string {
     if (this.isScanning) {
-      return this.scanElapsedLabel ? `Scan in progress · started ${this.scanElapsedLabel} ago` : 'Scan in progress';
+      return this.scanElapsedLabel ? `Started ${this.scanElapsedLabel} ago` : 'Started just now';
     }
     if (this.runtimeStatus?.lastError && this.refreshState === 'error') {
       return this.scanElapsedLabel ? `Stopped after ${this.scanElapsedLabel}` : 'Stopped before completion';
@@ -110,7 +121,7 @@ export class SessionDataStatePanelComponent {
     const index = Number(progress?.workspaceIndex ?? progress?.index ?? 0);
     const total = Number(progress?.workspaceTotal ?? progress?.total ?? 0);
     if (index > 0 && total > 0) {
-      return `VS Code storage entry ${index.toLocaleString()} of ${total.toLocaleString()}`;
+      return `Workspace ${index.toLocaleString()} of ${total.toLocaleString()}`;
     }
     return this.friendlyStageLabel(progress?.stage);
   }
@@ -140,7 +151,13 @@ export class SessionDataStatePanelComponent {
     );
     const chatSnapshots = workspaces.reduce((sum, workspace) => sum + Number(workspace.chatSnapshots ?? 0), 0);
     const debugLogFolders = workspaces.reduce((sum, workspace) => sum + Number(workspace.debugLogFolders ?? 0), 0);
-    return { sessions, memories, chatSnapshots, debugLogFolders, customizations };
+    const checkedWorkspaces = workspaces.filter((workspace) => workspace.completed).length;
+    const totalWorkspaces = Math.max(
+      Number(this.runtimeStatus?.scanProgress?.workspaceTotal ?? 0),
+      ...workspaces.map((workspace) => Number(workspace.workspaceTotal ?? 0)),
+      workspaces.length,
+    );
+    return { sessions, memories, chatSnapshots, debugLogFolders, customizations, checkedWorkspaces, totalWorkspaces };
   }
 
   protected get scanModeLabel(): string {
@@ -154,6 +171,52 @@ export class SessionDataStatePanelComponent {
 
   protected get recentLogs() {
     return this.runtimeStatus?.recentLogs?.slice(-6) ?? [];
+  }
+
+  protected get workspaceOutcomes(): WorkspaceOutcome[] {
+    const workspaces = this.runtimeStatus?.workspaceProgress ?? [];
+    return workspaces.slice(-6).reverse().map((workspace) => {
+      const title = workspace.workspace || workspace.workspaceDir || 'VS Code workspace';
+      const debugLogFolders = Number(workspace.debugLogFolders ?? 0);
+      const chatSnapshots = Number(workspace.chatSnapshots ?? 0);
+      const sessions = Number(workspace.sessions ?? 0);
+      const memories = Number(workspace.memories ?? 0);
+      const customizations = Number(workspace.customizations ?? workspace.customizationInventory ?? 0);
+      const findings = [
+        sessions ? `${sessions.toLocaleString()} session${sessions === 1 ? '' : 's'}` : '',
+        debugLogFolders ? `${debugLogFolders.toLocaleString()} debug-log folder${debugLogFolders === 1 ? '' : 's'}` : '',
+        chatSnapshots ? `${chatSnapshots.toLocaleString()} chat snapshot${chatSnapshots === 1 ? '' : 's'}` : '',
+        memories ? `${memories.toLocaleString()} memor${memories === 1 ? 'y' : 'ies'}` : '',
+        customizations ? `${customizations.toLocaleString()} customization${customizations === 1 ? '' : 's'}` : '',
+      ].filter(Boolean).join(' · ');
+
+      return {
+        title,
+        subtitle: this.friendlyStageLabel(workspace.lastStage),
+        status: workspace.completed
+          ? (sessions || debugLogFolders || chatSnapshots || memories || customizations ? 'complete' : 'warning')
+          : 'scanning',
+        findings: findings || 'No Copilot data found here yet',
+      };
+    });
+  }
+
+  protected get scanAdvice(): string {
+    if (this.isScanning) {
+      return this.foundSoFar.totalWorkspaces > 20
+        ? 'Large VS Code profiles can take a few minutes. You can stop the scan and keep the last imported snapshot.'
+        : 'The page will update when the scan finishes.';
+    }
+
+    if (this.foundSoFar.sessions === 0 && this.foundSoFar.chatSnapshots > 0) {
+      return 'Only fallback chat records were found. Enable Agent Debug Log file logging for exact model-call usage.';
+    }
+
+    if (this.foundSoFar.sessions === 0) {
+      return 'No sessions have been imported yet. Run a scan after using Copilot Chat or Agent mode in VS Code.';
+    }
+
+    return 'Data is loaded from local VS Code files. Run another scan after new Copilot activity.';
   }
 
   private friendlyStageLabel(stage?: string): string {

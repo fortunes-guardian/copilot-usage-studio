@@ -240,7 +240,7 @@ describe('App', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    clickButtonContaining(fixture.nativeElement, 'Scan');
+    clickButtonContaining(fixture.nativeElement, 'Refresh');
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Scanning');
 

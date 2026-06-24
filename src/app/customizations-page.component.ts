@@ -178,17 +178,17 @@ export class CustomizationsPageComponent {
 
   protected scanActionLabel(): string {
     if (this.refreshState === 'refreshing') {
-      return 'Scanning Copilot data...';
+      return 'Verifying rule usage...';
     }
     return this.customizationEvidenceSummary().hasScannedEvidence
-      ? 'Rescan Copilot data'
-      : 'Run detailed scan';
+      ? 'Verify rule usage again'
+      : 'Verify rule usage';
   }
 
   protected scanActionHelp(): string {
     return this.customizationEvidenceSummary().hasScannedEvidence
-      ? 'Refreshes local VS Code data and checks whether customization file text appears in imported model requests.'
-      : 'Detailed evidence was skipped to keep the last scan fast. Run this when you want to verify whether instruction or skill text actually reached the model.';
+      ? 'Checks local VS Code model requests again to see whether instruction, skill, prompt, hook, or agent text actually reached the model.'
+      : 'The fast scan found customization files but skipped the slower evidence check. Run this when you want proof that the file text reached a model request.';
   }
 
   protected selectCustomization(customization: CopilotCustomization): void {

@@ -65,10 +65,10 @@
           (click)="refreshSessionData()"
         >
           <span class="refresh-icon" [class.spinning]="sessionDataRefreshState() === 'refreshing'" aria-hidden="true">↻</span>
-          <span>{{ sessionDataRefreshState() === 'refreshing' ? 'Scanning' : 'Scan' }}</span>
+          <span>{{ topbarScanLabel() }}</span>
         </button>
         <span class="data-refresh-status" aria-live="polite">
-          {{ sessionDataRefreshMessage() || dataUpdatedLabel() }}
+          {{ topbarScanStatus() }}
         </span>
       </div>
       <button
