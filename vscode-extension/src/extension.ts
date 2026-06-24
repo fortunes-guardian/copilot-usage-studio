@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 type LocalRuntime = {
@@ -20,6 +21,69 @@ type RuntimeHandle = {
   runtime: LocalRuntime;
   baseUrl: string;
 };
+
+type CustomizationKind = 'instruction' | 'skill' | 'prompt' | 'hook' | 'agent';
+
+type CustomizationDiscoveryLocation = {
+  path: string;
+  kind: CustomizationKind;
+  source: string;
+  settingKey: string;
+  scope: string;
+  rawLocation: string;
+  workspaceFolder: string;
+};
+
+type CustomizationSettingSpec = {
+  section: string;
+  key: string;
+  settingKey: string;
+  kind: CustomizationKind;
+  documentedDefault: Record<string, boolean>;
+};
+
+const customizationSettingSpecs: CustomizationSettingSpec[] = [
+  {
+    section: 'chat',
+    key: 'instructionsFilesLocations',
+    settingKey: 'chat.instructionsFilesLocations',
+    kind: 'instruction',
+    documentedDefault: { '.github/instructions': true, '~/.claude/rules': false },
+  },
+  {
+    section: 'chat',
+    key: 'promptFilesLocations',
+    settingKey: 'chat.promptFilesLocations',
+    kind: 'prompt',
+    documentedDefault: { '.github/prompts': true },
+  },
+  {
+    section: 'chat',
+    key: 'agentFilesLocations',
+    settingKey: 'chat.agentFilesLocations',
+    kind: 'agent',
+    documentedDefault: { '.github/agents': true },
+  },
+  {
+    section: 'chat',
+    key: 'agentSkillsLocations',
+    settingKey: 'chat.agentSkillsLocations',
+    kind: 'skill',
+    documentedDefault: {
+      '.github/skills': true,
+      '.claude/skills': true,
+      '~/.copilot/skills': true,
+      '~/.claude/skills': true,
+    },
+  },
+  {
+    section: 'chat',
+    key: 'hookFilesLocations',
+    settingKey: 'chat.hookFilesLocations',
+    kind: 'hook',
+    documentedDefault: {},
+  },
+];
 
 let output: vscode.OutputChannel;
 let runtimeHandle: Promise<RuntimeHandle> | null = null;
@@ -144,6 +208,7 @@ async function startRuntime(context: vscode.ExtensionContext): Promise<RuntimeHa
     scanOptions: {
       roots: [vsCodeUserDataRoot(context)],
       customizationWorkspaceFolders: currentWorkspaceFolders(),
+      customizationDiscovery: buildCustomizationDiscovery(),
       includeCustomizations: false,
     },
     startupScanMode: 'quick',
@@ -197,22 +262,17 @@ function logDebugSettings(): void {
 }
 
 function logCustomizationSettings(): void {
-  const chatConfig = vscode.workspace.getConfiguration('chat');
-  const settingKeys = [
-    'instructionsFilesLocations',
-    'promptFilesLocations',
-    'agentFilesLocations',
-    'agentSkillsLocations',
-    'hookFilesLocations',
-  ];
-  const summary = settingKeys.map((key) => {
-    const value = chatConfig.get<Record<string, boolean>>(key) ?? {};
-    const enabled = Object.entries(value)
-      .filter(([, isEnabled]) => isEnabled === true)
-      .map(([location]) => location);
-    return `${key}=${enabled.length}`;
-  });
-  output.appendLine(`Effective Copilot customization location settings: ${summary.join(', ')}.`);
+  const discovery = buildCustomizationDiscovery();
+  const sourceCounts = discovery.locations.reduce<Record<string, number>>((counts, location) => {
+    counts[location.source] = (counts[location.source] ?? 0) + 1;
+    return counts;
+  }, {});
+  const summary = Object.entries(sourceCounts)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([source, count]) => `${source}=${count}`);
+  output.appendLine(
+    `Resolved Copilot customization discovery from VS Code API: ${discovery.locations.length} location${discovery.locations.length === 1 ? '' : 's'} (${summary.join(', ') || 'none'}).`,
+  );
 }
 
 function extensionLogger(): Pick<Console, 'log' | 'warn' | 'error'> {
@@ -271,6 +331,171 @@ function agentDebugLogFileLoggingEnabled(): boolean | undefined {
   return vscode.workspace
     .getConfiguration('github.copilot.chat.agentDebugLog')
     .get<boolean>('fileLogging.enabled');
+}
+
+function buildCustomizationDiscovery(): { strict: true; generatedBy: string; locations: CustomizationDiscoveryLocation[] } {
+  const locations = new Map<string, CustomizationDiscoveryLocation>();
+  for (const folder of vscode.workspace.workspaceFolders ?? []) {
+    if (folder.uri.scheme !== 'file') {
+      continue;
+    }
+    const workspaceFolder = folder.uri.fsPath;
+
+    for (const spec of customizationSettingSpecs) {
+      const config = vscode.workspace.getConfiguration(spec.section, folder.uri);
+      const inspected = config.inspect<Record<string, boolean>>(spec.key);
+      for (const [scope, value] of inspectedSettingObjects(inspected, spec.documentedDefault)) {
+        for (const [rawLocation, enabled] of Object.entries(value)) {
+          if (enabled !== true) {
+            continue;
+          }
+          addCustomizationLocation(locations, {
+            path: resolveCustomizationLocation(rawLocation, workspaceFolder),
+            kind: spec.kind,
+            source: scope === 'default' ? 'vscode-default' : `vscode-${scope}-setting`,
+            settingKey: spec.settingKey,
+            scope,
+            rawLocation,
+            workspaceFolder,
+          });
+        }
+      }
+    }
+
+    addBooleanDefaultLocation(
+      locations,
+      folder.uri,
+      workspaceFolder,
+      'github.copilot.chat.codeGeneration',
+      'useInstructionFiles',
+      '.github/copilot-instructions.md',
+      'instruction',
+    );
+    addBooleanDefaultLocation(
+      locations,
+      folder.uri,
+      workspaceFolder,
+      'chat',
+      'useAgentsMdFile',
+      'AGENTS.md',
+      'instruction',
+    );
+    addBooleanDefaultLocation(
+      locations,
+      folder.uri,
+      workspaceFolder,
+      'chat',
+      'useClaudeMdFile',
+      'CLAUDE.md',
+      'instruction',
+    );
+
+    if (vscode.workspace.getConfiguration('chat', folder.uri).get<boolean>('useCustomizationsInParentRepositories') === true) {
+      for (const repoFolder of parentRepositoryFolders(workspaceFolder)) {
+        for (const spec of customizationSettingSpecs) {
+          for (const [rawLocation, enabled] of Object.entries(spec.documentedDefault)) {
+            if (enabled !== true || rawLocation.startsWith('~')) {
+              continue;
+            }
+            addCustomizationLocation(locations, {
+              path: resolveCustomizationLocation(rawLocation, repoFolder),
+              kind: spec.kind,
+              source: 'vscode-parent-repo-default',
+              settingKey: 'chat.useCustomizationsInParentRepositories',
+              scope: 'parent-repo',
+              rawLocation,
+              workspaceFolder,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  return {
+    strict: true,
+    generatedBy: 'vscode-extension-api',
+    locations: [...locations.values()].sort((a, b) =>
+      `${a.workspaceFolder}:${a.kind}:${a.path}`.localeCompare(`${b.workspaceFolder}:${b.kind}:${b.path}`),
+    ),
+  };
+}
+
+function inspectedSettingObjects(
+  inspected: ReturnType<vscode.WorkspaceConfiguration['inspect']> | undefined,
+  documentedDefault: Record<string, boolean>,
+): Array<[string, Record<string, boolean>]> {
+  const values: Array<[string, unknown]> = [
+    ['default', inspected?.defaultValue ?? documentedDefault],
+    ['user', inspected?.globalValue],
+    ['workspace', inspected?.workspaceValue],
+    ['workspace-folder', inspected?.workspaceFolderValue],
+  ];
+  return values
+    .filter(([, value]) => value && typeof value === 'object' && !Array.isArray(value))
+    .map(([scope, value]) => [scope, value as Record<string, boolean>]);
+}
+
+function addBooleanDefaultLocation(
+  locations: Map<string, CustomizationDiscoveryLocation>,
+  scopeUri: vscode.Uri,
+  workspaceFolder: string,
+  section: string,
+  key: string,
+  rawLocation: string,
+  kind: CustomizationKind,
+): void {
+  const config = vscode.workspace.getConfiguration(section, scopeUri);
+  if (config.get<boolean>(key) === false) {
+    return;
+  }
+  const inspected = config.inspect<boolean>(key);
+  const source = inspected?.workspaceFolderValue !== undefined
+    ? 'vscode-workspace-folder-setting'
+    : inspected?.workspaceValue !== undefined
+      ? 'vscode-workspace-setting'
+      : inspected?.globalValue !== undefined
+        ? 'vscode-user-setting'
+        : 'vscode-default';
+  addCustomizationLocation(locations, {
+    path: resolveCustomizationLocation(rawLocation, workspaceFolder),
+    kind,
+    source,
+    settingKey: `${section}.${key}`,
+    scope: source.replace(/^vscode-/, '').replace(/-setting$/, ''),
+    rawLocation,
+    workspaceFolder,
+  });
+}
+
+function addCustomizationLocation(
+  locations: Map<string, CustomizationDiscoveryLocation>,
+  location: CustomizationDiscoveryLocation,
+): void {
+  const key = `${location.workspaceFolder}:${location.kind}:${location.path}:${location.source}:${location.settingKey}`;
+  locations.set(key, location);
+}
+
+function resolveCustomizationLocation(rawLocation: string, workspaceFolder: string): string {
+  if (rawLocation.startsWith('~/') || rawLocation.startsWith('~\\')) {
+    return resolve(homedir(), rawLocation.slice(2));
+  }
+  return isAbsolute(rawLocation) ? resolve(rawLocation) : resolve(workspaceFolder, rawLocation);
+}
+
+function parentRepositoryFolders(workspaceFolder: string): string[] {
+  const roots: string[] = [];
+  let current = resolve(workspaceFolder);
+  while (true) {
+    if (existsSync(join(current, '.git')) && current !== resolve(workspaceFolder)) {
+      roots.push(current);
+    }
+    const parent = dirname(current);
+    if (parent === current) {
+      return roots;
+    }
+    current = parent;
+  }
 }
 
 function rewriteAssetUris(html: string, webview: vscode.Webview, root: vscode.Uri): string {

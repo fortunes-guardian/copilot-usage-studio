@@ -23,6 +23,7 @@ export function parseWorkspace(workspaceDir, options = {}, onProgress = () => {}
   const includeCustomizations = options.includeCustomizations !== false;
   const customizationOptions = {
     includeSystemCustomizations: options.includeSystemCustomizations === true,
+    customizationDiscovery: options.customizationDiscovery ?? null,
   };
   const customizationEvidenceOptions = options.customizationEvidence ?? {};
   diagnostics.scannedWorkspaces += 1;
@@ -95,9 +96,10 @@ export function parseWorkspace(workspaceDir, options = {}, onProgress = () => {}
     progress('customizations', `Indexing customizations for ${workspace}.`);
     const customizationWorkspace = customizationsFromWorkspace(workspaceDir, customizationOptions);
     const customizationMap = new Map();
+    const strictCustomizationDiscovery = customizationOptions.customizationDiscovery?.strict === true;
     for (const customization of [
       ...customizationWorkspace.customizations,
-      ...customizationsFromDiscoveryFolders(debugRoot, workspace, customizationOptions),
+      ...(strictCustomizationDiscovery ? [] : customizationsFromDiscoveryFolders(debugRoot, workspace, customizationOptions)),
       ...customizationsFromDebugReferences(debugRoot, customizationWorkspace.bases, workspace, customizationOptions),
     ]) {
       customizationMap.set(customization.id, customization);

@@ -687,6 +687,11 @@ export class CustomizationsPageComponent {
       'debug-reference': 'Debug reference',
       'debug-discovery-root': 'VS Code discovery',
       'vscode-setting-root': 'VS Code setting',
+      'vscode-default-root': 'VS Code default',
+      'vscode-user-setting-root': 'User setting',
+      'vscode-workspace-setting-root': 'Workspace setting',
+      'vscode-workspace-folder-setting-root': 'Workspace-folder setting',
+      'vscode-parent-repo-default-root': 'Parent repo default',
       'user-default-root': 'User default',
     }[kind] ?? kind;
   }

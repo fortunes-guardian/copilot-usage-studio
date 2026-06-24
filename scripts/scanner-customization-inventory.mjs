@@ -494,6 +494,28 @@ function parseSimpleFrontmatter(content) {
   
     return entries;
   }
+
+  function strictCustomizationLocationEntries(workspaceFolder, options = {}) {
+    const discovery = options.customizationDiscovery;
+    if (!discovery?.strict || !Array.isArray(discovery.locations)) {
+      return null;
+    }
+
+    const currentWorkspaceFolder = resolve(workspaceFolder);
+    return discovery.locations
+      .filter((entry) => {
+        const entryWorkspace = entry?.workspaceFolder ? resolve(String(entry.workspaceFolder)) : '';
+        return !entryWorkspace || entryWorkspace === currentWorkspaceFolder;
+      })
+      .map((entry) => ({
+        path: resolve(String(entry.path ?? '')),
+        kind: normalizeCustomizationKind(entry.kind),
+        source: String(entry.source ?? 'vscode-setting'),
+        settingKey: String(entry.settingKey ?? ''),
+        rawLocation: String(entry.rawLocation ?? entry.path ?? ''),
+      }))
+      .filter((entry) => entry.path && entry.kind);
+  }
   
   function defaultUserCustomizationLocationEntries() {
     return [
@@ -565,45 +587,105 @@ function parseSimpleFrontmatter(content) {
   
     return isCustomizationSourceFile(file) && looksLikeCopilotCustomizationPath(file);
   }
+
+  function normalizeCustomizationKind(kind) {
+    return ['instruction', 'skill', 'prompt', 'hook', 'agent'].includes(String(kind))
+      ? String(kind)
+      : 'other';
+  }
+
+  function customizationLocationKind(source) {
+    return {
+      'vscode-default': 'vscode-default-root',
+      'vscode-user-setting': 'vscode-user-setting-root',
+      'vscode-workspace-setting': 'vscode-workspace-setting-root',
+      'vscode-workspace-folder-setting': 'vscode-workspace-folder-setting-root',
+      'vscode-parent-repo-default': 'vscode-parent-repo-default-root',
+      'user-default': 'user-default-root',
+    }[source] ?? 'vscode-setting-root';
+  }
+
+  function customizationBasesFromStrictEntries(entries, options = {}) {
+    return [...new Set(
+      entries
+        .filter((entry) => includeCustomizationPath(entry.path, options))
+        .map((entry) => {
+          if (pathHasGlob(entry.path)) {
+            return globBaseDir(entry.path);
+          }
+          if (existsSync(entry.path) && statSync(entry.path).isFile()) {
+            return dirname(entry.path);
+          }
+          return entry.path;
+        })
+        .filter(Boolean)
+        .map((entry) => resolve(entry)),
+    )];
+  }
+
+  function pathHasGlob(path) {
+    return /[*?[\]{}]/.test(path);
+  }
+
+  function globBaseDir(path) {
+    const resolved = resolve(path);
+    const normalized = resolved.replace(/\\/g, '/');
+    const parts = normalized.split('/');
+    const baseParts = [];
+    for (const part of parts) {
+      if (/[*?[\]{}]/.test(part)) {
+        break;
+      }
+      baseParts.push(part);
+    }
+    const base = baseParts.join('/') || dirname(resolved);
+    return resolve(base);
+  }
+
+  function globPathRegex(path) {
+    const normalized = normalizedPathForGlob(path);
+    let pattern = '';
+    for (let index = 0; index < normalized.length; index += 1) {
+      const char = normalized[index];
+      const next = normalized[index + 1];
+      if (char === '*' && next === '*') {
+        pattern += '.*';
+        index += 1;
+      } else if (char === '*') {
+        pattern += '[^/]*';
+      } else if (char === '?') {
+        pattern += '[^/]';
+      } else {
+        pattern += char.replace(/[|\\{}()[\]^$+?.]/g, '\\$&');
+      }
+    }
+    return new RegExp(`^${pattern}$`, 'i');
+  }
+
+  function normalizedPathForGlob(path) {
+    return resolve(path).replace(/\\/g, '/');
+  }
   
   function customizationsFromConfiguredSettings(workspaceDir, workspaceFolder, workspace, options = {}) {
     const files = new Map();
-    for (const entry of [
+    const strictEntries = strictCustomizationLocationEntries(workspaceFolder, options);
+    const entries = strictEntries ?? [
       ...configuredCustomizationLocationEntries(workspaceDir, workspaceFolder),
       ...defaultUserCustomizationLocationEntries(),
-    ]) {
+    ];
+    for (const entry of entries) {
       if (!includeCustomizationPath(entry.path, options)) {
         continue;
       }
-      if (!existsSync(entry.path)) {
+      const expandedFiles = customizationFilesFromConfiguredEntry(entry, options);
+      if (!expandedFiles.length) {
         continue;
       }
   
       diagnostics().scannedCustomizationRoots += 1;
-      recordCustomizationLocation(
-        entry.path,
-        entry.source === 'user-default' ? 'user-default-root' : 'vscode-setting-root',
-      );
-      if (statSync(entry.path).isFile()) {
-        if (configuredCustomizationFilePredicate(entry.kind, entry.path) && includeCustomizationPath(entry.path, options)) {
-          files.set(resolve(entry.path), { base: dirname(entry.path), kind: entry.kind });
-        }
-        continue;
-      }
-  
-      if (!statSync(entry.path).isDirectory()) {
-        continue;
-      }
-  
-      for (const file of listFilesRecursive(
-        entry.path,
-        (candidate) =>
-          configuredCustomizationFilePredicate(entry.kind, candidate) &&
-          includeCustomizationPath(candidate, options),
-        customizationFileLimit,
-        { label: 'customization', maxDepth: 5, maxDirs: 300 },
-      )) {
-        files.set(resolve(file), { base: entry.path, kind: entry.kind });
+      recordCustomizationLocation(entry.path, customizationLocationKind(entry.source));
+      for (const file of expandedFiles) {
+        files.set(resolve(file.path), { base: file.base, kind: entry.kind });
       }
     }
   
@@ -611,8 +693,56 @@ function parseSimpleFrontmatter(content) {
       .map(([file, entry]) => customizationFromFile(file, entry.base, workspace, entry.kind))
       .filter(Boolean);
   }
+
+  function customizationFilesFromConfiguredEntry(entry, options = {}) {
+    if (pathHasGlob(entry.path)) {
+      return customizationFilesFromGlobEntry(entry, options);
+    }
+
+    if (!existsSync(entry.path)) {
+      return [];
+    }
+
+    if (statSync(entry.path).isFile()) {
+      return configuredCustomizationFilePredicate(entry.kind, entry.path) &&
+        includeCustomizationPath(entry.path, options)
+        ? [{ path: resolve(entry.path), base: dirname(entry.path) }]
+        : [];
+    }
+
+    if (!statSync(entry.path).isDirectory()) {
+      return [];
+    }
+
+    return listFilesRecursive(
+      entry.path,
+      (candidate) =>
+        configuredCustomizationFilePredicate(entry.kind, candidate) &&
+        includeCustomizationPath(candidate, options),
+      customizationFileLimit,
+      { label: 'customization', maxDepth: 5, maxDirs: 300 },
+    ).map((file) => ({ path: resolve(file), base: entry.path }));
+  }
+
+  function customizationFilesFromGlobEntry(entry, options = {}) {
+    const base = globBaseDir(entry.path);
+    if (!base || !existsSync(base) || !statSync(base).isDirectory()) {
+      return [];
+    }
+
+    const pattern = globPathRegex(entry.path);
+    return listFilesRecursive(
+      base,
+      (candidate) =>
+        pattern.test(normalizedPathForGlob(candidate)) &&
+        configuredCustomizationFilePredicate(entry.kind, candidate) &&
+        includeCustomizationPath(candidate, options),
+      customizationFileLimit,
+      { label: 'customization', maxDepth: 8, maxDirs: 500 },
+    ).map((file) => ({ path: resolve(file), base }));
+  }
   
-  function localMarkdownPathCandidates(text, bases) {
+  function localMarkdownPathCandidates(text, bases, options = {}) {
     const content = String(text ?? '');
     const candidates = new Set();
     const fileTagPattern = /<file>([^<>"']+?\.md)<\/file>/gi;
@@ -637,7 +767,8 @@ function parseSimpleFrontmatter(content) {
           existsSync(possiblePath) &&
           isMarkdownFile(possiblePath) &&
           looksLikeCopilotCustomizationPath(possiblePath) &&
-          (isAbsolute(candidate) || bases.some((base) => containedByBase(possiblePath, base)))
+          (options.allowAbsoluteOutsideBases === true && isAbsolute(candidate) ||
+            bases.some((base) => containedByBase(possiblePath, base)))
         ) {
           files.push(resolve(possiblePath));
         }
@@ -782,7 +913,9 @@ function parseSimpleFrontmatter(content) {
           continue;
         }
   
-        for (const candidate of localMarkdownPathCandidates(readFileSync(file, 'utf8'), bases)) {
+        for (const candidate of localMarkdownPathCandidates(readFileSync(file, 'utf8'), bases, {
+          allowAbsoluteOutsideBases: options.customizationDiscovery?.strict !== true,
+        })) {
           if (!includeCustomizationPath(candidate, options)) {
             continue;
           }
@@ -804,17 +937,23 @@ function parseSimpleFrontmatter(content) {
       return { customizations: [], bases: [] };
     }
   
-    const bases = customizationCandidateBases(folder);
+    const strictEntries = strictCustomizationLocationEntries(folder, options);
+    const strictDiscovery = strictEntries !== null;
+    const bases = strictDiscovery
+      ? customizationBasesFromStrictEntries(strictEntries, options)
+      : customizationCandidateBases(folder);
     const files = new Map();
   
-    for (const base of bases) {
-      const directFiles = directCustomizationFiles(base);
-      if (directFiles.length) {
-        diagnostics().scannedCustomizationRoots += 1;
-      }
-  
-      for (const file of [...directFiles, ...customizationFilesFromKnownRoots(base)]) {
-        files.set(resolve(file), base);
+    if (!strictDiscovery) {
+      for (const base of bases) {
+        const directFiles = directCustomizationFiles(base);
+        if (directFiles.length) {
+          diagnostics().scannedCustomizationRoots += 1;
+        }
+    
+        for (const file of [...directFiles, ...customizationFilesFromKnownRoots(base)]) {
+          files.set(resolve(file), base);
+        }
       }
     }
   

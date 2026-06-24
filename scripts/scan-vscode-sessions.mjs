@@ -624,6 +624,7 @@ export async function scanVsCodeSessions(options = {}) {
   const workspaceOptions = {
     includeCustomizations: options.includeCustomizations !== false,
     includeSystemCustomizations: options.includeSystemCustomizations === true,
+    customizationDiscovery: options.customizationDiscovery ?? null,
     customizationEvidence: options.customizationEvidence ?? {},
   };
 

@@ -8,26 +8,14 @@
   </header>
 
   <section class="customizations-scan-status" aria-label="Customization scan status">
-    <div class="scan-status-grid">
-      <div>
-        <span>Current workspace</span>
-        <strong>{{ currentWorkspaceLabel() }}</strong>
-      </div>
-      <div>
-        <span>Customization files found</span>
-        <strong>{{ summary().total | number }}</strong>
-      </div>
-      <div>
-        <span>Usage evidence</span>
-        <strong>{{ evidenceStateLabel() }}</strong>
-      </div>
-      <div>
-        <span>{{ evidenceMetricLabel() }}</span>
-        <strong>{{ evidenceMetricText() }}</strong>
-      </div>
-    </div>
     <div class="scan-status-body">
       <div>
+        <p class="scan-summary-line">
+          <strong>{{ currentWorkspaceLabel() }}</strong>
+          <span>{{ summary().total | number }} customization{{ summary().total === 1 ? '' : 's' }}</span>
+          <span>{{ evidenceStateLabel() }}</span>
+          <span>{{ evidenceMetricText() }}</span>
+        </p>
         <p>{{ evidenceResultText() }}</p>
         @if (isEvidenceScanActive()) {
           @if (activeScanStats()) {
@@ -242,27 +230,27 @@
                       <b>{{ group.title }}</b>
                       <em>{{ evidenceGroupSubtitle(group) }}</em>
                     </span>
-                    @if (group.bestStatus === 'sent') {
-                      <span class="match-group-timeline" [attr.aria-label]="sessionEvidenceLabel(group)">
-                        @for (marker of timelineMarkers(group); track marker.callNumber) {
-                          <span
-                            class="timeline-marker"
-                            [class.sent]="marker.status === 'sent'"
-                            [class.listed]="marker.status === 'listed'"
-                            [class.discovered]="marker.status === 'discovered'"
-                            [attr.aria-label]="timelineMarkerLabel(marker)"
-                          >
-                            #{{ marker.callNumber }}
-                          </span>
-                        }
-                        @if (timelineOverflow(group)) {
-                          <span class="timeline-overflow">+{{ timelineOverflow(group) }}</span>
-                        }
-                      </span>
-                    } @else {
-                      <span class="match-group-weak">No file text found</span>
-                    }
                     <span class="match-group-status">
+                      @if (group.bestStatus === 'sent') {
+                        <span class="match-group-timeline" [attr.aria-label]="sessionEvidenceLabel(group)">
+                          @for (marker of timelineMarkers(group); track marker.callNumber) {
+                            <span
+                              class="timeline-marker"
+                              [class.sent]="marker.status === 'sent'"
+                              [class.listed]="marker.status === 'listed'"
+                              [class.discovered]="marker.status === 'discovered'"
+                              [attr.aria-label]="timelineMarkerLabel(marker)"
+                            >
+                              #{{ marker.callNumber }}
+                            </span>
+                          }
+                          @if (timelineOverflow(group)) {
+                            <span class="timeline-overflow">+{{ timelineOverflow(group) }}</span>
+                          }
+                        </span>
+                      } @else {
+                        <span class="match-group-weak">No file text found</span>
+                      }
                       <strong>{{ sessionEvidenceLabel(group) }}</strong>
                     </span>
                   </summary>

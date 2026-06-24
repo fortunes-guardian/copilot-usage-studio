@@ -687,6 +687,94 @@ test('can skip customization indexing for lightweight extension scans', async ()
   }
 });
 
+test('strict VS Code customization discovery scans only API-provided locations', async () => {
+  const { root, sessionDir, workspaceDir } = tempSessionFixture('strict-customization-discovery');
+  const workspaceFolder = join(root, 'example-workspace');
+  const allowedInstructionsDir = join(workspaceFolder, '.github', 'instructions');
+  const ignoredSkillsDir = join(workspaceFolder, '.github', 'skills');
+  const userSkillsDir = join(root, 'user-copilot-skills');
+
+  try {
+    mkdirSync(allowedInstructionsDir, { recursive: true });
+    mkdirSync(ignoredSkillsDir, { recursive: true });
+    mkdirSync(userSkillsDir, { recursive: true });
+    writeFileSync(
+      join(workspaceDir, 'workspace.json'),
+      JSON.stringify({ folder: pathToFileUrl(workspaceFolder) }),
+      'utf8',
+    );
+    writeFileSync(
+      join(allowedInstructionsDir, 'backend.instructions.md'),
+      'Allowed instruction text from the VS Code default location.',
+      'utf8',
+    );
+    writeFileSync(
+      join(ignoredSkillsDir, 'ignored.SKILL.md'),
+      'This workspace skill should not be imported without a VS Code discovery entry.',
+      'utf8',
+    );
+    writeFileSync(
+      join(userSkillsDir, 'SKILL.md'),
+      'User configured skill text from an explicit VS Code setting.',
+      'utf8',
+    );
+    writeJsonl(join(sessionDir, 'main.jsonl'), [
+      event(1, 'llm_request', 'panel/editAgent', {
+        attrs: {
+          model: 'gpt-5.4',
+          inputTokens: 2_000,
+          outputTokens: 100,
+          inputMessages:
+            'Allowed instruction text from the VS Code default location. User configured skill text from an explicit VS Code setting.',
+        },
+      }),
+    ]);
+
+    const data = await scanVsCodeSessions({
+      roots: [workspaceDir],
+      sqlite: false,
+      customizationDiscovery: {
+        strict: true,
+        locations: [
+          {
+            path: allowedInstructionsDir,
+            kind: 'instruction',
+            source: 'vscode-default',
+            settingKey: 'chat.instructionsFilesLocations',
+            rawLocation: '.github/instructions',
+            workspaceFolder,
+          },
+          {
+            path: userSkillsDir,
+            kind: 'skill',
+            source: 'vscode-user-setting',
+            settingKey: 'chat.agentSkillsLocations',
+            rawLocation: userSkillsDir,
+            workspaceFolder,
+          },
+        ],
+      },
+    });
+
+    const paths = data.customizations.map((item) => item.sourcePath);
+    assert.equal(paths.includes(join(allowedInstructionsDir, 'backend.instructions.md')), true);
+    assert.equal(paths.includes(join(userSkillsDir, 'SKILL.md')), true);
+    assert.equal(paths.includes(join(ignoredSkillsDir, 'ignored.SKILL.md')), false);
+    assert.equal(data.customizations.length, 2);
+    assert.equal(
+      data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'vscode-default-root'),
+      true,
+    );
+    assert.equal(
+      data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'vscode-user-setting-root'),
+      true,
+    );
+    assert.equal(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'root'), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('indexes repo-root, parent-repo, agent, and debug-referenced customizations', async () => {
   const { root, sessionDir, workspaceDir } = tempSessionFixture('customization-expanded-sources');
   const repoRoot = join(root, 'repo');
