@@ -278,6 +278,12 @@ export function customizationEvidenceFromDebugLogs(
   };
   const listDirs = context.listDirs ?? (() => []);
   const readJsonl = context.readJsonl ?? (() => []);
+  const maxSessions = positiveInteger(context.maxSessions, 40);
+  const maxModelCalls = positiveInteger(context.maxModelCalls, 300);
+  const maxElapsedMs = positiveInteger(context.maxElapsedMs, 60_000);
+  const maxPartChars = positiveInteger(context.maxPartChars, 250_000);
+  const startedAt = Date.now();
+  let cappedReason = '';
 
   if (!customizations.length || !existsSync(debugRoot)) {
     return customizations.map((customization) => {
@@ -299,17 +305,47 @@ export function customizationEvidenceFromDebugLogs(
   );
   const chunkMatchers = buildCustomizationChunkMatchers(matchState);
 
-  const sessionDirs = listDirs(debugRoot);
+  const allSessionDirs = listDirs(debugRoot);
+  const sessionDirs = allSessionDirs.slice(0, maxSessions);
+  if (allSessionDirs.length > sessionDirs.length) {
+    const sessionLimitReason = `limited to ${sessionDirs.length}/${allSessionDirs.length} debug-log folders`;
+    diagnostics.warnings?.push?.(
+      `Customization evidence scan for ${workspace || workspaceDir || debugRoot} ${sessionLimitReason}.`,
+    );
+  }
+
   for (const [sessionIndex, sessionDir] of sessionDirs.entries()) {
-    diagnostics.customizationEvidenceScannedSessions += 1;
-    if (sessionIndex > 0 && sessionIndex % 25 === 0) {
+    if (Date.now() - startedAt > maxElapsedMs) {
+      cappedReason = `stopped after ${Math.round(maxElapsedMs / 1000)}s`;
+      diagnostics.warnings?.push?.(
+        `Customization evidence scan for ${workspace || workspaceDir || debugRoot} ${cappedReason}.`,
+      );
       onProgress({
         stage: 'customization-evidence',
-        message: `Checked customization evidence in ${sessionIndex}/${sessionDirs.length} debug-log folders for ${workspace}.`,
+        message: `Customization usage check stopped early for ${workspace || 'current workspace'}; showing partial results.`,
         workspace,
         workspaceDir,
         index: sessionIndex,
-        total: sessionDirs.length,
+        total: allSessionDirs.length,
+        capped: true,
+        reason: cappedReason,
+        matches: diagnostics.customizationEvidenceMatchedCustomizations,
+      });
+      break;
+    }
+
+    diagnostics.customizationEvidenceScannedSessions += 1;
+    if (sessionIndex > 0 && sessionIndex % 5 === 0) {
+      onProgress({
+        stage: 'customization-evidence',
+        message: `Checking customization usage in recent Copilot sessions for ${workspace || 'current workspace'}.`,
+        workspace,
+        workspaceDir,
+        index: sessionIndex,
+        total: allSessionDirs.length,
+        sessions: diagnostics.customizationEvidenceScannedSessions,
+        modelCalls: diagnostics.customizationEvidenceModelCalls,
+        matches: diagnostics.customizationEvidenceMatchedCustomizations,
       });
     }
     const sessionId = basename(sessionDir);
@@ -325,6 +361,13 @@ export function customizationEvidenceFromDebugLogs(
     });
 
     for (const [index, event] of main.entries()) {
+      if (diagnostics.customizationEvidenceModelCalls >= maxModelCalls) {
+        cappedReason = `limited to ${maxModelCalls} model calls`;
+        diagnostics.warnings?.push?.(
+          `Customization evidence scan for ${workspace || workspaceDir || debugRoot} ${cappedReason}.`,
+        );
+        break;
+      }
       const eventText = normalizeMatchText(`${event.name ?? ''} ${event.attrs?.details ?? ''}`);
       const requestParts =
         event.type === 'llm_request' ? requestTextParts(sessionDir, event, sideFileCache) : [];
@@ -341,6 +384,9 @@ export function customizationEvidenceFromDebugLogs(
 
         if (event.type === 'llm_request') {
           for (const part of requestParts) {
+            if (part.normalized.length > maxPartChars) {
+              part.normalized = part.normalized.slice(0, maxPartChars);
+            }
             let allPartMatches = matchedChunksForParts.get(part.source);
             if (!allPartMatches) {
               allPartMatches = matchedChunksByCustomization(part.normalized, chunkMatchers);
@@ -388,6 +434,25 @@ export function customizationEvidenceFromDebugLogs(
           });
         }
       }
+      if (cappedReason) {
+        break;
+      }
+    }
+    if (cappedReason) {
+      onProgress({
+        stage: 'customization-evidence',
+        message: `Customization usage check stopped early for ${workspace || 'current workspace'}; showing partial results.`,
+        workspace,
+        workspaceDir,
+        index: sessionIndex + 1,
+        total: allSessionDirs.length,
+        capped: true,
+        reason: cappedReason,
+        sessions: diagnostics.customizationEvidenceScannedSessions,
+        modelCalls: diagnostics.customizationEvidenceModelCalls,
+        matches: diagnostics.customizationEvidenceMatchedCustomizations,
+      });
+      break;
     }
   }
 
@@ -403,4 +468,9 @@ export function customizationEvidenceFromDebugLogs(
       matches,
     };
   });
+}
+
+function positiveInteger(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? Math.floor(number) : fallback;
 }

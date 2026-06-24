@@ -24,6 +24,7 @@ export function parseWorkspace(workspaceDir, options = {}, onProgress = () => {}
   const customizationOptions = {
     includeSystemCustomizations: options.includeSystemCustomizations === true,
   };
+  const customizationEvidenceOptions = options.customizationEvidence ?? {};
   diagnostics.scannedWorkspaces += 1;
   const workspace = workspaceName(workspaceDir);
   const workspaceStartedAt = Date.now();
@@ -119,6 +120,7 @@ export function parseWorkspace(workspaceDir, options = {}, onProgress = () => {}
       workspace,
       workspaceDir,
       onProgress,
+      customizationEvidenceOptions,
     );
     workspaceScan.importedCustomizations = customizations.length;
     diagnostics.importedCustomizations += customizations.length;

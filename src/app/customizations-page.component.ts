@@ -10,7 +10,7 @@ import {
   SessionData,
 } from './session-data.model';
 import { HelpPopoverComponent } from './help-popover.component';
-import { SessionDataRefreshState } from './session-data.service';
+import { LocalRuntimeStatus, SessionDataRefreshState } from './session-data.service';
 
 type CustomizationKindFilter = 'all' | CopilotCustomizationKind;
 type CustomizationStatusFilter = 'all' | CopilotCustomizationEvidenceStatus;
@@ -84,8 +84,11 @@ export class CustomizationsPageComponent {
   }
 
   @Input() refreshState: SessionDataRefreshState = 'idle';
+  @Input() refreshMessage: string | null = null;
+  @Input() runtimeStatus: LocalRuntimeStatus | null = null;
 
   @Output() readonly scanEvidence = new EventEmitter<void>();
+  @Output() readonly cancelScan = new EventEmitter<void>();
   @Output() readonly openSession = new EventEmitter<CopilotSession>();
 
   protected readonly workspaceOptions = computed(() => [
@@ -178,17 +181,138 @@ export class CustomizationsPageComponent {
 
   protected scanActionLabel(): string {
     if (this.refreshState === 'refreshing') {
-      return 'Finding usage...';
+      return 'Scanning...';
     }
     return this.customizationEvidenceSummary().hasScannedEvidence
-      ? 'Find usage again'
+      ? 'Find usage evidence again'
       : 'Find usage evidence';
   }
 
-  protected scanActionHelp(): string {
-    return this.customizationEvidenceSummary().hasScannedEvidence
-      ? 'Checks local VS Code model requests again to see whether instruction, skill, prompt, hook, or agent text actually reached the model.'
-      : 'The fast scan found customization files but skipped the slower evidence check. Run this when you want proof that the file text reached a model request.';
+  protected isEvidenceScanActive(): boolean {
+    return this.refreshState === 'refreshing' && this.runtimeStatus?.activeScanMode === 'customizations';
+  }
+
+  protected currentWorkspaceLabel(): string {
+    const progressWorkspace = this.runtimeStatus?.scanProgress?.workspace || '';
+    if (progressWorkspace) {
+      return progressWorkspace;
+    }
+    const workspaces = this.workspaceOptions().filter((workspace) => workspace !== 'all');
+    if (this.workspaceFilter() !== 'all') {
+      return this.workspaceFilter();
+    }
+    if (workspaces.length === 1) {
+      return workspaces[0];
+    }
+    return 'Current VS Code workspace';
+  }
+
+  protected evidenceStateLabel(): string {
+    if (this.isEvidenceScanActive()) {
+      return 'Checking now';
+    }
+    if (this.refreshState === 'error') {
+      return 'Scan failed';
+    }
+    if (this.refreshMessage?.toLowerCase().includes('stopped')) {
+      return 'Scan stopped';
+    }
+    if (this.customizationEvidenceSummary().hasScannedEvidence) {
+      return this.customizationEvidenceSummary().sent > 0 ? 'Usage evidence found' : 'No usage evidence found';
+    }
+    return 'Not checked yet';
+  }
+
+  protected evidenceResultText(): string {
+    if (this.isEvidenceScanActive()) {
+      return this.currentScanStep();
+    }
+    if (this.refreshState === 'error') {
+      return this.refreshMessage || 'The usage evidence scan did not finish.';
+    }
+    if (this.refreshMessage?.toLowerCase().includes('stopped')) {
+      return 'Scan stopped. Existing customization data was kept.';
+    }
+    if (this.customizationEvidenceSummary().hasScannedEvidence) {
+      const sent = this.customizationEvidenceSummary().sent;
+      const sessions = this.evidenceSessionCount();
+      return sent
+        ? `${sent.toLocaleString()} customization${sent === 1 ? '' : 's'} had file text found in recent Copilot requests across ${sessions.toLocaleString()} session${sessions === 1 ? '' : 's'}.`
+        : `Checked recent Copilot requests. No customization file text was found.`;
+    }
+    return 'Run Find usage evidence to check whether these files appeared inside recent Copilot model requests.';
+  }
+
+  protected currentScanStep(): string {
+    const stage = this.runtimeStatus?.scanProgress?.stage ?? '';
+    if (stage === 'customizations' || stage === 'workspace' || stage === 'workspace-state') {
+      return 'Step 1 of 3: Loading customization files';
+    }
+    if (stage === 'customization-evidence' || stage === 'debug-logs') {
+      return 'Step 2 of 3: Checking recent Copilot sessions';
+    }
+    if (stage === 'complete') {
+      return 'Step 3 of 3: Summarising matches';
+    }
+    return 'Preparing current workspace scan';
+  }
+
+  protected elapsedScanLabel(): string {
+    const startedAt = this.runtimeStatus?.lastScanStartedAt;
+    if (!startedAt || !this.isEvidenceScanActive()) {
+      return '';
+    }
+    return this.durationLabel(Date.now() - Date.parse(startedAt));
+  }
+
+  protected lastProgressLabel(): string {
+    const updatedAt = this.runtimeStatus?.scanProgress?.updatedAt;
+    if (!updatedAt || !this.isEvidenceScanActive()) {
+      return '';
+    }
+    return this.durationLabel(Date.now() - Date.parse(updatedAt));
+  }
+
+  protected isLongRunningScan(): boolean {
+    const startedAt = this.runtimeStatus?.lastScanStartedAt;
+    if (!startedAt || !this.isEvidenceScanActive()) {
+      return false;
+    }
+    return Date.now() - Date.parse(startedAt) > 60_000;
+  }
+
+  protected isStaleScan(): boolean {
+    const updatedAt = this.runtimeStatus?.scanProgress?.updatedAt;
+    if (!updatedAt || !this.isEvidenceScanActive()) {
+      return false;
+    }
+    return Date.now() - Date.parse(updatedAt) > 30_000;
+  }
+
+  protected evidenceSessionCount(): number {
+    return new Set(
+      this.customizationsInput().flatMap((customization) =>
+        customization.matches.map((match) => match.sessionId),
+      ),
+    ).size;
+  }
+
+  protected evidenceMatchCount(): number {
+    return this.customizationsInput().reduce(
+      (sum, customization) => sum + customization.matches.filter((match) => match.status === 'sent').length,
+      0,
+    );
+  }
+
+  private durationLabel(ms: number): string {
+    if (!Number.isFinite(ms) || ms < 0) {
+      return '';
+    }
+    const seconds = Math.max(0, Math.round(ms / 1000));
+    if (seconds < 60) {
+      return `${seconds}s`;
+    }
+    return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
   }
 
   protected selectCustomization(customization: CopilotCustomization): void {

@@ -328,9 +328,14 @@ export class App {
       const workspace = progress?.workspace || progress?.workspaceDir || '';
 
       if (workspaceIndex > 0 && workspaceTotal > 0) {
+        if (status?.activeScanMode === 'customizations') {
+          return workspace
+            ? `Checking current workspace: ${workspace}`
+            : 'Checking current workspace';
+        }
         return workspace
-          ? `Workspace ${workspaceIndex.toLocaleString()} of ${workspaceTotal.toLocaleString()}: ${workspace}`
-          : `Workspace ${workspaceIndex.toLocaleString()} of ${workspaceTotal.toLocaleString()}`;
+          ? `Storage entry ${workspaceIndex.toLocaleString()} of ${workspaceTotal.toLocaleString()}: ${workspace}`
+          : `Storage entry ${workspaceIndex.toLocaleString()} of ${workspaceTotal.toLocaleString()}`;
       }
 
       return message || 'Scanning local VS Code data';
@@ -349,6 +354,10 @@ export class App {
 
   protected cancelScan(): void {
     this.sessionDataService.cancelScan();
+  }
+
+  protected showGlobalStatePanel(): boolean {
+    return this.activeView() !== 'customizations' || this.sessionDataLoadState() !== 'ready';
   }
 
   private isRuntimeScanning(): boolean {

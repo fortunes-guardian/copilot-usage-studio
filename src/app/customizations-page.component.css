@@ -10,7 +10,7 @@
 }
 
 .customizations-header,
-.customizations-scan-note,
+.customizations-scan-status,
 .customizations-controls,
 .customizations-diagnostics,
 .customizations-list,
@@ -30,6 +30,85 @@
   border-radius: 13px;
   padding: 10px 12px;
   background: var(--header-gradient);
+}
+
+.customizations-scan-status {
+  display: grid;
+  gap: 8px;
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--line));
+  border-radius: 13px;
+  padding: 9px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 6%, transparent), transparent 50%),
+    var(--surface);
+}
+
+.scan-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 6px;
+}
+
+.scan-status-grid div {
+  display: grid;
+  gap: 3px;
+  min-height: 50px;
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  border-radius: 10px;
+  padding: 8px 9px;
+  background: color-mix(in srgb, var(--surface-soft) 72%, transparent);
+}
+
+.scan-status-grid span {
+  color: var(--muted-2);
+  font-size: 9px;
+  font-weight: 820;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.scan-status-grid strong {
+  overflow: hidden;
+  color: var(--text-strong);
+  font-size: 13px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scan-status-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.scan-status-body p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.scan-progress-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 3px !important;
+  color: var(--muted-2) !important;
+  font-size: 11px !important;
+}
+
+.scan-warning {
+  margin-top: 4px !important;
+  color: var(--warning) !important;
+}
+
+.scan-status-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
 }
 
 .eyebrow,
@@ -65,41 +144,11 @@
   line-height: 1.35;
 }
 
-.customizations-header-meta {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 5px;
-}
-
-.customizations-header-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.customizations-header-meta span {
+.evidence-scan-button {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 3px 8px;
-  background: color-mix(in srgb, var(--surface) 74%, transparent);
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 720;
-  white-space: nowrap;
-}
-
-.customizations-header-meta strong {
-  margin-right: 4px;
-  color: var(--text-strong);
-}
-
-.evidence-scan-button {
+  justify-content: center;
+  gap: 7px;
   min-height: 30px;
   border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--line));
   border-radius: 999px;
@@ -116,41 +165,31 @@
   opacity: 0.68;
 }
 
-.customizations-scan-note {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border-color: color-mix(in srgb, var(--accent-2) 26%, var(--line));
-  border-radius: 12px;
-  padding: 9px 11px;
-  background: color-mix(in srgb, var(--accent-2) 7%, var(--surface));
-}
-
-.customizations-scan-note strong {
-  color: var(--text-strong);
-  font-size: 12px;
-}
-
-.customizations-scan-note p {
-  margin: 2px 0 0;
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.35;
-}
-
-.customizations-scan-note button {
-  flex: 0 0 auto;
+.secondary-scan-button {
   min-height: 30px;
-  border: 1px solid color-mix(in srgb, var(--accent-2) 42%, var(--line));
+  border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 5px 10px;
-  background: color-mix(in srgb, var(--accent-2) 10%, var(--surface));
-  color: var(--accent-2);
-  font: inherit;
+  padding: 6px 11px;
+  background: var(--surface-soft);
+  color: var(--text);
   font-size: 11px;
-  font-weight: 780;
+  font-weight: 760;
   cursor: pointer;
+}
+
+.button-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-top-color: var(--accent);
+  border-radius: 999px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .customizations-controls {
@@ -824,13 +863,17 @@
 
 @media (max-width: 700px) {
   .customizations-header,
-  .customizations-scan-note,
+  .customizations-scan-status,
   .customization-detail-header {
     display: grid;
   }
 
-  .customizations-header-meta {
-    justify-content: flex-start;
+  .scan-status-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .scan-status-body {
+    display: grid;
   }
 
   .match-group summary,

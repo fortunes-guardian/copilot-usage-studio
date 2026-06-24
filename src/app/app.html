@@ -126,15 +126,17 @@
     }
 
   <section class="content">
-    <app-session-data-state-panel
-      [state]="sessionDataLoadState()"
-      [error]="sessionDataLoadError()"
-      [refreshState]="sessionDataRefreshState()"
-      [runtimeStatus]="runtimeStatus()"
-      [runtimeStatusAvailable]="runtimeStatusAvailable()"
-      (refresh)="refreshSessionData()"
-      (cancelScan)="cancelScan()"
-    ></app-session-data-state-panel>
+    @if (showGlobalStatePanel()) {
+      <app-session-data-state-panel
+        [state]="sessionDataLoadState()"
+        [error]="sessionDataLoadError()"
+        [refreshState]="sessionDataRefreshState()"
+        [runtimeStatus]="runtimeStatus()"
+        [runtimeStatusAvailable]="runtimeStatusAvailable()"
+        (refresh)="refreshSessionData()"
+        (cancelScan)="cancelScan()"
+      ></app-session-data-state-panel>
+    }
 
     @if (sessionDataLoadState() === 'ready') {
     @if (debugLogGuidance(); as guidance) {
@@ -177,7 +179,10 @@
           [sessions]="sessions()"
           [ingestion]="ingestion()"
           [refreshState]="sessionDataRefreshState()"
+          [refreshMessage]="sessionDataRefreshMessage()"
+          [runtimeStatus]="runtimeStatus()"
           (scanEvidence)="refreshSessionData('customizations')"
+          (cancelScan)="cancelScan()"
           (openSession)="openSession($event)"
         ></app-customizations-page>
       } @placeholder {

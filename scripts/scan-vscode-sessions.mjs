@@ -555,8 +555,16 @@ function customizationsFromDebugReferences(debugRoot, bases, workspace, options 
   return customizationInventoryScanner().customizationsFromDebugReferences(debugRoot, bases, workspace, options);
 }
 
-function customizationEvidenceFromDebugLogs(...args) {
-  return customizationEvidenceFromDebugLogsCore(...args, {
+function customizationEvidenceFromDebugLogs(
+  debugRoot,
+  customizations,
+  workspace = '',
+  workspaceDir = '',
+  onProgress = () => {},
+  evidenceOptions = {},
+) {
+  return customizationEvidenceFromDebugLogsCore(debugRoot, customizations, workspace, workspaceDir, onProgress, {
+    ...evidenceOptions,
     diagnostics,
     listDirs,
     readJsonl,
@@ -616,6 +624,7 @@ export async function scanVsCodeSessions(options = {}) {
   const workspaceOptions = {
     includeCustomizations: options.includeCustomizations !== false,
     includeSystemCustomizations: options.includeSystemCustomizations === true,
+    customizationEvidence: options.customizationEvidence ?? {},
   };
 
   try {
