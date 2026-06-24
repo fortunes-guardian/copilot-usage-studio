@@ -808,7 +808,6 @@ function parseSimpleFrontmatter(content) {
     const files = new Map();
   
     for (const base of bases) {
-      recordCustomizationLocation(base, 'candidate');
       const directFiles = directCustomizationFiles(base);
       if (directFiles.length) {
         diagnostics().scannedCustomizationRoots += 1;

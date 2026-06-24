@@ -153,7 +153,9 @@ export class CustomizationsPageComponent {
 
   protected readonly scanDiagnostics = computed(() => {
     const ingestion = this.ingestionInput();
-    const locations = ingestion?.scannedCustomizationLocations ?? [];
+    const locations = (ingestion?.scannedCustomizationLocations ?? []).filter(
+      (location) => location.kind !== 'candidate',
+    );
     return {
       roots: ingestion?.scannedCustomizationRoots ?? 0,
       files: ingestion?.importedCustomizations ?? this.customizationsInput().length,
@@ -679,7 +681,7 @@ export class CustomizationsPageComponent {
 
   protected diagnosticKindLabel(kind: string): string {
     return {
-      candidate: 'Workspace folder',
+      candidate: 'Candidate root',
       root: 'Folder',
       file: 'File',
       'debug-reference': 'Debug reference',

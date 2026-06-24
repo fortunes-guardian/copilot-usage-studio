@@ -861,7 +861,7 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
     assert(paths.includes('release-review/SKILL.md'));
     assert(paths.includes('release-planner.agent.md'));
     assert.equal(data.customizations.some((item) => item.kind === 'agent'), true);
-    assert(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'candidate'));
+    assert.equal(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'candidate'), false);
     assert(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'root'));
     assert(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'file'));
     assert(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'debug-reference'));
@@ -1008,7 +1008,7 @@ test('does not treat the whole user profile as a customization root', async () =
       false,
     );
     assert.equal(
-      data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'candidate' && location.path === resolve(userDir)),
+      data.ingestion.scannedCustomizationLocations.some((location) => location.path === resolve(userDir)),
       false,
     );
   } finally {
