@@ -481,15 +481,31 @@ export class CustomizationsPageComponent {
 
   protected sourceLabel(source: MatchSource): string {
     if (/^system_prompt/i.test(source)) {
-      return 'System instructions';
+      return 'Instructions';
     }
     if (/^tools/i.test(source)) {
-      return 'Tool definitions';
+      return 'Tool list';
     }
     return {
-      inputMessages: 'Full model request',
-      userRequest: 'User message',
+      inputMessages: 'Complete request',
+      userRequest: 'User prompt',
     }[source] ?? source;
+  }
+
+  protected sourceHelp(source: EvidenceSource): string {
+    if (/^system_prompt/i.test(source.raw)) {
+      return 'Matched inside the instruction/system part of the request VS Code sent to the model. This is usually where custom instructions and skills are injected.';
+    }
+    if (/^tools/i.test(source.raw)) {
+      return 'Matched near the tool definitions VS Code sent with the request. This can include tool or MCP schema material.';
+    }
+    if (source.raw === 'inputMessages') {
+      return 'Matched somewhere in the full request payload VS Code sent to the model. This is useful as a broad confirmation that the text was included.';
+    }
+    if (source.raw === 'userRequest') {
+      return 'Matched in the user-facing prompt/request material for this model call.';
+    }
+    return 'Matched in this VS Code debug-log source. Open the technical proof section if you need the raw field name.';
   }
 
   protected rawSourceLabel(source: MatchSource): string {
@@ -537,8 +553,8 @@ export class CustomizationsPageComponent {
 
   protected timelineMarkerLabel(marker: EvidenceTimelineMarker): string {
     return marker.status === 'sent'
-      ? `Model call #${marker.callNumber}: content found in prompt material`
-      : `Model call #${marker.callNumber}: file text not proved`;
+      ? `Model request #${marker.callNumber}: this file's text was included`
+      : `Model request #${marker.callNumber}: file text not proved`;
   }
 
   protected callEvidence(group: CustomizationSessionEvidence): CustomizationCallEvidence[] {
@@ -591,9 +607,9 @@ export class CustomizationsPageComponent {
   }
 
   protected callEvidenceTitle(call: CustomizationCallEvidence): string {
-    const target = call.callNumber ? `Model call #${call.callNumber}` : `Event #${call.eventIndex}`;
+    const target = call.callNumber ? `Request #${call.callNumber}` : `Event #${call.eventIndex}`;
     if (call.status === 'sent') {
-      return `${target}: content found`;
+      return `${target}: file text was sent`;
     }
     if (call.status === 'listed') {
       return `${target}: not proved sent`;
@@ -603,7 +619,7 @@ export class CustomizationsPageComponent {
 
   protected callEvidenceSummary(call: CustomizationCallEvidence): string {
     if (call.status === 'sent') {
-      return `Actual text from this customization file appeared in ${this.sourcePhrase(call.sources)}.`;
+      return `We found actual text from this customization in ${this.sourcePhrase(call.sources)}.`;
     }
     if (call.status === 'listed') {
       return 'Only the file name/path or one of its labels was seen. Treat this as not proved sent.';
@@ -627,6 +643,10 @@ export class CustomizationsPageComponent {
     return this.uniqueSources(call.sources).map((source) => source.label);
   }
 
+  protected evidenceSources(call: CustomizationCallEvidence): EvidenceSource[] {
+    return this.uniqueSources(call.sources);
+  }
+
   protected rawEvidenceSources(call: CustomizationCallEvidence): EvidenceSource[] {
     return this.uniqueSources(call.sources);
   }
@@ -634,12 +654,12 @@ export class CustomizationsPageComponent {
   protected evidenceDetailsSummary(call: CustomizationCallEvidence): string {
     const parts = [];
     if (call.callNumber) {
-      parts.push(`model call #${call.callNumber}`);
+      parts.push(`request #${call.callNumber}`);
     }
     if (call.matchedCharacters) {
-      parts.push(`${call.matchedCharacters.toLocaleString()} matched characters`);
+      parts.push(`${call.matchedCharacters.toLocaleString()} characters matched`);
     }
-    return parts.join(' · ') || 'raw matching details';
+    return parts.join(' · ') || 'raw debug-log proof';
   }
 
   private sourcePhrase(sources: EvidenceSource[]): string {

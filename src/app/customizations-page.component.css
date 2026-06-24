@@ -4,7 +4,7 @@
 
 .customizations-page {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto auto auto minmax(0, 1fr);
   gap: 7px;
   min-height: calc(100vh - 96px);
 }
@@ -770,8 +770,17 @@
   font-size: 11px;
 }
 
+.matched-text-label {
+  margin-top: 2px;
+  color: var(--muted-2);
+  font-size: 9px;
+  font-weight: 820;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .call-event-main blockquote {
-  margin: 4px 0 0;
+  margin: 0;
   border-left: 2px solid color-mix(in srgb, var(--accent) 48%, var(--line));
   padding: 4px 8px;
   color: var(--text);
@@ -834,7 +843,16 @@
 }
 
 .call-event-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
   justify-content: flex-end;
+}
+
+.call-event-sources > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .weak-evidence-note {
