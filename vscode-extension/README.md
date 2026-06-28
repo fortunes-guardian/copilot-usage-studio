@@ -7,7 +7,7 @@ This extension is the primary local host for Copilot Usage Studio. It opens the 
 - Usage
 - Sessions
 - Memory
-- Customizations
+- Customizations preview
 - Compare
 - Insights
 - Prices
@@ -24,9 +24,9 @@ The extension starts a local runtime on `127.0.0.1`, scans local VS Code Copilot
 
 ## Status
 
-Early local VSIX preview. Test locally before relying on it for daily use.
+Early VS Code extension preview. Test locally before relying on it for daily use.
 
-The npm/browser app remains available as a development and fallback host, but this extension is the product path:
+After maintainer smoke testing, the release target is the VS Code Marketplace. The npm/browser app remains available as a development and fallback host:
 
 ```bash
 npx copilot-usage-studio

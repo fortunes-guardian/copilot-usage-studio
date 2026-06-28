@@ -16,7 +16,7 @@ The normalized `SessionData` object is the deeper boundary. `scanVsCodeSessions(
 
 The same contract now carries a sibling `memories` collection. Memories are not sessions and are not folded into session cost records. Session-scoped memory folders are linked by decoded session id when that relationship is present on disk.
 
-The contract also carries a sibling `customizations` collection for local Copilot customization files such as instructions and skills. Customizations are not cost rows. They answer a different developer question: did this local rule or skill merely exist, or did evidence show that its content reached a model request?
+The contract also carries a sibling `customizations` collection for local Copilot customization files such as instructions and skills. Customizations are not cost rows. They answer a different developer question: did this local rule or skill merely exist, or did local VS Code logs show a text match in visible model-request material?
 
 ## Copilot memory sources
 
@@ -131,38 +131,11 @@ Important boundary: these are source-backed size and presence signals. They are 
 
 ## Copilot customization evidence
 
-The scanner reads local Copilot customization files from known VS Code/GitHub Copilot locations for workspaces with imported Copilot data:
+The VS Code extension reads effective VS Code settings/defaults for the open workspace and uses those locations as the source of truth for Copilot customizations. This includes user, workspace, workspace-folder, and default scopes for settings such as `chat.instructionsFilesLocations`, `chat.promptFilesLocations`, `chat.agentFilesLocations`, `chat.agentSkillsLocations`, `chat.hookFilesLocations`, and `github.copilot.chat.codeGeneration.useInstructionFiles`.
 
-```text
-<workspace-or-parent-repo>/.github/copilot-instructions.md
-<workspace-or-parent-repo>/.github/instructions/**/*.md
-<workspace-or-parent-repo>/.claude/rules/**/*.md
-<workspace-or-parent-repo>/.copilot/instructions/**/*.md
-<workspace-or-parent-repo>/.github/skills/**/*.md
-<workspace-or-parent-repo>/.claude/skills/**/SKILL.md
-<workspace-or-parent-repo>/.agents/skills/**/SKILL.md
-<workspace-or-parent-repo>/.copilot/skills/**/SKILL.md
-<workspace-or-parent-repo>/.github/prompts/**/*.md
-<workspace-or-parent-repo>/.copilot/prompts/**/*.md
-<workspace-or-parent-repo>/.github/hooks/**/*.json
-<workspace-or-parent-repo>/.copilot/hooks/**/*.json
-<workspace-or-parent-repo>/.github/agents/**/*.md
-<workspace-or-parent-repo>/.claude/agents/**/*.md
-<workspace-or-parent-repo>/.copilot/agents/**/*.md
-<workspace-or-parent-repo>/AGENTS.md
-<workspace-or-parent-repo>/CLAUDE.md
-<workspace-or-parent-repo>/.claude/CLAUDE.md
-<workspace-or-parent-repo>/GEMINI.md
-<VS Code User>/prompts/**/*.md
-~/.copilot/skills/**/*.md
-~/.claude/skills/**/*.md
-```
+After a location is trusted by VS Code settings/defaults, the scanner applies a conservative file-type filter: Markdown for instructions, skills, prompts, and agents; JSON for hooks. Exact files referenced by debug logs are also imported when they look like Copilot customization files.
 
-For monorepos, it walks from the opened workspace folder up to the nearest Git repository root and checks those known locations at each level. It also reads workspace/user VS Code settings such as `chat.instructionsFilesLocations`, `chat.promptFilesLocations`, `chat.agentFilesLocations`, `chat.agentSkillsLocations`, and `chat.hookFilesLocations` when those settings files are available locally. Finally, it imports exact customization files referenced by VS Code debug-log side files and exact customization folders listed by VS Code discovery events.
-
-The scanner also checks bounded user-default roots for personal skills/hooks, including `~/.copilot/skills`, `~/.claude/skills`, `~/.agents/skills`, `~/.copilot/hooks`, and Claude settings files. This is how custom workspace locations, user-profile skills, and prompts can be found without crawling arbitrary home or repository folders.
-
-These are targeted scans, not whole-repository crawls. The scanner only walks the listed customization roots after the matching VS Code workspace-storage folder has Copilot debug/chat data. Stale VS Code workspace entries without Copilot data do not trigger repo-level customization scans. Recursion is capped by depth and directory count, skips symlinks, and ignores common dependency/build folders.
+The standalone/npm host has weaker access to VS Code's effective settings, so it keeps bounded fallback support for documented defaults and conventional filenames. Those fallbacks are compatibility behavior, not a license to crawl broad home folders or whole repositories. Recursion is capped by depth and directory count, skips symlinks, and ignores common dependency/build folders.
 
 The VS Code extension host now runs customization indexing because the extension is the primary product surface and exposes the Customizations view. Scanner progress reports workspace phase, debug-log folder counts, customization inventory counts, and elapsed time so slow machines can be diagnosed instead of appearing silently stuck.
 
@@ -276,7 +249,7 @@ The UI supports two reads:
 
 Why: session totals answer "how expensive was this run?" Calls answer "where did the cost happen?" That is the sharper debugging tool when a developer wants to know whether cost came from the first prompt, accumulated context, repo/tool output, a model switch, or a late-session spike.
 
-## Request-payload attribution roadmap
+## Request-payload attribution boundary
 
 Observed VS Code debug-log `llm_request` events can include large request payload fields such as `attrs.userRequest`, `attrs.inputMessages`, `attrs.systemPromptFile`, and `attrs.toolsFile`. The scanner now preserves side-file summaries and payload sizes, but it still does not fully bucket every request section.
 

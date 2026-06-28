@@ -20,7 +20,7 @@ function main() {
   const notes = [
     `# Copilot Usage Studio ${tag}`,
     '',
-    'Local-first Copilot usage visibility for VS Code. This release includes the npm app and, when built by GitHub Actions, a VS Code extension VSIX attached to the GitHub Release.',
+    'Local-first Copilot usage visibility for VS Code. The VS Code extension is the primary product path; the npm/browser host remains available for development and fallback testing.',
     '',
     '## Install',
     '',
@@ -28,7 +28,7 @@ function main() {
     `npx ${packageJson.name}@${version}`,
     '```',
     '',
-    'For the VS Code extension preview, download the `.vsix` asset from this GitHub Release and install it with:',
+    'For local VS Code extension preview testing, install the generated `.vsix` artifact with:',
     '',
     '```bash',
     'code --install-extension copilot-usage-studio-vscode-' + version + '.vsix --force',

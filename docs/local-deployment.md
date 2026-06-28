@@ -2,9 +2,9 @@
 
 The app is intended to run locally, near the VS Code data it reads. It should not require a hosted SaaS backend for the core workflow.
 
-Current release posture: early local developer preview. Version `0.2.0` is published publicly on npm, while clone-and-run remains available for contributors and development builds.
+Current release posture: early VS Code extension preview. Version `0.2.0` exists on npm as the development/fallback host, but the VS Code extension is the product path.
 
-Packaging foundation now available: the scanner exposes an in-memory Node API through `lib/scanner-api.mjs`. The existing scan command uses that same API and only adds argument parsing plus JSON persistence. This is the common core for the next local host, an `npx` command, Electron packaging, and a future thin VS Code extension.
+Packaging foundation now available: the scanner exposes an in-memory Node API through `lib/scanner-api.mjs`. The existing scan command, local runtime, npm host, and VS Code extension preview use the same scanner/runtime core so behavior stays aligned across hosts.
 
 Supported source today: VS Code GitHub Copilot Chat and Agent local storage. Visual Studio, JetBrains IDEs, Copilot CLI, GitHub.com chat, and GitHub billing exports are outside the current importer scope.
 
@@ -76,7 +76,7 @@ npm run test:scripts
 npm run build
 ```
 
-Release copy should describe the app as a local Copilot usage inspector for VS Code. The strongest promise is: "VS Code already logs useful usage data locally; this app makes it understandable for developers who do not have billing-console access."
+Release copy should describe the app as a local Copilot usage inspector for VS Code, now available as a local VSIX preview. The strongest promise is: "VS Code already logs useful usage data locally; this app makes it understandable for developers who do not have billing-console access."
 
 ### Packaged Data Location
 
@@ -94,11 +94,12 @@ GitHub Actions is the release control plane:
 
 - `.github/workflows/ci.yml` runs the full release gate and packages a VSIX artifact for every pushed branch, plus pull requests to `main`.
 - `.github/workflows/release.yml` runs automatically for version tags such as `v0.1.1`, with a manual existing-tag mode for repair and backfill.
-- The release workflow verifies that the tag matches `package.json`, publishes the exact tagged source to npm, packages the VS Code extension VSIX, generates release notes from `CHANGELOG.md`, and creates the matching GitHub Release with the VSIX attached.
+- The release workflow verifies that the tag matches `package.json`, runs the release gate, packages the VS Code extension VSIX, generates release notes from `CHANGELOG.md`, and creates the matching GitHub Release.
+- After maintainer smoke testing and Marketplace credentials are configured, public extension releases should be published to the VS Code Marketplace so users can install without manually downloading a VSIX.
 - A failed workflow can be rerun safely: an existing npm version is accepted only when its published `gitHead` matches the exact tagged commit. Conflicting or unverifiable versions are refused.
 - New versions must pass the full release gate before publication. An exact-commit backfill of an already-published historical version skips its old test suite and only repairs the missing GitHub Release.
 
-This keeps GitHub, npm, the VSIX asset, release notes, and the source tag tied to the same commit. Ordinary pushes never publish.
+This keeps GitHub, release artifacts, release notes, and the source tag tied to the same commit. Ordinary pushes never publish.
 
 ### Branch Validation
 
@@ -190,7 +191,7 @@ Then serve the generated `dist/` output with a small local static server.
 
 Why: Angular production output is just static assets plus the generated `public/data/sessions.json` copy. This is a good first packaging target because it avoids an app server and keeps the data model simple.
 
-Current build status: `npm run build` passes. There is still an initial bundle budget warning to clean up later; it does not block the local preview release.
+Current build status: `npm run build` passes. There are still Angular budget warnings for the initial bundle and `src/app/app.css`; they do not block the local preview release.
 
 For day-to-day development, use the in-app **Refresh** action. `npm run refresh:data` remains the explicit command-line scan plus verification path.
 
@@ -288,9 +289,9 @@ Install it locally:
 code --install-extension tmp/copilot-usage-studio-vscode-0.2.0.vsix --force
 ```
 
-The extension exposes the full app inside VS Code: Usage, Sessions, Memory, Customizations, Compare, Insights, and Prices. The npm/browser host remains useful for development and fallback testing, but the extension is the primary product surface.
+The extension exposes the full app inside VS Code: Usage, Sessions, Memory, Customizations preview, Compare, Insights, and Prices. The npm/browser host remains useful for development and fallback testing, but the extension is the primary product surface.
 
-The VSIX is a separate distribution artifact from the npm package. It is built from the same source tree and attached to GitHub Releases, while `npx copilot-usage-studio` continues to come from npm.
+The VSIX is a separate distribution artifact from the npm package. It is built from the same source tree. After Marketplace release is configured, the VS Code Marketplace should be the normal install route; `npx copilot-usage-studio` remains a development/fallback host.
 
 Why not move the whole product into an extension: keeping the scanner and analysis core editor-independent preserves a path to a desktop app and possible Visual Studio support if Visual Studio exposes equivalent local evidence later.
 

@@ -73,6 +73,48 @@ test('serves cached data, refreshes through the scanner, and reports status', as
   }
 });
 
+test('preserves customization evidence when a quick refresh skips customization indexing', async () => {
+  const fixture = runtimeFixture('quick-keeps-customizations');
+  const cached = sessionData('cached-session', '2026-06-13T08:00:00.000Z');
+  cached.ingestion.importedCustomizations = 1;
+  cached.ingestion.scannedCustomizationLocations = [{ kind: 'vscode-default-root', path: join(fixture.root, '.github', 'instructions') }];
+  cached.customizations = [
+    {
+      id: 'customization-one',
+      workspace: 'fixture',
+      sourcePath: join(fixture.root, '.github', 'instructions', 'rule.md'),
+      modifiedAt: '2026-06-13T08:00:00.000Z',
+      evidenceStatus: 'sent',
+    },
+  ];
+  const refreshed = sessionData('new-session', '2026-06-13T09:00:00.000Z');
+  writeFileSync(fixture.dataFile, JSON.stringify(cached), 'utf8');
+  const runtime = createLocalRuntime({
+    port: 0,
+    dataFile: fixture.dataFile,
+    seedDataFile: null,
+    staticDir: fixture.staticDir,
+    scanOnStart: false,
+    scanner: async () => refreshed,
+    logger: silentLogger(),
+  });
+
+  try {
+    const address = await runtime.listen();
+    const origin = `http://127.0.0.1:${address.port}`;
+    const refreshResponse = await jsonRequest(`${origin}/api/scan`, { method: 'POST' });
+    const saved = JSON.parse(readFileSync(fixture.dataFile, 'utf8'));
+
+    assert.equal(refreshResponse.sessionData.sessions[0].id, 'new-session');
+    assert.equal(refreshResponse.sessionData.customizations[0].id, 'customization-one');
+    assert.equal(refreshResponse.sessionData.ingestion.importedCustomizations, 1);
+    assert.equal(saved.customizations[0].id, 'customization-one');
+  } finally {
+    await runtime.close();
+    rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
 test('keeps the last valid snapshot when a refresh fails', async () => {
   const fixture = runtimeFixture('failure');
   const cached = sessionData('safe-session', '2026-06-13T08:00:00.000Z');

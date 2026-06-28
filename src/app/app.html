@@ -35,7 +35,8 @@
         [class.active]="activeView() === 'customizations'"
         (click)="activeView.set('customizations')"
       >
-        Customizations
+        <span class="nav-label">Customizations</span>
+        <span class="nav-preview">Preview</span>
       </button>
       }
       @if (isViewAvailable('compare')) {

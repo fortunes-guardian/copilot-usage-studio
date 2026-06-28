@@ -646,7 +646,7 @@ export class CustomizationsPageComponent {
       return `Text from this file was found in ${calls.toLocaleString()} ${label}. Use proof details only when you need raw VS Code log fields.`;
     }
     if (group.bestStatus === 'listed') {
-      return 'Only the customization name or path was visible in this session. That is a weak signal, not a text match.';
+      return 'This session mentioned the file name or path, but the local logs did not show the file text. Treat this as a reference, not proof that the rule body reached the model.';
     }
     if (group.bestStatus === 'discovered') {
       return 'VS Code setup/discovery mentioned this file, but imported model requests did not show file text.';

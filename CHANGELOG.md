@@ -14,10 +14,19 @@ All notable changes to Copilot Usage Studio are recorded here.
 - Add tag-driven npm Trusted Publishing with automatic provenance.
 - Create the matching GitHub Release from the same version tag.
 - Support safe workflow reruns and manual backfill of an existing tagged release.
-- Add a VS Code extension preview focused on Usage, Memory, and Prices.
+- Add a VS Code extension preview for Usage, Sessions, Memory, Customizations preview, Compare, Insights, and Prices.
 - Build and upload a VSIX artifact from CI for every pushed branch.
-- Attach the VSIX to GitHub Releases while keeping the npm package focused on the `npx` app.
+- Position the VS Code extension as the primary product path, with Marketplace publication planned after maintainer smoke testing.
 - Generate detailed release notes from the changelog and commits for tagged releases.
+- Tighten Customizations evidence wording around visible local-log text matches.
+- Trust explicit VS Code customization file settings, directories, and globs for file kind while keeping scans bounded by safe file type.
+- Add regression coverage for `copilot-instructions.md`, explicit configured customization files, and broad user-profile folders not being scanned by default.
+- Compact global scan status so detailed workspace diagnostics stay behind `View details`.
+- Report user-stopped scans as stopped while keeping the last valid snapshot visible.
+- Make Customizations evidence rows quieter by keeping raw VS Code source fields inside `Proof details` and marking partial evidence as minimum counts.
+- Preserve existing Customizations evidence when a normal top-right Refresh runs a quick scan that skips customization indexing.
+- Mark Customizations as a preview surface in both docs and the app navigation.
+- Purge public roadmap links from README and release-facing docs.
 
 ## 0.1.0 - 2026-06-14
 

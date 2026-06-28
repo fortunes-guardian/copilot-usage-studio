@@ -7,12 +7,12 @@ The extension exposes the full app inside VS Code:
 - Usage
 - Sessions
 - Memory
-- Customizations
+- Customizations preview
 - Compare
 - Insights
 - Prices
 
-Selected-run Sessions includes Overview, Cost, Calls, and Trace. Customization evidence is enabled because the extension keeps the feature close to the editor where instructions, skills, prompts, hooks, and agents are authored.
+Selected-run Sessions includes Overview, Cost, Calls, and Trace. Customization evidence is enabled as a preview because the extension keeps the feature close to the editor where instructions, skills, prompts, hooks, and agents are authored. Treat Customizations as local-log evidence, not a guarantee that every Copilot customization use is fully observable.
 
 ## Architecture
 
@@ -66,7 +66,7 @@ npm run vscode:package
 3. Run `Copilot Usage Studio: Open`.
 4. Confirm Usage loads first.
 5. Run `Copilot Usage Studio: Refresh Data`.
-6. Confirm Usage, Sessions, Memory, Customizations, Compare, Insights, and Prices load.
+6. Confirm Usage, Sessions, Memory, Customizations preview, Compare, Insights, and Prices load.
 7. Confirm scan progress/errors appear in the `Copilot Usage Studio` Output Channel.
 8. Confirm selected-run Overview, Cost, Calls, and Trace work inside Sessions.
 9. Confirm startup logs include customization scan progress and do not hang on large workspaces.
@@ -85,11 +85,11 @@ If that setting is off, the extension may still show older cached scans or weake
 
 ## Release Posture
 
-First release target is a local VSIX preview attached to the GitHub Release.
+Current release target is local VSIX testing first, then VS Code Marketplace publication after maintainer smoke testing.
 
 The extension is not part of the npm package. The VSIX is built from the same source and attached as a separate release asset. The npm package remains useful as a development/runtime fallback, but the extension is the user-facing product path.
 
-CI runs the normal app release gate and packages a VSIX artifact for pushed branches. Tag releases publish npm as before, then attach the matching VSIX to the GitHub Release with notes generated from `CHANGELOG.md`.
+CI runs the normal app release gate and packages a VSIX artifact for pushed branches. Tag releases should use curated notes from `CHANGELOG.md`; once Marketplace credentials are configured, the extension publication step should be the primary user-facing release path.
 
 Do not publish to the Marketplace until:
 

@@ -8,17 +8,17 @@ Extension-first usage, memory, customization, and cost insights for VS Code GitH
 
 Independent open-source developer tool. Not affiliated with or endorsed by GitHub or Microsoft.
 
-Status: early local developer preview. The VS Code extension is the product path; the npm/browser app remains available as a development and fallback host.
+Status: early VS Code extension preview. Test locally before relying on it for daily use.
 
 Supported scope today: VS Code GitHub Copilot Chat and Agent sessions on the local machine. This does not currently support Visual Studio, JetBrains IDEs, Copilot CLI, GitHub.com chat, or GitHub billing exports.
 
-Supported local VS Code storage locations:
+Supported local VS Code storage locations for the standalone/npm host:
 
 - Windows: `%APPDATA%\Code\User`
 - macOS: `~/Library/Application Support/Code/User`
 - Linux: `~/.config/Code/User`
 
-VS Code Insiders paths are scanned too.
+VS Code Insiders paths are scanned too by the standalone/npm host. The VS Code extension preview uses the VS Code user-data root for the VS Code installation it is running inside.
 
 The app helps answer three practical questions:
 
@@ -28,11 +28,11 @@ The app helps answer three practical questions:
 >
 > Why did this Copilot run cost what it cost?
 
-It scans local VS Code data, uses GitHub source usage when VS Code logs it, falls back to GitHub published model prices when it has to, and shows which models, token categories, and model calls drove the usage. It also indexes Copilot's locally saved memories/plans and local Copilot customizations so they are no longer hidden in VS Code storage.
+It scans local VS Code data, uses GitHub source usage when VS Code logs it, falls back to GitHub published model prices when it has to, and shows which models, token categories, and model calls drove the usage. It also indexes Copilot's locally saved memories/plans. The Customizations page is a preview for inspecting local instructions, skills, prompts, hooks, and agents with evidence from visible VS Code request logs.
 
 ## Start Here
 
-Recommended path: install the local VS Code extension preview.
+Recommended path: build and install the local VS Code extension preview.
 
 Requirements for building the preview: Node.js 22.5 or newer, npm, VS Code, and local VS Code GitHub Copilot session data.
 
@@ -44,7 +44,7 @@ code --install-extension tmp/copilot-usage-studio-vscode-0.2.0.vsix --force
 
 Then run `Copilot Usage Studio: Open` from the VS Code command palette.
 
-The npm/browser host remains useful for development and fallback testing, but it is no longer the main user path:
+The npm/browser host remains available for development and fallback testing:
 
 ```bash
 npx copilot-usage-studio
@@ -90,6 +90,7 @@ npx copilot-usage-studio status
 - **Usage**: the default home for last session, today, this week, current calendar month, selected workspace/model scope, and recent daily usage in GitHub AI credits.
 - **Sessions**: selected-run debugging with Overview, Cost, Calls, and Trace views.
 - **Memory**: read-only search and inspection for global, repository, workspace, and session-scoped Copilot memories and saved plans.
+- **Customizations preview**: read-only inventory and local-log text-match evidence for Copilot instructions, skills, prompts, hooks, and agents. Absence of a text match does not prove Copilot ignored a file.
 - **Cost**: source usage when VS Code logs it, fallback pricing when it does not, and separate normal input, cached input, cache write, and output buckets.
 - **Calls**: model-call timeline, context-load timeline, setup-footprint clues, and links back to the raw Trace event.
 - **Trace**: filterable raw log timeline with clickable event inspection.
@@ -120,7 +121,8 @@ npm run vscode:package
 code --install-extension tmp/copilot-usage-studio-vscode-0.2.0.vsix --force
 ```
 
-The extension opens the full app inside VS Code: Usage, Sessions, Memory, Customizations, Compare, Insights, and Prices.
+The extension opens the full app inside VS Code: Usage, Sessions, Memory, Customizations preview, Compare, Insights, and Prices.
+For pre-release testing, prefer the VSIX artifact produced by branch CI when available. After maintainer testing, the release target is the VS Code Marketplace so users can install without downloading a VSIX manually.
 
 ## Releasing
 
@@ -131,7 +133,7 @@ npm version patch
 git push origin main --follow-tags
 ```
 
-Use `minor` or `major` instead of `patch` when appropriate. GitHub Actions then tests and packages that exact tagged commit, publishes the npm package, builds the VS Code extension VSIX, and creates the matching GitHub Release from `CHANGELOG.md`. See [docs/local-deployment.md](docs/local-deployment.md#automated-releases) for the one-time npm Trusted Publisher setup and the full release procedure.
+Use `minor` or `major` instead of `patch` when appropriate. GitHub Actions tests and packages that exact tagged commit, builds the VS Code extension artifact, and creates release notes from `CHANGELOG.md`. See [docs/local-deployment.md](docs/local-deployment.md#automated-releases) for release mechanics.
 
 ## Current Boundaries
 
@@ -145,15 +147,13 @@ The app is a local developer visibility tool. It shows what can be understood fr
 
 - [docs/how-to-read-the-app.md](docs/how-to-read-the-app.md): plain-English guide to the UI.
 - [docs/pricing.md](docs/pricing.md): GitHub price source, calculation rules, AI-credit allowances, and real-world caveats.
-- [docs/local-deployment.md](docs/local-deployment.md): local run, build, and future packaging options.
+- [docs/local-deployment.md](docs/local-deployment.md): local run, build, and release mechanics.
 - [docs/vscode-extension.md](docs/vscode-extension.md): local VSIX preview architecture, build, and smoke-test flow.
 - [docs/scanner-api.md](docs/scanner-api.md): reusable Node scanner contract for local hosts, desktop packaging, and extensions.
 - [docs/data-ingestion.md](docs/data-ingestion.md): where the data comes from and what it means.
 - [docs/copilot-memory.md](docs/copilot-memory.md): observed Copilot memory storage, normalized fields, and evidence boundaries.
 - [docs/customization-evidence.md](docs/customization-evidence.md): how instruction/skill evidence is detected and what it proves.
 - [docs/debug-log-schema.md](docs/debug-log-schema.md): observed VS Code Agent Debug Log schema and generated app data contract.
-- [docs/schema-change-workflow.md](docs/schema-change-workflow.md): weekly VS Code/Copilot update audit, compatibility gates, and baseline procedure.
-- [docs/roadmap.md](docs/roadmap.md): current state, completed work, and planned build order.
 
 ## License
 

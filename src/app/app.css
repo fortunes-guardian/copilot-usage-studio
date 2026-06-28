@@ -1222,6 +1222,20 @@
   font-weight: 720;
 }
 
+.view-nav .nav-label,
+.view-nav .nav-preview {
+  display: block;
+  line-height: 1.05;
+}
+
+.view-nav .nav-preview {
+  margin-top: 1px;
+  color: color-mix(in srgb, currentColor 72%, transparent);
+  font-size: 9px;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
 .view-nav button.active {
   box-shadow: 0 7px 18px rgba(111, 92, 255, 0.24);
 }
