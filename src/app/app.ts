@@ -111,6 +111,7 @@ export class App {
   protected readonly sessionRailOpen = signal(false);
   protected readonly theme = signal<ThemeMode>(this.readStoredTheme());
   protected readonly allowancePlan = signal<CopilotAllowancePlan>('business-standard');
+  private readonly activeRefreshMode = signal<SessionDataScanMode | null>(null);
   protected readonly pricingSourceUrl = PRICING_SOURCE_URL;
   protected readonly help = {
     appEstimate:
@@ -299,6 +300,12 @@ export class App {
       this.document.documentElement.style.colorScheme = theme;
       this.persistTheme(theme);
     });
+
+    effect(() => {
+      if (this.sessionDataRefreshState() !== 'refreshing') {
+        this.activeRefreshMode.set(null);
+      }
+    });
   }
 
   protected toggleTheme(): void {
@@ -310,19 +317,17 @@ export class App {
   }
 
   protected refreshSessionData(mode: SessionDataScanMode = 'quick'): void {
+    this.activeRefreshMode.set(mode);
     this.sessionDataService.refresh(mode);
   }
 
   protected refreshActiveViewData(): void {
-    this.refreshSessionData(this.activeView() === 'customizations' ? 'customizations' : 'quick');
+    this.refreshSessionData('quick');
   }
 
   protected topbarScanLabel(): string {
     if (this.sessionDataRefreshState() === 'refreshing') {
       return 'Scanning';
-    }
-    if (this.activeView() === 'customizations') {
-      return 'Find usage';
     }
     return 'Refresh';
   }
@@ -339,16 +344,14 @@ export class App {
 
       if (workspaceIndex > 0 && workspaceTotal > 0) {
         if (status?.activeScanMode === 'customizations') {
-          return workspace
-            ? `Checking current workspace: ${workspace}`
-            : 'Checking current workspace';
+          return 'Checking customization evidence';
         }
-        return workspace
-          ? `Storage entry ${workspaceIndex.toLocaleString()} of ${workspaceTotal.toLocaleString()}: ${workspace}`
-          : `Storage entry ${workspaceIndex.toLocaleString()} of ${workspaceTotal.toLocaleString()}`;
+        return `${workspaceIndex.toLocaleString()} of ${workspaceTotal.toLocaleString()} storage entries checked`;
       }
 
-      return message || 'Scanning local VS Code data';
+      return status?.activeScanMode === 'customizations'
+        ? 'Checking customization evidence'
+        : (message || 'Scanning local VS Code data');
     }
 
     if (status?.scanning === true) {
@@ -373,7 +376,11 @@ export class App {
   }
 
   protected showGlobalStatePanel(): boolean {
-    return this.activeView() !== 'customizations' || this.sessionDataLoadState() !== 'ready';
+    if (this.activeView() !== 'customizations' || this.sessionDataLoadState() !== 'ready') {
+      return true;
+    }
+
+    return this.sessionDataRefreshState() === 'refreshing' && this.activeRefreshMode() !== 'customizations';
   }
 
   private isRuntimeScanning(): boolean {

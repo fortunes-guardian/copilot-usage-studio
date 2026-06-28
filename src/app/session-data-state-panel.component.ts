@@ -63,7 +63,9 @@ export class SessionDataStatePanelComponent {
 
   protected get statusTitle(): string {
     if (this.isScanning) {
-      return 'Scanning VS Code Copilot data';
+      return this.runtimeStatus?.activeScanMode === 'customizations'
+        ? 'Checking usage evidence'
+        : 'Scanning VS Code usage data';
     }
     if (this.refreshState === 'success') {
       return 'Scan complete';
@@ -82,12 +84,12 @@ export class SessionDataStatePanelComponent {
 
   protected get statusBody(): string {
     if (this.isScanning) {
-      return this.currentWorkspaceLabel
-        ? `Checking ${this.currentWorkspaceLabel}. Existing imported data stays visible while the scan runs.`
-        : 'Checking local VS Code Copilot usage, memories, and customization files. Existing imported data stays visible while the scan runs.';
+      return this.runtimeStatus?.activeScanMode === 'customizations'
+        ? `${this.customizationScanSummary}. Existing data stays visible while the scan runs.`
+        : `${this.scanProgressCountLabel}. Existing data stays visible while the scan runs.`;
     }
     if (this.refreshState === 'success') {
-      return 'Local VS Code Copilot data was refreshed.';
+      return `Scan complete - ${this.foundSoFar.sessions.toLocaleString()} session${this.foundSoFar.sessions === 1 ? '' : 's'} found - last updated just now.`;
     }
     if (this.refreshState === 'error') {
       return this.runtimeStatus?.lastError || this.error || 'The scan stopped before fresh data was imported.';
@@ -130,7 +132,7 @@ export class SessionDataStatePanelComponent {
       return 'Checking current workspace';
     }
     if (index > 0 && total > 0) {
-      return `VS Code storage entry ${index.toLocaleString()} of ${total.toLocaleString()}`;
+      return `Storage entry ${index.toLocaleString()} of ${total.toLocaleString()}`;
     }
     return this.friendlyStageLabel(progress?.stage);
   }
@@ -172,17 +174,36 @@ export class SessionDataStatePanelComponent {
   protected get scanModeLabel(): string {
     const mode = this.runtimeStatus?.activeScanMode;
     return mode === 'customizations'
-      ? 'Customization usage'
+      ? 'Usage evidence scan'
       : mode === 'full'
-        ? 'Full scan'
-        : 'Quick scan';
+        ? 'Global full scan'
+        : 'Global scan';
   }
 
   protected get scanProgressCountLabel(): string {
     if (this.runtimeStatus?.activeScanMode === 'customizations') {
-      return this.currentWorkspaceLabel ? 'Current workspace' : 'Current workspace not detected';
+      return this.customizationScanSummary;
     }
-    return `${this.foundSoFar.checkedWorkspaces.toLocaleString()} of ${this.foundSoFar.totalWorkspaces.toLocaleString()} VS Code storage entries checked`;
+    const progress = this.runtimeStatus?.scanProgress;
+    const index = Number(progress?.workspaceIndex ?? progress?.index ?? 0);
+    const total = Number(progress?.workspaceTotal ?? progress?.total ?? 0);
+    if (this.isScanning && index > 0 && total > 0) {
+      return `${index.toLocaleString()} of ${total.toLocaleString()} storage entries checked`;
+    }
+    return `${this.foundSoFar.checkedWorkspaces.toLocaleString()} of ${this.foundSoFar.totalWorkspaces.toLocaleString()} storage entries checked`;
+  }
+
+  protected get customizationScanSummary(): string {
+    const progress = this.runtimeStatus?.scanProgress;
+    const customizations = Number(progress?.customizationInventory ?? this.foundSoFar.customizations ?? 0);
+    const sessions = Number(progress?.sessions ?? 0);
+    const matches = Number(progress?.matches ?? 0);
+    const parts = [
+      customizations ? `${customizations.toLocaleString()} customization${customizations === 1 ? '' : 's'}` : '',
+      sessions ? `${sessions.toLocaleString()} session${sessions === 1 ? '' : 's'} checked` : '',
+      matches ? `${matches.toLocaleString()} text match${matches === 1 ? '' : 'es'}` : '',
+    ].filter(Boolean);
+    return parts.length ? parts.join(' - ') : 'Checking current workspace customizations';
   }
 
   protected get recentLogs() {
@@ -221,7 +242,7 @@ export class SessionDataStatePanelComponent {
     if (this.isScanning) {
       if (this.runtimeStatus?.activeScanMode === 'customizations') {
         return this.currentWorkspaceLabel
-          ? 'Checking whether current-workspace customizations appeared in recent model requests.'
+          ? 'Checking whether current-workspace customization text appears in visible model-request logs.'
           : 'Looking for the current VS Code workspace before checking customization usage.';
       }
       return this.foundSoFar.totalWorkspaces > 20
@@ -245,13 +266,14 @@ export class SessionDataStatePanelComponent {
       starting: 'Starting scan',
       roots: 'Finding VS Code data',
       workspaces: 'Finding VS Code history',
-      workspace: 'Checking VS Code storage entry',
+      workspace: 'Checking local VS Code data',
       'workspace-state': 'Reading saved workspace metadata',
       customizations: 'Finding Copilot customization files',
-      'customization-evidence': 'Checking whether customization text reached the model',
+      'customization-evidence': 'Checking visible customization text matches',
       'chat-snapshots': 'Checking chat snapshots',
-      'workspace-complete': 'VS Code storage entry complete',
+      'workspace-complete': 'Storage entry complete',
       complete: 'Scan complete',
+      stopped: 'Scan stopped',
       failed: 'Scan failed',
     }[stage ?? ''] ?? 'Preparing scan';
   }

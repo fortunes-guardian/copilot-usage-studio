@@ -124,6 +124,20 @@
   text-transform: uppercase;
 }
 
+.preview-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 17px;
+  margin-left: 6px;
+  border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--line));
+  border-radius: 999px;
+  padding: 0 7px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent-strong, var(--accent));
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
 .customizations-header h2,
 .customization-detail h3,
 .customizations-empty h3 {
@@ -199,13 +213,16 @@
   display: grid;
   grid-template-columns: minmax(260px, 1.8fr) repeat(3, minmax(130px, 0.8fr));
   gap: 6px;
+  align-items: end;
   border-radius: 12px;
   padding: 7px;
 }
 
 .customizations-controls label {
   display: grid;
+  align-content: start;
   gap: 4px;
+  min-height: 0;
 }
 
 .customizations-controls span {
@@ -217,6 +234,7 @@
 .customizations-controls input,
 .customizations-controls select {
   width: 100%;
+  height: 32px;
   min-height: 32px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -439,6 +457,20 @@
   font-size: 10px;
 }
 
+.partial-evidence-label {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border: 1px solid color-mix(in srgb, var(--warning) 34%, var(--line));
+  border-radius: 999px;
+  padding: 1px 7px;
+  background: color-mix(in srgb, var(--warning) 10%, transparent);
+  color: var(--warning);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 780;
+}
+
 .customization-detail {
   display: grid;
   align-content: start;
@@ -535,6 +567,28 @@
 .matched-customization-text {
   border-top: 1px solid var(--line);
   padding-top: 9px;
+}
+
+.partial-result-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--warning) 26%, var(--line));
+  border-radius: 9px;
+  padding: 7px 9px;
+  background: color-mix(in srgb, var(--warning) 7%, transparent);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.partial-result-note strong {
+  flex: 0 0 auto;
+  color: var(--warning);
+  font-size: 10px;
+  font-weight: 820;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .match-list {
@@ -689,7 +743,9 @@
 }
 
 .timeline-overflow {
+  max-width: 76px;
   border-style: dashed;
+  white-space: nowrap;
 }
 
 .match-group-weak {
@@ -789,14 +845,19 @@
 }
 
 .raw-evidence-details {
-  margin-top: 6px;
+  margin-top: 5px;
 }
 
 .raw-evidence-details summary {
+  width: fit-content;
   color: var(--muted);
   font-size: 10px;
   font-weight: 760;
   cursor: pointer;
+}
+
+.raw-evidence-details summary:hover {
+  color: var(--text);
 }
 
 .raw-evidence-details div {

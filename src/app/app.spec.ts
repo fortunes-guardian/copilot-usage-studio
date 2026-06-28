@@ -261,6 +261,23 @@ describe('App', () => {
     expect(fixture.nativeElement.textContent).toContain('2 sessions imported');
   });
 
+  it('keeps the topbar refresh as a global scan on Customizations', async () => {
+    globalThis.history.pushState(null, '', '/?view=customizations');
+    const fixture = TestBed.createComponent(App);
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/data/sessions.json').flush(sessionDataFixture);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    clickButtonContaining(fixture.nativeElement, 'Refresh');
+    fixture.detectChanges();
+
+    const request = http.expectOne('/api/scan');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ mode: 'quick' });
+    request.flush({ sessionData: sessionDataFixture });
+  });
+
   it('opens Sessions from the view query parameter', async () => {
     globalThis.history.pushState(null, '', '/?view=sessions');
     const fixture = TestBed.createComponent(App);

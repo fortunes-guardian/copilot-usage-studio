@@ -558,9 +558,18 @@ function parseSimpleFrontmatter(content) {
     ];
   }
   
-  function configuredCustomizationFilePredicate(kind, file) {
+  function configuredCustomizationFilePredicate(kind, file, options = {}) {
     const name = basename(file).toLowerCase();
     const extension = extname(file).toLowerCase();
+
+    if (options.explicitFile === true || options.trustedLocation === true) {
+      if (kind === 'hook') {
+        return extension === '.json';
+      }
+      if (['instruction', 'skill', 'prompt', 'agent'].includes(kind)) {
+        return extension === '.md';
+      }
+    }
   
     if (kind === 'instruction') {
       return extension === '.md' && (
@@ -704,7 +713,7 @@ function parseSimpleFrontmatter(content) {
     }
 
     if (statSync(entry.path).isFile()) {
-      return configuredCustomizationFilePredicate(entry.kind, entry.path) &&
+      return configuredCustomizationFilePredicate(entry.kind, entry.path, { explicitFile: true }) &&
         includeCustomizationPath(entry.path, options)
         ? [{ path: resolve(entry.path), base: dirname(entry.path) }]
         : [];
@@ -717,7 +726,7 @@ function parseSimpleFrontmatter(content) {
     return listFilesRecursive(
       entry.path,
       (candidate) =>
-        configuredCustomizationFilePredicate(entry.kind, candidate) &&
+        configuredCustomizationFilePredicate(entry.kind, candidate, { trustedLocation: true }) &&
         includeCustomizationPath(candidate, options),
       customizationFileLimit,
       { label: 'customization', maxDepth: 5, maxDirs: 300 },
@@ -735,7 +744,7 @@ function parseSimpleFrontmatter(content) {
       base,
       (candidate) =>
         pattern.test(normalizedPathForGlob(candidate)) &&
-        configuredCustomizationFilePredicate(entry.kind, candidate) &&
+        configuredCustomizationFilePredicate(entry.kind, candidate, { trustedLocation: true }) &&
         includeCustomizationPath(candidate, options),
       customizationFileLimit,
       { label: 'customization', maxDepth: 8, maxDirs: 500 },

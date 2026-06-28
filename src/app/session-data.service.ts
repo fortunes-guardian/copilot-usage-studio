@@ -48,6 +48,7 @@ export interface LocalRuntimeStatus {
     sessions?: number;
     modelCalls?: number;
     matches?: number;
+    customizationInventory?: number;
     capped?: boolean;
   } | null;
   recentLogs?: LocalRuntimeLogEntry[];
@@ -131,6 +132,11 @@ export class SessionDataService {
         );
       },
       error: (error: unknown) => {
+        const status = this.statusFromError(error);
+        if (status) {
+          this.runtimeStatus.set(status);
+          this.runtimeStatusAvailable.set(true);
+        }
         const message = this.errorMessage(error);
         if (message.toLowerCase().includes('scan stopped by user')) {
           this.refreshState.set('idle');
@@ -162,6 +168,22 @@ export class SessionDataService {
         this.refreshMessage.set(this.errorMessage(error));
       },
     });
+  }
+
+  private statusFromError(error: unknown): LocalRuntimeStatus | null {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'error' in error &&
+      error.error &&
+      typeof error.error === 'object' &&
+      'status' in error.error &&
+      error.error.status &&
+      typeof error.error.status === 'object'
+    ) {
+      return error.error.status as LocalRuntimeStatus;
+    }
+    return null;
   }
 
   private errorMessage(error: unknown): string {

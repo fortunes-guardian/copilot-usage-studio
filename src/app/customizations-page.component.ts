@@ -176,7 +176,7 @@ export class CustomizationsPageComponent {
       notProved,
       hasScannedEvidence,
       label: hasScannedEvidence
-        ? `${sent.toLocaleString()} proved sent · ${notProved.toLocaleString()} not proved`
+        ? `${sent.toLocaleString()} text-matched · ${notProved.toLocaleString()} name/path only`
         : 'Detailed evidence skipped',
     };
   });
@@ -192,10 +192,6 @@ export class CustomizationsPageComponent {
 
   protected isEvidenceScanActive(): boolean {
     return this.refreshState === 'refreshing' && this.runtimeStatus?.activeScanMode === 'customizations';
-  }
-
-  protected isAnyScanActive(): boolean {
-    return this.refreshState === 'refreshing';
   }
 
   protected currentWorkspaceLabel(): string {
@@ -249,7 +245,7 @@ export class CustomizationsPageComponent {
       return 'The usage evidence scan reached its time limit. Partial results were kept so the app does not hang.';
     }
     if (this.customizationScanCapped()) {
-      return 'The usage evidence scan reached its safety budget. Partial results are shown; run a deeper scan later if needed.';
+      return 'Scan stopped early to avoid taking too long. Partial evidence is shown, so some matches may be missing.';
     }
     if (this.customizationEvidenceSummary().hasScannedEvidence) {
       const sent = this.customizationEvidenceSummary().sent;
@@ -364,6 +360,10 @@ export class CustomizationsPageComponent {
     );
   }
 
+  protected isPartialEvidenceResult(): boolean {
+    return this.customizationScanTimedOut() || this.customizationScanCapped();
+  }
+
   private durationLabel(ms: number): string {
     if (!Number.isFinite(ms) || ms < 0) {
       return '';
@@ -427,8 +427,8 @@ export class CustomizationsPageComponent {
 
   protected statusLabel(status: CopilotCustomizationEvidenceStatus): string {
     return {
-      sent: 'Sent to model',
-      listed: 'Not proved sent',
+      sent: 'Text match found',
+      listed: 'Name/path only',
       discovered: 'Discovered',
       not_seen: 'Not seen',
     }[status];
@@ -436,8 +436,8 @@ export class CustomizationsPageComponent {
 
   protected statusHeadline(status: CopilotCustomizationEvidenceStatus): string {
     return {
-      sent: 'File text was sent to the model',
-      listed: 'Only the file name was seen',
+      sent: 'File text appeared in a model request',
+      listed: 'Only name/path appeared',
       discovered: 'Found locally, not seen in a request',
       not_seen: 'No evidence in imported sessions',
     }[status];
@@ -445,10 +445,10 @@ export class CustomizationsPageComponent {
 
   protected statusHelp(status: CopilotCustomizationEvidenceStatus): string {
     return {
-      sent: 'We found distinctive text from this customization inside a VS Code model request. That is the strongest local proof that Copilot used it.',
-      listed: 'A request mentioned the file name or label, but we did not find the actual customization text in the material sent to the model.',
-      discovered: 'The file exists in a known customization location, but imported model requests did not show it being used.',
-      not_seen: 'The file exists locally, but the imported sessions do not show it being discovered, mentioned, or sent.',
+      sent: 'We found distinctive text from this customization inside local VS Code request logs. This is strong local evidence, but it only counts text visible in those logs.',
+      listed: 'A request mentioned the file name or label, but local logs did not show distinctive text from this customization.',
+      discovered: 'The file exists in a known customization location, but imported model requests did not show a text match.',
+      not_seen: 'The file exists locally, but imported sessions do not show it being discovered, mentioned, or text-matched.',
     }[status];
   }
 
@@ -457,7 +457,7 @@ export class CustomizationsPageComponent {
     if (!customization.matches.length) {
       return 'No sessions';
     }
-    return `${sessions.toLocaleString()} session${sessions === 1 ? '' : 's'}`;
+    return `${this.isPartialEvidenceResult() ? 'At least ' : ''}${sessions.toLocaleString()} session${sessions === 1 ? '' : 's'}`;
   }
 
   protected evidenceGroupSubtitle(group: CustomizationSessionEvidence): string {
@@ -465,8 +465,8 @@ export class CustomizationsPageComponent {
     if (group.bestStatus === 'sent') {
       const sentCalls = this.sentModelCallCount(group);
       return sentCalls
-        ? `File text found in ${sentCalls.toLocaleString()} model call${sentCalls === 1 ? '' : 's'}`
-        : 'Content found in model material';
+        ? `${this.isPartialEvidenceResult() ? 'At least ' : ''}${sentCalls.toLocaleString()} text-matched request${sentCalls === 1 ? '' : 's'}`
+        : 'Text match found';
     }
     if (group.bestStatus === 'listed') {
       return calls
@@ -494,13 +494,13 @@ export class CustomizationsPageComponent {
 
   protected sourceHelp(source: EvidenceSource): string {
     if (/^system_prompt/i.test(source.raw)) {
-      return 'Matched inside the instruction/system part of the request VS Code sent to the model. This is usually where custom instructions and skills are injected.';
+      return 'Matched inside the instruction/system part of a VS Code request. This is usually where custom instructions and skills appear.';
     }
     if (/^tools/i.test(source.raw)) {
-      return 'Matched near the tool definitions VS Code sent with the request. This can include tool or MCP schema material.';
+      return 'Matched near the tool definitions included with the request. This can include tool or MCP schema material.';
     }
     if (source.raw === 'inputMessages') {
-      return 'Matched somewhere in the full request payload VS Code sent to the model. This is useful as a broad confirmation that the text was included.';
+      return 'Matched somewhere in the full request payload visible in VS Code logs. This is useful as broad local confirmation that the text appeared.';
     }
     if (source.raw === 'userRequest') {
       return 'Matched in the user-facing prompt/request material for this model call.';
@@ -515,14 +515,14 @@ export class CustomizationsPageComponent {
   protected sessionEvidenceLabel(group: CustomizationSessionEvidence): string {
     const calls = group.modelCallNumbers.length;
     if (!calls) {
-      return group.bestStatus === 'sent' ? 'Content found' : this.statusLabel(group.bestStatus);
+      return group.bestStatus === 'sent' ? 'Text match found' : this.statusLabel(group.bestStatus);
     }
     if (group.bestStatus !== 'sent') {
-      return 'Not proved sent';
+      return 'Name/path only';
     }
     const sentCalls = this.sentModelCallCount(group);
-    const label = sentCalls === 1 ? 'model call' : 'model calls';
-    return `File text found in ${sentCalls.toLocaleString()} ${label}`;
+    const label = sentCalls === 1 ? 'request' : 'requests';
+    return `${this.isPartialEvidenceResult() ? 'At least ' : ''}${sentCalls.toLocaleString()} text-matched ${label}`;
   }
 
   protected timelineMarkers(group: CustomizationSessionEvidence): EvidenceTimelineMarker[] {
@@ -609,10 +609,10 @@ export class CustomizationsPageComponent {
   protected callEvidenceTitle(call: CustomizationCallEvidence): string {
     const target = call.callNumber ? `Request #${call.callNumber}` : `Event #${call.eventIndex}`;
     if (call.status === 'sent') {
-      return `${target}: file text was sent`;
+      return `${target}: file text found`;
     }
     if (call.status === 'listed') {
-      return `${target}: not proved sent`;
+      return `${target}: name/path only`;
     }
     return `${target}: ${this.statusLabel(call.status).toLowerCase()}`;
   }
@@ -622,7 +622,7 @@ export class CustomizationsPageComponent {
       return `We found actual text from this customization in ${this.sourcePhrase(call.sources)}.`;
     }
     if (call.status === 'listed') {
-      return 'Only the file name/path or one of its labels was seen. Treat this as not proved sent.';
+      return 'Only the file name/path or one of its labels was seen. This is weak evidence, not a text match.';
     }
     return 'No request payload content was verified for this event.';
   }
@@ -637,6 +637,21 @@ export class CustomizationsPageComponent {
     return calls
       ? `Checked ${calls.toLocaleString()} model call${calls === 1 ? '' : 's'} in this session. The scanner did not find distinctive text from this file in those requests.${sourceText}`
       : `The scanner did not find distinctive text from this file in imported request material.${sourceText}`;
+  }
+
+  protected groupDetailSummary(group: CustomizationSessionEvidence): string {
+    if (group.bestStatus === 'sent') {
+      const calls = this.sentModelCallCount(group);
+      const label = calls === 1 ? 'model request' : 'model requests';
+      return `Text from this file was found in ${calls.toLocaleString()} ${label}. Use proof details only when you need raw VS Code log fields.`;
+    }
+    if (group.bestStatus === 'listed') {
+      return 'Only the customization name or path was visible in this session. That is a weak signal, not a text match.';
+    }
+    if (group.bestStatus === 'discovered') {
+      return 'VS Code setup/discovery mentioned this file, but imported model requests did not show file text.';
+    }
+    return 'No visible request evidence was imported for this session.';
   }
 
   protected evidenceSourceLabels(call: CustomizationCallEvidence): string[] {

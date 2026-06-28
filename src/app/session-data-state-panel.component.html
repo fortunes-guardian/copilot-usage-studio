@@ -12,29 +12,6 @@
     </div>
 
     @if (runtimeStatusAvailable && runtimeStatus) {
-      <div class="runtime-summary">
-        <div>
-          <span>{{ isScanning ? 'Scanning now' : 'Last scan' }}</span>
-          <strong>{{ isScanning ? scanModeLabel : (runtimeStatus.lastScanCompletedAt ? 'Complete' : runtimeStatus.phase) }}</strong>
-          <small>{{ scanStatusLabel }}</small>
-        </div>
-        <div>
-          <span>Imported sessions</span>
-          <strong>{{ foundSoFar.sessions | number }}</strong>
-          <small>{{ foundSoFar.debugLogFolders | number }} exact debug-log folders</small>
-        </div>
-        <div>
-          <span>Fallback chats</span>
-          <strong>{{ foundSoFar.chatSnapshots | number }}</strong>
-          <small>Used only when exact logs are absent</small>
-        </div>
-        <div>
-          <span>Memory and rules</span>
-          <strong>{{ foundSoFar.memories + foundSoFar.customizations | number }}</strong>
-          <small>{{ foundSoFar.memories | number }} memories · {{ foundSoFar.customizations | number }} customizations</small>
-        </div>
-      </div>
-
       @if (isScanning) {
         <div class="scan-progress">
           <div>
@@ -45,30 +22,6 @@
           </div>
           <span>{{ progressPercent ? (progressPercent + '%') : 'Working' }}</span>
           <progress [value]="progressPercent || null" max="100"></progress>
-        </div>
-      }
-
-      @if (workspaceOutcomes.length) {
-        <div class="workspace-outcomes" aria-label="Scan findings by workspace">
-          <div class="workspace-outcomes-heading">
-            <strong>What has been found</strong>
-            <span>
-              {{ scanProgressCountLabel }}
-            </span>
-          </div>
-          @for (workspace of workspaceOutcomes; track workspace.title + workspace.subtitle) {
-            <article
-              class="workspace-outcome"
-              [class.scanning]="workspace.status === 'scanning'"
-              [class.warning]="workspace.status === 'warning'"
-            >
-              <div>
-                <strong>{{ workspace.title }}</strong>
-                <small>{{ workspace.subtitle }}</small>
-              </div>
-              <span>{{ workspace.findings }}</span>
-            </article>
-          }
         </div>
       }
 
@@ -94,7 +47,52 @@
       }
 
       <details class="runtime-advanced">
-        <summary>Advanced details</summary>
+        <summary>View details</summary>
+        <div class="runtime-summary">
+          <div>
+            <span>{{ isScanning ? 'Scanning now' : 'Last scan' }}</span>
+            <strong>{{ isScanning ? scanModeLabel : (runtimeStatus.lastScanCompletedAt ? 'Complete' : runtimeStatus.phase) }}</strong>
+            <small>{{ scanStatusLabel }}</small>
+          </div>
+          <div>
+            <span>Imported sessions</span>
+            <strong>{{ foundSoFar.sessions | number }}</strong>
+            <small>{{ foundSoFar.debugLogFolders | number }} exact debug-log folders</small>
+          </div>
+          <div>
+            <span>Fallback chats</span>
+            <strong>{{ foundSoFar.chatSnapshots | number }}</strong>
+            <small>Used only when exact logs are absent</small>
+          </div>
+          <div>
+            <span>Memory and rules</span>
+            <strong>{{ foundSoFar.memories + foundSoFar.customizations | number }}</strong>
+            <small>{{ foundSoFar.memories | number }} memories · {{ foundSoFar.customizations | number }} customizations</small>
+          </div>
+        </div>
+        @if (workspaceOutcomes.length) {
+          <div class="workspace-outcomes" aria-label="Scan findings by workspace">
+            <div class="workspace-outcomes-heading">
+              <strong>What has been found</strong>
+              <span>
+                {{ scanProgressCountLabel }}
+              </span>
+            </div>
+            @for (workspace of workspaceOutcomes; track workspace.title + workspace.subtitle) {
+              <article
+                class="workspace-outcome"
+                [class.scanning]="workspace.status === 'scanning'"
+                [class.warning]="workspace.status === 'warning'"
+              >
+                <div>
+                  <strong>{{ workspace.title }}</strong>
+                  <small>{{ workspace.subtitle }}</small>
+                </div>
+                <span>{{ workspace.findings }}</span>
+              </article>
+            }
+          </div>
+        }
         @if (recentLogs.length) {
           <ol class="runtime-log">
             @for (entry of recentLogs; track entry.at + entry.message) {

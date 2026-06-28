@@ -8,18 +8,17 @@
 
 .state-panel {
   display: grid;
-  gap: 14px;
-  margin-bottom: 18px;
+  gap: 10px;
+  margin-bottom: 12px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  padding: 18px;
+  padding: 12px;
   background: var(--header-gradient);
   box-shadow: var(--shadow-soft);
 }
 
 .state-panel.loading {
-  min-height: min(420px, calc(100vh - 160px));
-  align-content: center;
+  align-content: start;
 }
 
 .state-panel.danger {
@@ -41,7 +40,7 @@
 
 .state-panel h2 {
   color: var(--text-strong);
-  font-size: 22px;
+  font-size: 18px;
   line-height: 1.12;
 }
 
@@ -258,6 +257,11 @@
 
 .runtime-advanced {
   padding: 8px 10px;
+}
+
+.runtime-advanced[open] {
+  display: grid;
+  gap: 10px;
 }
 
 .runtime-advanced summary {

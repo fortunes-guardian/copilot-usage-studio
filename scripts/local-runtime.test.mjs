@@ -105,6 +105,52 @@ test('keeps the last valid snapshot when a refresh fails', async () => {
   }
 });
 
+test('keeps data and reports stopped status when a refresh is cancelled', async () => {
+  const fixture = runtimeFixture('cancelled-refresh');
+  const cached = sessionData('kept-session', '2026-06-13T08:00:00.000Z');
+  writeFileSync(fixture.dataFile, JSON.stringify(cached), 'utf8');
+  const runtime = createLocalRuntime({
+    port: 0,
+    dataFile: fixture.dataFile,
+    seedDataFile: null,
+    staticDir: fixture.staticDir,
+    scanOnStart: false,
+    scanner: ({ signal }) =>
+      new Promise((_resolve, reject) => {
+        if (signal?.aborted) {
+          reject(new Error('Scan stopped by user.'));
+          return;
+        }
+        signal?.addEventListener('abort', () => reject(new Error('Scan stopped by user.')), { once: true });
+      }),
+    logger: silentLogger(),
+  });
+
+  try {
+    const address = await runtime.listen();
+    const origin = `http://127.0.0.1:${address.port}`;
+    const scanRequest = fetch(`${origin}/api/scan`, { method: 'POST' });
+
+    await waitForRuntimeStatus(origin, (status) => status.scanning === true);
+    const cancelResponse = await jsonRequest(`${origin}/api/scan/cancel`, { method: 'POST' });
+    assert.equal(cancelResponse.canceled, true);
+
+    const response = await scanRequest;
+    const body = await response.json();
+
+    assert.equal(response.status, 500);
+    assert.equal(body.status.hasData, true);
+    assert.equal(body.status.phase, 'ready');
+    assert.equal(body.status.lastError, 'Scan stopped by user.');
+    assert.equal(body.status.scanProgress.stage, 'stopped');
+    assert.equal(body.status.scanProgress.message, 'Scan stopped. Existing data was kept.');
+    assert.equal((await jsonRequest(`${origin}/api/sessions`)).sessions[0].id, 'kept-session');
+  } finally {
+    await runtime.close();
+    rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
 test('runs the default scanner in a child process', async () => {
   const fixture = runtimeFixture('worker-scan');
   const workspaceDir = join(fixture.root, 'workspace');
@@ -350,4 +396,15 @@ async function jsonRequest(url, options) {
   const response = await fetch(url, options);
   assert.equal(response.ok, true, `${response.status} ${response.statusText}`);
   return response.json();
+}
+
+async function waitForRuntimeStatus(origin, predicate) {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const status = await jsonRequest(`${origin}/api/status`);
+    if (predicate(status)) {
+      return status;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  assert.fail('Timed out waiting for runtime status predicate.');
 }

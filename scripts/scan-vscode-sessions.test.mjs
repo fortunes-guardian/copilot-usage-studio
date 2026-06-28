@@ -709,6 +709,11 @@ test('strict VS Code customization discovery scans only API-provided locations',
       'utf8',
     );
     writeFileSync(
+      join(allowedInstructionsDir, 'plain-backend-rule.md'),
+      'Plain markdown instruction text from a trusted VS Code instructions location.',
+      'utf8',
+    );
+    writeFileSync(
       join(ignoredSkillsDir, 'ignored.SKILL.md'),
       'This workspace skill should not be imported without a VS Code discovery entry.',
       'utf8',
@@ -725,7 +730,7 @@ test('strict VS Code customization discovery scans only API-provided locations',
           inputTokens: 2_000,
           outputTokens: 100,
           inputMessages:
-            'Allowed instruction text from the VS Code default location. User configured skill text from an explicit VS Code setting.',
+            'Allowed instruction text from the VS Code default location. Plain markdown instruction text from a trusted VS Code instructions location. User configured skill text from an explicit VS Code setting.',
         },
       }),
     ]);
@@ -758,9 +763,15 @@ test('strict VS Code customization discovery scans only API-provided locations',
 
     const paths = data.customizations.map((item) => item.sourcePath);
     assert.equal(paths.includes(join(allowedInstructionsDir, 'backend.instructions.md')), true);
+    assert.equal(paths.includes(join(allowedInstructionsDir, 'plain-backend-rule.md')), true);
     assert.equal(paths.includes(join(userSkillsDir, 'SKILL.md')), true);
     assert.equal(paths.includes(join(ignoredSkillsDir, 'ignored.SKILL.md')), false);
-    assert.equal(data.customizations.length, 2);
+    assert.equal(data.customizations.length, 3);
+    assert.equal(
+      data.customizations.find((item) => item.sourcePath === join(allowedInstructionsDir, 'plain-backend-rule.md'))
+        ?.evidenceStatus,
+      'sent',
+    );
     assert.equal(
       data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'vscode-default-root'),
       true,
@@ -770,6 +781,237 @@ test('strict VS Code customization discovery scans only API-provided locations',
       true,
     );
     assert.equal(data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'root'), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('strict VS Code customization discovery trusts explicit file locations without broad profile scanning', async () => {
+  const { root, sessionDir, workspaceDir } = tempSessionFixture('strict-explicit-customization-file');
+  const userProfileLikeFolder = join(root, 'Users', 'example');
+  const workspaceFolder = join(root, 'repo');
+  const explicitInstructionFile = join(userProfileLikeFolder, 'my-copilot-rule.md');
+  const unconfiguredInstructionFile = join(userProfileLikeFolder, 'AGENTS.md');
+
+  try {
+    mkdirSync(userProfileLikeFolder, { recursive: true });
+    mkdirSync(workspaceFolder, { recursive: true });
+    writeFileSync(
+      join(workspaceDir, 'workspace.json'),
+      JSON.stringify({ folder: pathToFileUrl(workspaceFolder) }),
+      'utf8',
+    );
+    writeFileSync(
+      explicitInstructionFile,
+      'Always review the payment boundary before changing the checkout API.',
+      'utf8',
+    );
+    writeFileSync(
+      unconfiguredInstructionFile,
+      'This broad profile instruction must not be imported unless VS Code explicitly points at it.',
+      'utf8',
+    );
+    writeJsonl(join(sessionDir, 'main.jsonl'), [
+      event(1, 'llm_request', 'panel/editAgent', {
+        attrs: {
+          model: 'gpt-5.4',
+          inputTokens: 2_000,
+          outputTokens: 100,
+          inputMessages: 'Always review the payment boundary before changing the checkout API.',
+        },
+      }),
+    ]);
+
+    const data = await scanVsCodeSessions({
+      roots: [workspaceDir],
+      sqlite: false,
+      customizationDiscovery: {
+        strict: true,
+        locations: [
+          {
+            path: explicitInstructionFile,
+            kind: 'instruction',
+            source: 'vscode-user-setting',
+            settingKey: 'chat.instructionsFilesLocations',
+            rawLocation: explicitInstructionFile,
+            workspaceFolder,
+          },
+        ],
+      },
+    });
+
+    const explicitInstruction = data.customizations.find(
+      (item) => item.sourcePath === explicitInstructionFile,
+    );
+
+    assert.equal(explicitInstruction?.kind, 'instruction');
+    assert.equal(explicitInstruction?.evidenceStatus, 'sent');
+    assert.equal(
+      data.customizations.some((item) => item.sourcePath === unconfiguredInstructionFile),
+      false,
+    );
+    assert.equal(
+      data.ingestion.scannedCustomizationLocations.some(
+        (location) => location.path === resolve(userProfileLikeFolder) && location.kind !== 'debug-reference',
+      ),
+      false,
+    );
+    assert.equal(
+      data.ingestion.scannedCustomizationLocations.some(
+        (location) => location.path === resolve(explicitInstructionFile) && location.kind === 'vscode-user-setting-root',
+      ),
+      true,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('strict VS Code customization discovery imports copilot instructions and separates text-match evidence from inventory', async () => {
+  const { root, sessionDir, workspaceDir } = tempSessionFixture('strict-copilot-instructions-evidence');
+  const workspaceFolder = join(root, 'repo-with-copilot-instructions');
+  const instructionFile = join(workspaceFolder, '.github', 'copilot-instructions.md');
+
+  try {
+    mkdirSync(dirname(instructionFile), { recursive: true });
+    writeFileSync(
+      join(workspaceDir, 'workspace.json'),
+      JSON.stringify({ folder: pathToFileUrl(workspaceFolder) }),
+      'utf8',
+    );
+    writeFileSync(
+      instructionFile,
+      [
+        '# Copilot instructions',
+        '',
+        'Always explain payment aggregate invariants before changing code paths.',
+        'Prefer small repository-safe edits with visible verification steps.',
+      ].join('\n'),
+      'utf8',
+    );
+    writeFileSync(
+      join(sessionDir, 'system_prompt_0.json'),
+      JSON.stringify({
+        messages: [
+          {
+            role: 'system',
+            content: 'Always explain payment aggregate invariants before changing code paths.',
+          },
+        ],
+      }),
+      'utf8',
+    );
+    writeJsonl(join(sessionDir, 'main.jsonl'), [
+      event(1, 'llm_request', 'panel/editAgent', {
+        attrs: {
+          model: 'gpt-5.4',
+          inputTokens: 2_000,
+          outputTokens: 100,
+          systemPromptFile: 'system_prompt_0.json',
+          inputMessages: 'Update the checkout flow.',
+        },
+      }),
+      event(2, 'llm_request', 'panel/editAgent', {
+        attrs: {
+          model: 'gpt-5.4',
+          inputTokens: 1_000,
+          outputTokens: 100,
+          inputMessages:
+            'The request referenced .github/copilot-instructions.md but did not include the visible instruction body.',
+        },
+      }),
+    ]);
+
+    const data = await scanVsCodeSessions({
+      roots: [workspaceDir],
+      sqlite: false,
+      customizationDiscovery: {
+        strict: true,
+        locations: [
+          {
+            path: instructionFile,
+            kind: 'instruction',
+            source: 'vscode-default',
+            settingKey: 'github.copilot.chat.codeGeneration.useInstructionFiles',
+            rawLocation: '.github/copilot-instructions.md',
+            workspaceFolder,
+          },
+        ],
+      },
+    });
+
+    const instruction = data.customizations.find((item) => item.sourcePath === instructionFile);
+    assert.equal(instruction?.kind, 'instruction');
+    assert.equal(instruction?.relativePath, 'copilot-instructions.md');
+    assert.equal(instruction?.evidenceStatus, 'sent');
+    assert.equal(instruction?.matches.some((match) => match.status === 'sent'), true);
+    assert.equal(instruction?.matches.some((match) => match.status === 'listed'), true);
+    assert.equal(instruction?.matches.some((match) => match.source === 'system_prompt_0.json'), true);
+    assert.equal(
+      instruction?.matches.some(
+        (match) => match.status === 'listed' && match.source === 'inputMessages',
+      ),
+      true,
+    );
+    assert.equal(
+      data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'vscode-default-root'),
+      true,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('strict VS Code customization discovery does not overclaim copilot instructions when request text is absent', async () => {
+  const { root, sessionDir, workspaceDir } = tempSessionFixture('strict-copilot-instructions-no-match');
+  const workspaceFolder = join(root, 'repo-with-unmatched-copilot-instructions');
+  const instructionFile = join(workspaceFolder, '.github', 'copilot-instructions.md');
+
+  try {
+    mkdirSync(dirname(instructionFile), { recursive: true });
+    writeFileSync(
+      join(workspaceDir, 'workspace.json'),
+      JSON.stringify({ folder: pathToFileUrl(workspaceFolder) }),
+      'utf8',
+    );
+    writeFileSync(
+      instructionFile,
+      'Always explain payment aggregate invariants before changing code paths.',
+      'utf8',
+    );
+    writeJsonl(join(sessionDir, 'main.jsonl'), [
+      event(1, 'llm_request', 'panel/editAgent', {
+        attrs: {
+          model: 'gpt-5.4',
+          inputTokens: 2_000,
+          outputTokens: 100,
+          inputMessages: 'Update the checkout flow without any visible instruction text.',
+        },
+      }),
+    ]);
+
+    const data = await scanVsCodeSessions({
+      roots: [workspaceDir],
+      sqlite: false,
+      customizationDiscovery: {
+        strict: true,
+        locations: [
+          {
+            path: instructionFile,
+            kind: 'instruction',
+            source: 'vscode-default',
+            settingKey: 'github.copilot.chat.codeGeneration.useInstructionFiles',
+            rawLocation: '.github/copilot-instructions.md',
+            workspaceFolder,
+          },
+        ],
+      },
+    });
+
+    const instruction = data.customizations.find((item) => item.sourcePath === instructionFile);
+    assert.equal(instruction?.kind, 'instruction');
+    assert.equal(instruction?.evidenceStatus, 'not_seen');
+    assert.deepEqual(instruction?.matches, []);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

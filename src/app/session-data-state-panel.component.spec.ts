@@ -68,10 +68,11 @@ describe('SessionDataStatePanelComponent', () => {
     fixture.detectChanges();
 
     const text = fixture.nativeElement.textContent;
-    expect(text).toContain('Scanning VS Code Copilot data');
-    expect(text).toContain('VS Code storage entry 8 of 111');
+    expect(text).toContain('Scanning VS Code usage data');
+    expect(text).toContain('8 of 111 storage entries checked');
     expect(text).toContain('work-repo');
     expect(text).toContain('runtime.log');
+    expect(text).toContain('View details');
     expect(text).toContain('Stop scan');
   });
 });
