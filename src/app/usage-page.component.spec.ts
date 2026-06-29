@@ -6,6 +6,15 @@ import { UsagePageComponent } from './usage-page.component';
 describe('UsagePageComponent', () => {
   let fixture: ComponentFixture<UsagePageComponent>;
 
+  beforeAll(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-05T12:00:00.000Z'));
+  });
+
+  afterAll(() => {
+    vi.useRealTimers();
+  });
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [UsagePageComponent],
@@ -72,6 +81,27 @@ describe('UsagePageComponent', () => {
 
     expect(fixture.nativeElement.textContent).toContain('1 of 2 sessions');
     expect(fixture.nativeElement.textContent).toContain('Reset scope');
+  });
+
+  it('groups recent-day usage by local calendar day with source usage first', () => {
+    fixture.componentRef.setInput('sessions', [
+      sessionFixture('jun-5-a', 'June 5 A', '2026-06-05T08:00:00.000Z', 0.01, 0.2),
+      sessionFixture('jun-5-b', 'June 5 B', '2026-06-05T20:00:00.000Z', 0.03),
+      sessionFixture('jun-4', 'June 4', '2026-06-04T12:00:00.000Z', 0.04, 0.1),
+      sessionFixture('outside-window', 'Outside window', '2026-05-01T12:00:00.000Z', 0.99, 1.23),
+    ]);
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent;
+
+    expect(text).toContain('Last 14 local calendar days');
+    expect(text).toContain('Fri, Jun 5');
+    expect(text).toContain('23 credits');
+    expect(text).toContain('2 sessions · $0.23');
+    expect(text).toContain('1 fallback');
+    expect(text).toContain('Thu, Jun 4');
+    expect(text).toContain('10 credits');
+    expect(text).not.toContain('Outside window');
   });
 });
 

@@ -1230,10 +1230,14 @@
 
 .view-nav .nav-preview {
   margin-top: 1px;
-  color: color-mix(in srgb, currentColor 72%, transparent);
+  color: var(--nav-preview-text, #7c8aa0);
   font-size: 9px;
   font-weight: 760;
   text-transform: uppercase;
+}
+
+.view-nav button.active .nav-preview {
+  color: var(--nav-preview-active-text, rgba(255, 255, 255, 0.86));
 }
 
 .view-nav button.active {
@@ -1654,6 +1658,8 @@
   --shadow-soft: 0 8px 22px rgba(31, 45, 64, 0.07);
   --control-bg: rgba(255, 255, 255, 0.82);
   --nav-bg: rgba(255, 255, 255, 0.72);
+  --nav-preview-text: #66758b;
+  --nav-preview-active-text: rgba(255, 255, 255, 0.9);
   --session-card-bg: rgba(255, 255, 255, 0.7);
   --session-card-hover: #ffffff;
   --session-card-active: linear-gradient(135deg, rgba(111, 92, 255, 0.12), rgba(12, 159, 131, 0.08)), #ffffff;
@@ -1695,6 +1701,8 @@
   --shadow-soft: 0 14px 36px rgba(0, 0, 0, 0.18);
   --control-bg: rgba(7, 11, 18, 0.78);
   --nav-bg: rgba(7, 11, 18, 0.78);
+  --nav-preview-text: #9ba8bb;
+  --nav-preview-active-text: rgba(255, 255, 255, 0.88);
   --session-card-bg: #0e1723;
   --session-card-hover: #142033;
   --session-card-active: #201a3e;

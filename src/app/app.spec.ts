@@ -259,6 +259,7 @@ describe('App', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('2 sessions imported');
+    expect(fixture.nativeElement.textContent).not.toContain('Scan complete');
   });
 
   it('keeps the topbar refresh as a global scan on Customizations', async () => {

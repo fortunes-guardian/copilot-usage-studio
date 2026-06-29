@@ -376,11 +376,19 @@ export class App {
   }
 
   protected showGlobalStatePanel(): boolean {
-    if (this.activeView() !== 'customizations' || this.sessionDataLoadState() !== 'ready') {
+    if (this.sessionDataLoadState() !== 'ready') {
       return true;
     }
 
-    return this.sessionDataRefreshState() === 'refreshing' && this.activeRefreshMode() !== 'customizations';
+    if (this.sessionDataRefreshState() === 'error') {
+      return true;
+    }
+
+    if (this.sessionDataRefreshState() !== 'refreshing') {
+      return false;
+    }
+
+    return this.activeView() !== 'customizations' || this.activeRefreshMode() !== 'customizations';
   }
 
   private isRuntimeScanning(): boolean {
