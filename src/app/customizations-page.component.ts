@@ -651,18 +651,6 @@ export class CustomizationsPageComponent {
     return 'No request payload content was verified for this event.';
   }
 
-  protected weakEvidenceSummary(group: CustomizationSessionEvidence): string {
-    const calls = group.modelCallNumbers.length;
-    const sources = this.uniqueSources(group.sources.map((source) => ({
-      label: this.sourceLabel(source),
-      raw: this.rawSourceLabel(source),
-    })));
-    const sourceText = sources.length ? ` Checked ${this.sourcePhrase(sources)}.` : '';
-    return calls
-      ? `Checked ${calls.toLocaleString()} model call${calls === 1 ? '' : 's'} in this session. The scanner did not find distinctive text from this file in those requests.${sourceText}`
-      : `The scanner did not find distinctive text from this file in imported request material.${sourceText}`;
-  }
-
   protected groupDetailSummary(group: CustomizationSessionEvidence): string {
     if (group.bestStatus === 'sent') {
       const calls = this.sentModelCallCount(group);
@@ -670,10 +658,10 @@ export class CustomizationsPageComponent {
       return `Text from this file was found in ${calls.toLocaleString()} ${label}. This proves request visibility, not whether the text came from automatic customization loading or manual file context.`;
     }
     if (group.bestStatus === 'listed') {
-      return 'This session shows Copilot read or referenced the file, but local logs did not show distinctive file text in model-request material.';
+      return 'Copilot read or referenced this file in this session, but imported model requests did not show distinctive file text.';
     }
     if (group.bestStatus === 'discovered') {
-      return 'VS Code setup/discovery mentioned this file, but imported model requests did not show file text.';
+      return 'VS Code setup or discovery mentioned this file, but imported model requests did not show distinctive file text.';
     }
     return 'No visible request evidence was imported for this session.';
   }

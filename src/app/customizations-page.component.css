@@ -916,27 +916,6 @@
   gap: 4px;
 }
 
-.weak-evidence-note {
-  display: grid;
-  gap: 4px;
-  border-top: 1px solid var(--line);
-  padding: 12px 10px;
-  background: color-mix(in srgb, var(--surface-soft) 70%, transparent);
-}
-
-.weak-evidence-note strong {
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 780;
-}
-
-.weak-evidence-note p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.45;
-}
-
 .customization-path {
   display: grid;
   gap: 4px;
