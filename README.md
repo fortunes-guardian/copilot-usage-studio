@@ -8,7 +8,7 @@ Extension-first usage, memory, customization, and cost insights for VS Code GitH
 
 Independent open-source developer tool. Not affiliated with or endorsed by GitHub or Microsoft.
 
-Status: early VS Code extension preview. Test locally before relying on it for daily use.
+Status: available as a VS Code extension. The Customizations page is preview because it depends on evidence visible in local VS Code request logs.
 
 Supported scope today: VS Code GitHub Copilot Chat and Agent sessions on the local machine. This does not currently support Visual Studio, JetBrains IDEs, Copilot CLI, GitHub.com chat, or GitHub billing exports.
 
@@ -18,7 +18,7 @@ Supported local VS Code storage locations for the standalone/npm host:
 - macOS: `~/Library/Application Support/Code/User`
 - Linux: `~/.config/Code/User`
 
-VS Code Insiders paths are scanned too by the standalone/npm host. The VS Code extension preview uses the VS Code user-data root for the VS Code installation it is running inside.
+VS Code Insiders paths are scanned too by the standalone/npm host. The VS Code extension uses the VS Code user-data root for the VS Code installation it is running inside.
 
 The app helps answer three practical questions:
 
@@ -32,17 +32,21 @@ It scans local VS Code data, uses GitHub source usage when VS Code logs it, fall
 
 ## Start Here
 
-Recommended path: build and install the local VS Code extension preview.
+Recommended path: install the VS Code extension from the Marketplace:
 
-Requirements for building the preview: Node.js 22.5 or newer, npm, VS Code, and local VS Code GitHub Copilot session data.
+https://marketplace.visualstudio.com/items?itemName=fortunes-guardian.copilot-usage-studio-vscode
+
+Then run `Copilot Usage Studio: Open` from the VS Code command palette.
+
+To build and install the current source locally:
+
+Requirements for building locally: Node.js 22.5 or newer, npm, VS Code, and local VS Code GitHub Copilot session data.
 
 ```bash
 npm install
 npm run vscode:package
-code --install-extension tmp/copilot-usage-studio-vscode-0.2.0.vsix --force
+code --install-extension tmp/copilot-usage-studio-vscode-0.2.1.vsix --force
 ```
-
-Then run `Copilot Usage Studio: Open` from the VS Code command palette.
 
 The npm/browser host remains available for development and fallback testing:
 
@@ -55,7 +59,7 @@ Then open `http://127.0.0.1:4312/`.
 `npx` downloads the latest published package from npm. To run this exact release:
 
 ```bash
-npx copilot-usage-studio@0.2.0
+npx copilot-usage-studio@0.2.1
 ```
 
 To contribute or run the current GitHub source:
@@ -114,15 +118,15 @@ npm run build
 
 See [docs/local-deployment.md](docs/local-deployment.md) for packaging options and why the app stays local-first.
 
-Build the VS Code extension preview:
+Build the VS Code extension locally:
 
 ```bash
 npm run vscode:package
-code --install-extension tmp/copilot-usage-studio-vscode-0.2.0.vsix --force
+code --install-extension tmp/copilot-usage-studio-vscode-0.2.1.vsix --force
 ```
 
 The extension opens the full app inside VS Code: Usage, Sessions, Memory, Customizations preview, Compare, Insights, and Prices.
-For pre-release testing, prefer the VSIX artifact produced by branch CI when available. After maintainer testing, the release target is the VS Code Marketplace so users can install without downloading a VSIX manually.
+For release validation, prefer the VSIX artifact produced by CI when available. Users should normally install from the VS Code Marketplace.
 
 ## Releasing
 

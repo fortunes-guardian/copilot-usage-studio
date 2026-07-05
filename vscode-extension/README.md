@@ -24,9 +24,11 @@ The extension starts a local runtime on `127.0.0.1`, scans local VS Code Copilot
 
 ## Status
 
-Early VS Code extension preview. Test locally before relying on it for daily use.
+Available on the VS Code Marketplace.
 
-After maintainer smoke testing, the release target is the VS Code Marketplace. The npm/browser app remains available as a development and fallback host:
+Copilot Usage Studio is a local-first developer tool for understanding VS Code GitHub Copilot usage, memories, sessions, and customization evidence. The Customizations page is still a preview because VS Code request-log formats can change and the app only reports evidence visible in local logs.
+
+The npm/browser app remains available as a development and fallback host:
 
 ```bash
 npx copilot-usage-studio
