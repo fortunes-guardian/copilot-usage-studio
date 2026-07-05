@@ -18,6 +18,15 @@
         </p>
         <p>{{ evidenceResultText() }}</p>
         @if (isEvidenceScanActive()) {
+          <div class="scan-progress-meter" aria-label="Evidence scan progress">
+            <div>
+              <strong>{{ evidenceScanProgressPercent() ? evidenceScanProgressPercent() + '%' : 'Working' }}</strong>
+              @if (evidenceScanProgressLabel()) {
+                <span>{{ evidenceScanProgressLabel() }}</span>
+              }
+            </div>
+            <progress [value]="evidenceScanProgressPercent() || null" max="100"></progress>
+          </div>
           @if (activeScanStats()) {
             <p class="scan-progress-stats">{{ activeScanStats() }}</p>
           }
@@ -155,9 +164,6 @@
             <span class="customization-card-side">
               <b>{{ statusLabel(customization.evidenceStatus) }}</b>
               <em>{{ evidenceCountLabel(customization) }}</em>
-              @if (isPartialEvidenceResult() && customization.matches.length) {
-                <em class="partial-evidence-label">Partial</em>
-              }
             </span>
           </button>
         }
@@ -182,9 +188,6 @@
                 [text]="statusHelp(customization.evidenceStatus)"
               label="Explain customization evidence"
             ></app-help-popover>
-            @if (isPartialEvidenceResult() && customization.matches.length) {
-              <span class="partial-evidence-label">Partial result</span>
-            }
           </span>
           </header>
 
@@ -206,12 +209,6 @@
               <h4>{{ statusHeadline(customization.evidenceStatus) }}</h4>
               <p>{{ statusHelp(customization.evidenceStatus) }}</p>
             </div>
-            @if (isPartialEvidenceResult() && customization.matches.length) {
-              <div class="partial-result-note">
-                <strong>Partial evidence</strong>
-                <span>Scan limits were reached, so counts are minimums. Some matches may be missing.</span>
-              </div>
-            }
             @if (customization.description) {
               <div class="matched-customization-text">
                 <span class="customization-kicker">Matched customization text</span>
@@ -264,9 +261,6 @@
                         <span class="match-group-weak">No file text found</span>
                       }
                       <strong>{{ sessionEvidenceLabel(group) }}</strong>
-                      @if (isPartialEvidenceResult() && group.matches.length) {
-                        <em class="partial-evidence-label">Partial</em>
-                      }
                     </span>
                   </summary>
                   <div class="match-group-detail-header">

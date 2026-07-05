@@ -220,10 +220,10 @@ export class CustomizationsPageComponent {
       return 'Scan stopped';
     }
     if (this.customizationScanTimedOut()) {
-      return 'Scan timed out';
+      return 'Rerun recommended';
     }
     if (this.customizationScanCapped()) {
-      return 'Partial results';
+      return 'Rerun recommended';
     }
     if (this.customizationEvidenceSummary().hasScannedEvidence) {
       return this.customizationEvidenceSummary().sent > 0 ? 'Usage evidence found' : 'No usage evidence found';
@@ -242,10 +242,10 @@ export class CustomizationsPageComponent {
       return 'Scan stopped. Existing customization data was kept.';
     }
     if (this.customizationScanTimedOut()) {
-      return 'The usage evidence scan reached its time limit. Partial results were kept so the app does not hang.';
+      return 'This evidence came from an older capped scan. Run Find usage evidence again to scan the workspace fully.';
     }
     if (this.customizationScanCapped()) {
-      return this.customizationScanLimitText();
+      return 'This evidence came from an older capped scan. Run Find usage evidence again to scan the workspace fully.';
     }
     if (this.customizationEvidenceSummary().hasScannedEvidence) {
       const sent = this.customizationEvidenceSummary().sent;
@@ -281,6 +281,29 @@ export class CustomizationsPageComponent {
       this.evidenceMetricText(),
     ].filter(Boolean);
     return parts.join(' · ');
+  }
+
+  protected evidenceScanProgressPercent(): number {
+    if (!this.isEvidenceScanActive()) {
+      return 0;
+    }
+    const progress = this.runtimeStatus?.scanProgress;
+    const index = Number(progress?.index ?? progress?.workspaceIndex ?? 0);
+    const total = Number(progress?.total ?? progress?.workspaceTotal ?? 0);
+    return index > 0 && total > 0 ? Math.max(1, Math.min(100, Math.round((index / total) * 100))) : 0;
+  }
+
+  protected evidenceScanProgressLabel(): string {
+    if (!this.isEvidenceScanActive()) {
+      return '';
+    }
+    const progress = this.runtimeStatus?.scanProgress;
+    const index = Number(progress?.index ?? 0);
+    const total = Number(progress?.total ?? 0);
+    if (index > 0 && total > 0) {
+      return `${index.toLocaleString()} of ${total.toLocaleString()} Copilot session folders checked`;
+    }
+    return 'Preparing session list';
   }
 
   protected currentScanStep(): string {
@@ -363,25 +386,8 @@ export class CustomizationsPageComponent {
 
   private customizationScanCapped(): boolean {
     return Boolean(this.customizationScanCapReason()) || this.customizationScanWarnings().some((warning) =>
-      /limited to|stopped early|stopped after/i.test(warning),
+      /limited to|configured limit|stopped after/i.test(warning),
     );
-  }
-
-  protected isPartialEvidenceResult(): boolean {
-    return this.customizationScanTimedOut() || this.customizationScanCapped();
-  }
-
-  private customizationScanLimitText(): string {
-    const reason = this.customizationScanCapReason();
-    const scannedCalls = this.ingestionInput()?.customizationEvidenceModelCalls ?? 0;
-    const scannedSessions = this.ingestionInput()?.customizationEvidenceScannedSessions ?? 0;
-    if (reason.includes('model calls')) {
-      return `Checked ${scannedCalls.toLocaleString()} model requests across ${scannedSessions.toLocaleString()} session${scannedSessions === 1 ? '' : 's'} and stopped at the safety limit. The matches shown are real, but older or later matches may be missing.`;
-    }
-    if (reason.includes('stopped after')) {
-      return `Checked for ${reason.replace('stopped after ', '')} and stopped at the time limit. The matches shown are real, but the scan may be incomplete.`;
-    }
-    return 'The evidence scan reached a safety limit. The matches shown are real, but some matches may be missing.';
   }
 
   private durationLabel(ms: number): string {
@@ -477,7 +483,7 @@ export class CustomizationsPageComponent {
     if (!customization.matches.length) {
       return 'No sessions';
     }
-    return `${this.isPartialEvidenceResult() ? 'At least ' : ''}${sessions.toLocaleString()} session${sessions === 1 ? '' : 's'}`;
+    return `${sessions.toLocaleString()} session${sessions === 1 ? '' : 's'}`;
   }
 
   protected evidenceGroupSubtitle(group: CustomizationSessionEvidence): string {
@@ -485,7 +491,7 @@ export class CustomizationsPageComponent {
     if (group.bestStatus === 'sent') {
       const sentCalls = this.sentModelCallCount(group);
       return sentCalls
-        ? `${this.isPartialEvidenceResult() ? 'At least ' : ''}${sentCalls.toLocaleString()} text-matched request${sentCalls === 1 ? '' : 's'}`
+        ? `${sentCalls.toLocaleString()} text-matched request${sentCalls === 1 ? '' : 's'}`
         : 'Text match found';
     }
     if (group.bestStatus === 'listed') {
@@ -546,7 +552,7 @@ export class CustomizationsPageComponent {
     }
     const sentCalls = this.sentModelCallCount(group);
     const label = sentCalls === 1 ? 'request' : 'requests';
-    return `${this.isPartialEvidenceResult() ? 'At least ' : ''}${sentCalls.toLocaleString()} text-matched ${label}`;
+    return `${sentCalls.toLocaleString()} text-matched ${label}`;
   }
 
   protected timelineMarkers(group: CustomizationSessionEvidence): EvidenceTimelineMarker[] {

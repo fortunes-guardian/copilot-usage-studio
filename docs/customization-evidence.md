@@ -116,7 +116,7 @@ Very short or generic snippets are ignored for strong proof. For example, a comm
 
 The evidence scan currently uses VS Code Agent Debug Logs and request side files. It does not treat fallback chat snapshots as strong customization evidence.
 
-False negatives are possible when VS Code logs omit, summarize, transform, truncate, hash, or otherwise avoid storing the full customization body. Large request parts and long scans are also bounded for performance, so partial evidence can undercount.
+False negatives are possible when VS Code logs omit, summarize, transform, truncate, hash, or otherwise avoid storing the full customization body. Large request parts are bounded for performance, so evidence can undercount when VS Code does not expose enough request text.
 
 False positives are possible when customization text is generic or repeated elsewhere. Use distinctive instruction/skill text when you want high-confidence matching.
 

@@ -95,6 +95,44 @@
   font-size: 11px !important;
 }
 
+.scan-progress-meter {
+  display: grid;
+  gap: 5px;
+  max-width: 460px;
+  margin-top: 8px;
+}
+
+.scan-progress-meter div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.scan-progress-meter strong {
+  color: var(--text);
+}
+
+.scan-progress-meter progress {
+  width: 100%;
+  height: 7px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-soft) 70%, transparent);
+}
+
+.scan-progress-meter progress::-webkit-progress-bar {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-soft) 70%, transparent);
+}
+
+.scan-progress-meter progress::-webkit-progress-value {
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+
 .scan-progress-stats {
   margin-top: 3px !important;
   color: var(--text) !important;
@@ -457,20 +495,6 @@
   font-size: 10px;
 }
 
-.partial-evidence-label {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  border: 1px solid color-mix(in srgb, var(--warning) 34%, var(--line));
-  border-radius: 999px;
-  padding: 1px 7px;
-  background: color-mix(in srgb, var(--warning) 10%, transparent);
-  color: var(--warning);
-  font-size: 10px;
-  font-style: normal;
-  font-weight: 780;
-}
-
 .customization-detail {
   display: grid;
   align-content: start;
@@ -569,27 +593,6 @@
   padding-top: 9px;
 }
 
-.partial-result-note {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid color-mix(in srgb, var(--warning) 26%, var(--line));
-  border-radius: 9px;
-  padding: 7px 9px;
-  background: color-mix(in srgb, var(--warning) 7%, transparent);
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.35;
-}
-
-.partial-result-note strong {
-  flex: 0 0 auto;
-  color: var(--warning);
-  font-size: 10px;
-  font-weight: 820;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
 
 .match-list {
   display: grid;

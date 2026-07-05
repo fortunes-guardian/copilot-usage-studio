@@ -328,9 +328,9 @@ export function customizationEvidenceFromDebugLogs(
   };
   const listDirs = context.listDirs ?? (() => []);
   const readJsonl = context.readJsonl ?? (() => []);
-  const maxSessions = positiveInteger(context.maxSessions, 40);
-  const maxModelCalls = positiveInteger(context.maxModelCalls, 300);
-  const maxElapsedMs = positiveInteger(context.maxElapsedMs, 60_000);
+  const maxSessions = optionalPositiveLimit(context.maxSessions, 40);
+  const maxModelCalls = optionalPositiveLimit(context.maxModelCalls, 300);
+  const maxElapsedMs = optionalPositiveLimit(context.maxElapsedMs, 60_000);
   const maxPartChars = positiveInteger(context.maxPartChars, 250_000);
   const startedAt = Date.now();
   let cappedReason = '';
@@ -359,7 +359,7 @@ export function customizationEvidenceFromDebugLogs(
   const chunkMatchers = buildCustomizationChunkMatchers(matchState);
 
   const allSessionDirs = listDirs(debugRoot);
-  const sessionDirs = allSessionDirs.slice(0, maxSessions);
+  const sessionDirs = Number.isFinite(maxSessions) ? allSessionDirs.slice(0, maxSessions) : allSessionDirs;
   if (allSessionDirs.length > sessionDirs.length) {
     const sessionLimitReason = `limited to ${sessionDirs.length}/${allSessionDirs.length} debug-log folders`;
     diagnostics.warnings?.push?.(
@@ -367,8 +367,20 @@ export function customizationEvidenceFromDebugLogs(
     );
   }
 
+  onProgress({
+    stage: 'customization-evidence',
+    message: `Checking customization usage in recent Copilot sessions for ${workspace || 'current workspace'}.`,
+    workspace,
+    workspaceDir,
+    index: 0,
+    total: sessionDirs.length,
+    sessions: 0,
+    modelCalls: diagnostics.customizationEvidenceModelCalls,
+    matches: diagnostics.customizationEvidenceMatchedCustomizations,
+  });
+
   for (const [sessionIndex, sessionDir] of sessionDirs.entries()) {
-    if (Date.now() - startedAt > maxElapsedMs) {
+    if (Number.isFinite(maxElapsedMs) && Date.now() - startedAt > maxElapsedMs) {
       cappedReason = `stopped after ${Math.round(maxElapsedMs / 1000)}s`;
       diagnostics.customizationEvidenceCapReason = cappedReason;
       diagnostics.warnings?.push?.(
@@ -376,7 +388,7 @@ export function customizationEvidenceFromDebugLogs(
       );
       onProgress({
         stage: 'customization-evidence',
-        message: `Customization usage check stopped early for ${workspace || 'current workspace'}; showing partial results.`,
+        message: `Customization usage check reached the configured limit for ${workspace || 'current workspace'}.`,
         workspace,
         workspaceDir,
         index: sessionIndex,
@@ -389,19 +401,17 @@ export function customizationEvidenceFromDebugLogs(
     }
 
     diagnostics.customizationEvidenceScannedSessions += 1;
-    if (sessionIndex > 0 && sessionIndex % 5 === 0) {
-      onProgress({
-        stage: 'customization-evidence',
-        message: `Checking customization usage in recent Copilot sessions for ${workspace || 'current workspace'}.`,
-        workspace,
-        workspaceDir,
-        index: sessionIndex,
-        total: allSessionDirs.length,
-        sessions: diagnostics.customizationEvidenceScannedSessions,
-        modelCalls: diagnostics.customizationEvidenceModelCalls,
-        matches: diagnostics.customizationEvidenceMatchedCustomizations,
-      });
-    }
+    onProgress({
+      stage: 'customization-evidence',
+      message: `Checking customization usage in recent Copilot sessions for ${workspace || 'current workspace'}.`,
+      workspace,
+      workspaceDir,
+      index: sessionIndex + 1,
+      total: sessionDirs.length,
+      sessions: diagnostics.customizationEvidenceScannedSessions,
+      modelCalls: diagnostics.customizationEvidenceModelCalls,
+      matches: diagnostics.customizationEvidenceMatchedCustomizations,
+    });
     const sessionId = basename(sessionDir);
     const main = readJsonl(join(sessionDir, 'main.jsonl'));
     const sideFileCache = new Map();
@@ -415,7 +425,7 @@ export function customizationEvidenceFromDebugLogs(
     });
 
     for (const [index, event] of main.entries()) {
-      if (diagnostics.customizationEvidenceModelCalls >= maxModelCalls) {
+      if (Number.isFinite(maxModelCalls) && diagnostics.customizationEvidenceModelCalls >= maxModelCalls) {
         cappedReason = `limited to ${maxModelCalls} model calls`;
         diagnostics.customizationEvidenceCapReason = cappedReason;
         diagnostics.warnings?.push?.(
@@ -524,7 +534,7 @@ export function customizationEvidenceFromDebugLogs(
     if (cappedReason) {
       onProgress({
         stage: 'customization-evidence',
-        message: `Customization usage check stopped early for ${workspace || 'current workspace'}; showing partial results.`,
+        message: `Customization usage check reached the configured limit for ${workspace || 'current workspace'}.`,
         workspace,
         workspaceDir,
         index: sessionIndex + 1,
@@ -556,4 +566,11 @@ export function customizationEvidenceFromDebugLogs(
 function positiveInteger(value, fallback) {
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? Math.floor(number) : fallback;
+}
+
+function optionalPositiveLimit(value, fallback) {
+  if (value === 0 || value === '0' || value === false || value === null) {
+    return Number.POSITIVE_INFINITY;
+  }
+  return positiveInteger(value, fallback);
 }
