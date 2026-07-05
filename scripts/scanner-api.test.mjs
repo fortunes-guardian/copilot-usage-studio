@@ -82,6 +82,18 @@ test('keeps diagnostics isolated between API scans', async () => {
   const empty = createWorkspaceFixture('empty');
   try {
     writeDebugSession(populated.workspaceDir, 'session-1', 1_000, 250, 50);
+    const staleRepo = join(empty.root, 'stale-repo');
+    mkdirSync(join(staleRepo, '.github', 'skills'), { recursive: true });
+    writeFileSync(
+      join(staleRepo, '.github', 'skills', 'stale.SKILL.md'),
+      '# Stale skill\n\nThis workspace has no Copilot data and should not be scanned.',
+      'utf8',
+    );
+    writeFileSync(
+      join(empty.workspaceDir, 'workspace.json'),
+      JSON.stringify({ folder: pathToFileUrl(staleRepo) }),
+      'utf8',
+    );
 
     const first = await scanVsCodeSessions({ roots: [populated.workspaceDir], sqlite: false });
     const second = await scanVsCodeSessions({ roots: [empty.workspaceDir], sqlite: false });
@@ -89,11 +101,86 @@ test('keeps diagnostics isolated between API scans', async () => {
     assert.equal(first.ingestion.importedSessions, 1);
     assert.equal(second.ingestion.importedSessions, 0);
     assert.equal(second.ingestion.importedDebugLogSessions, 0);
+    assert.equal(second.ingestion.importedCustomizations, 0);
+    assert.equal(second.customizations.length, 0);
     assert.equal(second.ingestion.skippedEmptyDebugLogs, 0);
     assert.deepEqual(second.ingestion.scannedRoots, [empty.workspaceDir]);
   } finally {
     rmSync(populated.root, { recursive: true, force: true });
     rmSync(empty.root, { recursive: true, force: true });
+  }
+});
+
+test('reports scanner progress for large local-runtime imports', async () => {
+  const fixture = createWorkspaceFixture('progress');
+  try {
+    writeDebugSession(fixture.workspaceDir, 'session-1', 1_000, 250, 50);
+    const events = [];
+
+    await scanVsCodeSessions({
+      roots: [fixture.workspaceDir],
+      sqlite: false,
+      onProgress: (event) => events.push(event),
+    });
+
+    assert.ok(events.some((event) => event.stage === 'roots'));
+    assert.ok(events.some((event) => event.stage === 'workspace'));
+    assert.ok(events.some((event) => event.stage === 'debug-logs'));
+    assert.ok(events.some((event) => event.stage === 'complete'));
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('can scope a scan to the current VS Code workspace folder', async () => {
+  const root = mkdirTemp('copilot-usage-studio-api-current-workspace-');
+  try {
+    const userDir = join(root, 'Code', 'User');
+    const currentProject = join(root, 'projects', 'current');
+    const oldProject = join(root, 'projects', 'old');
+    const currentStorage = createStoredWorkspace(userDir, 'current-storage', currentProject);
+    const duplicateCurrentStorage = createStoredWorkspace(userDir, 'current-storage-duplicate', currentProject);
+    const oldStorage = createStoredWorkspace(userDir, 'old-storage', oldProject);
+    writeDebugSession(currentStorage, 'current-session', 1_000, 100, 50);
+    writeDebugSession(duplicateCurrentStorage, 'duplicate-current-session', 3_000, 300, 70);
+    writeDebugSession(oldStorage, 'old-session', 2_000, 200, 60);
+
+    const result = await scanVsCodeSessions({
+      roots: [userDir],
+      sqlite: false,
+      workspaceFolders: [currentProject],
+    });
+
+    assert.equal(result.ingestion.importedSessions, 1);
+    assert.equal(result.sessions[0].id, 'current-session');
+    assert.equal(result.ingestion.scannedWorkspaces, 1);
+    assert.equal(result.ingestion.workspaceScans[0].workspace, 'current');
+    assert.ok(result.ingestion.warnings.some((warning) => warning.includes('Duplicate VS Code storage entry skipped')));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('does not scan historical storage entries when current workspace is required but missing', async () => {
+  const root = mkdirTemp('copilot-usage-studio-api-no-current-workspace-');
+  try {
+    const userDir = join(root, 'Code', 'User');
+    const oldProject = join(root, 'projects', 'old');
+    const oldStorage = createStoredWorkspace(userDir, 'old-storage', oldProject);
+    writeDebugSession(oldStorage, 'old-session', 2_000, 200, 60);
+
+    const result = await scanVsCodeSessions({
+      roots: [userDir],
+      sqlite: false,
+      requireWorkspaceFolders: true,
+      workspaceFolders: [],
+    });
+
+    assert.equal(result.ingestion.importedSessions, 0);
+    assert.equal(result.ingestion.scannedWorkspaces, 0);
+    assert.equal(result.sessions.length, 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
 });
 
@@ -162,6 +249,22 @@ function mkdirTemp(prefix) {
   const path = join(tmpdir(), `${prefix}${Date.now()}-${Math.random().toString(16).slice(2)}`);
   mkdirSync(path, { recursive: true });
   return path;
+}
+
+function createStoredWorkspace(userDir, storageName, projectDir) {
+  const workspaceDir = join(userDir, 'workspaceStorage', storageName);
+  mkdirSync(projectDir, { recursive: true });
+  mkdirSync(workspaceDir, { recursive: true });
+  writeFileSync(
+    join(workspaceDir, 'workspace.json'),
+    JSON.stringify({ folder: pathToFileUrl(projectDir) }),
+    'utf8',
+  );
+  return workspaceDir;
+}
+
+function pathToFileUrl(file) {
+  return `file://${file.replace(/\\/g, '/')}`;
 }
 
 function writeDebugSession(workspaceDir, sessionId, inputTokens, cachedTokens, outputTokens) {

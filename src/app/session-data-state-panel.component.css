@@ -8,18 +8,29 @@
 
 .state-panel {
   display: grid;
-  gap: 8px;
-  margin-bottom: 18px;
+  gap: 10px;
+  margin-bottom: 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 18px;
-  background: var(--surface-soft);
+  border-radius: 14px;
+  padding: 12px;
+  background: var(--header-gradient);
+  box-shadow: var(--shadow-soft);
 }
 
 .state-panel.loading {
-  place-content: center;
-  min-height: min(520px, calc(100vh - 130px));
-  text-align: center;
+  align-content: start;
+}
+
+.state-panel.danger {
+  border-color: rgba(255, 107, 95, 0.4);
+  background:
+    linear-gradient(135deg, rgba(255, 107, 95, 0.12), transparent 58%),
+    var(--surface);
+}
+
+.state-panel-main {
+  display: grid;
+  gap: 5px;
 }
 
 .state-panel h2,
@@ -29,29 +40,209 @@
 
 .state-panel h2 {
   color: var(--text-strong);
+  font-size: 18px;
+  line-height: 1.12;
 }
 
 .state-panel p {
   color: var(--muted);
-  line-height: 1.5;
+  line-height: 1.45;
 }
 
-.state-panel.danger {
-  border-color: rgba(255, 107, 95, 0.4);
-  background: rgba(255, 107, 95, 0.08);
+.eyebrow {
+  color: var(--accent-2);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.runtime-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.runtime-summary div,
+.scan-progress,
+.workspace-outcomes,
+.runtime-advanced {
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+}
+
+.runtime-summary div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 10px 12px;
+}
+
+.runtime-summary span,
+.runtime-summary small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runtime-summary span {
+  font-weight: 820;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.runtime-summary strong {
+  overflow: hidden;
+  color: var(--text-strong);
+  font-size: 17px;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scan-progress {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
+}
+
+.scan-progress div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.scan-progress strong,
+.scan-progress > span {
+  color: var(--text-strong);
+  font-size: 12px;
+  font-weight: 780;
+}
+
+.scan-progress div span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scan-progress progress {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--line) 72%, transparent);
+}
+
+.scan-progress progress::-webkit-progress-bar {
+  background: color-mix(in srgb, var(--line) 72%, transparent);
+}
+
+.scan-progress progress::-webkit-progress-value {
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+
+.workspace-outcomes {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+.workspace-outcomes-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.workspace-outcomes-heading strong {
+  color: var(--text-strong);
+  font-size: 13px;
+}
+
+.workspace-outcomes-heading span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.workspace-outcome {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.72fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--accent-2) 24%, var(--line));
+  border-radius: 9px;
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--accent-2) 5%, var(--surface-soft));
+}
+
+.workspace-outcome.scanning {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--line));
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface-soft));
+}
+
+.workspace-outcome.warning {
+  border-color: color-mix(in srgb, var(--warning) 32%, var(--line));
+  background: color-mix(in srgb, var(--warning) 6%, var(--surface-soft));
+}
+
+.workspace-outcome div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.workspace-outcome strong,
+.workspace-outcome small,
+.workspace-outcome > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-outcome strong {
+  color: var(--text-strong);
+  font-size: 12px;
+}
+
+.workspace-outcome small,
+.workspace-outcome > span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.scan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .scan-button {
-  justify-self: start;
   min-height: 36px;
   border: 1px solid color-mix(in srgb, var(--accent) 48%, var(--line));
-  border-radius: 7px;
+  border-radius: 999px;
   padding: 0 14px;
   background: color-mix(in srgb, var(--accent) 10%, var(--surface));
   color: var(--text-strong);
   font: inherit;
-  font-weight: 750;
+  font-weight: 760;
   cursor: pointer;
+}
+
+.scan-button.secondary {
+  border-color: color-mix(in srgb, var(--muted) 28%, var(--line));
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  color: var(--muted);
 }
 
 .scan-button:hover:not(:disabled) {
@@ -64,12 +255,75 @@
   opacity: 0.65;
 }
 
-.eyebrow {
-  color: var(--accent-2);
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+.runtime-advanced {
+  padding: 8px 10px;
 }
 
+.runtime-advanced[open] {
+  display: grid;
+  gap: 10px;
+}
 
+.runtime-advanced summary {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.runtime-log {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0;
+  padding: 0;
+  color: var(--muted);
+  font-size: 12px;
+  list-style: none;
+  text-align: left;
+}
+
+.runtime-advice {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.runtime-log li {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 7px 9px;
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runtime-log li.error {
+  border-color: rgba(255, 107, 95, 0.35);
+  color: var(--text-strong);
+}
+
+.runtime-log-file {
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 760px) {
+  .runtime-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .runtime-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-outcomes-heading,
+  .workspace-outcome {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}

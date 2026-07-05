@@ -16,6 +16,8 @@ The normalized `SessionData` object is the deeper boundary. `scanVsCodeSessions(
 
 The same contract now carries a sibling `memories` collection. Memories are not sessions and are not folded into session cost records. Session-scoped memory folders are linked by decoded session id when that relationship is present on disk.
 
+The contract also carries a sibling `customizations` collection for local Copilot customization files such as instructions and skills. Customizations are not cost rows. They answer a different developer question: did this local rule or skill merely exist, or did local VS Code logs show a text match in visible model-request material?
+
 ## Copilot memory sources
 
 The scanner reads Markdown files beneath two observed stores:
@@ -25,7 +27,7 @@ The scanner reads Markdown files beneath two observed stores:
 <VS Code User>/globalStorage/github.copilot-chat/memory-tool/memories/
 ```
 
-Workspace stores can contain `repo/` memories and base64-encoded session-id folders containing files such as `plan.md`. Global storage contains user-wide memories. The scanner indexes Markdown only, caps a single file at 1 MiB, and caps a memory root at 5,000 files.
+Workspace stores can contain `repo/` memories and base64-encoded session-id folders containing files such as `plan.md`. Global storage contains user-wide memories. The scanner indexes Markdown only, caps a single file at 1 MiB, caps a memory root at 5,000 files, limits recursive depth, caps visited directories, skips symlinks, and ignores common dependency/build folders.
 
 Memory indexing is read-only. The normalized record preserves title, content, excerpt, scope, workspace, optional session id, path, timestamps, byte/character/line counts, and whether the file is a plan. Explicit Agent Debug Log `memory view` events are attached as recall history with their session, time, returned character count, and following model-request totals. Those request totals are not treated as memory-only tokens or cost. See [copilot-memory.md](copilot-memory.md) for the full evidence boundary.
 
@@ -127,6 +129,31 @@ When `requestShape.hasPreviousResponseId` and `inputItemTypes: ["function_call_o
 
 Important boundary: these are source-backed size and presence signals. They are not exact per-section billing rows. Exact local cost is still calculated at the `llm_request` model-call level from logged token totals. Only show exact instruction/MCP cost if a future source exposes token counts for those specific sections.
 
+## Copilot customization evidence
+
+The VS Code extension reads effective VS Code settings/defaults for the open workspace and uses those locations as the source of truth for Copilot customizations. This includes user, workspace, workspace-folder, and default scopes for settings such as `chat.instructionsFilesLocations`, `chat.promptFilesLocations`, `chat.agentFilesLocations`, `chat.agentSkillsLocations`, `chat.hookFilesLocations`, and `github.copilot.chat.codeGeneration.useInstructionFiles`.
+
+After a location is trusted by VS Code settings/defaults, the scanner applies a conservative file-type filter: Markdown for instructions, skills, prompts, and agents; JSON for hooks. Exact files referenced by debug logs are also imported when they look like Copilot customization files.
+
+The standalone/npm host has weaker access to VS Code's effective settings, so it keeps bounded fallback support for documented defaults and conventional filenames. Those fallbacks are compatibility behavior, not a license to crawl broad home folders or whole repositories. Recursion is capped by depth and directory count, skips symlinks, and ignores common dependency/build folders.
+
+The VS Code extension host now runs customization indexing because the extension is the primary product surface and exposes the Customizations view. Scanner progress reports workspace phase, debug-log folder counts, customization inventory counts, and elapsed time so slow machines can be diagnosed instead of appearing silently stuck.
+
+Installed VS Code extension customizations are excluded from the default scan. Files under paths such as `.vscode/extensions/...` can be useful for deep debugging, but they are not usually the developer's own repo or user rules, and evidence matching them can slow startup. Hosts can opt in with `includeSystemCustomizations: true` when a future system-customization view needs that data.
+
+Each customization stores metadata only: title, name, description, `applyTo`, triggers, path, size, and an excerpt. The scanner reads the full file during the scan to build fingerprints, but it does not persist the full content into `sessions.json`.
+
+Evidence levels:
+
+- `sent`: distinctive content chunks from the customization were matched inside a model request payload or a referenced request side file.
+- `listed`: local logs show Copilot read, opened, or referenced the customization file, but distinctive file text was not found in visible model-request material.
+- `discovered`: VS Code setup/discovery events mentioned the customization, but request payload evidence was not found.
+- `not_seen`: the file exists locally, but imported sessions did not contain discovery or request evidence for it.
+
+Why: VS Code can resolve an instruction or skill without necessarily sending the full file content into the model. Developers need that distinction when debugging whether their AI-assisted-development customizations are actually active.
+
+Boundary: `sent` means the customization text appeared in the imported request evidence. It does not prove that the model followed the instruction, changed its output because of it, or that a provider billed a separate token bucket for it.
+
 See [debug-log-schema.md](debug-log-schema.md) for the observed VS Code Agent Debug Log fields and the generated app schema. That document exists so new features start from the real data model rather than from assumptions about what the logs probably contain.
 
 For chat snapshots:
@@ -146,13 +173,13 @@ Costs are estimates calculated from token totals and the local pricing table. Th
 - `cost.usd`
 - `cost.eur`
 
-The current pricing version is `github-copilot-usage-pricing-2026-06-14`. The app displays `cost.usd` and treats USD as the canonical estimate because GitHub prices and AI credits are USD-native. The `cost.eur` and `usdToEur` fields remain only as legacy schema compatibility fields; new scans default `usdToEur` to `1`.
+The current pricing version is `github-copilot-usage-pricing-2026-07-05`. The app displays `cost.usd` and treats USD as the canonical estimate because GitHub prices and AI credits are USD-native. The `cost.eur` and `usdToEur` fields remain only as legacy schema compatibility fields; new scans default `usdToEur` to `1`.
 
 The GitHub rate card lives in `data/github-copilot-pricing.json`. The scanner, verifier, and UI all read this same file. Why: pricing is part of the data contract. If the app calculates cost with one table and explains it with another, the debugger becomes untrustworthy.
 
 When a debug-log session uses more than one model, cost is calculated per `modelBreakdown` entry and then summed into `cost.usd`. Why: applying one session-level model price to all tokens is wrong for mixed runs and hides model-switching behavior.
 
-The price table is copied from GitHub's public Copilot model pricing documentation, then exposed in the UI as a first-class `GitHub prices` view. Why: cost estimates should be inspectable from their inputs. A user should not have to trust a hidden rate card.
+The price table is copied from GitHub's public Copilot model pricing documentation, then exposed in the UI as a first-class `GitHub prices` view. The table can also carry aliases for raw VS Code model ids such as `claude-opus-4.8-fast` when GitHub's displayed model label differs from the local id. Why: cost estimates should be inspectable from their inputs. A user should not have to trust a hidden rate card.
 
 Token-bearing trace rows repeat the pricing decision at the event level. Why: the UI should not parse cost-critical facts back out of human display text such as `detail`. The generated session data is the contract, so it carries the exact model and price row used for each model call.
 
@@ -222,7 +249,7 @@ The UI supports two reads:
 
 Why: session totals answer "how expensive was this run?" Calls answer "where did the cost happen?" That is the sharper debugging tool when a developer wants to know whether cost came from the first prompt, accumulated context, repo/tool output, a model switch, or a late-session spike.
 
-## Request-payload attribution roadmap
+## Request-payload attribution boundary
 
 Observed VS Code debug-log `llm_request` events can include large request payload fields such as `attrs.userRequest`, `attrs.inputMessages`, `attrs.systemPromptFile`, and `attrs.toolsFile`. The scanner now preserves side-file summaries and payload sizes, but it still does not fully bucket every request section.
 

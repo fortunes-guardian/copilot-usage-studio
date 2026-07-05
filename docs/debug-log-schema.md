@@ -11,9 +11,9 @@ Reference sample used for this pass:
 Latest schema drift check:
 
 ```text
-2026-06-13
+2026-07-05
 %APPDATA%\Code\User\workspaceStorage\<workspace-id>\GitHub.copilot-chat\debug-logs\<session-id>
-VS Code 1.124.2, GitHub Copilot Chat 0.52.0
+VS Code 1.127.0, GitHub Copilot Chat 0.55.0
 ```
 
 The schema is observed, not guaranteed by a published VS Code API. Treat it as a local data contract that must be verified with fixtures as VS Code Copilot changes.
@@ -235,7 +235,7 @@ The 2026-05-30 sample includes a rich `models.json` file. It is an array of mode
 
 Boundary: `models.json` is VS Code/Copilot model metadata, not the authoritative GitHub billing table. It can improve context-window and capability explanations, but pricing should continue to come from source `copilotUsageNanoAiu` when available and the app's imported GitHub pricing table as the explanation/fallback layer.
 
-The model catalogue is volatile. Between the 2026-06-05 and 2026-06-13 samples it added `gpt-5.4-mini-free-auto` and `mai-code-1-flash-picker`, removed `gpt-5.2-codex`, changed fallback flags, and zeroed several legacy/internal token-price rows. Those changes are useful for compatibility audits, but they are not evidence that a model was used in a session or that a zero row means free user billing.
+The model catalogue is volatile. Between the 2026-06-05 and 2026-06-13 samples it added `gpt-5.4-mini-free-auto` and `mai-code-1-flash-picker`, removed `gpt-5.2-codex`, changed fallback flags, and zeroed several legacy/internal token-price rows. The 2026-07-05 audit against VS Code 1.127.0 / Copilot Chat 0.55.0 observed new catalogue model ids including `claude-sonnet-5`, `claude-opus-4.8-fast`, and `kimi-k2.7-code`, plus cache-write price fields inside catalogue token-price metadata. Those changes are useful for compatibility audits, but they are not evidence that a model was used in a session or that a catalogue row replaces source usage or the committed GitHub Docs pricing snapshot.
 
 ## Tool And MCP Evidence
 
@@ -318,6 +318,32 @@ In the 2026-06-05 sample, the summed source usage exactly matched the app-calcul
 When a model call references `systemPromptFile` or `toolsFile`, the scanner also preserves `traceEvents[].setupPayload`: system prompt side-file name and character count, tools side-file name and character count, total tool count, MCP tool count, MCP tool names, and the largest tool schemas by character size. This is setup-payload evidence for debugging. It is not a section-level token bill.
 
 `modelLimits` answers a capacity question, not a billing question: did the run get expensive because a request was close to the model's prompt/context limit, or because many model calls repeatedly sent context? It compares observed raw `inputTokens` with `models.json` limits and keeps pricing separate. The app deliberately does not show model capability noise such as supported API endpoints in the main UI.
+
+Top-level `customizations` records local Copilot customization files and request evidence:
+
+| Field | Meaning |
+| --- | --- |
+| `kind` | `instruction`, `skill`, `prompt`, `hook`, `agent`, or `other` |
+| `title`, `name`, `description`, `applyTo`, `triggers` | Local customization metadata derived from frontmatter, filename, and Markdown |
+| `sourcePath`, `relativePath` | Local file location |
+| `characterCount`, `lineCount`, `excerpt` | Bounded size/readability metadata; full content is not persisted |
+| `evidenceStatus` | `sent`, `listed`, `discovered`, or `not_seen` |
+| `matches[]` | Session/request evidence rows with status, session id, timestamp, event index, model-call number, source field/file, and matched chunk counts |
+
+The evidence ladder is intentionally conservative:
+
+- `sent`: a distinctive content chunk from the file was found in `llm_request.attrs.inputMessages`, `llm_request.attrs.userRequest`, or a referenced request side file such as `system_prompt_0.json` or `tools_0.json`.
+- `listed`: local logs show the customization was read, opened, or referenced, but distinctive file text was not found in visible model-request material.
+- `discovered`: setup/discovery events mentioned the customization, but no request payload match was found.
+- `not_seen`: no imported evidence matched the file.
+
+This feature answers "did this customization reach the model request?" It does not claim the model obeyed it, and it does not create exact section-level cost attribution.
+
+`ingestion.scannedCustomizationLocations` records bounded diagnostic rows for customization scan coverage. Rows are `{ kind, path }`, where `kind` is usually `root`, `file`, or `debug-reference`. The UI uses this for the collapsed Customizations scan-coverage diagnostic.
+
+`ingestion.customizationEvidenceScannedSessions`, `customizationEvidenceModelCalls`, `customizationEvidenceTextParts`, and `customizationEvidenceMatchedCustomizations` are scanner diagnostics. They explain whether a zero-usage customization result came from no model-call evidence, no payload text, or payloads that simply did not match local customization content.
+
+The VS Code extension runs customization indexing. These diagnostics are therefore meaningful in extension-mode scans, especially when investigating why a customization was inventoried but not matched inside model-call evidence.
 
 ## Feature Boundaries
 

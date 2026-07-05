@@ -178,6 +178,10 @@ if (sessionData.memories !== undefined && !Array.isArray(sessionData.memories)) 
   fail('Expected memories to be an array when present');
 }
 
+if (sessionData.customizations !== undefined && !Array.isArray(sessionData.customizations)) {
+  fail('Expected customizations to be an array when present');
+}
+
 for (const memory of sessionData.memories ?? []) {
   if (!memory.id) {
     fail('Memory missing id');
@@ -206,6 +210,33 @@ for (const memory of sessionData.memories ?? []) {
     if (!Number.isFinite(memory[field]) || memory[field] < 0) {
       fail(`${memory.id} has invalid ${field}`);
     }
+  }
+}
+
+for (const customization of sessionData.customizations ?? []) {
+  if (!customization.id) {
+    fail('Customization missing id');
+  }
+  if (!['instruction', 'skill', 'prompt', 'hook', 'agent', 'other'].includes(customization.kind)) {
+    fail(`${customization.id ?? 'unknown customization'} has invalid kind ${customization.kind}`);
+  }
+  if (!['sent', 'listed', 'discovered', 'not_seen'].includes(customization.evidenceStatus)) {
+    fail(
+      `${customization.id ?? 'unknown customization'} has invalid evidenceStatus ${customization.evidenceStatus}`,
+    );
+  }
+  for (const field of ['title', 'name', 'sourcePath', 'relativePath', 'modifiedAt']) {
+    if (!customization[field]) {
+      fail(`${customization.id ?? 'unknown customization'} missing ${field}`);
+    }
+  }
+  for (const field of ['sizeBytes', 'characterCount', 'lineCount']) {
+    if (!Number.isFinite(customization[field]) || customization[field] < 0) {
+      fail(`${customization.id ?? 'unknown customization'} has invalid ${field}`);
+    }
+  }
+  if (!Array.isArray(customization.matches)) {
+    fail(`${customization.id ?? 'unknown customization'} missing matches array`);
   }
 }
 
@@ -305,9 +336,10 @@ for (const session of sessionData.sessions ?? []) {
             `${session.id} traceEvents.${event.index ?? 'unknown'} sourceUsage.nanoAiu must be positive`,
           );
         }
-        if (Math.abs(Number(event.sourceUsage.usd ?? NaN) - expectedEventUsd) > 0.000000001) {
+        const expectedSourceUsd = (Number(event.sourceUsage.nanoAiu ?? 0) / 1_000_000_000) * 0.01;
+        if (Math.abs(Number(event.sourceUsage.usd ?? NaN) - expectedSourceUsd) > 0.000000001) {
           fail(
-            `${session.id} traceEvents.${event.index ?? 'unknown'} sourceUsage.usd does not match token pricing`,
+            `${session.id} traceEvents.${event.index ?? 'unknown'} sourceUsage.usd does not match source credits`,
           );
         }
       }
@@ -386,8 +418,13 @@ for (const session of sessionData.sessions ?? []) {
     warn(`${session.id} has no tags`);
   }
 
-  if (!Array.isArray(session.modelBreakdown) || !session.modelBreakdown.length) {
+  if (
+    hasBillableSignal &&
+    (!Array.isArray(session.modelBreakdown) || !session.modelBreakdown.length)
+  ) {
     fail(`${session.id} missing modelBreakdown array`);
+  } else if (!Array.isArray(session.modelBreakdown) || !session.modelBreakdown.length) {
+    warn(`${session.id} has no modelBreakdown rows because no model-token rows were imported`);
   }
 
   let modelBreakdownUsd = 0;
@@ -493,12 +530,32 @@ for (const field of [
   'importedPlans',
   'skippedOversizedMemories',
   'skippedUnreadableMemories',
+  'scannedCustomizationRoots',
+  'importedCustomizations',
+  'customizationEvidenceScannedSessions',
+  'customizationEvidenceModelCalls',
+  'customizationEvidenceTextParts',
+  'customizationEvidenceMatchedCustomizations',
+  'skippedOversizedCustomizations',
+  'skippedUnreadableCustomizations',
 ]) {
   if (
     sessionData.ingestion?.[field] !== undefined &&
     (!Number.isFinite(sessionData.ingestion[field]) || sessionData.ingestion[field] < 0)
   ) {
     fail(`ingestion.${field} is invalid`);
+  }
+}
+
+for (const location of sessionData.ingestion?.scannedCustomizationLocations ?? []) {
+  if (
+    !location ||
+    typeof location.kind !== 'string' ||
+    typeof location.path !== 'string' ||
+    !location.kind ||
+    !location.path
+  ) {
+    fail('ingestion.scannedCustomizationLocations contains an invalid location row');
   }
 }
 

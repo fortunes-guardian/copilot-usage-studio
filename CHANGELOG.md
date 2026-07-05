@@ -10,10 +10,25 @@ All notable changes to Copilot Usage Studio are recorded here.
 - Show source-backed memory recall history from explicit VS Code `memory view` events, linked to the following model request without inventing memory-only cost.
 - Compact the Memory page into an IDE-style file browser with filename search, copy-content action, collapsed source view, and scope help.
 - Make startup loading a stable page state and clarify that the runtime URL shown during `npm start` is backend-only.
-- Add GitHub Actions CI for pull requests and pushes to `main`.
+- Add GitHub Actions CI for pull requests, `main`, and pushed feature branches.
 - Add tag-driven npm Trusted Publishing with automatic provenance.
 - Create the matching GitHub Release from the same version tag.
 - Support safe workflow reruns and manual backfill of an existing tagged release.
+- Add a VS Code extension preview for Usage, Sessions, Memory, Customizations preview, Compare, Insights, and Prices.
+- Build and upload a VSIX artifact from CI for every pushed branch.
+- Position the VS Code extension as the primary product path, with Marketplace publication planned after maintainer smoke testing.
+- Generate detailed release notes from the changelog and commits for tagged releases.
+- Tighten Customizations evidence wording around visible local-log text matches.
+- Trust explicit VS Code customization file settings, directories, and globs for file kind while keeping scans bounded by safe file type.
+- Add regression coverage for `copilot-instructions.md`, explicit configured customization files, and broad user-profile folders not being scanned by default.
+- Compact global scan status so detailed workspace diagnostics stay behind `View details`.
+- Report user-stopped scans as stopped while keeping the last valid snapshot visible.
+- Make Customizations evidence rows quieter by keeping raw VS Code source fields inside `Proof details` and marking partial evidence as minimum counts.
+- Preserve existing Customizations evidence when a normal top-right Refresh runs a quick scan that skips customization indexing.
+- Mark Customizations as a preview surface in both docs and the app navigation.
+- Purge public roadmap links from README and release-facing docs.
+- Refresh GitHub Copilot model pricing from the July 5, 2026 GitHub Docs table, including Claude Sonnet 5, Claude Opus 4.8 fast mode, Kimi K2.7 Code, and updated model statuses.
+- Add raw model-id alias support so newly observed VS Code ids can map to the matching GitHub pricing row without hidden fallback pricing.
 
 ## 0.1.0 - 2026-06-14
 

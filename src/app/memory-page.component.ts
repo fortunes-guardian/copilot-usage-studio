@@ -11,6 +11,7 @@ import {
   MemoryRecall,
 } from './session-data.model';
 import { HelpPopoverComponent } from './help-popover.component';
+import { apiUrl } from './host-config';
 
 type MemoryKindFilter = 'all' | CopilotMemoryKind;
 type MemoryScopeFilter = 'all' | CopilotMemoryScope;
@@ -44,6 +45,8 @@ export class MemoryPageComponent {
   @Input() set sessions(value: CopilotSession[] | null | undefined) {
     this.sessionsInput.set(value ?? []);
   }
+
+  @Input() canOpenSession = true;
 
   @Output() readonly openSession = new EventEmitter<CopilotSession>();
 
@@ -101,7 +104,7 @@ export class MemoryPageComponent {
 
   protected emitRecallSession(sessionId: string): void {
     const session = this.recallSession(sessionId);
-    if (session) {
+    if (this.canOpenSession && session) {
       this.openSession.emit(session);
     }
   }
@@ -183,14 +186,14 @@ export class MemoryPageComponent {
 
   protected emitOpenSession(memory: CopilotMemory): void {
     const session = this.linkedSession(memory);
-    if (session) {
+    if (this.canOpenSession && session) {
       this.openSession.emit(session);
     }
   }
 
   protected runMemoryAction(memory: CopilotMemory, action: MemoryAction): void {
     this.actionStatus.set(action === 'open' ? 'Opening file…' : 'Showing file…');
-    this.http.post(`/api/memories/${memory.id}/open`, { action }).subscribe({
+    this.http.post(apiUrl(`/api/memories/${memory.id}/open`), { action }).subscribe({
       next: () => this.actionStatus.set(action === 'open' ? 'Opened file' : 'Shown in folder'),
       error: () => this.actionStatus.set('File actions require the local runtime'),
     });

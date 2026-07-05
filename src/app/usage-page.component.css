@@ -128,7 +128,7 @@
   padding: 13px;
   color: var(--text);
   text-align: left;
-  cursor: pointer;
+  cursor: default;
 }
 
 .usage-answer-card.primary {
@@ -138,12 +138,16 @@
     var(--surface);
 }
 
-.usage-answer-card:disabled {
+.usage-answer-card.empty:disabled {
   cursor: default;
   opacity: 0.72;
 }
 
-.usage-answer-card:hover:not(:disabled) {
+.usage-answer-card.can-open {
+  cursor: pointer;
+}
+
+.usage-answer-card.can-open:hover {
   border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
   transform: translateY(-1px);
 }
@@ -280,15 +284,22 @@
   background: var(--surface-soft);
   color: var(--text);
   text-align: left;
-  cursor: pointer;
+  cursor: default;
 }
 
 .daily-usage-list button:disabled {
   cursor: default;
+}
+
+.daily-usage-list button.empty:disabled {
   opacity: 0.64;
 }
 
-.daily-usage-list button:hover:not(:disabled) {
+.daily-usage-list button.can-open {
+  cursor: pointer;
+}
+
+.daily-usage-list button.can-open:hover {
   border-color: var(--line-strong);
 }
 

@@ -19,8 +19,8 @@ describe('SessionDataStatePanelComponent', () => {
     fixture.detectChanges();
 
     const text = fixture.nativeElement.textContent;
-    expect(text).toContain('Import your first sessions');
-    expect(text).toContain('Scan VS Code');
+    expect(text).toContain('No local sessions imported yet');
+    expect(text).toContain('Scan local Copilot data');
     expect(text).not.toContain('npm run scan');
   });
 
@@ -32,5 +32,47 @@ describe('SessionDataStatePanelComponent', () => {
     fixture.nativeElement.querySelector('button').click();
 
     expect(emit).toHaveBeenCalledOnce();
+  });
+
+  it('shows runtime diagnostics while local sessions are loading', () => {
+    fixture.componentRef.setInput('state', 'loading');
+    fixture.componentRef.setInput('runtimeStatusAvailable', true);
+    fixture.componentRef.setInput('runtimeStatus', {
+      phase: 'scanning',
+      scanning: true,
+      hasData: false,
+      sessionCount: 0,
+      memoryCount: 0,
+      generatedAt: '',
+      lastScanStartedAt: new Date().toISOString(),
+      lastScanCompletedAt: '',
+      lastScanDurationMs: 0,
+      lastError: '',
+      logFile: 'C:\\local\\Copilot Usage Studio\\runtime.log',
+      scanProgress: {
+        stage: 'workspace',
+        message: 'Scanning 140 debug-log folders in work-repo.',
+        workspace: 'work-repo',
+        workspaceIndex: 8,
+        workspaceTotal: 111,
+        updatedAt: new Date().toISOString(),
+      },
+      recentLogs: [
+        {
+          at: new Date().toISOString(),
+          level: 'log',
+          message: 'Scanning workspace work-repo.',
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('Scanning VS Code usage data');
+    expect(text).toContain('8 of 111 storage entries checked');
+    expect(text).toContain('work-repo');
+    expect(text).toContain('runtime.log');
+    expect(text).toContain('View details');
+    expect(text).toContain('Stop scan');
   });
 });

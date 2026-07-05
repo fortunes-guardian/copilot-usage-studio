@@ -13,10 +13,15 @@ export function normalizeModel(model, pricing) {
     .trim();
   const key = modelKey(raw);
   const knownModels = Object.keys(pricing);
+  const knownAliases = knownModels.flatMap((name) =>
+    (pricing[name].aliases ?? []).map((alias) => ({ name, aliasKey: modelKey(alias) })),
+  );
 
   return (
     knownModels.find((name) => modelKey(name) === key) ??
+    knownAliases.find(({ aliasKey }) => aliasKey === key)?.name ??
     knownModels.find((name) => key.includes(modelKey(name))) ??
+    knownAliases.find(({ aliasKey }) => key.includes(aliasKey))?.name ??
     (raw || 'Unknown model')
   );
 }

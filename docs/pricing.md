@@ -17,10 +17,10 @@ https://docs.github.com/en/copilot/concepts/billing/usage-based-billing-for-orga
 Current version:
 
 ```text
-github-copilot-usage-pricing-2026-06-14
+github-copilot-usage-pricing-2026-07-05
 ```
 
-The source table says prices are per 1 million tokens. The committed snapshot was checked against GitHub Docs on June 14, 2026.
+The source table says prices are per 1 million tokens. The committed snapshot was checked against GitHub Docs on July 5, 2026.
 
 ## Where Pricing Lives
 
@@ -40,7 +40,7 @@ This should be a deliberate maintainer update, not a runtime web fetch.
 
 1. Open GitHub's official model pricing page and record the check date.
 2. Update `data/github-copilot-pricing.json`, including model availability, all token buckets, and request-size tiers.
-3. Keep tier thresholds machine-readable. Apply them per model call using normal plus cached input, never aggregated session tokens.
+3. Keep tier thresholds and raw-model aliases machine-readable. Apply tiers per model call using normal plus cached input, never aggregated session tokens.
 4. Update the pricing version and snapshot date.
 5. Add or update threshold boundary tests and verify that several smaller calls do not accidentally trigger a long-context tier.
 6. Run `npm run refresh:data` to recalculate the local development snapshot.

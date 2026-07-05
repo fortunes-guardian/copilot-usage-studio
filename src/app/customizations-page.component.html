@@ -1,0 +1,331 @@
+<section class="customizations-page">
+  <header class="customizations-header">
+    <div>
+      <p class="eyebrow">Customization evidence <span class="preview-badge">Preview</span></p>
+      <h2>Did your rules appear in Copilot requests?</h2>
+      <p>Browse local instructions, skills, prompts, hooks, and agents. Preview evidence is based on text visible in imported VS Code model requests.</p>
+    </div>
+  </header>
+
+  <section class="customizations-scan-status" aria-label="Customization scan status">
+    <div class="scan-status-body">
+      <div>
+        <p class="scan-summary-line">
+          <strong>{{ currentWorkspaceLabel() }}</strong>
+          <span>{{ customizationFileCountLabel() }}</span>
+          <span>{{ requestTextCountLabel() }}</span>
+        </p>
+        <p>{{ evidenceResultText() }}</p>
+        @if (isEvidenceScanActive()) {
+          <div class="scan-progress-meter" aria-label="Evidence scan progress">
+            <div>
+              <strong>{{ evidenceScanProgressPercent() ? evidenceScanProgressPercent() + '%' : 'Working' }}</strong>
+              @if (evidenceScanProgressLabel()) {
+                <span>{{ evidenceScanProgressLabel() }}</span>
+              }
+            </div>
+            <progress [value]="evidenceScanProgressPercent() || null" max="100"></progress>
+          </div>
+          @if (activeScanStats()) {
+            <p class="scan-progress-stats">{{ activeScanStats() }}</p>
+          }
+          <p class="scan-progress-line">
+            @if (elapsedScanLabel()) {
+              <span>Running {{ elapsedScanLabel() }}</span>
+            }
+            @if (lastProgressLabel()) {
+              <span>Last update {{ lastProgressLabel() }} ago</span>
+            }
+          </p>
+        }
+        @if (isLongRunningScan()) {
+          <p class="scan-warning">This is taking longer than expected. You can stop it; existing data will be kept.</p>
+        }
+        @if (isStaleScan()) {
+          <p class="scan-warning">No recent progress update has been received.</p>
+        }
+      </div>
+      <div class="scan-status-actions">
+        @if (isEvidenceScanActive()) {
+          <button type="button" class="secondary-scan-button" (click)="cancelScan.emit()">Stop evidence scan</button>
+        }
+        <button
+          type="button"
+          class="evidence-scan-button"
+          [disabled]="refreshState === 'refreshing'"
+          [attr.aria-busy]="refreshState === 'refreshing'"
+          (click)="scanEvidence.emit()"
+        >
+          @if (isEvidenceScanActive()) {
+            <span class="button-spinner" aria-hidden="true"></span>
+          }
+          {{ scanActionLabel() }}
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section class="customizations-controls" aria-label="Customization filters">
+    <label class="customizations-search">
+      <span>Search customizations</span>
+      <input
+        type="search"
+        placeholder="Search filename, title, description, applyTo, trigger"
+        [ngModel]="query()"
+        (ngModelChange)="setQuery($event)"
+      />
+    </label>
+    <label>
+      <span>Type</span>
+      <select [ngModel]="kindFilter()" (ngModelChange)="setKindFilter($event)">
+        <option value="all">All types</option>
+        <option value="instruction">Instructions</option>
+        <option value="skill">Skills</option>
+        <option value="prompt">Prompts</option>
+        <option value="hook">Hooks</option>
+        <option value="agent">Agents</option>
+        <option value="other">Other</option>
+      </select>
+    </label>
+    <label>
+      <span>Evidence</span>
+      <select [ngModel]="statusFilter()" (ngModelChange)="setStatusFilter($event)">
+        <option value="all">All evidence</option>
+        <option value="sent">Text match found</option>
+        <option value="listed">Read by Copilot</option>
+        <option value="discovered">Discovered only</option>
+        <option value="not_seen">Not seen</option>
+      </select>
+    </label>
+    <label>
+      <span>Workspace</span>
+      <select [ngModel]="workspaceFilter()" (ngModelChange)="setWorkspaceFilter($event)">
+        @for (workspace of workspaceOptions(); track workspace) {
+          <option [value]="workspace">{{ workspace === 'all' ? 'All workspaces' : workspace }}</option>
+        }
+      </select>
+    </label>
+  </section>
+
+  <details class="customizations-diagnostics">
+    <summary>
+      <span>Advanced scan coverage</span>
+      <strong>
+        {{ scanDiagnostics().roots | number }} folders/files checked ·
+        {{ scanDiagnostics().files | number }} customization{{ scanDiagnostics().files === 1 ? '' : 's' }} found
+      </strong>
+    </summary>
+    @if (scanDiagnostics().locations.length) {
+      <div class="diagnostic-list">
+        @for (location of scanDiagnostics().locations; track location.kind + ':' + location.path) {
+          <div>
+            <b>{{ diagnosticKindLabel(location.kind) }}</b>
+            <code>{{ location.path }}</code>
+          </div>
+        }
+      </div>
+      @if (scanDiagnostics().capped) {
+        <p class="diagnostic-note">Showing the first 80 recorded locations. Generated scan diagnostics are capped.</p>
+      }
+    } @else {
+      <p class="diagnostic-note">No source-location details were recorded for this scan. This does not mean no customization files were found.</p>
+    }
+  </details>
+
+  @if (filteredCustomizations().length) {
+    <section class="customizations-workspace">
+      <aside class="customizations-list" aria-label="Local customizations">
+        <div class="customizations-list-heading">
+          <span>{{ filteredCustomizations().length | number }} shown</span>
+          @if (
+            query() || kindFilter() !== 'all' || statusFilter() !== 'all' || workspaceFilter() !== 'all'
+          ) {
+            <button type="button" (click)="resetFilters()">Reset</button>
+          }
+        </div>
+        @for (customization of filteredCustomizations(); track customization.id) {
+          <button
+            type="button"
+            class="customization-card"
+            [class.active]="selectedCustomizationId() === customization.id"
+            [class.sent]="customization.evidenceStatus === 'sent'"
+            [class.listed]="customization.evidenceStatus === 'listed'"
+            [class.discovered]="customization.evidenceStatus === 'discovered'"
+            (click)="selectCustomization(customization)"
+          >
+            <span class="customization-file-icon" aria-hidden="true">
+              {{ kindLabel(customization.kind).slice(0, 1) }}
+            </span>
+            <span class="customization-card-main">
+              <strong>{{ customization.title }}</strong>
+              <small>{{ fileName(customization) }} · {{ kindLabel(customization.kind) }}</small>
+            </span>
+            <span class="customization-card-side">
+              <b>{{ statusLabel(customization.evidenceStatus) }}</b>
+              <em>{{ evidenceCountLabel(customization) }}</em>
+            </span>
+          </button>
+        }
+      </aside>
+
+      @if (selectedCustomization(); as customization) {
+        <article class="customization-detail">
+          <header class="customization-detail-header">
+            <div>
+              <span class="customization-kicker">{{ kindLabel(customization.kind) }}</span>
+              <h3>{{ customization.title }}</h3>
+              <p>{{ customization.workspace || 'Local' }} · {{ fileName(customization) }}</p>
+            </div>
+            <span
+              class="evidence-badge"
+              [class.sent]="customization.evidenceStatus === 'sent'"
+              [class.listed]="customization.evidenceStatus === 'listed'"
+              [class.discovered]="customization.evidenceStatus === 'discovered'"
+            >
+              {{ statusLabel(customization.evidenceStatus) }}
+              <app-help-popover
+                [text]="statusHelp(customization.evidenceStatus)"
+              label="Explain customization evidence"
+            ></app-help-popover>
+          </span>
+          </header>
+
+          <div class="customization-facts">
+            <span><b>{{ customization.characterCount | number }}</b> characters</span>
+            <span><b>{{ customization.lineCount | number }}</b> lines</span>
+            <span><b>updated</b> {{ customization.modifiedAt | date: 'mediumDate' }}</span>
+            @if (customization.applyTo.length) {
+              <span><b>applyTo</b> {{ customization.applyTo.join(', ') }}</span>
+            }
+            @if (customization.triggers.length) {
+              <span><b>trigger</b> {{ customization.triggers.join(', ') }}</span>
+            }
+          </div>
+
+          <section class="evidence-summary">
+            <div>
+              <span class="customization-kicker">Detection result</span>
+              <h4>{{ statusHeadline(customization.evidenceStatus) }}</h4>
+              <p>{{ statusHelp(customization.evidenceStatus) }}</p>
+            </div>
+            @if (customization.description) {
+              <div class="matched-customization-text">
+                <span class="customization-kicker">Matched customization text</span>
+                <p class="description">{{ customization.description }}</p>
+              </div>
+            }
+          </section>
+
+          @if (customization.matches.length) {
+            <section class="match-list" aria-label="Customization evidence matches">
+              <header>
+                <span class="customization-kicker">Where it appeared</span>
+                <h4>{{ selectedSessionEvidence().length | number }} session{{ selectedSessionEvidence().length === 1 ? '' : 's' }}</h4>
+              </header>
+              <p class="match-list-help">
+                Each row is one Copilot session. Open a row for request-level proof.
+              </p>
+              @for (group of selectedSessionEvidence(); track group.sessionId) {
+                <details
+                  class="match-group"
+                  [class.sent]="group.bestStatus === 'sent'"
+                  [class.listed]="group.bestStatus === 'listed'"
+                  [class.discovered]="group.bestStatus === 'discovered'"
+                >
+                  <summary>
+                    <span class="match-group-title">
+                      <time>{{ group.timestamp | date: 'medium' }}</time>
+                      <b>{{ group.title }}</b>
+                      <em>{{ evidenceGroupSubtitle(group) }}</em>
+                    </span>
+                    <span class="match-group-status">
+                      @if (group.bestStatus === 'sent') {
+                        <span class="match-group-timeline" [attr.aria-label]="sessionEvidenceLabel(group)">
+                          @for (marker of timelineMarkers(group); track marker.callNumber) {
+                            <span
+                              class="timeline-marker"
+                              [class.sent]="marker.status === 'sent'"
+                              [class.listed]="marker.status === 'listed'"
+                              [class.discovered]="marker.status === 'discovered'"
+                              [attr.aria-label]="timelineMarkerLabel(marker)"
+                            >
+                              #{{ marker.callNumber }}
+                            </span>
+                          }
+                          @if (timelineOverflow(group)) {
+                            <span class="timeline-overflow">+{{ timelineOverflow(group) }} more</span>
+                          }
+                        </span>
+                      } @else {
+                        <span class="match-group-weak">No file text found</span>
+                      }
+                      <strong>{{ sessionEvidenceLabel(group) }}</strong>
+                    </span>
+                  </summary>
+                  <div class="match-group-detail-header">
+                    <p>
+                      {{ groupDetailSummary(group) }}
+                    </p>
+                    @if (group.session) {
+                      <button type="button" (click)="emitOpenSession(group.sessionId)">Open run</button>
+                    }
+                  </div>
+                  @if (group.bestStatus === 'sent') {
+                    <div class="match-events call-events">
+                      @for (call of sentCallEvidence(group); track call.key) {
+                        <article class="match-event call-event" [class.sent]="call.status === 'sent'">
+                          <div class="call-event-main">
+                            <strong>{{ callEvidenceTitle(call) }}</strong>
+                            <p>{{ callEvidenceSummary(call) }}</p>
+                            @if (call.matchedPreview.length) {
+                              <blockquote>
+                                {{ call.matchedPreview[0] }}
+                              </blockquote>
+                            }
+                            <details class="raw-evidence-details">
+                              <summary>Proof details · {{ evidenceDetailsSummary(call) }}</summary>
+                              <div>
+                                <span>Visible VS Code log sources</span>
+                                <ul>
+                                  @for (source of rawEvidenceSources(call); track source.raw + source.label) {
+                                    <li>
+                                      <b>{{ source.label }}</b>
+                                      <code>{{ source.raw }}</code>
+                                    </li>
+                                  }
+                                </ul>
+                              </div>
+                            </details>
+                          </div>
+                        </article>
+                      }
+                    </div>
+                  }
+                </details>
+              }
+            </section>
+          }
+
+          <footer class="customization-path">
+            <span>Local file</span>
+            <code>{{ customization.sourcePath }}</code>
+          </footer>
+        </article>
+      }
+    </section>
+  } @else {
+    <section class="customizations-empty">
+      <h3>{{ customizationsInput().length ? 'No customizations match these filters' : 'No Copilot customization files found for this workspace' }}</h3>
+      <p>
+        {{
+          customizationsInput().length
+            ? 'Try a broader search or reset the filters.'
+            : 'The scanner checks known Copilot customization locations for the current workspace. Open Advanced scan coverage to inspect source locations.'
+        }}
+      </p>
+      @if (customizationsInput().length) {
+        <button type="button" (click)="resetFilters()">Reset filters</button>
+      }
+    </section>
+  }
+</section>

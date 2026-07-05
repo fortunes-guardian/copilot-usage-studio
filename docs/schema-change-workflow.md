@@ -67,7 +67,7 @@ For a real schema change:
 2. Update the scanner conservatively. Prefer supporting old and new shapes during a transition.
 3. Update `docs/debug-log-schema.md` with the exact observed runtime and field meaning.
 4. Update UI behavior only when the new field answers a real developer question reliably.
-5. Keep uncertain fields in diagnostics or the roadmap rather than promoting them into product claims.
+5. Keep uncertain fields in diagnostics or private planning notes rather than promoting them into product claims.
 
 ### 5. Run the full compatibility gate
 
@@ -127,4 +127,3 @@ Examples:
 - [ ] Schema and ingestion docs updated.
 - [ ] Baseline accepted only after review.
 - [ ] No prompt, response, local path, argument, or result payload committed.
-

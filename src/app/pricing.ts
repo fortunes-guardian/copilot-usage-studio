@@ -2,13 +2,14 @@ import { TokenBreakdown } from './session-data.model';
 import pricingData from '../../data/github-copilot-pricing.json';
 
 export interface ModelPrice {
-  provider: 'OpenAI' | 'Anthropic' | 'Google' | 'Microsoft' | 'Fine-tuned (GitHub)';
+  provider: 'OpenAI' | 'Anthropic' | 'Google' | 'Microsoft' | 'Fine-tuned (GitHub)' | 'Moonshot AI';
   category: 'Lightweight' | 'Versatile' | 'Powerful';
   releaseStatus: 'GA' | 'Public preview';
   input: number;
   cachedInput: number;
   cacheWrite?: number;
   output: number;
+  aliases?: string[];
   note?: string;
   tierLabel?: string;
   tierThresholdLabel?: string;
@@ -103,10 +104,18 @@ export function normalizeModel(model: string | null | undefined): string {
     .trim();
   const key = modelKey(raw);
   const knownModels = Object.keys(MODEL_PRICES_USD_PER_MILLION);
+  const knownAliases = knownModels.flatMap((name) =>
+    (MODEL_PRICES_USD_PER_MILLION[name].aliases ?? []).map((alias) => ({
+      name,
+      aliasKey: modelKey(alias),
+    })),
+  );
 
   return (
     knownModels.find((name) => modelKey(name) === key) ??
+    knownAliases.find(({ aliasKey }) => aliasKey === key)?.name ??
     knownModels.find((name) => key.includes(modelKey(name))) ??
+    knownAliases.find(({ aliasKey }) => key.includes(aliasKey))?.name ??
     (raw || 'Unknown model')
   );
 }

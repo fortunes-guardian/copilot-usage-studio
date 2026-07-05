@@ -3,8 +3,9 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 
 import { AnalyticsPageComponent } from './analytics-page.component';
 import { ComparePageComponent } from './compare-page.component';
+import { CustomizationsPageComponent } from './customizations-page.component';
 import { MemoryPageComponent } from './memory-page.component';
-import { SessionDataService } from './session-data.service';
+import { SessionDataScanMode, SessionDataService } from './session-data.service';
 import { SessionDataStatePanelComponent } from './session-data-state-panel.component';
 import { CopilotSession, TraceEvent } from './session-data.model';
 import { PricingPageComponent } from './pricing-page.component';
@@ -17,6 +18,7 @@ import { SessionTraceComponent } from './session-trace.component';
 import { SessionTurnsComponent } from './session-turns.component';
 import { SelectedRunHeaderComponent } from './selected-run-header.component';
 import { UsagePageComponent } from './usage-page.component';
+import { allowedHostViews, hostConfig } from './host-config';
 import {
   COPILOT_ALLOWANCE_PLANS,
   CopilotAllowancePlan,
@@ -33,7 +35,14 @@ import {
 } from './session-analysis';
 import { sessionUsageUsd } from './session-cost-utils';
 
-type ActiveView = 'sessions' | 'usage' | 'memory' | 'compare' | 'analytics' | 'pricing';
+type ActiveView =
+  | 'sessions'
+  | 'usage'
+  | 'memory'
+  | 'customizations'
+  | 'compare'
+  | 'analytics'
+  | 'pricing';
 type SelectedRunView = 'overview' | 'cost' | 'turns' | 'trace';
 type ThemeMode = 'light' | 'dark';
 type SessionTimeFilter = 'all' | '7d' | '30d' | '90d';
@@ -44,6 +53,7 @@ type SessionTimeFilter = 'all' | '7d' | '30d' | '90d';
     AnalyticsPageComponent,
     DecimalPipe,
     ComparePageComponent,
+    CustomizationsPageComponent,
     MemoryPageComponent,
     SessionDataStatePanelComponent,
     PricingPageComponent,
@@ -69,6 +79,8 @@ export class App {
   protected readonly sessionDataLoadError = this.sessionDataService.loadError;
   protected readonly sessionDataRefreshState = this.sessionDataService.refreshState;
   protected readonly sessionDataRefreshMessage = this.sessionDataService.refreshMessage;
+  protected readonly runtimeStatus = this.sessionDataService.runtimeStatus;
+  protected readonly runtimeStatusAvailable = this.sessionDataService.runtimeStatusAvailable;
   protected readonly selectedId = signal<string | null>(null);
   protected readonly compareA = signal<string | null>(null);
   protected readonly compareB = signal<string | null>(null);
@@ -83,11 +95,23 @@ export class App {
   protected readonly selectedTraceEventIndex = signal<number | null>(null);
   protected readonly traceOpenedFromTurns = signal(false);
   protected readonly modelCallSort = signal<ModelCallSort>('timeline');
+  protected readonly availableViews = allowedHostViews([
+    'usage',
+    'sessions',
+    'memory',
+    'customizations',
+    'compare',
+    'analytics',
+    'pricing',
+  ]);
+  protected readonly hostMode = hostConfig().mode;
+  protected readonly canOpenSessions = this.availableViews.includes('sessions');
   protected readonly activeView = signal<ActiveView>(this.readInitialView());
   protected readonly selectedRunView = signal<SelectedRunView>('overview');
   protected readonly sessionRailOpen = signal(false);
   protected readonly theme = signal<ThemeMode>(this.readStoredTheme());
   protected readonly allowancePlan = signal<CopilotAllowancePlan>('business-standard');
+  private readonly activeRefreshMode = signal<SessionDataScanMode | null>(null);
   protected readonly pricingSourceUrl = PRICING_SOURCE_URL;
   protected readonly help = {
     appEstimate:
@@ -114,7 +138,7 @@ export class App {
     priceRow:
       'The GitHub model pricing row used to estimate this model. Unknown models keep their display label and show any pricing fallback separately.',
     pricingFallback:
-      'The raw model name from VS Code did not match a GitHub price row in the local pricing table, so the estimate uses the displayed fallback price row. Treat this as an explicit estimate assumption.',
+      'Some imported model names do not exactly match a GitHub pricing row. Those runs keep their original model label, but their estimate uses this pricing row as an explicit fallback assumption.',
   };
   protected readonly sessionTriageHelp =
     'Fast read derived from imported tokens and model mix. These are cost-debugging signals, not billing rows.';
@@ -143,6 +167,28 @@ export class App {
 
   protected readonly sessions = computed(() => this.sessionData()?.sessions ?? []);
   protected readonly memories = computed(() => this.sessionData()?.memories ?? []);
+  protected readonly customizations = computed(() => this.sessionData()?.customizations ?? []);
+  protected readonly ingestion = computed(() => this.sessionData()?.ingestion ?? null);
+  protected readonly debugLogGuidance = computed(() => {
+    const sessionData = this.sessionData();
+    const ingestion = sessionData?.ingestion;
+    if (!ingestion || ingestion.importedDebugLogSessions > 0) {
+      return null;
+    }
+
+    const fileLogging = hostConfig().agentDebugLogFileLoggingEnabled;
+    const hasFallbackData = ingestion.importedChatSnapshotSessions > 0 || (sessionData?.sessions.length ?? 0) > 0;
+
+    return {
+      title: fileLogging === false
+        ? 'Agent Debug Log file logging is off'
+        : 'No Agent Debug Log sessions imported',
+      body: hasFallbackData
+        ? 'Some weaker local data was imported, but exact model-call usage needs VS Code Agent Debug Log file logging.'
+        : 'No exact model-call data was found. Enable VS Code Agent Debug Log file logging, run a Copilot chat or agent session, then refresh.',
+      setting: 'github.copilot.chat.agentDebugLog.fileLogging.enabled',
+    };
+  });
   protected readonly warningOptions = computed(() => {
     const labels = new Set<string>();
 
@@ -254,6 +300,12 @@ export class App {
       this.document.documentElement.style.colorScheme = theme;
       this.persistTheme(theme);
     });
+
+    effect(() => {
+      if (this.sessionDataRefreshState() !== 'refreshing') {
+        this.activeRefreshMode.set(null);
+      }
+    });
   }
 
   protected toggleTheme(): void {
@@ -264,8 +316,83 @@ export class App {
     return this.theme() === 'light' ? 'Light' : 'Dark';
   }
 
-  protected refreshSessionData(): void {
-    this.sessionDataService.refresh();
+  protected refreshSessionData(mode: SessionDataScanMode = 'quick'): void {
+    this.activeRefreshMode.set(mode);
+    this.sessionDataService.refresh(mode);
+  }
+
+  protected refreshActiveViewData(): void {
+    this.refreshSessionData(this.activeView() === 'customizations' ? 'customizations' : 'quick');
+  }
+
+  protected topbarScanLabel(): string {
+    if (this.sessionDataRefreshState() === 'refreshing') {
+      return 'Scanning';
+    }
+    return 'Refresh';
+  }
+
+  protected topbarScanStatus(): string {
+    const status = this.runtimeStatus();
+    const message = this.sessionDataRefreshMessage();
+
+    if (this.sessionDataRefreshState() === 'refreshing') {
+      const progress = status?.scanProgress;
+      const workspaceIndex = Number(progress?.workspaceIndex ?? progress?.index ?? 0);
+      const workspaceTotal = Number(progress?.workspaceTotal ?? progress?.total ?? 0);
+      const workspace = progress?.workspace || progress?.workspaceDir || '';
+
+      if (workspaceIndex > 0 && workspaceTotal > 0) {
+        if (status?.activeScanMode === 'customizations') {
+          return 'Checking customization evidence';
+        }
+        return `${workspaceIndex.toLocaleString()} of ${workspaceTotal.toLocaleString()} storage entries checked`;
+      }
+
+      return status?.activeScanMode === 'customizations'
+        ? 'Checking customization evidence'
+        : (message || 'Scanning local VS Code data');
+    }
+
+    if (status?.scanning === true) {
+      return status.activeScanMode === 'customizations'
+        ? 'Checking customization evidence in the background'
+        : 'Background scan running';
+    }
+
+    if (this.sessionDataRefreshState() === 'error') {
+      return message || 'Scan failed';
+    }
+
+    if (this.sessionDataRefreshState() === 'success' && message) {
+      return message;
+    }
+
+    return this.dataUpdatedLabel();
+  }
+
+  protected cancelScan(): void {
+    this.sessionDataService.cancelScan();
+  }
+
+  protected showGlobalStatePanel(): boolean {
+    if (this.sessionDataLoadState() !== 'ready') {
+      return true;
+    }
+
+    if (this.sessionDataRefreshState() === 'error') {
+      return true;
+    }
+
+    if (this.sessionDataRefreshState() !== 'refreshing') {
+      return false;
+    }
+
+    return this.activeView() !== 'customizations' || this.activeRefreshMode() !== 'customizations';
+  }
+
+  private isRuntimeScanning(): boolean {
+    return this.runtimeStatus()?.scanning === true || this.sessionDataRefreshState() === 'refreshing';
   }
 
   protected dataUpdatedLabel(): string {
@@ -371,6 +498,10 @@ export class App {
       return;
     }
 
+    if (!this.isViewAvailable('sessions')) {
+      return;
+    }
+
     this.selectedId.set(session.id);
     this.activeView.set('sessions');
     this.selectedRunView.set('overview');
@@ -450,19 +581,39 @@ export class App {
 
   private readInitialView(): ActiveView {
     try {
-      const view = new URL(globalThis.location?.href ?? '').searchParams.get('view');
-
-      return view === 'sessions' ||
+      const configuredView = hostConfig().initialView;
+      const view = configuredView || new URL(globalThis.location?.href ?? '').searchParams.get('view');
+      const candidate = view === 'sessions' ||
         view === 'usage' ||
         view === 'memory' ||
+        view === 'customizations' ||
         view === 'compare' ||
         view === 'analytics' ||
         view === 'pricing'
         ? view
         : 'usage';
+
+      return this.isViewAvailable(candidate) ? candidate : this.firstAvailableView();
     } catch {
-      return 'usage';
+      return this.firstAvailableView();
     }
+  }
+
+  protected isViewAvailable(view: ActiveView): boolean {
+    return this.availableViews.includes(view);
+  }
+
+  private firstAvailableView(): ActiveView {
+    const [first] = this.availableViews;
+    return first === 'sessions' ||
+      first === 'usage' ||
+      first === 'memory' ||
+      first === 'customizations' ||
+      first === 'compare' ||
+      first === 'analytics' ||
+      first === 'pricing'
+      ? first
+      : 'usage';
   }
 
   private persistTheme(theme: ThemeMode): void {

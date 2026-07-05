@@ -195,6 +195,27 @@ describe('App', () => {
     expect(fixture.nativeElement.textContent).toContain('Loading usage');
   });
 
+  it('explains when no Agent Debug Log sessions were imported', async () => {
+    const fixture = TestBed.createComponent(App);
+    TestBed.inject(HttpTestingController)
+      .expectOne('/data/sessions.json')
+      .flush({
+        ...sessionDataFixture,
+        ingestion: {
+          ...sessionDataFixture.ingestion,
+          importedDebugLogSessions: 0,
+          importedChatSnapshotSessions: 1,
+        },
+      });
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('No Agent Debug Log sessions imported');
+    expect(fixture.nativeElement.textContent).toContain(
+      'github.copilot.chat.agentDebugLog.fileLogging.enabled',
+    );
+  });
+
   it('opens Memory from the view query parameter', async () => {
     globalThis.history.pushState(null, '', '/?view=memory');
     const fixture = TestBed.createComponent(App);
@@ -233,10 +254,29 @@ describe('App', () => {
     };
     const request = http.expectOne('/api/scan');
     expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ mode: 'quick' });
     request.flush({ sessionData: refreshedData });
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('2 sessions imported');
+    expect(fixture.nativeElement.textContent).not.toContain('Scan complete');
+  });
+
+  it('uses the topbar refresh as an evidence scan on Customizations', async () => {
+    globalThis.history.pushState(null, '', '/?view=customizations');
+    const fixture = TestBed.createComponent(App);
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/data/sessions.json').flush(sessionDataFixture);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    clickButtonContaining(fixture.nativeElement, 'Refresh');
+    fixture.detectChanges();
+
+    const request = http.expectOne('/api/scan');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ mode: 'customizations' });
+    request.flush({ sessionData: sessionDataFixture });
   });
 
   it('opens Sessions from the view query parameter', async () => {

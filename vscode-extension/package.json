@@ -1,0 +1,51 @@
+{
+  "name": "copilot-usage-studio-vscode",
+  "displayName": "Copilot Usage Studio",
+  "description": "Local GitHub Copilot usage, memory, and customization insights for VS Code.",
+  "version": "0.2.0",
+  "publisher": "fortunes-guardian",
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fortunes-guardian/copilot-usage-studio.git"
+  },
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:copilotUsageStudio.open",
+    "onCommand:copilotUsageStudio.refresh",
+    "onCommand:copilotUsageStudio.showLogs",
+    "onCommand:copilotUsageStudio.exportDiagnostics",
+    "onCommand:copilotUsageStudio.openInBrowser"
+  ],
+  "main": "./dist/extension.cjs",
+  "contributes": {
+    "commands": [
+      {
+        "command": "copilotUsageStudio.open",
+        "title": "Copilot Usage Studio: Open"
+      },
+      {
+        "command": "copilotUsageStudio.refresh",
+        "title": "Copilot Usage Studio: Refresh Data"
+      },
+      {
+        "command": "copilotUsageStudio.showLogs",
+        "title": "Copilot Usage Studio: Show Logs"
+      },
+      {
+        "command": "copilotUsageStudio.exportDiagnostics",
+        "title": "Copilot Usage Studio: Export Diagnostics"
+      },
+      {
+        "command": "copilotUsageStudio.openInBrowser",
+        "title": "Copilot Usage Studio: Open in Browser"
+      }
+    ]
+  }
+}

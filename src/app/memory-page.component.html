@@ -123,9 +123,13 @@
             <span><b>{{ memory.lineCount | number }}</b> lines</span>
             <span><b>{{ fileName(memory) }}</b></span>
             @if (linkedSession(memory); as session) {
-              <button type="button" (click)="emitOpenSession(memory)">
-                Created in: {{ session.title }}
-              </button>
+              @if (canOpenSession) {
+                <button type="button" (click)="emitOpenSession(memory)">
+                  Created in: {{ session.title }}
+                </button>
+              } @else {
+                <span>Created in: {{ session.title }}</span>
+              }
             } @else if (memory.sessionId) {
               <span>Session {{ memory.sessionId.slice(0, 8) }}</span>
             }
@@ -153,9 +157,13 @@
                     <div>
                       <time>{{ recall.timestamp | date: 'medium' }}</time>
                       @if (recallSession(recall.sessionId); as session) {
-                        <button type="button" (click)="emitRecallSession(recall.sessionId)">
-                          {{ session.title }}
-                        </button>
+                        @if (canOpenSession) {
+                          <button type="button" (click)="emitRecallSession(recall.sessionId)">
+                            {{ session.title }}
+                          </button>
+                        } @else {
+                          <span>{{ session.title }}</span>
+                        }
                       } @else {
                         <span>Session {{ recall.sessionId.slice(0, 8) }}</span>
                       }

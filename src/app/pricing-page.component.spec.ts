@@ -41,7 +41,7 @@ describe('PricingPageComponent', () => {
     ]);
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Fallback row');
+    expect(fixture.nativeElement.textContent).toContain('Estimate fallback');
 
     const longContextRow = [...fixture.nativeElement.querySelectorAll('.pricing-row')].find(
       (row: Element) =>

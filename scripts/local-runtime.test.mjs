@@ -19,8 +19,16 @@ test('serves cached data, refreshes through the scanner, and reports status', as
     seedDataFile: null,
     staticDir: fixture.staticDir,
     scanOnStart: false,
-    scanner: async () => {
+    scanner: async ({ onProgress }) => {
       scans += 1;
+      onProgress({
+        stage: 'workspace',
+        message: 'Scanning fixture workspace.',
+        workspace: 'fixture',
+        workspaceDir: fixture.root,
+        elapsedMs: 12,
+        debugLogFolders: 2,
+      });
       return refreshed;
     },
     logger: silentLogger(),
@@ -33,6 +41,8 @@ test('serves cached data, refreshes through the scanner, and reports status', as
     const initialStatus = await jsonRequest(`${origin}/api/status`);
     assert.equal(initialStatus.phase, 'ready');
     assert.equal(initialStatus.sessionCount, 1);
+    assert.ok(Array.isArray(initialStatus.recentLogs));
+    assert.equal(typeof initialStatus.logFile, 'string');
     assert.equal((await jsonRequest(`${origin}/api/sessions`)).sessions[0].id, 'cached-session');
     assert.equal((await jsonRequest(`${origin}/data/sessions.json`)).sessions[0].id, 'cached-session');
 
@@ -40,8 +50,65 @@ test('serves cached data, refreshes through the scanner, and reports status', as
     assert.equal(scans, 1);
     assert.equal(refreshResponse.sessionData.sessions[0].id, 'new-session');
     assert.equal(refreshResponse.status.phase, 'ready');
+    assert.equal(refreshResponse.status.scanProgress.stage, 'complete');
+    assert.equal(refreshResponse.status.progressHistory.at(-1).stage, 'complete');
+    assert.equal(refreshResponse.status.workspaceProgress[0].workspace, 'fixture');
+    assert.equal(refreshResponse.status.workspaceProgress[0].debugLogFolders, 2);
     assert.equal((await jsonRequest(`${origin}/api/sessions`)).sessions[0].id, 'new-session');
     assert.equal(JSON.parse(readFileSync(fixture.dataFile, 'utf8')).sessions[0].id, 'new-session');
+    const logs = await jsonRequest(`${origin}/api/logs`);
+    assert.ok(logs.entries.some((entry) => entry.message.includes('Local data refresh')));
+    const diagnostics = await jsonRequest(`${origin}/api/diagnostics`);
+    assert.equal(diagnostics.status.phase, 'ready');
+    assert.equal(diagnostics.workspaceProgress[0].workspace, 'fixture');
+    assert.deepEqual(diagnostics.scanOptions, {
+      roots: [],
+      customizationWorkspaceFolders: [],
+      includeCustomizations: true,
+      sqlite: true,
+    });
+  } finally {
+    await runtime.close();
+    rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('preserves customization evidence when a quick refresh skips customization indexing', async () => {
+  const fixture = runtimeFixture('quick-keeps-customizations');
+  const cached = sessionData('cached-session', '2026-06-13T08:00:00.000Z');
+  cached.ingestion.importedCustomizations = 1;
+  cached.ingestion.scannedCustomizationLocations = [{ kind: 'vscode-default-root', path: join(fixture.root, '.github', 'instructions') }];
+  cached.customizations = [
+    {
+      id: 'customization-one',
+      workspace: 'fixture',
+      sourcePath: join(fixture.root, '.github', 'instructions', 'rule.md'),
+      modifiedAt: '2026-06-13T08:00:00.000Z',
+      evidenceStatus: 'sent',
+    },
+  ];
+  const refreshed = sessionData('new-session', '2026-06-13T09:00:00.000Z');
+  writeFileSync(fixture.dataFile, JSON.stringify(cached), 'utf8');
+  const runtime = createLocalRuntime({
+    port: 0,
+    dataFile: fixture.dataFile,
+    seedDataFile: null,
+    staticDir: fixture.staticDir,
+    scanOnStart: false,
+    scanner: async () => refreshed,
+    logger: silentLogger(),
+  });
+
+  try {
+    const address = await runtime.listen();
+    const origin = `http://127.0.0.1:${address.port}`;
+    const refreshResponse = await jsonRequest(`${origin}/api/scan`, { method: 'POST' });
+    const saved = JSON.parse(readFileSync(fixture.dataFile, 'utf8'));
+
+    assert.equal(refreshResponse.sessionData.sessions[0].id, 'new-session');
+    assert.equal(refreshResponse.sessionData.customizations[0].id, 'customization-one');
+    assert.equal(refreshResponse.sessionData.ingestion.importedCustomizations, 1);
+    assert.equal(saved.customizations[0].id, 'customization-one');
   } finally {
     await runtime.close();
     rmSync(fixture.root, { recursive: true, force: true });
@@ -80,6 +147,80 @@ test('keeps the last valid snapshot when a refresh fails', async () => {
   }
 });
 
+test('keeps data and reports stopped status when a refresh is cancelled', async () => {
+  const fixture = runtimeFixture('cancelled-refresh');
+  const cached = sessionData('kept-session', '2026-06-13T08:00:00.000Z');
+  writeFileSync(fixture.dataFile, JSON.stringify(cached), 'utf8');
+  const runtime = createLocalRuntime({
+    port: 0,
+    dataFile: fixture.dataFile,
+    seedDataFile: null,
+    staticDir: fixture.staticDir,
+    scanOnStart: false,
+    scanner: ({ signal }) =>
+      new Promise((_resolve, reject) => {
+        if (signal?.aborted) {
+          reject(new Error('Scan stopped by user.'));
+          return;
+        }
+        signal?.addEventListener('abort', () => reject(new Error('Scan stopped by user.')), { once: true });
+      }),
+    logger: silentLogger(),
+  });
+
+  try {
+    const address = await runtime.listen();
+    const origin = `http://127.0.0.1:${address.port}`;
+    const scanRequest = fetch(`${origin}/api/scan`, { method: 'POST' });
+
+    await waitForRuntimeStatus(origin, (status) => status.scanning === true);
+    const cancelResponse = await jsonRequest(`${origin}/api/scan/cancel`, { method: 'POST' });
+    assert.equal(cancelResponse.canceled, true);
+
+    const response = await scanRequest;
+    const body = await response.json();
+
+    assert.equal(response.status, 500);
+    assert.equal(body.status.hasData, true);
+    assert.equal(body.status.phase, 'ready');
+    assert.equal(body.status.lastError, 'Scan stopped by user.');
+    assert.equal(body.status.scanProgress.stage, 'stopped');
+    assert.equal(body.status.scanProgress.message, 'Scan stopped. Existing data was kept.');
+    assert.equal((await jsonRequest(`${origin}/api/sessions`)).sessions[0].id, 'kept-session');
+  } finally {
+    await runtime.close();
+    rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('runs the default scanner in a child process', async () => {
+  const fixture = runtimeFixture('worker-scan');
+  const workspaceDir = join(fixture.root, 'workspace');
+  writeWorkspaceDebugSession(workspaceDir, 'worker-session');
+  const runtime = createLocalRuntime({
+    port: 0,
+    dataFile: fixture.dataFile,
+    seedDataFile: null,
+    staticDir: fixture.staticDir,
+    scanOnStart: false,
+    scanOptions: { roots: [workspaceDir], sqlite: false },
+    logger: silentLogger(),
+  });
+
+  try {
+    const address = await runtime.listen();
+    const origin = `http://127.0.0.1:${address.port}`;
+    const response = await jsonRequest(`${origin}/api/scan`, { method: 'POST' });
+
+    assert.equal(response.sessionData.sessions.length, 1);
+    assert.equal(response.sessionData.sessions[0].id, 'worker-session');
+    assert.equal(response.status.scanProgress.stage, 'complete');
+  } finally {
+    await runtime.close();
+    rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
 test('holds a fresh-install data request until the startup scan completes', async () => {
   const fixture = runtimeFixture('first-run');
   let finishScan;
@@ -99,11 +240,42 @@ test('holds a fresh-install data request until the startup scan completes', asyn
     const origin = `http://127.0.0.1:${address.port}`;
     const pendingData = fetch(`${origin}/data/sessions.json`);
     await new Promise((resolveWait) => setTimeout(resolveWait, 20));
+    const pendingStatus = await jsonRequest(`${origin}/api/status`);
+    assert.equal(pendingStatus.scanning, true);
+    assert.equal(pendingStatus.scanProgress.stage, 'starting');
     finishScan(sessionData('first-session', '2026-06-13T10:00:00.000Z'));
 
     const response = await pendingData;
     assert.equal(response.status, 200);
     assert.equal((await response.json()).sessions[0].id, 'first-session');
+  } finally {
+    await runtime.close();
+    rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('returns runtime status instead of hanging when first startup scan is still running', async () => {
+  const fixture = runtimeFixture('first-run-timeout');
+  const runtime = createLocalRuntime({
+    port: 0,
+    dataFile: fixture.dataFile,
+    seedDataFile: null,
+    staticDir: fixture.staticDir,
+    firstDataWaitMs: 10,
+    scanner: () => new Promise(() => {}),
+    logger: silentLogger(),
+  });
+
+  try {
+    const address = await runtime.listen();
+    const origin = `http://127.0.0.1:${address.port}`;
+    const response = await fetch(`${origin}/data/sessions.json`);
+    const body = await response.json();
+
+    assert.equal(response.status, 503);
+    assert.equal(body.error, 'No session data is available yet.');
+    assert.equal(body.status.scanning, true);
+    assert.equal(body.status.scanProgress.stage, 'starting');
   } finally {
     await runtime.close();
     rmSync(fixture.root, { recursive: true, force: true });
@@ -217,6 +389,47 @@ function sessionData(id, generatedAt) {
   };
 }
 
+function writeWorkspaceDebugSession(workspaceDir, sessionId) {
+  mkdirSync(workspaceDir, { recursive: true });
+  writeFileSync(
+    join(workspaceDir, 'workspace.json'),
+    JSON.stringify({ folder: 'file:///tmp/copilot-usage-studio-worker-fixture' }),
+    'utf8',
+  );
+  const sessionDir = join(workspaceDir, 'GitHub.copilot-chat', 'debug-logs', sessionId);
+  mkdirSync(sessionDir, { recursive: true });
+  const records = [
+    {
+      ts: 1,
+      timestamp: '2026-06-18T08:00:00.000Z',
+      sid: sessionId,
+      type: 'user_message',
+      name: 'user message',
+      status: 'ok',
+      attrs: { content: 'Scan from worker.' },
+    },
+    {
+      ts: 2,
+      timestamp: '2026-06-18T08:00:01.000Z',
+      sid: sessionId,
+      type: 'llm_request',
+      name: 'panel/editAgent',
+      status: 'ok',
+      attrs: {
+        model: 'gpt-5.4',
+        inputTokens: 1000,
+        cachedTokens: 500,
+        outputTokens: 100,
+      },
+    },
+  ];
+  writeFileSync(
+    join(sessionDir, 'main.jsonl'),
+    records.map((record) => JSON.stringify(record)).join('\n'),
+    'utf8',
+  );
+}
+
 function silentLogger() {
   return { log() {}, warn() {}, error() {} };
 }
@@ -225,4 +438,15 @@ async function jsonRequest(url, options) {
   const response = await fetch(url, options);
   assert.equal(response.ok, true, `${response.status} ${response.statusText}`);
   return response.json();
+}
+
+async function waitForRuntimeStatus(origin, predicate) {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const status = await jsonRequest(`${origin}/api/status`);
+    if (predicate(status)) {
+      return status;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  assert.fail('Timed out waiting for runtime status predicate.');
 }
