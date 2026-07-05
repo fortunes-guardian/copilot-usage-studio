@@ -60,6 +60,8 @@ It reads full file content during the scan to build fingerprints, but it does no
 
 Distinctive content from the customization file was found inside a visible VS Code model request payload or referenced request side file, after the same session showed local evidence that Copilot read or opened that file. Internally this is the strongest evidence state, but the UI avoids phrasing it as absolute proof of all Copilot behavior.
 
+This proves request visibility, not causality. The text may have reached the request because VS Code loaded it as customization context, or because the user explicitly attached/read the file with `#file` or a file-read action.
+
 `Read by Copilot`
 
 Local logs show Copilot read, opened, reviewed, or referenced the customization file, but the scanner did not match distinctive file content inside visible model-request material.
@@ -86,6 +88,7 @@ The app must not say:
 
 - Copilot ignored a customization just because no text match was visible
 - the model obeyed the customization
+- a text match proves the customization mechanism caused the inclusion
 - the customization caused the final answer
 - the customization has an exact token cost
 - the whole following request should be attributed to that customization

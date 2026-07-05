@@ -262,7 +262,7 @@ describe('App', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Scan complete');
   });
 
-  it('keeps the topbar refresh as a global scan on Customizations', async () => {
+  it('uses the topbar refresh as an evidence scan on Customizations', async () => {
     globalThis.history.pushState(null, '', '/?view=customizations');
     const fixture = TestBed.createComponent(App);
     const http = TestBed.inject(HttpTestingController);
@@ -275,7 +275,7 @@ describe('App', () => {
 
     const request = http.expectOne('/api/scan');
     expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({ mode: 'quick' });
+    expect(request.request.body).toEqual({ mode: 'customizations' });
     request.flush({ sessionData: sessionDataFixture });
   });
 

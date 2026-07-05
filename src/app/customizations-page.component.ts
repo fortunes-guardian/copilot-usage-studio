@@ -445,7 +445,7 @@ export class CustomizationsPageComponent {
 
   protected statusHelp(status: CopilotCustomizationEvidenceStatus): string {
     return {
-      sent: 'We found distinctive text from this customization inside local VS Code request logs. This is strong local evidence, but it only counts text visible in those logs.',
+      sent: 'We found distinctive text from this file inside local VS Code request logs. The text reached a model request, but it may have arrived as customization context or as manually attached file context.',
       listed: 'Local logs show Copilot read or referenced this file, but did not show distinctive file text inside the model request.',
       discovered: 'The file exists in a known customization location, but imported model requests did not show a text match.',
       not_seen: 'The file exists locally, but imported sessions do not show local evidence for it yet.',
@@ -647,7 +647,7 @@ export class CustomizationsPageComponent {
     if (group.bestStatus === 'sent') {
       const calls = this.sentModelCallCount(group);
       const label = calls === 1 ? 'model request' : 'model requests';
-      return `Text from this file was found in ${calls.toLocaleString()} ${label}. Use proof details only when you need raw VS Code log fields.`;
+      return `Text from this file was found in ${calls.toLocaleString()} ${label}. This proves request visibility, not whether the text came from automatic customization loading or manual file context.`;
     }
     if (group.bestStatus === 'listed') {
       return 'This session shows Copilot read or referenced the file, but local logs did not show distinctive file text in model-request material.';
