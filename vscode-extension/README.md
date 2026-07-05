@@ -1,18 +1,58 @@
 # Copilot Usage Studio
 
-Local GitHub Copilot usage, memory, and customization evidence for VS Code.
+Understand your GitHub Copilot usage from inside VS Code.
 
-This extension is the primary local host for Copilot Usage Studio. It opens the full app inside VS Code:
+Copilot Usage Studio helps developers answer questions that are usually hard to answer without access to an enterprise billing console:
 
-- Usage
-- Sessions
-- Memory
-- Customizations preview
-- Compare
-- Insights
-- Prices
+- How many Copilot credits did I use today, this week, and this month?
+- Which sessions, models, and requests drove that usage?
+- What Copilot memories and saved plans exist locally?
+- Did my instructions, skills, prompts, hooks, or agents appear in visible Copilot request logs?
 
-The extension starts a local runtime on `127.0.0.1`, scans local VS Code Copilot data, and stores its generated cache in VS Code extension storage. No SaaS backend is used.
+It is built for developers who use Copilot heavily and want practical local visibility, not a SaaS dashboard or an official GitHub billing statement.
+
+## What You Get
+
+### Usage Home
+
+See local Copilot usage for:
+
+- Last session
+- Today
+- This week
+- Calendar month
+- Selected workspace/model scope
+
+Usage is shown in GitHub AI credits where VS Code exposes source usage, with fallback estimates clearly marked when needed.
+
+### Sessions and Cost
+
+Inspect individual Copilot sessions to understand:
+
+- Input, cached input, cache write, and output token buckets
+- Model calls and request shape
+- Cost and credit drivers
+- Recent usage patterns
+
+### Memory Browser
+
+Browse Copilot memories and saved plans stored locally by VS Code. This is useful when Copilot generated a plan or memory and you want to find it again later.
+
+### Customizations Preview
+
+Preview local evidence for instructions, skills, prompts, hooks, and agents.
+
+This feature is intentionally conservative. It can show when customization text appears in visible VS Code request logs, but it does not claim official billing truth or prove every internal Copilot decision.
+
+## Local First
+
+Copilot Usage Studio runs locally.
+
+- No SaaS backend
+- No telemetry
+- No upload of prompts, memories, paths, or session data
+- Generated cache is stored in VS Code extension storage
+- The local runtime binds to `127.0.0.1`
 
 ## Commands
 
@@ -22,14 +62,18 @@ The extension starts a local runtime on `127.0.0.1`, scans local VS Code Copilot
 - `Copilot Usage Studio: Export Diagnostics`
 - `Copilot Usage Studio: Open in Browser`
 
-## Status
+## Scope
 
-Available on the VS Code Marketplace.
+Supported today:
 
-Copilot Usage Studio is a local-first developer tool for understanding VS Code GitHub Copilot usage, memories, sessions, and customization evidence. The Customizations page is still a preview because VS Code request-log formats can change and the app only reports evidence visible in local logs.
+- VS Code GitHub Copilot Chat and Agent data on the local machine
 
-The npm/browser app remains available as a development and fallback host:
+Not currently supported:
 
-```bash
-npx copilot-usage-studio
-```
+- Visual Studio
+- JetBrains IDEs
+- Copilot CLI
+- GitHub.com chat
+- GitHub billing exports
+
+Copilot Usage Studio is an independent open-source developer tool. It is not affiliated with or endorsed by GitHub or Microsoft.
