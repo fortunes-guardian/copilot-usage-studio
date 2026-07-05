@@ -45,7 +45,7 @@ Requirements for building locally: Node.js 22.5 or newer, npm, VS Code, and loca
 ```bash
 npm install
 npm run vscode:package
-code --install-extension tmp/copilot-usage-studio-vscode-0.2.1.vsix --force
+code --install-extension tmp/copilot-usage-studio-vscode-0.2.2.vsix --force
 ```
 
 The npm/browser host remains available for development and fallback testing:
@@ -122,7 +122,7 @@ Build the VS Code extension locally:
 
 ```bash
 npm run vscode:package
-code --install-extension tmp/copilot-usage-studio-vscode-0.2.1.vsix --force
+code --install-extension tmp/copilot-usage-studio-vscode-0.2.2.vsix --force
 ```
 
 The extension opens the full app inside VS Code: Usage, Sessions, Memory, Customizations preview, Compare, Insights, and Prices.
