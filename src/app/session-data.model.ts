@@ -349,6 +349,7 @@ export interface SessionData {
     customizationEvidenceModelCalls?: number;
     customizationEvidenceTextParts?: number;
     customizationEvidenceMatchedCustomizations?: number;
+    customizationEvidenceCapReason?: string;
     skippedSystemCustomizations?: number;
     skippedOversizedMemories?: number;
     skippedUnreadableMemories?: number;

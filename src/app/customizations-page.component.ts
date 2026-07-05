@@ -245,7 +245,7 @@ export class CustomizationsPageComponent {
       return 'The usage evidence scan reached its time limit. Partial results were kept so the app does not hang.';
     }
     if (this.customizationScanCapped()) {
-      return 'Scan stopped early to avoid taking too long. Partial evidence is shown, so some matches may be missing.';
+      return this.customizationScanLimitText();
     }
     if (this.customizationEvidenceSummary().hasScannedEvidence) {
       const sent = this.customizationEvidenceSummary().sent;
@@ -350,18 +350,38 @@ export class CustomizationsPageComponent {
     );
   }
 
+  private customizationScanCapReason(): string {
+    return String(this.ingestionInput()?.customizationEvidenceCapReason ?? '').trim();
+  }
+
   private customizationScanTimedOut(): boolean {
-    return this.customizationScanWarnings().some((warning) => warning.toLowerCase().includes('stopped after'));
+    return (
+      this.customizationScanCapReason().toLowerCase().includes('stopped after') ||
+      this.customizationScanWarnings().some((warning) => warning.toLowerCase().includes('stopped after'))
+    );
   }
 
   private customizationScanCapped(): boolean {
-    return this.customizationScanWarnings().some((warning) =>
+    return Boolean(this.customizationScanCapReason()) || this.customizationScanWarnings().some((warning) =>
       /limited to|stopped early|stopped after/i.test(warning),
     );
   }
 
   protected isPartialEvidenceResult(): boolean {
     return this.customizationScanTimedOut() || this.customizationScanCapped();
+  }
+
+  private customizationScanLimitText(): string {
+    const reason = this.customizationScanCapReason();
+    const scannedCalls = this.ingestionInput()?.customizationEvidenceModelCalls ?? 0;
+    const scannedSessions = this.ingestionInput()?.customizationEvidenceScannedSessions ?? 0;
+    if (reason.includes('model calls')) {
+      return `Checked ${scannedCalls.toLocaleString()} model requests across ${scannedSessions.toLocaleString()} session${scannedSessions === 1 ? '' : 's'} and stopped at the safety limit. The matches shown are real, but older or later matches may be missing.`;
+    }
+    if (reason.includes('stopped after')) {
+      return `Checked for ${reason.replace('stopped after ', '')} and stopped at the time limit. The matches shown are real, but the scan may be incomplete.`;
+    }
+    return 'The evidence scan reached a safety limit. The matches shown are real, but some matches may be missing.';
   }
 
   private durationLabel(ms: number): string {

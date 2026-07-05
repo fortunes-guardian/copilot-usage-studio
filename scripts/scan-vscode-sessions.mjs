@@ -67,6 +67,7 @@ function createDiagnostics() {
     customizationEvidenceModelCalls: 0,
     customizationEvidenceTextParts: 0,
     customizationEvidenceMatchedCustomizations: 0,
+    customizationEvidenceCapReason: '',
     importedCustomizations: 0,
     workspaceScans: [],
     skippedSystemCustomizations: 0,

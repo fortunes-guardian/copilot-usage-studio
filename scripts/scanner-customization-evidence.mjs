@@ -324,6 +324,7 @@ export function customizationEvidenceFromDebugLogs(
     customizationEvidenceModelCalls: 0,
     customizationEvidenceTextParts: 0,
     customizationEvidenceMatchedCustomizations: 0,
+    customizationEvidenceCapReason: '',
   };
   const listDirs = context.listDirs ?? (() => []);
   const readJsonl = context.readJsonl ?? (() => []);
@@ -369,6 +370,7 @@ export function customizationEvidenceFromDebugLogs(
   for (const [sessionIndex, sessionDir] of sessionDirs.entries()) {
     if (Date.now() - startedAt > maxElapsedMs) {
       cappedReason = `stopped after ${Math.round(maxElapsedMs / 1000)}s`;
+      diagnostics.customizationEvidenceCapReason = cappedReason;
       diagnostics.warnings?.push?.(
         `Customization evidence scan for ${workspace || workspaceDir || debugRoot} ${cappedReason}.`,
       );
@@ -415,6 +417,7 @@ export function customizationEvidenceFromDebugLogs(
     for (const [index, event] of main.entries()) {
       if (diagnostics.customizationEvidenceModelCalls >= maxModelCalls) {
         cappedReason = `limited to ${maxModelCalls} model calls`;
+        diagnostics.customizationEvidenceCapReason = cappedReason;
         diagnostics.warnings?.push?.(
           `Customization evidence scan for ${workspace || workspaceDir || debugRoot} ${cappedReason}.`,
         );
