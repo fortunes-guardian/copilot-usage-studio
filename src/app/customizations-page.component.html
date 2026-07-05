@@ -12,9 +12,8 @@
       <div>
         <p class="scan-summary-line">
           <strong>{{ currentWorkspaceLabel() }}</strong>
-          <span>{{ summary().total | number }} customization{{ summary().total === 1 ? '' : 's' }}</span>
-          <span>{{ evidenceStateLabel() }}</span>
-          <span>{{ evidenceMetricText() }}</span>
+          <span>{{ customizationFileCountLabel() }}</span>
+          <span>{{ requestTextCountLabel() }}</span>
         </p>
         <p>{{ evidenceResultText() }}</p>
         @if (isEvidenceScanActive()) {

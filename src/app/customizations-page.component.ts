@@ -209,9 +209,15 @@ export class CustomizationsPageComponent {
     return 'Current VS Code workspace';
   }
 
-  protected evidenceStateLabel(): string {
+  protected customizationFileCountLabel(): string {
+    const total = this.summary().total;
+    return `${total.toLocaleString()} customization file${total === 1 ? '' : 's'}`;
+  }
+
+  protected requestTextCountLabel(): string {
+    const evidence = this.customizationEvidenceSummary();
     if (this.isEvidenceScanActive()) {
-      return 'Checking now';
+      return 'Checking recent requests';
     }
     if (this.refreshState === 'error') {
       return 'Scan failed';
@@ -219,10 +225,13 @@ export class CustomizationsPageComponent {
     if (this.refreshMessage?.toLowerCase().includes('stopped')) {
       return 'Scan stopped';
     }
-    if (this.customizationEvidenceSummary().hasScannedEvidence) {
-      return this.customizationEvidenceSummary().sent > 0 ? 'Usage evidence found' : 'No usage evidence found';
+    if (!evidence.hasScannedEvidence) {
+      return 'Not checked yet';
     }
-    return 'Not checked yet';
+    const sent = evidence.sent;
+    return sent
+      ? `${sent.toLocaleString()} file${sent === 1 ? '' : 's'} with request text`
+      : 'No request text found';
   }
 
   protected evidenceResultText(): string {
@@ -238,8 +247,9 @@ export class CustomizationsPageComponent {
     if (this.customizationEvidenceSummary().hasScannedEvidence) {
       const sent = this.customizationEvidenceSummary().sent;
       const sessions = this.evidenceSessionCount();
+      const matches = this.evidenceMatchCount();
       return sent
-        ? `${sent.toLocaleString()} customization${sent === 1 ? '' : 's'} had file text found in recent Copilot requests across ${sessions.toLocaleString()} session${sessions === 1 ? '' : 's'}.`
+        ? `${matches.toLocaleString()} text match${matches === 1 ? '' : 'es'} across ${sessions.toLocaleString()} Copilot session${sessions === 1 ? '' : 's'}.`
         : `Checked recent Copilot requests. No customization file text was found.`;
     }
     return 'Run Find usage evidence to check whether these files appeared inside recent Copilot model requests.';
