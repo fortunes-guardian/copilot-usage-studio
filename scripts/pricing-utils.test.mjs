@@ -21,6 +21,12 @@ test('normalizes raw VS Code model ids to GitHub pricing rows', () => {
   assert.equal(modelKey('copilot/Claude Sonnet 4.6'), 'claude sonnet 4 6');
   assert.equal(normalizeModel('copilot/claude-sonnet-4.6', pricing), 'Claude Sonnet 4.6');
   assert.equal(normalizeModel('gpt-5.4', pricing), 'GPT-5.4');
+  assert.equal(normalizeModel('claude-sonnet-5', pricing), 'Claude Sonnet 5');
+  assert.equal(normalizeModel('kimi-k2.7-code', pricing), 'Kimi K2.7 Code');
+  assert.equal(
+    normalizeModel('copilot/claude-opus-4.8-fast', pricing),
+    'Claude Opus 4.8 (fast mode)',
+  );
 });
 
 test('keeps unknown model labels but prices them with the explicit fallback row', () => {

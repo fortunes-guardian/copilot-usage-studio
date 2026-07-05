@@ -11,9 +11,9 @@ Reference sample used for this pass:
 Latest schema drift check:
 
 ```text
-2026-06-13
+2026-07-05
 %APPDATA%\Code\User\workspaceStorage\<workspace-id>\GitHub.copilot-chat\debug-logs\<session-id>
-VS Code 1.124.2, GitHub Copilot Chat 0.52.0
+VS Code 1.127.0, GitHub Copilot Chat 0.55.0
 ```
 
 The schema is observed, not guaranteed by a published VS Code API. Treat it as a local data contract that must be verified with fixtures as VS Code Copilot changes.
@@ -235,7 +235,7 @@ The 2026-05-30 sample includes a rich `models.json` file. It is an array of mode
 
 Boundary: `models.json` is VS Code/Copilot model metadata, not the authoritative GitHub billing table. It can improve context-window and capability explanations, but pricing should continue to come from source `copilotUsageNanoAiu` when available and the app's imported GitHub pricing table as the explanation/fallback layer.
 
-The model catalogue is volatile. Between the 2026-06-05 and 2026-06-13 samples it added `gpt-5.4-mini-free-auto` and `mai-code-1-flash-picker`, removed `gpt-5.2-codex`, changed fallback flags, and zeroed several legacy/internal token-price rows. Those changes are useful for compatibility audits, but they are not evidence that a model was used in a session or that a zero row means free user billing.
+The model catalogue is volatile. Between the 2026-06-05 and 2026-06-13 samples it added `gpt-5.4-mini-free-auto` and `mai-code-1-flash-picker`, removed `gpt-5.2-codex`, changed fallback flags, and zeroed several legacy/internal token-price rows. The 2026-07-05 audit against VS Code 1.127.0 / Copilot Chat 0.55.0 observed new catalogue model ids including `claude-sonnet-5`, `claude-opus-4.8-fast`, and `kimi-k2.7-code`, plus cache-write price fields inside catalogue token-price metadata. Those changes are useful for compatibility audits, but they are not evidence that a model was used in a session or that a catalogue row replaces source usage or the committed GitHub Docs pricing snapshot.
 
 ## Tool And MCP Evidence
 

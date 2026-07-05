@@ -68,6 +68,7 @@ This file is the first stop for AI agents working on Copilot Usage Studio. It gi
 - `docs/debug-log-schema.md`: observed VS Code Agent Debug Log schema.
 - `docs/pricing.md`: pricing and GitHub AI-credit calculations.
 - `docs/vscode-extension.md`: VS Code extension host and packaging.
+- `.agents/skills/copilot-schema-pricing-update/SKILL.md`: repeatable schema/pricing update workflow.
 
 ## UX Standards
 

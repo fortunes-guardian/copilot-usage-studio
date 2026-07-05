@@ -9,7 +9,7 @@ Use this file for short-lived current-state context. Keep durable product rules 
 - Core app pages exist: Usage, Sessions, Memory, Customizations preview, Compare, Insights, and Prices.
 - Scanner imports local VS Code Copilot sessions, debug logs, chat snapshots, memories, plans, and customization evidence.
 - Local runtime supports refresh, status, cancellation, logs, cached data, and static app delivery.
-- Current branch adds documentation only.
+- Current branch includes extension-first release polish, pricing/schema maintenance, and documentation updates.
 
 ## Current Priorities
 
@@ -17,6 +17,7 @@ Use this file for short-lived current-state context. Keep durable product rules 
 - Keep global scan and Customizations evidence scan clearly separated in UI and runtime state.
 - Keep Customizations preview conservative, settings-first, and understandable.
 - Preserve schema drift resilience for VS Code Agent Debug Logs.
+- Track the latest observed schema audit: VS Code 1.127.0 / Copilot Chat 0.55.0 produced no breaking findings, but the one-session probe still reported warning-level missing fields that should not be baseline-accepted without broader probes.
 - Keep scanner modules decomposed enough that discovery, evidence, pricing, memory, and parsing can be reasoned about independently.
 
 ## Technical Debt

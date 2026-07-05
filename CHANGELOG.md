@@ -27,6 +27,8 @@ All notable changes to Copilot Usage Studio are recorded here.
 - Preserve existing Customizations evidence when a normal top-right Refresh runs a quick scan that skips customization indexing.
 - Mark Customizations as a preview surface in both docs and the app navigation.
 - Purge public roadmap links from README and release-facing docs.
+- Refresh GitHub Copilot model pricing from the July 5, 2026 GitHub Docs table, including Claude Sonnet 5, Claude Opus 4.8 fast mode, Kimi K2.7 Code, and updated model statuses.
+- Add raw model-id alias support so newly observed VS Code ids can map to the matching GitHub pricing row without hidden fallback pricing.
 
 ## 0.1.0 - 2026-06-14
 
