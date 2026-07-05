@@ -84,7 +84,7 @@
       <select [ngModel]="statusFilter()" (ngModelChange)="setStatusFilter($event)">
         <option value="all">All evidence</option>
         <option value="sent">Text match found</option>
-        <option value="listed">Name/path only</option>
+        <option value="listed">Read by Copilot</option>
         <option value="discovered">Discovered only</option>
         <option value="not_seen">Not seen</option>
       </select>
@@ -321,7 +321,7 @@
                     </div>
                   } @else {
                     <div class="weak-evidence-note">
-                      <strong>Name/path only</strong>
+                      <strong>Read or referenced</strong>
                       <p>{{ weakEvidenceSummary(group) }}</p>
                     </div>
                   }

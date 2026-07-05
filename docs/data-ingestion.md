@@ -146,7 +146,7 @@ Each customization stores metadata only: title, name, description, `applyTo`, tr
 Evidence levels:
 
 - `sent`: distinctive content chunks from the customization were matched inside a model request payload or a referenced request side file.
-- `listed`: the model request listed the customization by path, filename, title, description, trigger, or `applyTo`, but full content was not matched.
+- `listed`: local logs show Copilot read, opened, or referenced the customization file, but distinctive file text was not found in visible model-request material.
 - `discovered`: VS Code setup/discovery events mentioned the customization, but request payload evidence was not found.
 - `not_seen`: the file exists locally, but imported sessions did not contain discovery or request evidence for it.
 

@@ -176,7 +176,7 @@ export class CustomizationsPageComponent {
       notProved,
       hasScannedEvidence,
       label: hasScannedEvidence
-        ? `${sent.toLocaleString()} text-matched · ${notProved.toLocaleString()} name/path only`
+        ? `${sent.toLocaleString()} text-matched · ${notProved.toLocaleString()} read/referenced`
         : 'Detailed evidence skipped',
     };
   });
@@ -428,7 +428,7 @@ export class CustomizationsPageComponent {
   protected statusLabel(status: CopilotCustomizationEvidenceStatus): string {
     return {
       sent: 'Text match found',
-      listed: 'Name/path only',
+      listed: 'Read by Copilot',
       discovered: 'Discovered',
       not_seen: 'Not seen',
     }[status];
@@ -437,7 +437,7 @@ export class CustomizationsPageComponent {
   protected statusHeadline(status: CopilotCustomizationEvidenceStatus): string {
     return {
       sent: 'File text appeared in a model request',
-      listed: 'Only name/path appeared',
+      listed: 'Copilot read or referenced this file',
       discovered: 'Found locally, not seen in a request',
       not_seen: 'No evidence in imported sessions',
     }[status];
@@ -446,9 +446,9 @@ export class CustomizationsPageComponent {
   protected statusHelp(status: CopilotCustomizationEvidenceStatus): string {
     return {
       sent: 'We found distinctive text from this customization inside local VS Code request logs. This is strong local evidence, but it only counts text visible in those logs.',
-      listed: 'A request mentioned the file name or label, but local logs did not show distinctive text from this customization.',
+      listed: 'Local logs show Copilot read or referenced this file, but did not show distinctive file text inside the model request.',
       discovered: 'The file exists in a known customization location, but imported model requests did not show a text match.',
-      not_seen: 'The file exists locally, but imported sessions do not show it being discovered, mentioned, or text-matched.',
+      not_seen: 'The file exists locally, but imported sessions do not show local evidence for it yet.',
     }[status];
   }
 
@@ -470,8 +470,8 @@ export class CustomizationsPageComponent {
     }
     if (group.bestStatus === 'listed') {
       return calls
-        ? `No file text found; only names/paths appeared`
-        : 'No file text found';
+        ? `Read or referenced, but no file text found`
+        : 'Read or referenced';
     }
     if (group.bestStatus === 'discovered') {
       return 'Found during setup or discovery';
@@ -489,6 +489,7 @@ export class CustomizationsPageComponent {
     return {
       inputMessages: 'Complete request',
       userRequest: 'User prompt',
+      copilotFileRead: 'File read',
     }[source] ?? source;
   }
 
@@ -505,6 +506,9 @@ export class CustomizationsPageComponent {
     if (source.raw === 'userRequest') {
       return 'Matched in the user-facing prompt/request material for this model call.';
     }
+    if (source.raw === 'copilotFileRead') {
+      return 'VS Code logs show Copilot read this customization file. This is useful evidence, but it does not prove the file text was sent to the model.';
+    }
     return 'Matched in this VS Code debug-log source. Open the technical proof section if you need the raw field name.';
   }
 
@@ -518,7 +522,7 @@ export class CustomizationsPageComponent {
       return group.bestStatus === 'sent' ? 'Text match found' : this.statusLabel(group.bestStatus);
     }
     if (group.bestStatus !== 'sent') {
-      return 'Name/path only';
+      return 'Read or referenced';
     }
     const sentCalls = this.sentModelCallCount(group);
     const label = sentCalls === 1 ? 'request' : 'requests';
@@ -612,7 +616,7 @@ export class CustomizationsPageComponent {
       return `${target}: file text found`;
     }
     if (call.status === 'listed') {
-      return `${target}: name/path only`;
+      return `${target}: read or referenced`;
     }
     return `${target}: ${this.statusLabel(call.status).toLowerCase()}`;
   }
@@ -622,7 +626,7 @@ export class CustomizationsPageComponent {
       return `We found actual text from this customization in ${this.sourcePhrase(call.sources)}.`;
     }
     if (call.status === 'listed') {
-      return 'Only the file name/path or one of its labels was seen. This is weak evidence, not a text match.';
+      return 'Copilot read or referenced this file, but local logs did not show distinctive file text inside this model request.';
     }
     return 'No request payload content was verified for this event.';
   }
@@ -646,7 +650,7 @@ export class CustomizationsPageComponent {
       return `Text from this file was found in ${calls.toLocaleString()} ${label}. Use proof details only when you need raw VS Code log fields.`;
     }
     if (group.bestStatus === 'listed') {
-      return 'This session mentioned the file name or path, but the local logs did not show the file text. Treat this as a reference, not proof that the rule body reached the model.';
+      return 'This session shows Copilot read or referenced the file, but local logs did not show distinctive file text in model-request material.';
     }
     if (group.bestStatus === 'discovered') {
       return 'VS Code setup/discovery mentioned this file, but imported model requests did not show file text.';

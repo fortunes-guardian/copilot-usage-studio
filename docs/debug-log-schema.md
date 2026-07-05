@@ -333,7 +333,7 @@ Top-level `customizations` records local Copilot customization files and request
 The evidence ladder is intentionally conservative:
 
 - `sent`: a distinctive content chunk from the file was found in `llm_request.attrs.inputMessages`, `llm_request.attrs.userRequest`, or a referenced request side file such as `system_prompt_0.json` or `tools_0.json`.
-- `listed`: metadata such as filename, path, description, trigger, or `applyTo` appeared in request payload evidence, but content chunks did not.
+- `listed`: local logs show the customization was read, opened, or referenced, but distinctive file text was not found in visible model-request material.
 - `discovered`: setup/discovery events mentioned the customization, but no request payload match was found.
 - `not_seen`: no imported evidence matched the file.
 

@@ -58,11 +58,11 @@ It reads full file content during the scan to build fingerprints, but it does no
 
 `Text match found`
 
-Distinctive content from the customization file was found inside a visible VS Code model request payload or referenced request side file. Internally this is the strongest evidence state, but the UI avoids phrasing it as absolute proof of all Copilot behavior.
+Distinctive content from the customization file was found inside a visible VS Code model request payload or referenced request side file, after the same session showed local evidence that Copilot read or opened that file. Internally this is the strongest evidence state, but the UI avoids phrasing it as absolute proof of all Copilot behavior.
 
-`Name/path only`
+`Read by Copilot`
 
-The request listed the customization by filename, path, title, description, trigger, or `applyTo`, but the scanner did not match full content.
+Local logs show Copilot read, opened, reviewed, or referenced the customization file, but the scanner did not match distinctive file content inside visible model-request material.
 
 `Discovered only`
 
@@ -78,7 +78,7 @@ The app can say:
 
 - this file exists locally
 - VS Code discovered it
-- the model request listed it
+- Copilot read, opened, or referenced it in local logs
 - distinctive file content appeared in visible request evidence
 - which session/request showed that evidence
 
@@ -94,6 +94,12 @@ The app must not say:
 
 Strong evidence is normalized exact text matching, not semantic matching.
 
+The scanner uses a conservative evidence chain:
+
+1. Discover trusted customization files from VS Code settings/defaults, conventional documented locations, or exact debug-log references.
+2. Look for local debug-log evidence that Copilot read, opened, reviewed, or referenced that file in a session.
+3. Only after that session-level read/reference evidence exists, search visible model-request material for distinctive text from the file.
+
 The scanner builds distinctive snippets from customization file content and searches visible VS Code Agent Debug Log request material:
 
 - `inputMessages`
@@ -101,7 +107,9 @@ The scanner builds distinctive snippets from customization file content and sear
 - request side files such as `systemPromptFile`
 - request side files such as `toolsFile`
 
-Weak evidence uses file path, filename, title, description, `applyTo`, and triggers. A weak match means the request named or listed a customization, but the file body was not text-matched.
+Weak evidence is file-read/reference evidence without a distinctive body match. It means local logs made the file visible to Copilot, but the file body was not proven inside the model request.
+
+Very short or generic snippets are ignored for strong proof. For example, a common code phrase can appear naturally in repository code or prompts, so the scanner requires distinctive customization text rather than treating every small string match as proof.
 
 The evidence scan currently uses VS Code Agent Debug Logs and request side files. It does not treat fallback chat snapshots as strong customization evidence.
 

@@ -614,6 +614,9 @@ test('indexes Copilot customizations and classifies request evidence', async () 
     );
     writeJsonl(join(sessionDir, 'main.jsonl'), [
       event(1, 'user_message', 'user message', { attrs: { content: 'Review the backend.' } }),
+      event(1.5, 'tool_call', 'read_file', {
+        attrs: { details: `Read ${join(instructionsDir, 'backend.instructions.md')}` },
+      }),
       event(2, 'llm_request', 'panel/editAgent', {
         attrs: {
           model: 'gpt-5.4',
@@ -724,6 +727,15 @@ test('strict VS Code customization discovery scans only API-provided locations',
       'utf8',
     );
     writeJsonl(join(sessionDir, 'main.jsonl'), [
+      event(0.5, 'tool_call', 'read_file', {
+        attrs: {
+          details: [
+            `Read ${join(allowedInstructionsDir, 'backend.instructions.md')}`,
+            `Read ${join(allowedInstructionsDir, 'plain-backend-rule.md')}`,
+            `Read ${join(userSkillsDir, 'SKILL.md')}`,
+          ].join('\n'),
+        },
+      }),
       event(1, 'llm_request', 'panel/editAgent', {
         attrs: {
           model: 'gpt-5.4',
@@ -812,6 +824,9 @@ test('strict VS Code customization discovery trusts explicit file locations with
       'utf8',
     );
     writeJsonl(join(sessionDir, 'main.jsonl'), [
+      event(0.5, 'tool_call', 'read_file', {
+        attrs: { details: `Read ${explicitInstructionFile}` },
+      }),
       event(1, 'llm_request', 'panel/editAgent', {
         attrs: {
           model: 'gpt-5.4',
@@ -902,6 +917,9 @@ test('strict VS Code customization discovery imports copilot instructions and se
       'utf8',
     );
     writeJsonl(join(sessionDir, 'main.jsonl'), [
+      event(0.5, 'tool_call', 'read_file', {
+        attrs: { details: `Read ${instructionFile}` },
+      }),
       event(1, 'llm_request', 'panel/editAgent', {
         attrs: {
           model: 'gpt-5.4',
@@ -949,7 +967,7 @@ test('strict VS Code customization discovery imports copilot instructions and se
     assert.equal(instruction?.matches.some((match) => match.source === 'system_prompt_0.json'), true);
     assert.equal(
       instruction?.matches.some(
-        (match) => match.status === 'listed' && match.source === 'inputMessages',
+        (match) => match.status === 'listed' && match.source === 'copilotFileRead',
       ),
       true,
     );
@@ -1161,6 +1179,20 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
           details: `Resolved 1 skills in 10ms | loaded: [pending-git] | folders: [${dirname(discoveredSkillFile)}]`,
         },
       }),
+      event(0.5, 'tool_call', 'read_file', {
+        attrs: {
+          details: [
+            `Read ${join(repoRoot, '.github', 'copilot-instructions.md')}`,
+            `Read ${externalSkillFile}`,
+            `Read ${discoveredSkillFile}`,
+            `Read ${join(repoRoot, '.github', 'agents', 'planner.agent.md')}`,
+            `Read ${configuredInstructionFile}`,
+            `Read ${configuredSkillFile}`,
+            `Read ${configuredAgentFile}`,
+            `Read ${systemSkillFile}`,
+          ].join('\n'),
+        },
+      }),
       event(1, 'llm_request', 'panel/editAgent', {
         attrs: {
           model: 'gpt-5.4',
@@ -1274,6 +1306,9 @@ test('indexes VS Code user-level customizations and matches request side-file ev
       'utf8',
     );
     writeJsonl(join(sessionDir, 'main.jsonl'), [
+      event(0.5, 'tool_call', 'read_file', {
+        attrs: { details: `Read ${promptFile}` },
+      }),
       event(1, 'llm_request', 'panel/editAgent', {
         attrs: {
           model: 'gpt-5.4',

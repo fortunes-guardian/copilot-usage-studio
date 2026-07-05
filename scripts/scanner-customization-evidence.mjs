@@ -23,19 +23,37 @@ function normalizeMatchText(value) {
     .trim();
 }
 
+function normalizedWordCount(value) {
+  return normalizeMatchText(value).split(/\s+/).filter((word) => /[a-z]{2,}/.test(word)).length;
+}
+
+function isDistinctiveCustomizationChunk(chunk) {
+  const normalized = normalizeMatchText(chunk);
+  if (normalized.length < 56 || !/[a-z]/.test(normalized)) {
+    return false;
+  }
+  if (normalizedWordCount(normalized) < 8) {
+    return false;
+  }
+  if (/^(applyto|description|trigger|name|title)\s*[:=]/i.test(normalized)) {
+    return false;
+  }
+  return true;
+}
+
 function customizationChunks(content) {
   const lineChunks = String(content ?? '')
     .split(/\r?\n/)
     .map(normalizeMatchText)
-    .filter((chunk) => chunk.length >= 32 && /[a-z]/.test(chunk));
+    .filter(isDistinctiveCustomizationChunk);
   const normalized = normalizeMatchText(content);
   const chunks = normalized
     .split(/\n{2,}|(?<=\.)\s+/)
     .map((chunk) => chunk.trim())
-    .filter((chunk) => chunk.length >= 48 && /[a-z]/.test(chunk))
+    .filter(isDistinctiveCustomizationChunk)
     .sort((a, b) => b.length - a.length);
 
-  if (normalized.length >= 80) {
+  if (isDistinctiveCustomizationChunk(normalized)) {
     chunks.unshift(normalized.slice(0, Math.min(normalized.length, 420)));
   }
 
@@ -125,6 +143,10 @@ function matchedChunkPreview(chunks) {
     .map((chunk) => chunk.length > 220 ? `${chunk.slice(0, 217)}...` : chunk);
 }
 
+function hasStrongContentMatch(chunks) {
+  return chunks.length > 0;
+}
+
 function extractPayloadText(value, depth = 0) {
   if (value === null || value === undefined || depth > 8) {
     return '';
@@ -202,12 +224,39 @@ function customizationTerms(customization) {
     basename(customization.sourcePath),
     customization.name,
     customization.title,
-    customization.description,
-    ...customization.applyTo,
-    ...customization.triggers,
   ]
     .map(normalizeMatchText)
-    .filter((value) => value.length >= 4);
+    .filter((value) => value.length >= 8);
+}
+
+function basenameCounts(customizations) {
+  const counts = new Map();
+  for (const customization of customizations) {
+    const name = normalizeMatchText(basename(customization.sourcePath));
+    if (!name) {
+      continue;
+    }
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function readTermsForCustomization(customization, nameCounts) {
+  const sourcePath = normalizeMatchText(customization.sourcePath);
+  const relativePath = normalizeMatchText(customization.relativePath);
+  const fileName = normalizeMatchText(basename(customization.sourcePath));
+  const terms = [sourcePath, relativePath].filter((term) => term.length >= 8);
+  if (fileName.length >= 8 && nameCounts.get(fileName) === 1) {
+    terms.push(fileName);
+  }
+  return [...new Set(terms)];
+}
+
+function looksLikeFileReadEvidence(text) {
+  return (
+    /(?:\bread\b|read_file|reviewed|opened|summaris|summariz|loaded)/i.test(text) &&
+    /\.(?:md|markdown|json|jsonc|ya?ml)\b/i.test(text)
+  );
 }
 
 function evidenceStatus(rank) {
@@ -292,6 +341,7 @@ export function customizationEvidenceFromDebugLogs(
     });
   }
 
+  const fileNameCounts = basenameCounts(customizations);
   const matchState = new Map(
     customizations.map((customization) => [
       customization.id,
@@ -300,6 +350,8 @@ export function customizationEvidenceFromDebugLogs(
         matches: [],
         chunks: customizationChunks(customization._content),
         terms: customizationTerms(customization),
+        readTerms: readTermsForCustomization(customization, fileNameCounts),
+        readSessions: new Set(),
       },
     ]),
   );
@@ -374,6 +426,32 @@ export function customizationEvidenceFromDebugLogs(
       if (event.type === 'llm_request') {
         diagnostics.customizationEvidenceModelCalls += 1;
         diagnostics.customizationEvidenceTextParts += requestParts.filter((part) => part.normalized).length;
+      } else {
+        const readEvidenceText = normalizeMatchText(
+          `${event.type ?? ''} ${event.name ?? ''} ${extractPayloadText(event.attrs)}`,
+        );
+        if (looksLikeFileReadEvidence(readEvidenceText)) {
+          for (const state of matchState.values()) {
+            if (!state.readTerms.some((term) => readEvidenceText.includes(term))) {
+              continue;
+            }
+            if (!state.readSessions.has(sessionId)) {
+              state.readSessions.add(sessionId);
+              state.rank = Math.max(state.rank, 2);
+              recordCustomizationMatch(state, {
+                status: 'listed',
+                sessionId,
+                workspace,
+                timestamp: timestampForEvent(event),
+                eventIndex: index,
+                modelCallNumber: 0,
+                source: 'copilotFileRead',
+                matchedChunks: 0,
+                matchedCharacters: 0,
+              });
+            }
+          }
+        }
       }
       const matchedChunksForParts = new Map();
       for (const customization of customizations) {
@@ -383,6 +461,9 @@ export function customizationEvidenceFromDebugLogs(
         }
 
         if (event.type === 'llm_request') {
+          if (!state.readSessions.has(sessionId)) {
+            continue;
+          }
           for (const part of requestParts) {
             if (part.normalized.length > maxPartChars) {
               part.normalized = part.normalized.slice(0, maxPartChars);
@@ -393,12 +474,11 @@ export function customizationEvidenceFromDebugLogs(
               matchedChunksForParts.set(part.source, allPartMatches);
             }
             const matchedChunks = allPartMatches.get(customization.id) ?? [];
-            const listed = !matchedChunks.length && state.terms.some((term) => part.normalized.includes(term));
-            if (!matchedChunks.length && !listed) {
+            if (!matchedChunks.length || !hasStrongContentMatch(matchedChunks)) {
               continue;
             }
 
-            const rank = matchedChunks.length ? 3 : 2;
+            const rank = 3;
             if (rank === 3 && state.rank < 3) {
               diagnostics.customizationEvidenceMatchedCustomizations += 1;
             }
