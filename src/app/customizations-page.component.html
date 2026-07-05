@@ -279,7 +279,6 @@
                             <strong>{{ callEvidenceTitle(call) }}</strong>
                             <p>{{ callEvidenceSummary(call) }}</p>
                             @if (call.matchedPreview.length) {
-                              <span class="matched-text-label">Matched text</span>
                               <blockquote>
                                 {{ call.matchedPreview[0] }}
                               </blockquote>
@@ -298,17 +297,6 @@
                                 </ul>
                               </div>
                             </details>
-                          </div>
-                          <div class="call-event-sources">
-                            @for (source of evidenceSources(call); track source.raw + source.label) {
-                              <span>
-                                {{ source.label }}
-                                <app-help-popover
-                                  [text]="sourceHelp(source)"
-                                  [label]="'Explain ' + source.label"
-                                ></app-help-popover>
-                              </span>
-                            }
                           </div>
                         </article>
                       }

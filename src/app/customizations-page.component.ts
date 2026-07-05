@@ -649,7 +649,7 @@ export class CustomizationsPageComponent {
 
   protected callEvidenceSummary(call: CustomizationCallEvidence): string {
     if (call.status === 'sent') {
-      return `We found actual text from this customization in ${this.sourcePhrase(call.sources)}.`;
+      return 'Distinctive file text appeared in this Copilot request.';
     }
     if (call.status === 'listed') {
       return 'Copilot read or referenced this file, but local logs did not show distinctive file text inside this model request.';
@@ -661,7 +661,7 @@ export class CustomizationsPageComponent {
     if (group.bestStatus === 'sent') {
       const calls = this.sentModelCallCount(group);
       const label = calls === 1 ? 'model request' : 'model requests';
-      return `Text from this file was found in ${calls.toLocaleString()} ${label}. This proves request visibility, not whether the text came from automatic customization loading or manual file context.`;
+      return `File text appeared in ${calls.toLocaleString()} Copilot ${label}. This confirms the text was visible in local request logs.`;
     }
     if (group.bestStatus === 'listed') {
       return 'Copilot read or referenced this file in this session, but imported model requests did not show distinctive file text.';
@@ -688,6 +688,10 @@ export class CustomizationsPageComponent {
     const parts = [];
     if (call.callNumber) {
       parts.push(`request #${call.callNumber}`);
+    }
+    const sourceText = this.sourcePhrase(call.sources);
+    if (sourceText) {
+      parts.push(sourceText);
     }
     if (call.matchedCharacters) {
       parts.push(`${call.matchedCharacters.toLocaleString()} characters matched`);
