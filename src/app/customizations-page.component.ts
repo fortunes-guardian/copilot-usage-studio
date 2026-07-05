@@ -219,12 +219,6 @@ export class CustomizationsPageComponent {
     if (this.refreshMessage?.toLowerCase().includes('stopped')) {
       return 'Scan stopped';
     }
-    if (this.customizationScanTimedOut()) {
-      return 'Rerun recommended';
-    }
-    if (this.customizationScanCapped()) {
-      return 'Rerun recommended';
-    }
     if (this.customizationEvidenceSummary().hasScannedEvidence) {
       return this.customizationEvidenceSummary().sent > 0 ? 'Usage evidence found' : 'No usage evidence found';
     }
@@ -240,12 +234,6 @@ export class CustomizationsPageComponent {
     }
     if (this.refreshMessage?.toLowerCase().includes('stopped')) {
       return 'Scan stopped. Existing customization data was kept.';
-    }
-    if (this.customizationScanTimedOut()) {
-      return 'This evidence came from an older capped scan. Run Find usage evidence again to scan the workspace fully.';
-    }
-    if (this.customizationScanCapped()) {
-      return 'This evidence came from an older capped scan. Run Find usage evidence again to scan the workspace fully.';
     }
     if (this.customizationEvidenceSummary().hasScannedEvidence) {
       const sent = this.customizationEvidenceSummary().sent;
@@ -364,29 +352,6 @@ export class CustomizationsPageComponent {
     return this.customizationsInput().reduce(
       (sum, customization) => sum + customization.matches.filter((match) => match.status === 'sent').length,
       0,
-    );
-  }
-
-  private customizationScanWarnings(): string[] {
-    return (this.ingestionInput()?.warnings ?? []).filter((warning) =>
-      String(warning).toLowerCase().includes('customization evidence scan'),
-    );
-  }
-
-  private customizationScanCapReason(): string {
-    return String(this.ingestionInput()?.customizationEvidenceCapReason ?? '').trim();
-  }
-
-  private customizationScanTimedOut(): boolean {
-    return (
-      this.customizationScanCapReason().toLowerCase().includes('stopped after') ||
-      this.customizationScanWarnings().some((warning) => warning.toLowerCase().includes('stopped after'))
-    );
-  }
-
-  private customizationScanCapped(): boolean {
-    return Boolean(this.customizationScanCapReason()) || this.customizationScanWarnings().some((warning) =>
-      /limited to|configured limit|stopped after/i.test(warning),
     );
   }
 
