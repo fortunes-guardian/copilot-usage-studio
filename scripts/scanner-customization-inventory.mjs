@@ -8,6 +8,11 @@ import { userDirForRoot } from './scanner-traversal.mjs';
 const customizationFileLimit = 1000;
 const customizationFileSizeLimit = 1024 * 1024;
 
+function stablePathKey(file) {
+  const resolved = resolve(file);
+  return platform() === 'win32' ? resolved.toLowerCase() : resolved;
+}
+
 function safeJson(text) {
   try {
     return JSON.parse(text);
@@ -326,7 +331,7 @@ function parseSimpleFrontmatter(content) {
             .filter(Boolean);
   
       return {
-        id: createHash('sha256').update(resolve(file)).digest('hex').slice(0, 24),
+        id: createHash('sha256').update(stablePathKey(file)).digest('hex').slice(0, 24),
         kind,
         title: frontmatter.title ? markdownTitle(content, file) : titleFromFileName(file),
         name: String(frontmatter.id ?? basename(file, extname(file))).trim(),
@@ -694,12 +699,12 @@ function parseSimpleFrontmatter(content) {
       diagnostics().scannedCustomizationRoots += 1;
       recordCustomizationLocation(entry.path, customizationLocationKind(entry.source));
       for (const file of expandedFiles) {
-        files.set(resolve(file.path), { base: file.base, kind: entry.kind });
+        files.set(stablePathKey(file.path), { path: resolve(file.path), base: file.base, kind: entry.kind });
       }
     }
   
-    return [...files.entries()]
-      .map(([file, entry]) => customizationFromFile(file, entry.base, workspace, entry.kind))
+    return [...files.values()]
+      .map((entry) => customizationFromFile(entry.path, entry.base, workspace, entry.kind))
       .filter(Boolean);
   }
 
@@ -892,12 +897,12 @@ function parseSimpleFrontmatter(content) {
         customizationFileLimit,
         { label: 'customization', maxDepth: 5, maxDirs: 300 },
       )) {
-        files.set(resolve(file), folder);
+        files.set(stablePathKey(file), { path: resolve(file), base: folder });
       }
     }
   
-    return [...files.entries()]
-      .map(([file, base]) => customizationFromFile(file, base, workspace))
+    return [...files.values()]
+      .map((entry) => customizationFromFile(entry.path, entry.base, workspace))
       .filter(Boolean);
   }
   
@@ -930,13 +935,13 @@ function parseSimpleFrontmatter(content) {
           }
           const base = bases.find((candidateBase) => containedByBase(candidate, candidateBase)) ?? dirname(candidate);
           recordCustomizationLocation(candidate, 'debug-reference');
-          files.set(candidate, base);
+          files.set(stablePathKey(candidate), { path: resolve(candidate), base });
         }
       }
     }
   
-    return [...files.entries()]
-      .map(([file, base]) => customizationFromFile(file, base, workspace))
+    return [...files.values()]
+      .map((entry) => customizationFromFile(entry.path, entry.base, workspace))
       .filter(Boolean);
   }
   
@@ -961,14 +966,14 @@ function parseSimpleFrontmatter(content) {
         }
     
         for (const file of [...directFiles, ...customizationFilesFromKnownRoots(base)]) {
-          files.set(resolve(file), base);
+          files.set(stablePathKey(file), { path: resolve(file), base });
         }
       }
     }
   
     const workspace = workspaceName(workspaceDir);
-    const knownCustomizations = [...files.entries()]
-      .map(([file, base]) => customizationFromFile(file, base, workspace))
+    const knownCustomizations = [...files.values()]
+      .map((entry) => customizationFromFile(entry.path, entry.base, workspace))
       .filter(Boolean);
   
     return {
