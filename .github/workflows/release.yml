@@ -118,10 +118,6 @@ jobs:
           fi
           echo "Microsoft Entra Marketplace identity verified."
 
-      - name: Publish to npm
-        if: steps.npm-state.outputs.already-published != 'true'
-        run: npm publish --access public
-
       - name: Publish VS Code extension to Marketplace
         shell: bash
         run: |
@@ -130,6 +126,10 @@ jobs:
             --packagePath "$vsix_asset" \
             --skip-duplicate \
             --azure-credential
+
+      - name: Publish to npm
+        if: steps.npm-state.outputs.already-published != 'true'
+        run: npm publish --access public
 
       - name: Generate release notes
         run: npm run release:notes -- --tag "$RELEASE_TAG" --out tmp/release-notes.md
