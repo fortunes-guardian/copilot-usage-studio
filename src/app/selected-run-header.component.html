@@ -50,11 +50,11 @@
   <div class="source-callout pricing-fallback-callout">
     <div>
       <span>Pricing assumption</span>
-      <strong>{{ pricingFallbacks.length }} raw model id{{ pricingFallbacks.length === 1 ? '' : 's' }} used fallback pricing</strong>
+      <strong>{{ pricingFallbacks.length }} raw model id{{ pricingFallbacks.length === 1 ? '' : 's' }} missing from the local price table</strong>
       <p>
         @for (fallback of pricingFallbacks; track fallback.model + fallback.pricingModel) {
           <span class="inline-fallback">
-            {{ fallback.model }} priced as {{ fallback.pricingModel }}
+            {{ fallback.model }} estimated with {{ fallback.pricingModel }} pricing
             <app-help-popover
               [text]="pricingFallbackReason(fallback.model, fallback.pricingModel)"
               label="Explain fallback pricing"

@@ -13,14 +13,16 @@ test('serves cached data, refreshes through the scanner, and reports status', as
   const refreshed = sessionData('new-session', '2026-06-13T09:00:00.000Z');
   writeFileSync(fixture.dataFile, JSON.stringify(cached), 'utf8');
   let scans = 0;
+  let lastScanOptions = null;
   const runtime = createLocalRuntime({
     port: 0,
     dataFile: fixture.dataFile,
     seedDataFile: null,
     staticDir: fixture.staticDir,
     scanOnStart: false,
-    scanner: async ({ onProgress }) => {
+    scanner: async ({ onProgress, ...scanOptions }) => {
       scans += 1;
+      lastScanOptions = scanOptions;
       onProgress({
         stage: 'workspace',
         message: 'Scanning fixture workspace.',
@@ -48,6 +50,8 @@ test('serves cached data, refreshes through the scanner, and reports status', as
 
     const refreshResponse = await jsonRequest(`${origin}/api/scan`, { method: 'POST' });
     assert.equal(scans, 1);
+    assert.equal(lastScanOptions.incrementalSince, cached.generatedAt);
+    assert.equal(lastScanOptions.includeCustomizations, false);
     assert.equal(refreshResponse.sessionData.sessions[0].id, 'new-session');
     assert.equal(refreshResponse.status.phase, 'ready');
     assert.equal(refreshResponse.status.scanProgress.stage, 'complete');
@@ -57,7 +61,7 @@ test('serves cached data, refreshes through the scanner, and reports status', as
     assert.equal((await jsonRequest(`${origin}/api/sessions`)).sessions[0].id, 'new-session');
     assert.equal(JSON.parse(readFileSync(fixture.dataFile, 'utf8')).sessions[0].id, 'new-session');
     const logs = await jsonRequest(`${origin}/api/logs`);
-    assert.ok(logs.entries.some((entry) => entry.message.includes('Local data refresh')));
+    assert.ok(logs.entries.some((entry) => entry.message.includes('added or updated')));
     const diagnostics = await jsonRequest(`${origin}/api/diagnostics`);
     assert.equal(diagnostics.status.phase, 'ready');
     assert.equal(diagnostics.workspaceProgress[0].workspace, 'fixture');
@@ -67,6 +71,13 @@ test('serves cached data, refreshes through the scanner, and reports status', as
       includeCustomizations: true,
       sqlite: true,
     });
+    await jsonRequest(`${origin}/api/scan`, {
+      method: 'POST',
+      body: JSON.stringify({ mode: 'full' }),
+    });
+    assert.equal(scans, 2);
+    assert.equal(lastScanOptions.incrementalSince, '');
+    assert.equal(lastScanOptions.includeCustomizations, false);
   } finally {
     await runtime.close();
     rmSync(fixture.root, { recursive: true, force: true });

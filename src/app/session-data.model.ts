@@ -319,6 +319,7 @@ export interface CopilotCustomization {
   sizeBytes: number;
   characterCount: number;
   lineCount: number;
+  contentHash?: string;
   excerpt: string;
   evidenceStatus: CopilotCustomizationEvidenceStatus;
   matches: CopilotCustomizationMatch[];
@@ -346,6 +347,7 @@ export interface SessionData {
     scannedCustomizationLocations?: Array<{ kind: string; path: string }>;
     importedCustomizations?: number;
     customizationEvidenceScannedSessions?: number;
+    customizationEvidenceAnalyzedAt?: string;
     customizationEvidenceModelCalls?: number;
     customizationEvidenceTextParts?: number;
     customizationEvidenceMatchedCustomizations?: number;
@@ -359,6 +361,9 @@ export interface SessionData {
     skippedChatSnapshotsWithoutRequests: number;
     skippedDuplicateChatSnapshots: number;
     importedSessions: number;
+    scanKind?: 'incremental' | 'full';
+    incrementalSince?: string;
+    incrementalSessionsImported?: number;
     cacheTokenAudit?: CacheTokenAudit;
     warnings: string[];
   };

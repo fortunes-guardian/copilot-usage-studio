@@ -1,5 +1,5 @@
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, statSync } from 'node:fs';
+import { basename, join } from 'node:path';
 
 export function parseWorkspace(workspaceDir, options = {}, onProgress = () => {}, dependencies = {}) {
   const {
@@ -64,15 +64,25 @@ export function parseWorkspace(workspaceDir, options = {}, onProgress = () => {}
     });
   };
   const debugRoot = join(workspaceDir, 'GitHub.copilot-chat', 'debug-logs');
-  const debugSessionDirs = listDirs(debugRoot);
-  const chatSessionFiles = listFiles(join(workspaceDir, 'chatSessions'), '.jsonl');
+  const allDebugSessionDirs = listDirs(debugRoot);
+  const allChatSessionFiles = listFiles(join(workspaceDir, 'chatSessions'), '.jsonl');
+  const incrementalSinceMs = timestampMs(options.incrementalSince);
+  const debugSessionDirs = incrementalSinceMs
+    ? allDebugSessionDirs.filter((sessionDir) =>
+      sourceChangedSince(join(sessionDir, 'main.jsonl'), incrementalSinceMs))
+    : allDebugSessionDirs;
+  const chatSessionFiles = incrementalSinceMs
+    ? allChatSessionFiles.filter((file) => sourceChangedSince(file, incrementalSinceMs))
+    : allChatSessionFiles;
   const memoryRoot = join(workspaceDir, 'GitHub.copilot-chat', 'memory-tool', 'memories');
   const hasMemoryRoot = existsSync(memoryRoot);
-  workspaceScan.debugLogFolders = debugSessionDirs.length;
-  workspaceScan.chatSnapshots = chatSessionFiles.length;
+  workspaceScan.debugLogFolders = allDebugSessionDirs.length;
+  workspaceScan.chatSnapshots = allChatSessionFiles.length;
+  workspaceScan.changedDebugLogFolders = debugSessionDirs.length;
+  workspaceScan.changedChatSnapshots = chatSessionFiles.length;
   workspaceScan.hasMemoryRoot = hasMemoryRoot;
 
-  if (!debugSessionDirs.length && !chatSessionFiles.length && !hasMemoryRoot) {
+  if (!allDebugSessionDirs.length && !allChatSessionFiles.length && !hasMemoryRoot) {
     workspaceScan.completedAt = new Date().toISOString();
     workspaceScan.durationMs = Date.now() - workspaceStartedAt;
     workspaceScan.lastStage = 'empty';
@@ -84,8 +94,10 @@ export function parseWorkspace(workspaceDir, options = {}, onProgress = () => {}
   }
 
   progress('workspace', `Checking VS Code storage entry for ${workspace}.`, {
-    debugLogFolders: debugSessionDirs.length,
-    chatSnapshots: chatSessionFiles.length,
+    debugLogFolders: allDebugSessionDirs.length,
+    chatSnapshots: allChatSessionFiles.length,
+    changedDebugLogFolders: debugSessionDirs.length,
+    changedChatSnapshots: chatSessionFiles.length,
     hasMemoryRoot,
   });
   progress('workspace-state', `Reading workspace metadata for ${workspace}.`);
@@ -146,7 +158,7 @@ export function parseWorkspace(workspaceDir, options = {}, onProgress = () => {}
       debugSessions.push(enrichSessionFromWorkspaceState(session, stateBySessionId));
     }
   }
-  const debugIds = new Set(debugSessions.map((session) => session.id));
+  const debugIds = new Set(allDebugSessionDirs.map((sessionDir) => basename(sessionDir)));
   diagnostics.importedDebugLogSessions += debugSessions.length;
 
   if (chatSessionFiles.length) {
@@ -186,6 +198,22 @@ export function parseWorkspace(workspaceDir, options = {}, onProgress = () => {}
   };
 }
 
+
+function timestampMs(value) {
+  if (!value) {
+    return 0;
+  }
+  const parsed = Date.parse(String(value));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function sourceChangedSince(path, sinceMs) {
+  try {
+    return statSync(path).mtimeMs > sinceMs;
+  } catch {
+    return true;
+  }
+}
 function assertWorkspaceDependencies(dependencies) {
   for (const name of [
     'customizationsFromDebugReferences',

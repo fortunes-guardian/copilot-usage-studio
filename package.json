@@ -1,6 +1,6 @@
 {
   "name": "copilot-usage-studio",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Local VS Code GitHub Copilot usage, cost, and session insights.",
   "type": "module",
   "bin": {
@@ -46,13 +46,15 @@
     "schema:accept": "node scripts/audit-vscode-schema.mjs --accept",
     "vscode:typecheck": "tsc -p vscode-extension/tsconfig.json --noEmit",
     "vscode:compile": "npm run vscode:typecheck && node scripts/build-vscode-extension.mjs --extension-only",
+    "verify:versions": "node scripts/verify-release-versions.mjs",
     "vscode:build": "npm run build && npm run vscode:typecheck && node scripts/build-vscode-extension.mjs",
     "vscode:verify": "npm run vscode:build && node scripts/verify-vscode-extension.mjs",
     "vscode:vsix:dry-run": "npm run vscode:verify && cd vscode-extension && vsce ls --tree",
     "vscode:package": "npm run vscode:verify && node scripts/package-vscode-extension.mjs",
     "verify:package": "node scripts/verify-package.mjs",
     "release:notes": "node scripts/generate-release-notes.mjs",
-    "release:check": "npm run test:scripts && npm test -- --watch=false && npm run build && npm run verify:package",
+    "version": "node scripts/sync-release-version.mjs",
+    "release:check": "npm run verify:versions && npm run test:scripts && npm test -- --watch=false && npm run build && npm run verify:package",
     "prepack": "npm run build"
   },
   "exports": {

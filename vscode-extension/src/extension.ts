@@ -95,7 +95,8 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(
     vscode.commands.registerCommand('copilotUsageStudio.open', () => openStudio(context)),
-    vscode.commands.registerCommand('copilotUsageStudio.refresh', () => refreshData(context)),
+    vscode.commands.registerCommand('copilotUsageStudio.refresh', () => refreshData(context, 'quick')),
+    vscode.commands.registerCommand('copilotUsageStudio.fullRescan', () => refreshData(context, 'full')),
     vscode.commands.registerCommand('copilotUsageStudio.showLogs', () => output.show(true)),
     vscode.commands.registerCommand('copilotUsageStudio.exportDiagnostics', () => exportDiagnostics(context)),
     vscode.commands.registerCommand('copilotUsageStudio.openInBrowser', () => openInBrowser(context)),
@@ -135,19 +136,22 @@ async function openStudio(context: vscode.ExtensionContext): Promise<void> {
   });
 }
 
-async function refreshData(context: vscode.ExtensionContext): Promise<void> {
+async function refreshData(
+  context: vscode.ExtensionContext,
+  mode: 'quick' | 'full' = 'quick',
+): Promise<void> {
   const handle = await ensureRuntime(context);
   output.show(true);
 
   await vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
-      title: 'Refreshing Copilot Usage Studio data',
+      title: mode === 'full' ? 'Rebuilding Copilot Usage Studio data' : 'Checking for new Copilot data',
       cancellable: true,
     },
     async (_progress, token) => {
       token.onCancellationRequested(() => handle.runtime.cancelScan?.());
-      await handle.runtime.refresh('vscode-command', { mode: 'quick' });
+      await handle.runtime.refresh('vscode-command', { mode });
     },
   );
 

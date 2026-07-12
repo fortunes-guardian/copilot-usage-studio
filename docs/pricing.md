@@ -169,6 +169,8 @@ The user should be able to inspect the cost inputs directly. If a session looks 
 - cached input or cache-write accounting
 - a model fallback because the raw model id was not in the known GitHub table
 
+Some VS Code logs can contain internal raw model ids that are not published as GitHub pricing rows. For example, a raw id such as `oswe-vscode-prime` stays visible in the UI and is estimated with the configured fallback pricing row. The app should not silently rename that id unless a reliable pricing alias is added.
+
 The `GitHub prices` view therefore shows every rate row the app knows about, where it came from, and whether any imported session currently uses it.
 
 The same view also shows the selected Business/Enterprise AI-credit allowance and how the current imported sessions compare with it.

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import test from 'node:test';
@@ -66,6 +66,40 @@ test('workspace scanner imports debug logs before chat snapshots and skips dupli
   }
 });
 
+
+test('incremental workspace scans import only changed sessions and support no-op refreshes', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cus-workspace-delta-'));
+  try {
+    const workspaceDir = join(root, 'workspace-delta');
+    const debugRoot = join(workspaceDir, 'GitHub.copilot-chat', 'debug-logs');
+    const sessions = ['session-old', 'session-new'].map((id) => join(debugRoot, id));
+    const changedDuplicateChat = join(workspaceDir, 'chatSessions', 'session-old.jsonl');
+    for (const sessionDir of sessions) {
+      mkdirSync(sessionDir, { recursive: true });
+      writeFileSync(join(sessionDir, 'main.jsonl'), '{}\n', 'utf8');
+    }
+    utimesSync(join(sessions[0], 'main.jsonl'), new Date('2026-06-01T00:00:00Z'), new Date('2026-06-01T00:00:00Z'));
+    utimesSync(join(sessions[1], 'main.jsonl'), new Date('2026-06-03T00:00:00Z'), new Date('2026-06-03T00:00:00Z'));
+    mkdirSync(join(workspaceDir, 'chatSessions'), { recursive: true });
+    writeFileSync(changedDuplicateChat, '{}\n', 'utf8');
+    utimesSync(changedDuplicateChat, new Date('2026-06-03T00:00:00Z'), new Date('2026-06-03T00:00:00Z'));
+    const diagnostics = diagnosticsFixture();
+    const deps = dependenciesFixture({
+      diagnostics,
+      debugSessionDirs: sessions,
+      chatSessionFiles: [changedDuplicateChat],
+    });
+    const changed = parseWorkspace(workspaceDir, { includeCustomizations: false, incrementalSince: '2026-06-02T00:00:00Z' }, () => {}, deps);
+    assert.deepEqual(changed.sessions.map((session) => session.id), ['session-new']);
+    assert.equal(diagnostics.workspaceScans[0].debugLogFolders, 2);
+    assert.equal(diagnostics.workspaceScans[0].changedDebugLogFolders, 1);
+    const noop = parseWorkspace(workspaceDir, { includeCustomizations: false, incrementalSince: '2999-01-01T00:00:00Z' }, () => {}, deps);
+    assert.equal(diagnostics.skippedDuplicateChatSnapshots, 1);
+    assert.deepEqual(noop.sessions, []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 function diagnosticsFixture() {
   return {
     scannedWorkspaces: 0,

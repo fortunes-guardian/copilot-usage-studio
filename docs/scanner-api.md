@@ -81,6 +81,18 @@ Next decomposition targets:
 - pricing/token normalization
 - SQLite/state enrichment helpers
 
+## Incremental scans
+
+The runtime passes the previous snapshot's `generatedAt` value as `incrementalSince` during a normal quick refresh. The scanner still discovers known VS Code storage entries, but it parses only debug-session `main.jsonl` files and chat snapshots modified after that cursor. The runtime merges changed sessions by stable session ID and retains unchanged sessions.
+
+This provides two explicit modes: quick/incremental for normal startup, visibility refresh, and `Refresh Data`; full for recovery/debugging through `Copilot Usage Studio: Full Rescan`.
+
+Incremental scans intentionally do not infer deletions. A full rescan rebuilds the snapshot and is the recovery path for deleted or externally rewritten sources. Memory roots remain indexed during quick scans because memory files are small and can be independently added or removed.
+
+Customization analysis has its own cache boundary. Inventory records include a SHA-256 content fingerprint. If all current fingerprints match the previous analysis, only changed session logs are checked and prior evidence is retained. Any customization content change invalidates that shortcut.
+
+The current delta cursor is timestamp-based because VS Code does not publish a stable scanner API or change journal for Agent Debug Logs. The full-rescan command exists specifically to recover from timestamp anomalies or external file restoration.
+
 ## Local Runtime Host
 
 `lib/local-runtime.mjs` is the first shared API host. It keeps the last valid `SessionData` snapshot in memory, serves it while scans run, and persists successful refreshes.

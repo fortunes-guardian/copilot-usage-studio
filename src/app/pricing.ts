@@ -167,7 +167,7 @@ export function pricingFallbackReason(
     return 'This model matched a GitHub price row directly.';
   }
 
-  return `${normalized || 'Unknown model'} is priced with the ${priceRow} row because that raw model id is not in the local GitHub pricing table.`;
+  return `${normalized || 'Unknown model'} is a raw VS Code model id that does not have a GitHub pricing row in the local table. The estimate keeps that model label visible and uses ${priceRow} pricing as an explicit assumption.`;
 }
 
 export function estimateCostUsd(model: string, tokens: TokenBreakdown): number {

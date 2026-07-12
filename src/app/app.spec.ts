@@ -242,10 +242,11 @@ describe('App', () => {
 
     clickButtonContaining(fixture.nativeElement, 'Refresh');
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Scanning');
+    expect(fixture.nativeElement.textContent).toContain('Checking');
 
     const refreshedData = {
       ...sessionDataFixture,
+      ingestion: { ...sessionDataFixture.ingestion, incrementalSessionsImported: 1 },
       generatedAt: '2026-06-13T09:30:00.000Z',
       sessions: [
         ...sessionDataFixture.sessions,
@@ -258,11 +259,11 @@ describe('App', () => {
     request.flush({ sessionData: refreshedData });
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('2 sessions imported');
+    expect(fixture.nativeElement.textContent).toContain('1 session added or updated');
     expect(fixture.nativeElement.textContent).not.toContain('Scan complete');
   });
 
-  it('uses the topbar refresh as an evidence scan on Customizations', async () => {
+  it('keeps topbar refresh incremental on Customizations', async () => {
     globalThis.history.pushState(null, '', '/?view=customizations');
     const fixture = TestBed.createComponent(App);
     const http = TestBed.inject(HttpTestingController);
@@ -275,7 +276,7 @@ describe('App', () => {
 
     const request = http.expectOne('/api/scan');
     expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({ mode: 'customizations' });
+    expect(request.request.body).toEqual({ mode: 'quick' });
     request.flush({ sessionData: sessionDataFixture });
   });
 

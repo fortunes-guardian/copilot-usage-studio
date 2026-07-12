@@ -49,18 +49,20 @@
         @if (isEvidenceScanActive()) {
           <button type="button" class="secondary-scan-button" (click)="cancelScan.emit()">Stop evidence scan</button>
         }
-        <button
-          type="button"
-          class="evidence-scan-button"
-          [disabled]="refreshState === 'refreshing'"
-          [attr.aria-busy]="refreshState === 'refreshing'"
-          (click)="scanEvidence.emit()"
-        >
-          @if (isEvidenceScanActive()) {
-            <span class="button-spinner" aria-hidden="true"></span>
-          }
-          {{ scanActionLabel() }}
-        </button>
+        @if (showHeaderScanAction()) {
+          <button
+            type="button"
+            class="evidence-scan-button"
+            [disabled]="refreshState === 'refreshing'"
+            [attr.aria-busy]="refreshState === 'refreshing'"
+            (click)="scanEvidence.emit()"
+          >
+            @if (isEvidenceScanActive()) {
+              <span class="button-spinner" aria-hidden="true"></span>
+            }
+            {{ scanActionLabel() }}
+          </button>
+        }
       </div>
     </div>
   </section>
@@ -315,15 +317,22 @@
     </section>
   } @else {
     <section class="customizations-empty">
-      <h3>{{ customizationsInput().length ? 'No customizations match these filters' : 'No Copilot customization files found for this workspace' }}</h3>
-      <p>
-        {{
-          customizationsInput().length
-            ? 'Try a broader search or reset the filters.'
-            : 'The scanner checks known Copilot customization locations for the current workspace. Open Advanced scan coverage to inspect source locations.'
-        }}
-      </p>
-      @if (customizationsInput().length) {
+      <h3>{{ emptyStateTitle() }}</h3>
+      <p>{{ emptyStateText() }}</p>
+      @if (!customizationsInput().length) {
+        <button
+          type="button"
+          class="evidence-scan-button"
+          [disabled]="refreshState === 'refreshing'"
+          [attr.aria-busy]="refreshState === 'refreshing'"
+          (click)="scanEvidence.emit()"
+        >
+          @if (isEvidenceScanActive()) {
+            <span class="button-spinner" aria-hidden="true"></span>
+          }
+          {{ scanActionLabel() }}
+        </button>
+      } @else {
         <button type="button" (click)="resetFilters()">Reset filters</button>
       }
     </section>

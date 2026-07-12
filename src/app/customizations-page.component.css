@@ -908,9 +908,15 @@
 .customizations-empty {
   display: grid;
   place-items: center;
-  min-height: 190px;
+  align-self: start;
+  gap: 8px;
+  min-height: 160px;
   padding: 18px;
   text-align: center;
+}
+
+.customizations-empty .evidence-scan-button {
+  margin-top: 2px;
 }
 
 @media (max-width: 980px) {

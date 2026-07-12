@@ -57,6 +57,7 @@ Copilot Usage Studio runs locally.
 ## Commands
 
 - `Copilot Usage Studio: Open`
+- `Copilot Usage Studio: Full Rescan`
 - `Copilot Usage Studio: Refresh Data`
 - `Copilot Usage Studio: Show Logs`
 - `Copilot Usage Studio: Export Diagnostics`

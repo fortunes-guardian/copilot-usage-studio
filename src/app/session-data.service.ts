@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 
@@ -32,6 +33,7 @@ export interface LocalRuntimeStatus {
   lastError: string;
   activeScanId?: number;
   activeScanMode?: SessionDataScanMode | string;
+  lastScanMode?: SessionDataScanMode | string;
   logFile?: string;
   scanProgress?: {
     stage?: string;
@@ -75,6 +77,9 @@ export interface LocalRuntimeStatus {
 export class SessionDataService {
   private readonly http = inject(HttpClient);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly document = inject(DOCUMENT);
+  private lastAutomaticRefreshAt = 0;
+  private readonly automaticRefreshCooldownMs = 15_000;
 
   readonly sessionData = signal<SessionData | null>(null);
   readonly loadState = signal<SessionDataLoadState>('loading');
@@ -95,9 +100,14 @@ export class SessionDataService {
         this.pollRuntimeStatus();
       }
     }, 1500);
+    const onVisibilityChange = () => {
+      if (this.document.visibilityState === 'visible') this.refreshIfStale();
+    };
+    this.document.addEventListener('visibilitychange', onVisibilityChange);
     this.destroyRef.onDestroy(() => {
       clearTimeout(initialStatusTimer);
       clearInterval(statusTimer);
+      this.document.removeEventListener('visibilitychange', onVisibilityChange);
     });
 
     this.loadSessionData();
@@ -109,7 +119,11 @@ export class SessionDataService {
     }
 
     this.refreshState.set('refreshing');
-    this.refreshMessage.set(mode === 'customizations' ? 'Finding customization usage evidence...' : 'Scanning local Copilot data...');
+    this.refreshMessage.set(mode === 'customizations'
+      ? 'Finding customization usage evidence...'
+      : mode === 'full'
+        ? 'Rebuilding all local Copilot data...'
+        : 'Checking for new Copilot data...');
     this.http.post<LocalScanResponse>(apiUrl('/api/scan'), { mode }).subscribe({
       next: ({ sessionData, status }) => {
         if (status) {
@@ -123,12 +137,17 @@ export class SessionDataService {
         }
         this.sessionData.set(sessionData);
         this.loadState.set('ready');
+        const changedSessions = Number(sessionData.ingestion?.incrementalSessionsImported ?? 0);
         this.loadError.set(null);
         this.refreshState.set('success');
         this.refreshMessage.set(
           mode === 'customizations'
-            ? 'Usage evidence checked.'
-            : `${sessionData.sessions.length.toLocaleString()} sessions imported`,
+            ? 'Customization analysis complete'
+            : mode === 'full'
+              ? `${sessionData.sessions.length.toLocaleString()} sessions rebuilt`
+              : changedSessions > 0
+                ? `${changedSessions.toLocaleString()} ${changedSessions === 1 ? 'session' : 'sessions'} added or updated`
+                : 'Up to date',
         );
       },
       error: (error: unknown) => {
@@ -168,6 +187,16 @@ export class SessionDataService {
         this.refreshMessage.set(this.errorMessage(error));
       },
     });
+  }
+
+  private refreshIfStale(): void {
+    const now = Date.now();
+    if (this.loadState() !== 'ready' || this.refreshState() === 'refreshing') return;
+    if (now - this.lastAutomaticRefreshAt < this.automaticRefreshCooldownMs) return;
+    const generatedAt = Date.parse(this.sessionData()?.generatedAt ?? '');
+    if (Number.isFinite(generatedAt) && now - generatedAt < this.automaticRefreshCooldownMs) return;
+    this.lastAutomaticRefreshAt = now;
+    this.refresh('quick');
   }
 
   private statusFromError(error: unknown): LocalRuntimeStatus | null {

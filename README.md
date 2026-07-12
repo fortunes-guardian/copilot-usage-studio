@@ -59,7 +59,7 @@ Then open `http://127.0.0.1:4312/`.
 `npx` downloads the latest published package from npm. To run this exact release:
 
 ```bash
-npx copilot-usage-studio@0.2.1
+npx copilot-usage-studio@0.2.2
 ```
 
 To contribute or run the current GitHub source:

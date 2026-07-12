@@ -33,6 +33,8 @@ test('keeps unknown model labels but prices them with the explicit fallback row'
   assert.equal(normalizeModel('some-new-model', pricing), 'some-new-model');
   assert.equal(pricingModelForModel('some-new-model', pricing, fallback), 'GPT-5.4');
   assert.equal(modelUsesPricingFallback('some-new-model', 'GPT-5.4', pricing, fallback), true);
+  assert.equal(normalizeModel('oswe-vscode-prime', pricing), 'oswe-vscode-prime');
+  assert.equal(pricingModelForModel('oswe-vscode-prime', pricing, fallback), 'GPT-5.4');
 });
 
 test('does not mark direct model matches as fallback pricing', () => {

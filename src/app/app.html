@@ -63,6 +63,7 @@
           class="data-refresh-button"
           [disabled]="sessionDataRefreshState() === 'refreshing'"
           [attr.aria-busy]="sessionDataRefreshState() === 'refreshing'"
+          title="Check for new Copilot sessions and memories"
           (click)="refreshActiveViewData()"
         >
           <span class="refresh-icon" [class.spinning]="sessionDataRefreshState() === 'refreshing'" aria-hidden="true">↻</span>

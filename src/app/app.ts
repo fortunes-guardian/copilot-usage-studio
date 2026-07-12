@@ -322,12 +322,14 @@ export class App {
   }
 
   protected refreshActiveViewData(): void {
-    this.refreshSessionData(this.activeView() === 'customizations' ? 'customizations' : 'quick');
+    this.refreshSessionData('quick');
   }
 
   protected topbarScanLabel(): string {
     if (this.sessionDataRefreshState() === 'refreshing') {
-      return 'Scanning';
+      if (this.activeRefreshMode() === 'customizations') return 'Analyzing';
+      if (this.activeRefreshMode() === 'full') return 'Rescanning';
+      return 'Checking';
     }
     return 'Refresh';
   }

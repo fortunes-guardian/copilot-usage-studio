@@ -627,6 +627,7 @@ export async function scanVsCodeSessions(options = {}) {
     includeSystemCustomizations: options.includeSystemCustomizations === true,
     customizationDiscovery: options.customizationDiscovery ?? null,
     customizationEvidence: options.customizationEvidence ?? {},
+    incrementalSince: options.incrementalSince ?? '',
   };
 
   try {
@@ -748,6 +749,9 @@ export async function scanVsCodeSessions(options = {}) {
       ingestion: {
         ...diagnostics,
         importedSessions: sessions.length,
+        scanKind: options.incrementalSince ? 'incremental' : 'full',
+        incrementalSince: options.incrementalSince ?? '',
+        customizationEvidenceAnalyzedAt: options.includeCustomizations !== false ? generatedAt : '',
         cacheTokenAudit: mergeCacheTokenAudits(
           sessions.map((session) => session.cacheTokenAudit).filter(Boolean),
         ),

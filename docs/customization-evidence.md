@@ -93,6 +93,21 @@ The app must not say:
 - the customization has an exact token cost
 - the whole following request should be attributed to that customization
 
+## Staged analysis and cache
+
+The global refresh and customization analysis are deliberately separate:
+
+1. Global refresh performs a lightweight incremental import of changed Copilot sessions and memories.
+2. `Analyze customizations` inventories trusted files for the current workspace and checks evidence on demand.
+3. A later analysis reuses prior evidence when customization content hashes are unchanged and checks only session logs modified since the previous snapshot.
+4. Changing, adding, or removing a customization invalidates the evidence shortcut so the current workspace is analyzed against its available logs again.
+
+The top-right refresh never starts customization analysis. This keeps routine usage refreshes quick and gives the Customizations page one clear action. `Copilot Usage Studio: Full Rescan` remains available from the command palette for recovery when cached state is suspected to be stale.
+
+Evidence matching runs in the scanner worker, not the Angular UI. It supports cancellation and reports session-folder progress through the local runtime. Successful results are merged into the existing local snapshot; a failed or canceled analysis keeps the last valid evidence.
+
+The previous implementation reparsed all session logs on every refresh and rebuilt customization evidence from scratch. That made normal refreshes expensive and blurred two different questions: “is there new Copilot activity?” and “does this workspace's customization evidence need analysis?” The staged workflow makes those boundaries explicit.
+
 ## Matching strategy
 
 Strong evidence is normalized exact text matching, not semantic matching.
@@ -112,7 +127,7 @@ The scanner builds distinctive snippets from customization file content and sear
 
 Weak evidence is file-read/reference evidence without a distinctive body match. It means local logs made the file visible to Copilot, but the file body was not proven inside the model request.
 
-Very short or generic snippets are ignored for strong proof. For example, a common code phrase can appear naturally in repository code or prompts, so the scanner requires distinctive customization text rather than treating every small string match as proof.
+Very short or generic snippets are ignored for strong proof. A single match must be a substantial block (at least 120 normalized characters and 16 meaningful words), or multiple distinct blocks must cross a larger combined threshold. A common code phrase can appear naturally in repository code or prompts and is never enough by itself.
 
 The evidence scan currently uses VS Code Agent Debug Logs and request side files. It does not treat fallback chat snapshots as strong customization evidence.
 

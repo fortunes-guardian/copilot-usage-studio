@@ -2,7 +2,7 @@
 
 The app is intended to run locally, near the VS Code data it reads. It should not require a hosted SaaS backend for the core workflow.
 
-Current release posture: early VS Code extension preview. Version `0.2.0` exists on npm as the development/fallback host, but the VS Code extension is the product path.
+Current release posture: the VS Code Marketplace extension is the product path. The npm package remains a development and fallback host.
 
 Packaging foundation now available: the scanner exposes an in-memory Node API through `lib/scanner-api.mjs`. The existing scan command, local runtime, npm host, and VS Code extension preview use the same scanner/runtime core so behavior stays aligned across hosts.
 
@@ -94,10 +94,10 @@ GitHub Actions is the release control plane:
 
 - `.github/workflows/ci.yml` runs the full release gate and packages a VSIX artifact for every pushed branch, plus pull requests to `main`.
 - `.github/workflows/release.yml` runs automatically for version tags such as `v0.1.1`, with a manual existing-tag mode for repair and backfill.
-- The release workflow verifies that the tag matches `package.json`, runs the release gate, packages the VS Code extension VSIX, generates release notes from `CHANGELOG.md`, and creates the matching GitHub Release.
-- After maintainer smoke testing and Marketplace credentials are configured, public extension releases should be published to the VS Code Marketplace so users can install without manually downloading a VSIX.
+- The release workflow verifies that the tag matches both package versions, runs the release gate, packages one VSIX, publishes that artifact to the VS Code Marketplace, and attaches the exact VSIX to the matching GitHub Release.
+- Marketplace publication uses the `VSCE_PAT` GitHub Actions secret and `--skip-duplicate`, so a safe workflow rerun does not require another manual upload.
 - A failed workflow can be rerun safely: an existing npm version is accepted only when its published `gitHead` matches the exact tagged commit. Conflicting or unverifiable versions are refused.
-- New versions must pass the full release gate before publication. An exact-commit backfill of an already-published historical version skips its old test suite and only repairs the missing GitHub Release.
+- Every release and repair run passes the current release gate before publication.
 
 This keeps GitHub, release artifacts, release notes, and the source tag tied to the same commit. Ordinary pushes never publish.
 
@@ -124,6 +124,15 @@ Commit and push the workflow files first, then configure npm Trusted Publishing 
 
 The workflow uses GitHub's OIDC identity, so no long-lived `NPM_TOKEN` repository secret is required. npm automatically adds provenance for a public package published from a public repository through Trusted Publishing.
 
+### One-Time VS Code Marketplace Setup
+
+1. In Azure DevOps, create a Personal Access Token with **All accessible organizations** and **Marketplace: Manage** scope.
+2. Give it the shortest practical expiration and store it as the GitHub Actions repository secret `VSCE_PAT`.
+3. Confirm the Marketplace publisher ID in `vscode-extension/package.json` is `fortunes-guardian`.
+4. Never commit or print the token. GitHub passes it only to the Marketplace publication step.
+
+The current VS Code publishing tool uses `VSCE_PAT` automatically. Microsoft has announced retirement of global Azure DevOps PATs on December 1, 2026; migrate this workflow to Microsoft Entra ID automated publishing before that deadline. The workflow publishes the already packaged `tmp/*.vsix`, and that exact file is uploaded to the GitHub Release.
+
 ### Publishing a Version
 
 Start from an up-to-date, clean `main` branch. Choose the semantic-version bump that matches the change:
@@ -138,20 +147,21 @@ npm version patch
 git push origin main --follow-tags
 ```
 
-`npm version patch` updates both `package.json` and `package-lock.json`, creates a version commit, and creates an annotated `vX.Y.Z` tag. Use `npm version minor` for a backward-compatible feature release or `npm version major` for a breaking release.
+`npm version patch` updates `package.json` and `package-lock.json`; the repository's `version` lifecycle hook synchronizes `vscode-extension/package.json` before npm creates the version commit and annotated `vX.Y.Z` tag. Use `npm version minor` for a backward-compatible feature release or `npm version major` for a breaking release.
 
 After the tag is pushed:
 
 1. Watch the **Release** workflow in GitHub Actions.
-2. Confirm the new version appears on npm.
-3. Confirm GitHub created a Release for the same tag.
-4. Confirm the release notes read well and include the curated highlights.
-5. Download the attached VSIX if the extension should be tested or shared.
-6. Run `npx copilot-usage-studio@X.Y.Z --version` from a clean directory as a final smoke test.
+2. Confirm the new version appears in the VS Code Marketplace.
+3. Confirm the new version appears on npm.
+4. Confirm GitHub created a Release for the same tag and attached the same-version VSIX.
+5. Confirm the release notes read well and include the curated highlights.
+6. Install or update from the Marketplace and run one final extension smoke test.
+7. Run `npx copilot-usage-studio@X.Y.Z --version` from a clean directory as a fallback-host smoke test.
 
 If CI or release validation fails, fix the issue on `main` and publish a new version. Do not move or reuse a public release tag, and do not overwrite an npm version; both are immutable release coordinates.
 
-The workflow also has a manual **Run workflow** action with a required existing tag. Use this to repair or backfill the GitHub Release for an exact tag. For the already-published first version, ensure `v0.1.0` exists on GitHub, then run the workflow once with `v0.1.0`; it will verify npm's published `gitHead`, skip the historical release gate and npm publication, and create the missing GitHub Release.
+The workflow also has a manual **Run workflow** action with a required existing tag. Use it to repair a release from that immutable tag. Duplicate npm and Marketplace publication is skipped safely, while the release gate reruns and the GitHub Release notes/artifact are repaired.
 
 ### Manual Emergency Fallback
 
@@ -286,7 +296,7 @@ npm run vscode:package
 Install it locally:
 
 ```bash
-code --install-extension tmp/copilot-usage-studio-vscode-0.2.0.vsix --force
+code --install-extension tmp/copilot-usage-studio-vscode-X.Y.Z.vsix --force
 ```
 
 The extension exposes the full app inside VS Code: Usage, Sessions, Memory, Customizations preview, Compare, Insights, and Prices. The npm/browser host remains useful for development and fallback testing, but the extension is the primary product surface.

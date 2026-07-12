@@ -19,6 +19,7 @@
   "activationEvents": [
     "onCommand:copilotUsageStudio.open",
     "onCommand:copilotUsageStudio.refresh",
+    "onCommand:copilotUsageStudio.fullRescan",
     "onCommand:copilotUsageStudio.showLogs",
     "onCommand:copilotUsageStudio.exportDiagnostics",
     "onCommand:copilotUsageStudio.openInBrowser"
@@ -33,6 +34,10 @@
       {
         "command": "copilotUsageStudio.refresh",
         "title": "Copilot Usage Studio: Refresh Data"
+      },
+      {
+        "command": "copilotUsageStudio.fullRescan",
+        "title": "Copilot Usage Studio: Full Rescan"
       },
       {
         "command": "copilotUsageStudio.showLogs",

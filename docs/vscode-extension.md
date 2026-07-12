@@ -30,10 +30,15 @@ This keeps the extension, scanner, and npm development host on the same runtime 
 
 For performance, the extension scans only the VS Code user-data root that owns the installed extension. The npm development host may scan both Stable and Insiders roots by default; the extension should not do that because it is already running inside one VS Code installation.
 
+The runtime performs a full import only when no cache exists or when the user explicitly runs a full rescan. Normal startup and refresh use the cached snapshot as a cursor and parse only debug-log sessions and chat snapshots whose source files changed after that snapshot. When the retained webview becomes visible again, it performs a throttled freshness check so recent Copilot activity appears without a manual full scan.
+
+Customizations remain a separate on-demand analysis. The normal refresh does not index or match customization files. This avoids making every return to the app pay for evidence analysis.
+
 ## Commands
 
 - `Copilot Usage Studio: Open`
 - `Copilot Usage Studio: Refresh Data`
+- `Copilot Usage Studio: Full Rescan`
 - `Copilot Usage Studio: Show Logs`
 - `Copilot Usage Studio: Export Diagnostics`
 - `Copilot Usage Studio: Open in Browser`
@@ -61,7 +66,7 @@ npm run vscode:package
 1. Build the extension with `npm run vscode:package`.
 2. Install the local VSIX:
    ```bash
-   code --install-extension tmp/copilot-usage-studio-vscode-0.2.0.vsix --force
+   code --install-extension tmp/copilot-usage-studio-vscode-X.Y.Z.vsix --force
    ```
 3. Run `Copilot Usage Studio: Open`.
 4. Confirm Usage loads first.
@@ -85,13 +90,13 @@ If that setting is off, the extension may still show older cached scans or weake
 
 ## Release Posture
 
-Current release target is local VSIX testing first, then VS Code Marketplace publication after maintainer smoke testing.
+The VS Code Marketplace is the normal installation path. A locally packaged or CI-built VSIX remains the pre-release smoke-test artifact.
 
 The extension is not part of the npm package. The VSIX is built from the same source and attached as a separate release asset. The npm package remains useful as a development/runtime fallback, but the extension is the user-facing product path.
 
-CI runs the normal app release gate and packages a VSIX artifact for pushed branches. Tag releases should use curated notes from `CHANGELOG.md`; once Marketplace credentials are configured, the extension publication step should be the primary user-facing release path.
+CI runs the normal app release gate and packages a VSIX artifact for pushed branches. A version tag publishes one aligned npm/extension version, sends the packaged VSIX to the Marketplace, attaches that same file to the GitHub Release, and uses curated notes from `CHANGELOG.md`.
 
-Do not publish to the Marketplace until:
+Before publishing a new Marketplace version:
 
 - the local VSIX smoke test has passed on at least one normal machine and one large/work machine;
 - startup scans remain responsive;

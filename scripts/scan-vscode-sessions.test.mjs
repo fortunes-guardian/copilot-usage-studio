@@ -635,8 +635,8 @@ test('indexes Copilot customizations and classifies request evidence', async () 
 
     assert.equal(data.ingestion.importedCustomizations, 2);
     assert.equal(data.customizations.some((item) => item.relativePath.includes('node_modules')), false);
-    assert.equal(instruction.evidenceStatus, 'sent');
-    assert.equal(instruction.matches.some((match) => match.status === 'sent'), true);
+    assert.equal(instruction.evidenceStatus, 'listed');
+    assert.equal(instruction.matches.some((match) => match.status === 'listed'), true);
     assert.equal(skill.evidenceStatus, 'not_seen');
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -782,7 +782,7 @@ test('strict VS Code customization discovery scans only API-provided locations',
     assert.equal(
       data.customizations.find((item) => item.sourcePath === join(allowedInstructionsDir, 'plain-backend-rule.md'))
         ?.evidenceStatus,
-      'sent',
+      'listed',
     );
     assert.equal(
       data.ingestion.scannedCustomizationLocations.some((location) => location.kind === 'vscode-default-root'),
@@ -860,7 +860,7 @@ test('strict VS Code customization discovery trusts explicit file locations with
     );
 
     assert.equal(explicitInstruction?.kind, 'instruction');
-    assert.equal(explicitInstruction?.evidenceStatus, 'sent');
+    assert.equal(explicitInstruction?.evidenceStatus, 'listed');
     assert.equal(
       data.customizations.some((item) => item.sourcePath === unconfiguredInstructionFile),
       false,
@@ -961,10 +961,10 @@ test('strict VS Code customization discovery imports copilot instructions and se
     const instruction = data.customizations.find((item) => item.sourcePath === instructionFile);
     assert.equal(instruction?.kind, 'instruction');
     assert.equal(instruction?.relativePath, 'copilot-instructions.md');
-    assert.equal(instruction?.evidenceStatus, 'sent');
-    assert.equal(instruction?.matches.some((match) => match.status === 'sent'), true);
+    assert.equal(instruction?.evidenceStatus, 'listed');
+    assert.equal(instruction?.matches.some((match) => match.status === 'sent'), false);
     assert.equal(instruction?.matches.some((match) => match.status === 'listed'), true);
-    assert.equal(instruction?.matches.some((match) => match.source === 'system_prompt_0.json'), true);
+    assert.equal(instruction?.matches.some((match) => match.source === 'system_prompt_0.json'), false);
     assert.equal(
       instruction?.matches.some(
         (match) => match.status === 'listed' && match.source === 'copilotFileRead',
@@ -1233,15 +1233,15 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
     assert.equal(systemSkill, undefined);
     assert.equal(data.ingestion.skippedSystemCustomizations > 0, true);
     assert.equal(externalSkill?.kind, 'skill');
-    assert.equal(externalSkill?.evidenceStatus, 'sent');
+    assert.equal(externalSkill?.evidenceStatus, 'listed');
     assert.equal(discoveredSkill?.kind, 'skill');
-    assert.equal(discoveredSkill?.evidenceStatus, 'sent');
+    assert.equal(discoveredSkill?.evidenceStatus, 'listed');
     assert.equal(configuredInstruction?.kind, 'instruction');
-    assert.equal(configuredInstruction?.evidenceStatus, 'sent');
+    assert.equal(configuredInstruction?.evidenceStatus, 'listed');
     assert.equal(configuredSkill?.kind, 'skill');
-    assert.equal(configuredSkill?.evidenceStatus, 'sent');
+    assert.equal(configuredSkill?.evidenceStatus, 'listed');
     assert.equal(configuredAgent?.kind, 'agent');
-    assert.equal(configuredAgent?.evidenceStatus, 'sent');
+    assert.equal(configuredAgent?.evidenceStatus, 'listed');
 
     const dataWithSystem = await scanVsCodeSessions({
       roots: [workspaceDir],
@@ -1250,13 +1250,13 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
     });
     const includedSystemSkill = dataWithSystem.customizations.find((item) => item.sourcePath === systemSkillFile);
     assert.equal(includedSystemSkill?.kind, 'skill');
-    assert.equal(includedSystemSkill?.evidenceStatus, 'sent');
+    assert.equal(includedSystemSkill?.evidenceStatus, 'listed');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-test('indexes VS Code user-level customizations and matches request side-file evidence', async () => {
+test('indexes VS Code user-level customizations and rejects weak side-file similarity', async () => {
   const root = mkdtempSync(join(tmpdir(), 'copilot-usage-studio-user-customizations-'));
   const userDir = join(root, 'Code', 'User');
   const workspaceDir = join(userDir, 'workspaceStorage', 'workspace-one');
@@ -1324,10 +1324,10 @@ test('indexes VS Code user-level customizations and matches request side-file ev
     const prompt = data.customizations.find((item) => item.sourcePath === promptFile);
 
     assert.equal(prompt?.kind, 'prompt');
-    assert.equal(prompt?.evidenceStatus, 'sent');
-    assert.equal(prompt?.matches.some((match) => match.source === 'tools_0.json'), true);
+    assert.equal(prompt?.evidenceStatus, 'listed');
+    assert.equal(prompt?.matches.some((match) => match.source === 'copilotFileRead'), true);
     assert(data.ingestion.customizationEvidenceTextParts > 0);
-    assert(data.ingestion.customizationEvidenceMatchedCustomizations > 0);
+    assert.equal(data.ingestion.customizationEvidenceMatchedCustomizations, 0);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

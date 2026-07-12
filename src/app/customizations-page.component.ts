@@ -170,7 +170,9 @@ export class CustomizationsPageComponent {
     const customizations = this.customizationsInput();
     const sent = customizations.filter((item) => item.evidenceStatus === 'sent').length;
     const notProved = customizations.filter((item) => item.evidenceStatus === 'listed').length;
-    const hasScannedEvidence = (ingestion?.customizationEvidenceScannedSessions ?? 0) > 0;
+    const hasScannedEvidence = Boolean(
+      ingestion?.customizationEvidenceAnalyzedAt || (ingestion?.customizationEvidenceScannedSessions ?? 0) > 0,
+    );
     return {
       sent,
       notProved,
@@ -183,11 +185,21 @@ export class CustomizationsPageComponent {
 
   protected scanActionLabel(): string {
     if (this.refreshState === 'refreshing') {
-      return 'Scanning...';
+      return 'Analyzing...';
     }
-    return this.customizationEvidenceSummary().hasScannedEvidence
-      ? 'Find usage evidence again'
-      : 'Find usage evidence';
+    if (!this.customizationsInput().length && !this.customizationEvidenceSummary().hasScannedEvidence) {
+      return 'Analyze this workspace';
+    }
+    return this.customizationEvidenceSummary().hasScannedEvidence ? 'Analyze new activity' : 'Analyze customizations';
+  }
+
+  protected showHeaderScanAction(): boolean {
+    return (
+      this.isEvidenceScanActive() ||
+      this.customizationsInput().length > 0 ||
+      this.customizationEvidenceSummary().hasScannedEvidence ||
+      this.refreshState === 'error'
+    );
   }
 
   protected isEvidenceScanActive(): boolean {
@@ -252,7 +264,29 @@ export class CustomizationsPageComponent {
         ? `${matches.toLocaleString()} text match${matches === 1 ? '' : 'es'} across ${sessions.toLocaleString()} Copilot session${sessions === 1 ? '' : 's'}.`
         : `Checked recent Copilot requests. No customization file text was found.`;
     }
-    return 'Run Find usage evidence to check whether these files appeared inside recent Copilot model requests.';
+    if (!this.customizationsInput().length) {
+      return 'Analyze this workspace to find customization files and check recent Copilot requests.';
+    }
+    return 'Analyze customizations to check whether these files appeared inside recent Copilot model requests.';
+  }
+
+  protected emptyStateTitle(): string {
+    if (this.customizationsInput().length) {
+      return 'No customizations match these filters';
+    }
+    return this.scanDiagnostics().roots > 0
+      ? 'No customization files found'
+      : 'No customization scan has run yet';
+  }
+
+  protected emptyStateText(): string {
+    if (this.customizationsInput().length) {
+      return 'Try a broader search or reset the filters.';
+    }
+    if (this.scanDiagnostics().roots > 0) {
+      return 'Checked the current VS Code customization locations. Open Advanced scan coverage if you need to inspect the folders that were checked.';
+    }
+    return 'Scan this workspace to find Copilot instructions, skills, prompts, hooks, and agents, then check recent request logs for evidence.';
   }
 
   protected evidenceMetricLabel(): string {

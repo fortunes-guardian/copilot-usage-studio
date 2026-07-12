@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -282,6 +282,47 @@ test('generic short customization snippets are not treated as strong proof', () 
     assert.equal(customization.evidenceStatus, 'listed');
     assert.equal(customization.matches.length, 1);
     assert.equal(customization.matches[0].source, 'copilotFileRead');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('evidence cache skips unchanged sessions and invalidates when customization content changes', () => {
+  const root = mkdtempSync(join(tmpdir(), 'copilot-usage-studio-customization-cache-'));
+  const debugRoot = join(root, 'debug-logs');
+  const sessionDir = join(debugRoot, 'session-1');
+  try {
+    mkdirSync(sessionDir, { recursive: true });
+    writeFileSync(join(sessionDir, 'main.jsonl'), '{}\n', 'utf8');
+    const sourcePath = join(root, 'backend.instructions.md');
+    const previous = {
+      id: 'instruction-1', contentHash: 'hash-old', evidenceStatus: 'listed',
+      matches: [{ status: 'listed', sessionId: 'session-0', source: 'copilotFileRead', eventIndex: 1, modelCallNumber: 0, timestamp: '2026-06-01T00:00:00Z' }],
+    };
+    const current = {
+      ...previous, kind: 'instruction', title: 'Backend rules', name: 'backend.instructions.md',
+      description: 'Distinct backend rules.', applyTo: [], triggers: [], scope: 'workspace', workspace: 'fixture',
+      sourcePath, relativePath: 'backend.instructions.md', createdAt: '2026-06-01T00:00:00Z',
+      modifiedAt: '2026-06-01T00:00:00Z', sizeBytes: 180, characterCount: 180, lineCount: 2,
+      excerpt: 'Distinct backend rules.',
+      _content: 'Create domain aggregates through named factories and validate every invariant before persistence. Reject invalid state transitions with explicit domain errors and keep transport concerns outside the aggregate boundary.',
+    };
+    let reads = 0;
+    const context = {
+      listDirs: () => [sessionDir],
+      readJsonl: () => { reads += 1; return []; },
+      incrementalSince: '2999-01-01T00:00:00Z',
+      previousEvidence: [previous],
+    };
+    const [unchanged] = customizationEvidenceFromDebugLogs(debugRoot, [current], 'fixture', root, () => {}, context);
+    assert.equal(reads, 0);
+    assert.equal(unchanged.evidenceStatus, 'listed');
+    assert.equal(unchanged.matches.length, 1);
+    const [changed] = customizationEvidenceFromDebugLogs(
+      debugRoot, [{ ...current, contentHash: 'hash-new' }], 'fixture', root, () => {}, context,
+    );
+    assert.equal(reads, 1);
+    assert.equal(changed.evidenceStatus, 'not_seen');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

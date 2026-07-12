@@ -343,6 +343,7 @@ function parseSimpleFrontmatter(content) {
         sourcePath: resolve(file),
         relativePath,
         createdAt: stats.birthtimeMs > 0 ? stats.birthtime.toISOString() : '',
+        contentHash: createHash('sha256').update(content).digest('hex'),
         modifiedAt: stats.mtime.toISOString(),
         sizeBytes: stats.size,
         characterCount: content.length,

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { basename, isAbsolute, join, resolve, sep } from 'node:path';
 
 function safeJson(text) {
@@ -144,7 +144,13 @@ function matchedChunkPreview(chunks) {
 }
 
 function hasStrongContentMatch(chunks) {
-  return chunks.length > 0;
+  const unique = [...new Set(chunks.map(normalizeMatchText).filter(Boolean))];
+  const totalCharacters = unique.reduce((sum, chunk) => sum + chunk.length, 0);
+  const totalWords = unique.reduce((sum, chunk) => sum + normalizedWordCount(chunk), 0);
+  return (
+    unique.some((chunk) => chunk.length >= 120 && normalizedWordCount(chunk) >= 16) ||
+    (unique.length >= 2 && totalCharacters >= 140 && totalWords >= 20)
+  );
 }
 
 function extractPayloadText(value, depth = 0) {
@@ -311,6 +317,30 @@ function recordCustomizationMatch(state, match) {
   state.matches = state.matches.slice(0, 60);
 }
 
+function initialMatchState(customization, fileNameCounts, previous) {
+  const matches = previous?.matches ?? [];
+  return {
+    rank: statusRank(previous?.evidenceStatus),
+    matches: [...matches],
+    chunks: customizationChunks(customization._content),
+    terms: customizationTerms(customization),
+    readTerms: readTermsForCustomization(customization, fileNameCounts),
+    readSessions: new Set(
+      matches.filter((match) => statusRank(match.status) >= 2).map((match) => match.sessionId),
+    ),
+  };
+}
+
+function sourceChangedSince(path, since) {
+  const sinceMs = Date.parse(String(since ?? ''));
+  if (!Number.isFinite(sinceMs)) return true;
+  try {
+    return statSync(path).mtimeMs > sinceMs;
+  } catch {
+    return true;
+  }
+}
+
 export function customizationEvidenceFromDebugLogs(
   debugRoot,
   customizations,
@@ -343,25 +373,32 @@ export function customizationEvidenceFromDebugLogs(
   }
 
   const fileNameCounts = basenameCounts(customizations);
+  const previousById = new Map((context.previousEvidence ?? []).map((item) => [item.id, item]));
+  const canIncrement = Boolean(context.incrementalSince) && customizations.every((customization) =>
+    previousById.get(customization.id)?.contentHash === customization.contentHash);
+
   const matchState = new Map(
     customizations.map((customization) => [
       customization.id,
-      {
-        rank: 0,
-        matches: [],
-        chunks: customizationChunks(customization._content),
-        terms: customizationTerms(customization),
-        readTerms: readTermsForCustomization(customization, fileNameCounts),
-        readSessions: new Set(),
-      },
+      initialMatchState(
+        customization,
+        fileNameCounts,
+        canIncrement ? previousById.get(customization.id) : null,
+      ),
     ]),
   );
   const chunkMatchers = buildCustomizationChunkMatchers(matchState);
 
   const allSessionDirs = listDirs(debugRoot);
-  const sessionDirs = Number.isFinite(maxSessions) ? allSessionDirs.slice(0, maxSessions) : allSessionDirs;
-  if (allSessionDirs.length > sessionDirs.length) {
-    const sessionLimitReason = `limited to ${sessionDirs.length}/${allSessionDirs.length} debug-log folders`;
+  const candidateSessionDirs = canIncrement
+    ? allSessionDirs.filter((sessionDir) =>
+      sourceChangedSince(join(sessionDir, 'main.jsonl'), context.incrementalSince))
+    : allSessionDirs;
+  const sessionDirs = Number.isFinite(maxSessions)
+    ? candidateSessionDirs.slice(0, maxSessions)
+    : candidateSessionDirs;
+  if (candidateSessionDirs.length > sessionDirs.length) {
+    const sessionLimitReason = `limited to ${sessionDirs.length}/${candidateSessionDirs.length} changed debug-log folders`;
     diagnostics.warnings?.push?.(
       `Customization evidence scan for ${workspace || workspaceDir || debugRoot} ${sessionLimitReason}.`,
     );
