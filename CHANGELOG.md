@@ -30,8 +30,20 @@ All notable changes to Copilot Usage Studio are recorded here.
 - Refresh GitHub Copilot model pricing from the July 5, 2026 GitHub Docs table, including Claude Sonnet 5, Claude Opus 4.8 fast mode, Kimi K2.7 Code, and updated model statuses.
 - Add raw model-id alias support so newly observed VS Code ids can map to the matching GitHub pricing row without hidden fallback pricing.
 
-## 0.2.2 - 2026-07-12
+## 0.2.3 - 2026-07-12
 
+- Ship incremental routine refreshes with a clear up-to-date result and an explicit recovery-oriented full rescan.
+- Separate session and memory refresh from on-demand Customizations analysis.
+- Cache unchanged customization evidence and inspect only new or changed session logs.
+- Require substantial, distinctive text before reporting customization request evidence.
+- Preserve conservative discovery, read/reference, and request-text evidence states.
+- Improve Customizations actions, empty states, progress reporting, and cancellation behavior.
+- Add a VS Code Full Rescan command and automatic lightweight refresh when returning to the app.
+- Keep npm, extension, tag, Marketplace, and GitHub Release versions aligned.
+- Publish the same tested VSIX automatically through Microsoft Entra workload identity federation.
+
+
+## 0.2.2 - 2026-07-12
 - Make routine refreshes incremental and report clearly when local Copilot data is already up to date.
 - Add an explicit full-rescan command for recovery without making every refresh expensive.
 - Separate session and memory refresh from on-demand Customizations analysis.
