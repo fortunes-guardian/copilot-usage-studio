@@ -16,7 +16,7 @@ Use this file for short-lived current-state context. Keep durable product rules 
 ## Current Priorities
 
 - Validate incremental refresh and Customizations analysis on a large/work profile.
-- Configure the `VSCE_PAT` GitHub Actions secret before tagging `v0.2.2`.
+- Configure Microsoft Entra workload identity federation and the protected `marketplace` GitHub environment before tagging `v0.2.2`.
 - Keep Customizations preview conservative, settings-first, and understandable.
 - Preserve schema drift resilience for VS Code Agent Debug Logs.
 - Track the latest observed schema audit: VS Code 1.127.0 / Copilot Chat 0.55.0 produced no breaking findings, but the one-session probe still reported warning-level missing fields that should not be baseline-accepted without broader probes.

@@ -95,7 +95,7 @@ GitHub Actions is the release control plane:
 - `.github/workflows/ci.yml` runs the full release gate and packages a VSIX artifact for every pushed branch, plus pull requests to `main`.
 - `.github/workflows/release.yml` runs automatically for version tags such as `v0.1.1`, with a manual existing-tag mode for repair and backfill.
 - The release workflow verifies that the tag matches both package versions, runs the release gate, packages one VSIX, publishes that artifact to the VS Code Marketplace, and attaches the exact VSIX to the matching GitHub Release.
-- Marketplace publication uses the `VSCE_PAT` GitHub Actions secret and `--skip-duplicate`, so a safe workflow rerun does not require another manual upload.
+- Marketplace publication uses GitHub OIDC and Microsoft Entra workload identity federation. No Marketplace token or client secret is stored in GitHub.
 - A failed workflow can be rerun safely: an existing npm version is accepted only when its published `gitHead` matches the exact tagged commit. Conflicting or unverifiable versions are refused.
 - Every release and repair run passes the current release gate before publication.
 
@@ -120,18 +120,27 @@ Commit and push the workflow files first, then configure npm Trusted Publishing 
 3. Set repository to `copilot-usage-studio`.
 4. Set workflow filename to `release.yml`.
 5. Allow the `npm publish` action.
-6. Leave the environment blank unless the workflow is later changed to use a protected GitHub environment.
+6. Set the trusted-publisher environment to `marketplace`, matching the protected environment used by the release job.
 
 The workflow uses GitHub's OIDC identity, so no long-lived `NPM_TOKEN` repository secret is required. npm automatically adds provenance for a public package published from a public repository through Trusted Publishing.
 
 ### One-Time VS Code Marketplace Setup
 
-1. In Azure DevOps, create a Personal Access Token with **All accessible organizations** and **Marketplace: Manage** scope.
-2. Give it the shortest practical expiration and store it as the GitHub Actions repository secret `VSCE_PAT`.
-3. Confirm the Marketplace publisher ID in `vscode-extension/package.json` is `fortunes-guardian`.
-4. Never commit or print the token. GitHub passes it only to the Marketplace publication step.
+1. In Microsoft Entra ID, create an app registration for Marketplace publishing. Record its application (client) ID and directory (tenant) ID. Do not create a client secret.
+2. Add a federated credential to that app registration using the GitHub Actions scenario:
+   - organization: `fortunes-guardian`
+   - repository: `copilot-usage-studio`
+   - entity type: **Environment**
+   - environment: `marketplace`
+3. In GitHub, create an environment named `marketplace`. Restrict deployment to protected version tags when practical.
+4. Add environment variables `AZURE_CLIENT_ID` and `AZURE_TENANT_ID`. These identifiers are not credentials; GitHub's short-lived OIDC assertion is the credential.
+5. After this workflow is merged to `main`, run **Marketplace Identity Check** from GitHub Actions.
+6. Copy the profile ID from the workflow summary. In the Visual Studio Marketplace publisher management page, add that identity ID as a member of publisher `fortunes-guardian` with the **Contributor** role.
+7. Rerun **Marketplace Identity Check** if publisher membership or federation changes.
 
-The current VS Code publishing tool uses `VSCE_PAT` automatically. Microsoft has announced retirement of global Azure DevOps PATs on December 1, 2026; migrate this workflow to Microsoft Entra ID automated publishing before that deadline. The workflow publishes the already packaged `tmp/*.vsix`, and that exact file is uploaded to the GitHub Release.
+The release job uses `azure/login` with GitHub OIDC, then publishes with `vsce --azure-credential`. No PAT, client secret, or certificate is created. The workflow publishes the already packaged `tmp/*.vsix`, and that exact file is uploaded to the GitHub Release.
+
+References: [VS Code secure automated publishing](https://code.visualstudio.com/api/working-with-extensions/publishing-extension#secure-automated-publishing-to-visual-studio-marketplace) and [GitHub OIDC with Azure](https://docs.github.com/actions/security-for-github-actions/security-hardening-your-deployments/configuring-openid-connect-in-azure).
 
 ### Publishing a Version
 

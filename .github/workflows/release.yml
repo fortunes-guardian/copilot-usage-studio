@@ -23,6 +23,7 @@ jobs:
   publish:
     name: Publish npm, VS Code Marketplace, and GitHub Release
     runs-on: ubuntu-latest
+    environment: marketplace
     env:
       RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
@@ -96,24 +97,39 @@ jobs:
       - name: Package VS Code extension
         run: npm run vscode:package
 
+      - name: Authenticate with Microsoft Entra ID
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+
+      - name: Verify Marketplace publisher identity
+        shell: bash
+        run: |
+          profile_id="$(az rest \
+            --url https://app.vssps.visualstudio.com/_apis/profile/profiles/me \
+            --resource 499b84ac-1321-427f-aa17-267ca6975798 \
+            --query id \
+            --output tsv)"
+          if [[ -z "$profile_id" ]]; then
+            echo "Microsoft Entra authentication succeeded, but no Marketplace profile ID was returned."
+            exit 1
+          fi
+          echo "Microsoft Entra Marketplace identity verified."
+
       - name: Publish to npm
         if: steps.npm-state.outputs.already-published != 'true'
         run: npm publish --access public
 
       - name: Publish VS Code extension to Marketplace
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
         shell: bash
         run: |
-          if [[ -z "$VSCE_PAT" ]]; then
-            echo "Repository secret VSCE_PAT is required for Marketplace publication."
-            exit 1
-          fi
-
           vsix_asset="$(ls tmp/*.vsix | head -n 1)"
           node node_modules/@vscode/vsce/vsce publish \
             --packagePath "$vsix_asset" \
-            --skip-duplicate
+            --skip-duplicate \
+            --azure-credential
 
       - name: Generate release notes
         run: npm run release:notes -- --tag "$RELEASE_TAG" --out tmp/release-notes.md

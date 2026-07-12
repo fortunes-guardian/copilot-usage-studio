@@ -1,0 +1,37 @@
+name: Marketplace Identity Check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  verify:
+    name: Verify Microsoft Entra Marketplace identity
+    runs-on: ubuntu-latest
+    environment: marketplace
+
+    steps:
+      - name: Authenticate with Microsoft Entra ID
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+
+      - name: Retrieve Marketplace profile ID
+        shell: bash
+        run: |
+          profile_id="$(az rest \
+            --url https://app.vssps.visualstudio.com/_apis/profile/profiles/me \
+            --resource 499b84ac-1321-427f-aa17-267ca6975798 \
+            --query id \
+            --output tsv)"
+          if [[ -z "$profile_id" ]]; then
+            echo "No Marketplace profile ID was returned."
+            exit 1
+          fi
+          echo "### Marketplace identity profile ID" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`$profile_id\`" >> "$GITHUB_STEP_SUMMARY"

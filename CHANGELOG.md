@@ -41,6 +41,7 @@ All notable changes to Copilot Usage Studio are recorded here.
 - Improve Customizations empty states, actions, scan progress, and cancellation behavior.
 - Publish one versioned VSIX automatically to the VS Code Marketplace and attach that exact artifact to the matching GitHub Release.
 - Enforce matching npm, extension, tag, and release versions in CI.
+- Authenticate Marketplace releases through GitHub OIDC and Microsoft Entra workload identity federation without a PAT or client secret.
 
 
 ## 0.1.0 - 2026-06-14
