@@ -2,7 +2,7 @@
   "name": "copilot-usage-studio-vscode",
   "displayName": "Copilot Usage Studio",
   "description": "Local GitHub Copilot usage, memory, and customization insights for VS Code.",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "publisher": "fortunes-guardian",
   "license": "MIT",
   "icon": "media/icon.png",
