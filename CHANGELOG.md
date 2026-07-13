@@ -4,12 +4,6 @@ All notable changes to Copilot Usage Studio are recorded here.
 
 ## Unreleased
 
-- Refresh the GitHub Copilot pricing catalogue from the July 13 table, including GPT-5.6 Luna, Sol, and Terra with per-request long-context tiers.
-- Harmonize Customizations around explicit Global refresh and focused evidence-scan states, evidence-first sorting, quick filters, compact confidence cards, clearer preview/source explanations, and readable request chips.
-- Give generic `SKILL.md` records recognizable metadata/folder-derived names.
-- Add a shared, persisted, draggable results sidebar width to Customizations and Memory.
-- Preserve merged debug-log source counts after focused and incremental scans so Refresh cannot falsely report that no Agent Debug Log session was imported.
-
 - Add a read-only Copilot Memory library for global, repository, workspace, and session-scoped memories and plans.
 - Link session-scoped memory files to the imported run that created them.
 - Add guarded local-runtime actions to open or reveal an indexed memory file.
@@ -35,6 +29,14 @@ All notable changes to Copilot Usage Studio are recorded here.
 - Purge public roadmap links from README and release-facing docs.
 - Refresh GitHub Copilot model pricing from the July 5, 2026 GitHub Docs table, including Claude Sonnet 5, Claude Opus 4.8 fast mode, Kimi K2.7 Code, and updated model statuses.
 - Add raw model-id alias support so newly observed VS Code ids can map to the matching GitHub pricing row without hidden fallback pricing.
+
+## 0.3.0 - 2026-07-13
+
+- Refresh the GitHub Copilot pricing catalogue from the July 13 table, including GPT-5.6 Luna, Sol, and Terra with per-request long-context tiers.
+- Harmonize Customizations around explicit Global refresh and focused evidence-scan states, evidence-first sorting, quick filters, compact confidence cards, clearer preview/source explanations, and readable request chips.
+- Give generic `SKILL.md` records recognizable metadata/folder-derived names.
+- Add a shared, persisted, draggable results sidebar width to Customizations and Memory.
+- Preserve merged debug-log source counts after focused and incremental scans so Refresh cannot falsely report that no Agent Debug Log session was imported.
 
 ## 0.2.3 - 2026-07-12
 
