@@ -17,10 +17,10 @@ https://docs.github.com/en/copilot/concepts/billing/usage-based-billing-for-orga
 Current version:
 
 ```text
-github-copilot-usage-pricing-2026-07-05
+github-copilot-usage-pricing-2026-07-13
 ```
 
-The source table says prices are per 1 million tokens. The committed snapshot was checked against GitHub Docs on July 5, 2026.
+The source table says prices are per 1 million tokens. The committed snapshot was checked against GitHub Docs on July 13, 2026.
 
 ## Where Pricing Lives
 
@@ -83,7 +83,7 @@ GitHub documents `1 AI credit = $0.01 USD`.
 
 ### Long-context tiers
 
-GitHub publishes a second rate tier for GPT-5.4 and GPT-5.5 requests over 272K input tokens, and for Gemini 3.1 Pro requests over 200K input tokens.
+GitHub publishes a second rate tier for GPT-5.4, GPT-5.5, GPT-5.6 Sol, and GPT-5.6 Terra requests over 272K input tokens, and for GPT-5.6 Luna and Gemini 3.1 Pro requests over 200K input tokens.
 
 The app evaluates that threshold independently for every model call:
 

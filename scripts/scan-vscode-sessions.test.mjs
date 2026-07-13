@@ -1235,10 +1235,12 @@ test('indexes repo-root, parent-repo, agent, and debug-referenced customizations
     assert.equal(externalSkill?.kind, 'skill');
     assert.equal(externalSkill?.evidenceStatus, 'listed');
     assert.equal(discoveredSkill?.kind, 'skill');
+    assert.equal(discoveredSkill?.title, 'Pending Git');
     assert.equal(discoveredSkill?.evidenceStatus, 'listed');
     assert.equal(configuredInstruction?.kind, 'instruction');
     assert.equal(configuredInstruction?.evidenceStatus, 'listed');
     assert.equal(configuredSkill?.kind, 'skill');
+    assert.equal(configuredSkill?.title, 'Release Review');
     assert.equal(configuredSkill?.evidenceStatus, 'listed');
     assert.equal(configuredAgent?.kind, 'agent');
     assert.equal(configuredAgent?.evidenceStatus, 'listed');

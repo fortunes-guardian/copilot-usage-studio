@@ -16,6 +16,7 @@
           <span>{{ requestTextCountLabel() }}</span>
         </p>
         <p>{{ evidenceResultText() }}</p>
+        <p class="scan-relationship">{{ scanRelationshipText() }}</p>
         @if (isEvidenceScanActive()) {
           <div class="scan-progress-meter" aria-label="Evidence scan progress">
             <div>
@@ -67,6 +68,29 @@
     </div>
   </section>
 
+  <section class="customizations-summary" aria-label="Customization evidence summary">
+    <div>
+      <span>Customization files discovered</span>
+      <strong>{{ summary().total | number }}</strong>
+      <app-help-popover [text]="summaryHelp.files" label="Explain discovered customization files"></app-help-popover>
+    </div>
+    <div>
+      <span>Files with evidence</span>
+      <strong>{{ summary().sent | number }}</strong>
+      <app-help-popover [text]="summaryHelp.evidence" label="Explain files with evidence"></app-help-popover>
+    </div>
+    <div>
+      <span>Sessions containing evidence</span>
+      <strong>{{ summary().sessions | number }}</strong>
+      <app-help-popover [text]="summaryHelp.sessions" label="Explain sessions containing evidence"></app-help-popover>
+    </div>
+    <div>
+      <span>Total evidence matches</span>
+      <strong>{{ summary().matches | number }}</strong>
+      <app-help-popover [text]="summaryHelp.matches" label="Explain total evidence matches"></app-help-popover>
+    </div>
+  </section>
+
   <section class="customizations-controls" aria-label="Customization filters">
     <label class="customizations-search">
       <span>Search customizations</span>
@@ -78,28 +102,6 @@
       />
     </label>
     <label>
-      <span>Type</span>
-      <select [ngModel]="kindFilter()" (ngModelChange)="setKindFilter($event)">
-        <option value="all">All types</option>
-        <option value="instruction">Instructions</option>
-        <option value="skill">Skills</option>
-        <option value="prompt">Prompts</option>
-        <option value="hook">Hooks</option>
-        <option value="agent">Agents</option>
-        <option value="other">Other</option>
-      </select>
-    </label>
-    <label>
-      <span>Evidence</span>
-      <select [ngModel]="statusFilter()" (ngModelChange)="setStatusFilter($event)">
-        <option value="all">All evidence</option>
-        <option value="sent">Text match found</option>
-        <option value="listed">Read by Copilot</option>
-        <option value="discovered">Discovered only</option>
-        <option value="not_seen">Not seen</option>
-      </select>
-    </label>
-    <label>
       <span>Workspace</span>
       <select [ngModel]="workspaceFilter()" (ngModelChange)="setWorkspaceFilter($event)">
         @for (workspace of workspaceOptions(); track workspace) {
@@ -108,6 +110,19 @@
       </select>
     </label>
   </section>
+
+  <nav class="customizations-filter-chips" aria-label="Quick result filters">
+    @for (filter of resultFilters; track filter.value) {
+      <button
+        type="button"
+        [class.active]="resultFilter() === filter.value"
+        [attr.aria-pressed]="resultFilter() === filter.value"
+        (click)="setResultFilter(filter.value)"
+      >
+        {{ filter.label }}
+      </button>
+    }
+  </nav>
 
   <details class="customizations-diagnostics">
     <summary>
@@ -140,7 +155,7 @@
         <div class="customizations-list-heading">
           <span>{{ filteredCustomizations().length | number }} shown</span>
           @if (
-            query() || kindFilter() !== 'all' || statusFilter() !== 'all' || workspaceFilter() !== 'all'
+            query() || resultFilter() !== 'all' || workspaceFilter() !== 'all'
           ) {
             <button type="button" (click)="resetFilters()">Reset</button>
           }
@@ -160,7 +175,7 @@
             </span>
             <span class="customization-card-main">
               <strong>{{ customization.title }}</strong>
-              <small>{{ fileName(customization) }} · {{ kindLabel(customization.kind) }}</small>
+              <small>{{ customizationTypeLabel(customization) }} · {{ fileName(customization) }}</small>
             </span>
             <span class="customization-card-side">
               <b>{{ statusLabel(customization.evidenceStatus) }}</b>
@@ -170,11 +185,18 @@
         }
       </aside>
 
+      <div
+        class="results-sidebar-resizer"
+        appResizableSidebar="copilot-usage-studio.results-sidebar-width"
+        [resizableMin]="300"
+        [resizableDefault]="430"
+      ></div>
+
       @if (selectedCustomization(); as customization) {
         <article class="customization-detail">
           <header class="customization-detail-header">
             <div>
-              <span class="customization-kicker">{{ kindLabel(customization.kind) }}</span>
+              <span class="customization-kicker">{{ customizationTypeLabel(customization) }}</span>
               <h3>{{ customization.title }}</h3>
               <p>{{ customization.workspace || 'Local' }} · {{ fileName(customization) }}</p>
             </div>
@@ -206,20 +228,33 @@
 
           <section class="evidence-summary">
             <div>
-              <span class="customization-kicker">Detection result</span>
+              <span class="customization-kicker">Evidence confidence</span>
               <h4>{{ statusHeadline(customization.evidenceStatus) }}</h4>
-              <p>{{ statusHelp(customization.evidenceStatus) }}</p>
+              <ul class="evidence-checklist">
+                <li class="confirmed">✓ Local file detected</li>
+                @if (customization.evidenceStatus === 'sent') {
+                  <li class="confirmed">✓ Matching request text found</li>
+                } @else if (customization.evidenceStatus === 'listed') {
+                  <li class="partial">~ File path or read reference found</li>
+                  <li>– File contents unavailable for text comparison</li>
+                } @else if (customization.evidenceStatus === 'discovered') {
+                  <li class="partial">~ VS Code discovery record found</li>
+                  <li>– No matching request text recovered</li>
+                } @else {
+                  <li>– No matching evidence in imported request logs</li>
+                }
+              </ul>
+              @if (customization.matches.length) {
+                <a href="#customization-evidence-list">View evidence</a>
+              }
             </div>
             @if (customization.description) {
-              <div class="matched-customization-text">
-                <span class="customization-kicker">Matched customization text</span>
-                <p class="description">{{ customization.description }}</p>
-              </div>
+              <p class="description">{{ customization.description }}</p>
             }
           </section>
 
           @if (customization.matches.length) {
-            <section class="match-list" aria-label="Customization evidence matches">
+            <section id="customization-evidence-list" class="match-list" aria-label="Customization evidence matches">
               <header>
                 <span class="customization-kicker">Where it appeared</span>
                 <h4>{{ selectedSessionEvidence().length | number }} session{{ selectedSessionEvidence().length === 1 ? '' : 's' }}</h4>
@@ -251,7 +286,7 @@
                               [class.discovered]="marker.status === 'discovered'"
                               [attr.aria-label]="timelineMarkerLabel(marker)"
                             >
-                              #{{ marker.callNumber }}
+                              R{{ marker.callNumber }}
                             </span>
                           }
                           @if (timelineOverflow(group)) {
@@ -259,14 +294,14 @@
                           }
                         </span>
                       } @else {
-                        <span class="match-group-weak">No file text found</span>
+                        <span class="match-group-weak">Limited evidence</span>
                       }
                       <strong>{{ sessionEvidenceLabel(group) }}</strong>
                     </span>
                   </summary>
                   <div class="match-group-detail-header">
                     <p>
-                      {{ groupDetailSummary(group) }}
+                      {{ group.bestStatus === 'sent' ? groupDetailSummary(group) : weakEvidenceExplanation(group) }}
                     </p>
                     @if (group.session) {
                       <button type="button" (click)="emitOpenSession(group.sessionId)">Open run</button>
@@ -280,14 +315,19 @@
                             <strong>{{ callEvidenceTitle(call) }}</strong>
                             <p>{{ callEvidenceSummary(call) }}</p>
                             @if (call.matchedPreview.length) {
+                              <span class="matched-excerpt-label">Matched excerpt</span>
                               <blockquote>
                                 {{ call.matchedPreview[0] }}
                               </blockquote>
+                              <small class="matched-character-count">
+                                Approximate matched content: {{ call.matchedCharacters | number }} characters
+                              </small>
                             }
                             <details class="raw-evidence-details">
                               <summary>Proof details · {{ evidenceDetailsSummary(call) }}</summary>
                               <div>
                                 <span>Visible VS Code log sources</span>
+                                <p>These labels identify request-log sections where the match appeared. They are evidence fields, not files, so they cannot be opened.</p>
                                 <ul>
                                   @for (source of rawEvidenceSources(call); track source.raw + source.label) {
                                     <li>

@@ -11,12 +11,14 @@ Reference sample used for this pass:
 Latest schema drift check:
 
 ```text
-2026-07-05
+2026-07-13
 %APPDATA%\Code\User\workspaceStorage\<workspace-id>\GitHub.copilot-chat\debug-logs\<session-id>
 VS Code 1.127.0, GitHub Copilot Chat 0.55.0
 ```
 
 The schema is observed, not guaranteed by a published VS Code API. Treat it as a local data contract that must be verified with fixtures as VS Code Copilot changes.
+
+The July 13 audit was compatible: no breaking or warning findings. Additive observations included discovery event names, cache-write price metadata in `models.json`, and raw model ids for Claude Sonnet 5, Claude Fable 5, Claude Opus 4.8 fast mode, and Kimi K2.7 Code. Raw ids are mapped only where the official GitHub pricing table has a matching row.
 
 The repeatable update process and committed privacy-safe fingerprint are documented in [schema-change-workflow.md](schema-change-workflow.md). Run `npm run schema:audit` before importing sessions from a newly updated VS Code/Copilot runtime.
 

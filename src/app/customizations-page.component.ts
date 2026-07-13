@@ -11,9 +11,19 @@ import {
 } from './session-data.model';
 import { HelpPopoverComponent } from './help-popover.component';
 import { LocalRuntimeStatus, SessionDataRefreshState } from './session-data.service';
+import { ResizableSidebarDirective } from './resizable-sidebar.directive';
 
 type CustomizationKindFilter = 'all' | CopilotCustomizationKind;
 type CustomizationStatusFilter = 'all' | CopilotCustomizationEvidenceStatus;
+type CustomizationResultFilter =
+  | 'all'
+  | 'evidence'
+  | 'none'
+  | 'partial'
+  | 'skill'
+  | 'instruction'
+  | 'prompt'
+  | 'rule';
 type MatchSource = 'inputMessages' | 'userRequest' | string;
 type EvidenceSource = {
   label: string;
@@ -53,7 +63,7 @@ type CustomizationSessionEvidence = {
 
 @Component({
   selector: 'app-customizations-page',
-  imports: [DatePipe, DecimalPipe, FormsModule, HelpPopoverComponent],
+  imports: [DatePipe, DecimalPipe, FormsModule, HelpPopoverComponent, ResizableSidebarDirective],
   templateUrl: './customizations-page.component.html',
   styleUrl: './customizations-page.component.css',
 })
@@ -65,6 +75,7 @@ export class CustomizationsPageComponent {
   protected readonly kindFilter = signal<CustomizationKindFilter>('all');
   protected readonly statusFilter = signal<CustomizationStatusFilter>('all');
   protected readonly workspaceFilter = signal('all');
+  protected readonly resultFilter = signal<CustomizationResultFilter>('all');
   protected readonly selectedId = signal<string | null>(null);
 
   @Input() set customizations(value: CopilotCustomization[] | null | undefined) {
@@ -126,9 +137,14 @@ export class CustomizationsPageComponent {
         matchesQuery &&
         (kind === 'all' || item.kind === kind) &&
         (status === 'all' || item.evidenceStatus === status) &&
-        (workspace === 'all' || item.workspace === workspace)
+        (workspace === 'all' || item.workspace === workspace) &&
+        this.matchesResultFilter(item, this.resultFilter())
       );
-    });
+    }).sort((a, b) =>
+      this.evidenceSortCount(b) - this.evidenceSortCount(a) ||
+      this.statusRank(b.evidenceStatus) - this.statusRank(a.evidenceStatus) ||
+      a.title.localeCompare(b.title),
+    );
   });
 
   protected readonly selectedCustomization = computed(() => {
@@ -148,8 +164,29 @@ export class CustomizationsPageComponent {
       sent: items.filter((item) => item.evidenceStatus === 'sent').length,
       listed: items.filter((item) => item.evidenceStatus === 'listed').length,
       discovered: items.filter((item) => item.evidenceStatus === 'discovered').length,
+      sessions: this.evidenceSessionCount(),
+      matches: this.evidenceMatchCount(),
+      partial: items.filter((item) => ['listed', 'discovered'].includes(item.evidenceStatus)).length,
     };
   });
+
+  protected readonly resultFilters: Array<{ value: CustomizationResultFilter; label: string }> = [
+    { value: 'all', label: 'All' },
+    { value: 'evidence', label: 'Evidence found' },
+    { value: 'none', label: 'No evidence' },
+    { value: 'partial', label: 'Partial results' },
+    { value: 'skill', label: 'Skills' },
+    { value: 'instruction', label: 'Instructions' },
+    { value: 'prompt', label: 'Prompts' },
+    { value: 'rule', label: 'Rules' },
+  ];
+
+  protected readonly summaryHelp = {
+    files: 'Customization files discovered in trusted VS Code settings, defaults, or exact local-log references.',
+    evidence: 'Files with distinctive text matched inside visible VS Code model-request logs.',
+    sessions: 'Distinct Copilot sessions containing at least one text match for a customization file.',
+    matches: 'Text-match evidence records. One file can match multiple requests in the same session.',
+  };
 
   protected readonly scanDiagnostics = computed(() => {
     const ingestion = this.ingestionInput();
@@ -204,6 +241,12 @@ export class CustomizationsPageComponent {
 
   protected isEvidenceScanActive(): boolean {
     return this.refreshState === 'refreshing' && this.runtimeStatus?.activeScanMode === 'customizations';
+  }
+
+  protected scanRelationshipText(): string {
+    return this.isEvidenceScanActive()
+      ? 'Customization evidence scan is running. Global refresh is temporarily unavailable because local scans run one at a time.'
+      : 'Customization evidence analysis is separate from Global refresh and runs only when requested here.';
   }
 
   protected currentWorkspaceLabel(): string {
@@ -434,11 +477,17 @@ export class CustomizationsPageComponent {
     this.ensureVisibleSelection();
   }
 
+  protected setResultFilter(value: CustomizationResultFilter): void {
+    this.resultFilter.set(value);
+    this.ensureVisibleSelection();
+  }
+
   protected resetFilters(): void {
     this.query.set('');
     this.kindFilter.set('all');
     this.statusFilter.set('all');
     this.workspaceFilter.set('all');
+    this.resultFilter.set('all');
     this.ensureVisibleSelection();
   }
 
@@ -460,12 +509,19 @@ export class CustomizationsPageComponent {
     }[kind];
   }
 
+  protected customizationTypeLabel(customization: CopilotCustomization): string {
+    const kind = this.kindLabel(customization.kind);
+    return customization.kind === 'skill' && !/^skill$/i.test(customization.title)
+      ? `${kind} (${customization.title})`
+      : kind;
+  }
+
   protected statusLabel(status: CopilotCustomizationEvidenceStatus): string {
     return {
-      sent: 'Text match found',
-      listed: 'Read by Copilot',
-      discovered: 'Discovered',
-      not_seen: 'Not seen',
+      sent: 'Evidence found',
+      listed: 'Path/reference only',
+      discovered: 'Discovered locally',
+      not_seen: 'No local-log evidence',
     }[status];
   }
 
@@ -501,11 +557,11 @@ export class CustomizationsPageComponent {
       const sentCalls = this.sentModelCallCount(group);
       return sentCalls
         ? `${sentCalls.toLocaleString()} text-matched request${sentCalls === 1 ? '' : 's'}`
-        : 'Text match found';
+        : 'Evidence found';
     }
     if (group.bestStatus === 'listed') {
       return calls
-        ? `Read or referenced, but no file text found`
+        ? `File path or read recorded; contents unavailable`
         : 'Read or referenced';
     }
     if (group.bestStatus === 'discovered') {
@@ -554,7 +610,7 @@ export class CustomizationsPageComponent {
   protected sessionEvidenceLabel(group: CustomizationSessionEvidence): string {
     const calls = group.modelCallNumbers.length;
     if (!calls) {
-      return group.bestStatus === 'sent' ? 'Text match found' : this.statusLabel(group.bestStatus);
+      return group.bestStatus === 'sent' ? 'Evidence found' : this.statusLabel(group.bestStatus);
     }
     if (group.bestStatus !== 'sent') {
       return 'Read or referenced';
@@ -576,7 +632,7 @@ export class CustomizationsPageComponent {
     return [...markers.entries()]
       .sort(([a], [b]) => a - b)
       .filter(([, status]) => group.bestStatus !== 'sent' || status === 'sent')
-      .slice(0, 18)
+      .slice(0, 10)
       .map(([callNumber, status]) => ({ callNumber, status }));
   }
 
@@ -587,7 +643,7 @@ export class CustomizationsPageComponent {
         .map((match) => match.modelCallNumber)
         .filter(Boolean),
     );
-    return Math.max(0, distinctCalls.size - 18);
+    return Math.max(0, distinctCalls.size - 10);
   }
 
   protected timelineMarkerLabel(marker: EvidenceTimelineMarker): string {
@@ -658,7 +714,10 @@ export class CustomizationsPageComponent {
 
   protected callEvidenceSummary(call: CustomizationCallEvidence): string {
     if (call.status === 'sent') {
-      return 'Distinctive file text appeared in this Copilot request.';
+      const count = call.matchedCharacters.toLocaleString();
+      return call.matchedCharacters >= 600
+        ? `Large text match detected. A representative excerpt is shown below. Approximate matched content: ${count} characters.`
+        : `Distinctive file text appeared in this Copilot request. Approximate matched content: ${count} characters.`;
     }
     if (call.status === 'listed') {
       return 'Copilot read or referenced this file, but local logs did not show distinctive file text inside this model request.';
@@ -679,6 +738,16 @@ export class CustomizationsPageComponent {
       return 'VS Code setup or discovery mentioned this file, but imported model requests did not show distinctive file text.';
     }
     return 'No visible request evidence was imported for this session.';
+  }
+
+  protected weakEvidenceExplanation(group: CustomizationSessionEvidence): string {
+    if (group.bestStatus === 'listed') {
+      return 'Only the file path or a file-read reference was visible. The file contents were not available in the request logs for comparison.';
+    }
+    if (group.bestStatus === 'discovered') {
+      return 'VS Code reported the file during customization discovery, but no matching text snippet could be recovered from imported request logs.';
+    }
+    return 'No matching text snippet could be recovered from the imported logs.';
   }
 
   protected evidenceSourceLabels(call: CustomizationCallEvidence): string[] {
@@ -834,6 +903,29 @@ export class CustomizationsPageComponent {
       sent: 3,
     };
     return rank[next] > rank[current] ? next : current;
+  }
+
+  private statusRank(status: CopilotCustomizationEvidenceStatus): number {
+    return { not_seen: 0, discovered: 1, listed: 2, sent: 3 }[status];
+  }
+
+  private evidenceSortCount(customization: CopilotCustomization): number {
+    return customization.matches.filter((match) => match.status === 'sent').length;
+  }
+
+  private matchesResultFilter(
+    customization: CopilotCustomization,
+    filter: CustomizationResultFilter,
+  ): boolean {
+    if (filter === 'all') return true;
+    if (filter === 'evidence') return customization.evidenceStatus === 'sent';
+    if (filter === 'none') return customization.evidenceStatus === 'not_seen';
+    if (filter === 'partial') return ['listed', 'discovered'].includes(customization.evidenceStatus);
+    if (filter === 'rule') {
+      const path = `${customization.relativePath} ${customization.sourcePath}`.replace(/\\/g, '/').toLowerCase();
+      return customization.kind === 'instruction' && (path.includes('/rules/') || path.includes('.rules.'));
+    }
+    return customization.kind === filter;
   }
 
   private ensureVisibleSelection(): void {

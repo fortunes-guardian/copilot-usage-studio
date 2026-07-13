@@ -1792,6 +1792,10 @@
   animation: refresh-spin 900ms linear infinite;
 }
 
+.refresh-icon.evidence {
+  color: var(--accent);
+}
+
 .data-refresh-status {
   overflow: hidden;
   max-width: min(36vw, 420px);

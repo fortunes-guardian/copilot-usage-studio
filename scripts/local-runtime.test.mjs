@@ -126,6 +126,48 @@ test('preserves customization evidence when a quick refresh skips customization 
   }
 });
 
+test('keeps debug-log source counts after customization analysis and a quick refresh', async () => {
+  const fixture = runtimeFixture('refresh-keeps-debug-counts');
+  const cached = sessionData('debug-session', '2026-06-13T08:00:00.000Z');
+  cached.sessions[0].sourceKind = 'vscode-copilot-debug-log';
+  cached.ingestion.importedDebugLogSessions = 1;
+  cached.ingestion.importedChatSnapshotSessions = 0;
+  writeFileSync(fixture.dataFile, JSON.stringify(cached), 'utf8');
+  let scans = 0;
+  const runtime = createLocalRuntime({
+    port: 0,
+    dataFile: fixture.dataFile,
+    seedDataFile: null,
+    staticDir: fixture.staticDir,
+    scanOnStart: false,
+    scanner: async () => {
+      scans += 1;
+      return {
+        ...sessionData(`delta-${scans}`, `2026-06-13T0${8 + scans}:00:00.000Z`),
+        sessions: [],
+        ingestion: { importedSessions: 0, importedDebugLogSessions: 0, importedChatSnapshotSessions: 0 },
+      };
+    },
+    logger: silentLogger(),
+  });
+
+  try {
+    const address = await runtime.listen();
+    const origin = `http://127.0.0.1:${address.port}`;
+    const customizationResponse = await jsonRequest(`${origin}/api/scan`, {
+      method: 'POST',
+      body: JSON.stringify({ mode: 'customizations' }),
+    });
+    assert.equal(customizationResponse.sessionData.ingestion.importedDebugLogSessions, 1);
+    const refreshResponse = await jsonRequest(`${origin}/api/scan`, { method: 'POST' });
+    assert.equal(refreshResponse.sessionData.ingestion.importedDebugLogSessions, 1);
+    assert.equal(refreshResponse.sessionData.sessions[0].id, 'debug-session');
+  } finally {
+    await runtime.close();
+    rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
 test('keeps the last valid snapshot when a refresh fails', async () => {
   const fixture = runtimeFixture('failure');
   const cached = sessionData('safe-session', '2026-06-13T08:00:00.000Z');

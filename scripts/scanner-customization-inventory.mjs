@@ -210,6 +210,21 @@ function parseSimpleFrontmatter(content) {
       .replace(/\b\w/g, (character) => character.toUpperCase())
       .slice(0, 160);
   }
+
+  function customizationDisplayName(content, file, kind) {
+    const frontmatter = parseSimpleFrontmatter(content);
+    const metadataName = String(
+      frontmatter.title ?? frontmatter.name ?? frontmatter.displayName ?? frontmatter.id ?? '',
+    ).trim();
+    if (metadataName) {
+      return metadataName.slice(0, 160);
+    }
+
+    const fileTitle = titleFromFileName(file);
+    return kind === 'skill' && /^skill$/i.test(fileTitle)
+      ? titleFromFileName(dirname(file))
+      : fileTitle;
+  }
   
   function isMarkdownFile(file) {
     return extname(file).toLowerCase() === '.md';
@@ -333,8 +348,14 @@ function parseSimpleFrontmatter(content) {
       return {
         id: createHash('sha256').update(stablePathKey(file)).digest('hex').slice(0, 24),
         kind,
-        title: frontmatter.title ? markdownTitle(content, file) : titleFromFileName(file),
-        name: String(frontmatter.id ?? basename(file, extname(file))).trim(),
+        title: customizationDisplayName(content, file, kind),
+        name: String(
+          frontmatter.name ??
+          frontmatter.id ??
+          (kind === 'skill' && basename(file).toLowerCase() === 'skill.md'
+            ? basename(dirname(file))
+            : basename(file, extname(file))),
+        ).trim(),
         description: description || memoryExcerpt(content).slice(0, 180),
         applyTo,
         triggers: Array.isArray(frontmatter.triggers) ? frontmatter.triggers.map(String) : [],

@@ -21,6 +21,9 @@ test('normalizes raw VS Code model ids to GitHub pricing rows', () => {
   assert.equal(modelKey('copilot/Claude Sonnet 4.6'), 'claude sonnet 4 6');
   assert.equal(normalizeModel('copilot/claude-sonnet-4.6', pricing), 'Claude Sonnet 4.6');
   assert.equal(normalizeModel('gpt-5.4', pricing), 'GPT-5.4');
+  assert.equal(normalizeModel('copilot/gpt-5.6-luna', pricing), 'GPT-5.6 Luna');
+  assert.equal(normalizeModel('gpt-5.6-sol', pricing), 'GPT-5.6 Sol');
+  assert.equal(normalizeModel('gpt-5.6-terra', pricing), 'GPT-5.6 Terra');
   assert.equal(normalizeModel('claude-sonnet-5', pricing), 'Claude Sonnet 5');
   assert.equal(normalizeModel('kimi-k2.7-code', pricing), 'Kimi K2.7 Code');
   assert.equal(
@@ -79,5 +82,13 @@ test('selects long-context pricing per request using normal plus cached input', 
   assert.equal(
     priceForTokens('Gemini 3.1 Pro', { input: 200_001, cachedInput: 0 }, pricing, fallback).output,
     18,
+  );
+  assert.equal(
+    priceForTokens('GPT-5.6 Luna', { input: 200_001, cachedInput: 0 }, pricing, fallback).output,
+    9,
+  );
+  assert.equal(
+    priceForTokens('GPT-5.6 Terra', { input: 272_001, cachedInput: 0 }, pricing, fallback).input,
+    5,
   );
 });

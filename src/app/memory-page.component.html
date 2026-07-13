@@ -93,6 +93,13 @@
         }
       </aside>
 
+      <div
+        class="results-sidebar-resizer"
+        appResizableSidebar="copilot-usage-studio.results-sidebar-width"
+        [resizableMin]="280"
+        [resizableDefault]="380"
+      ></div>
+
       @if (selectedMemory(); as memory) {
         <article class="memory-detail">
           <header class="memory-detail-header">

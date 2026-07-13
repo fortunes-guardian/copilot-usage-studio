@@ -327,11 +327,22 @@ export class App {
 
   protected topbarScanLabel(): string {
     if (this.sessionDataRefreshState() === 'refreshing') {
-      if (this.activeRefreshMode() === 'customizations') return 'Analyzing';
+      if (this.isCustomizationEvidenceScanActive()) return 'Evidence scan';
       if (this.activeRefreshMode() === 'full') return 'Rescanning';
-      return 'Checking';
+      return 'Global Refresh';
     }
-    return 'Refresh';
+    return 'Global Refresh';
+  }
+
+  protected isCustomizationEvidenceScanActive(): boolean {
+    return this.activeRefreshMode() === 'customizations' ||
+      (this.runtimeStatus()?.scanning === true && this.runtimeStatus()?.activeScanMode === 'customizations');
+  }
+
+  protected topbarScanTitle(): string {
+    return this.isCustomizationEvidenceScanActive()
+      ? 'Customization evidence scan is running; global refresh waits until it finishes'
+      : 'Global refresh: check for new Copilot sessions and memories';
   }
 
   protected topbarScanStatus(): string {
@@ -346,19 +357,19 @@ export class App {
 
       if (workspaceIndex > 0 && workspaceTotal > 0) {
         if (status?.activeScanMode === 'customizations') {
-          return 'Checking customization evidence';
+          return 'Focused customization evidence analysis';
         }
         return `${workspaceIndex.toLocaleString()} of ${workspaceTotal.toLocaleString()} storage entries checked`;
       }
 
       return status?.activeScanMode === 'customizations'
-        ? 'Checking customization evidence'
+        ? 'Focused customization evidence analysis'
         : (message || 'Scanning local VS Code data');
     }
 
     if (status?.scanning === true) {
       return status.activeScanMode === 'customizations'
-        ? 'Checking customization evidence in the background'
+        ? 'Focused customization evidence analysis in progress'
         : 'Background scan running';
     }
 

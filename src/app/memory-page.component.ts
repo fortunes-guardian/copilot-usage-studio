@@ -12,6 +12,7 @@ import {
 } from './session-data.model';
 import { HelpPopoverComponent } from './help-popover.component';
 import { apiUrl } from './host-config';
+import { ResizableSidebarDirective } from './resizable-sidebar.directive';
 
 type MemoryKindFilter = 'all' | CopilotMemoryKind;
 type MemoryScopeFilter = 'all' | CopilotMemoryScope;
@@ -19,7 +20,7 @@ type MemoryAction = 'open' | 'reveal';
 
 @Component({
   selector: 'app-memory-page',
-  imports: [DatePipe, DecimalPipe, FormsModule, HelpPopoverComponent],
+  imports: [DatePipe, DecimalPipe, FormsModule, HelpPopoverComponent, ResizableSidebarDirective],
   templateUrl: './memory-page.component.html',
   styleUrl: './memory-page.component.css',
 })

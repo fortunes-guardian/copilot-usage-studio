@@ -128,11 +128,33 @@
 
 .memory-workspace {
   display: grid;
-  grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: minmax(280px, var(--results-sidebar-width, 380px)) 8px minmax(0, 1fr);
+  gap: 0;
   align-items: start;
   min-height: 0;
 }
+
+.results-sidebar-resizer {
+  position: sticky;
+  top: 70px;
+  height: calc(100vh - 150px);
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.results-sidebar-resizer::after {
+  display: block;
+  width: 2px;
+  height: 100%;
+  margin: 0 auto;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--line) 82%, transparent);
+  content: '';
+}
+
+.results-sidebar-resizer:hover::after,
+.results-sidebar-resizer:focus-visible::after,
+.results-sidebar-resizer.dragging::after { background: var(--accent); }
 
 .memory-list,
 .memory-detail,
@@ -555,6 +577,8 @@
     position: static;
     max-height: 420px;
   }
+
+  .results-sidebar-resizer { display: none; }
 
   .memory-actions {
     justify-content: flex-start;

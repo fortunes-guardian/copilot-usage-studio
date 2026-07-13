@@ -18,6 +18,8 @@ The same contract now carries a sibling `memories` collection. Memories are not 
 
 The contract also carries a sibling `customizations` collection for local Copilot customization files such as instructions and skills. Customizations are not cost rows. They answer a different developer question: did this local rule or skill merely exist, or did local VS Code logs show a text match in visible model-request material?
 
+Customization display names prefer front-matter title/name metadata, then stable metadata ids, filenames, and finally the parent folder for generic `SKILL.md` files. This keeps the normalized contract recognizable without requiring Angular to parse customization files.
+
 ## Copilot memory sources
 
 The scanner reads Markdown files beneath two observed stores:
@@ -173,7 +175,7 @@ Costs are estimates calculated from token totals and the local pricing table. Th
 - `cost.usd`
 - `cost.eur`
 
-The current pricing version is `github-copilot-usage-pricing-2026-07-05`. The app displays `cost.usd` and treats USD as the canonical estimate because GitHub prices and AI credits are USD-native. The `cost.eur` and `usdToEur` fields remain only as legacy schema compatibility fields; new scans default `usdToEur` to `1`.
+The current pricing version is `github-copilot-usage-pricing-2026-07-13`. The app displays `cost.usd` and treats USD as the canonical estimate because GitHub prices and AI credits are USD-native. The `cost.eur` and `usdToEur` fields remain only as legacy schema compatibility fields; new scans default `usdToEur` to `1`.
 
 The GitHub rate card lives in `data/github-copilot-pricing.json`. The scanner, verifier, and UI all read this same file. Why: pricing is part of the data contract. If the app calculates cost with one table and explains it with another, the debugger becomes untrustworthy.
 

@@ -1,9 +1,9 @@
 {
-  "version": "github-copilot-usage-pricing-2026-07-05",
+  "version": "github-copilot-usage-pricing-2026-07-13",
   "sourceUrl": "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
   "sourceLabel": "GitHub Docs: Models and pricing for GitHub Copilot",
-  "snapshotDate": "2026-07-05",
-  "importedAt": "2026-07-05",
+  "snapshotDate": "2026-07-13",
+  "importedAt": "2026-07-13",
   "fallbackModel": "GPT-5.4",
   "models": {
     "GPT-5 mini": {
@@ -77,6 +77,69 @@
           "input": 10,
           "cachedInput": 1,
           "output": 45
+        }
+      ]
+    },
+    "GPT-5.6 Luna": {
+      "provider": "OpenAI",
+      "releaseStatus": "GA",
+      "category": "Lightweight",
+      "input": 1,
+      "cachedInput": 0.1,
+      "output": 6,
+      "tierLabel": "Default",
+      "tierThresholdLabel": "Up to 200K input tokens",
+      "tiers": [
+        {
+          "id": "long-context",
+          "label": "Long context",
+          "thresholdInputTokensExclusive": 200000,
+          "thresholdLabel": "Over 200K input tokens",
+          "input": 2,
+          "cachedInput": 0.2,
+          "output": 9
+        }
+      ]
+    },
+    "GPT-5.6 Sol": {
+      "provider": "OpenAI",
+      "releaseStatus": "GA",
+      "category": "Powerful",
+      "input": 5,
+      "cachedInput": 0.5,
+      "output": 30,
+      "tierLabel": "Default",
+      "tierThresholdLabel": "Up to 272K input tokens",
+      "tiers": [
+        {
+          "id": "long-context",
+          "label": "Long context",
+          "thresholdInputTokensExclusive": 272000,
+          "thresholdLabel": "Over 272K input tokens",
+          "input": 10,
+          "cachedInput": 1,
+          "output": 45
+        }
+      ]
+    },
+    "GPT-5.6 Terra": {
+      "provider": "OpenAI",
+      "releaseStatus": "GA",
+      "category": "Versatile",
+      "input": 2.5,
+      "cachedInput": 0.25,
+      "output": 15,
+      "tierLabel": "Default",
+      "tierThresholdLabel": "Up to 272K input tokens",
+      "tiers": [
+        {
+          "id": "long-context",
+          "label": "Long context",
+          "thresholdInputTokensExclusive": 272000,
+          "thresholdLabel": "Over 272K input tokens",
+          "input": 5,
+          "cachedInput": 0.5,
+          "output": 22.5
         }
       ]
     },

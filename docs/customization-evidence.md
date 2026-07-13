@@ -56,21 +56,21 @@ It reads full file content during the scan to build fingerprints, but it does no
 
 ## Evidence states
 
-`Text match found`
+`Evidence found`
 
 Distinctive content from the customization file was found inside a visible VS Code model request payload or referenced request side file, after the same session showed local evidence that Copilot read or opened that file. Internally this is the strongest evidence state, but the UI avoids phrasing it as absolute proof of all Copilot behavior.
 
 This proves request visibility, not causality. The text may have reached the request because VS Code loaded it as customization context, or because the user explicitly attached/read the file with `#file` or a file-read action.
 
-`Read by Copilot`
+`Path/reference only`
 
 Local logs show Copilot read, opened, reviewed, or referenced the customization file, but the scanner did not match distinctive file content inside visible model-request material.
 
-`Discovered only`
+`Discovered locally`
 
 VS Code setup/discovery events mentioned the customization, but request payload evidence was not found.
 
-`Not seen`
+`No local-log evidence`
 
 The file exists locally, but imported sessions did not show discovery or request evidence for it.
 
@@ -102,7 +102,11 @@ The global refresh and customization analysis are deliberately separate:
 3. A later analysis reuses prior evidence when customization content hashes are unchanged and checks only session logs modified since the previous snapshot.
 4. Changing, adding, or removing a customization invalidates the evidence shortcut so the current workspace is analyzed against its available logs again.
 
-The top-right refresh never starts customization analysis. This keeps routine usage refreshes quick and gives the Customizations page one clear action. `Copilot Usage Studio: Full Rescan` remains available from the command palette for recovery when cached state is suspected to be stale.
+The top-right **Global refresh** never starts customization analysis. Both actions use the same serialized local scanner, so while a focused **Customization evidence scan** is running the global action is temporarily unavailable and labeled as such. This keeps routine usage refreshes quick without making the interface look like two scans are running. `Copilot Usage Studio: Full Rescan` remains available from the command palette for recovery when cached state is suspected to be stale.
+
+Results are sorted by text-evidence count by default. Quick filters separate evidence found, no evidence, partial results, skills, instructions, prompts, and rule-path instructions. The result sidebar is draggable, keyboard-resizable, and remembers one shared width across Customizations and Memory.
+
+Evidence details use a compact confidence checklist. A missing preview is explained as unavailable request content or an unrecovered text snippet, not merely “No file text found.” Large matches show a representative excerpt alongside the approximate matched character count. Raw VS Code source labels identify request-log fields; they are not local files and therefore are not openable.
 
 Evidence matching runs in the scanner worker, not the Angular UI. It supports cancellation and reports session-folder progress through the local runtime. Successful results are merged into the existing local snapshot; a failed or canceled analysis keeps the last valid evidence.
 

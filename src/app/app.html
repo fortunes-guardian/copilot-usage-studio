@@ -63,10 +63,15 @@
           class="data-refresh-button"
           [disabled]="sessionDataRefreshState() === 'refreshing'"
           [attr.aria-busy]="sessionDataRefreshState() === 'refreshing'"
-          title="Check for new Copilot sessions and memories"
+          [title]="topbarScanTitle()"
           (click)="refreshActiveViewData()"
         >
-          <span class="refresh-icon" [class.spinning]="sessionDataRefreshState() === 'refreshing'" aria-hidden="true">↻</span>
+          <span
+            class="refresh-icon"
+            [class.spinning]="sessionDataRefreshState() === 'refreshing'"
+            [class.evidence]="isCustomizationEvidenceScanActive()"
+            aria-hidden="true"
+          >{{ isCustomizationEvidenceScanActive() ? '◎' : '↻' }}</span>
           <span>{{ topbarScanLabel() }}</span>
         </button>
         <span class="data-refresh-status" aria-live="polite">
