@@ -36,7 +36,7 @@ The scanner then classifies files inside those trusted locations by the setting 
 
 Filename and path conventions such as `.github/copilot-instructions.md`, `.instructions.md`, `SKILL.md`, `.prompt.md`, and `.agent.md` remain fallback behavior for standalone/npm runs, documented defaults, and exact files referenced by debug logs. They must not become broad home-folder or whole-repository crawling in extension mode.
 
-The Customizations page includes a collapsed scan-coverage diagnostic that lists recorded source locations such as VS Code defaults, VS Code settings, parent-repo defaults, and debug-log references. This is primarily for debugging false negatives on machines with unusual workspace, profile, or monorepo layouts.
+The Customizations page keeps scan coverage in a collapsed developer-diagnostics section that lists recorded source locations such as VS Code defaults, VS Code settings, parent-repo defaults, and debug-log references. This is primarily for debugging false negatives on machines with unusual workspace, profile, or monorepo layouts.
 
 The VS Code extension runs this indexing because it is the primary product surface and can read effective VS Code settings. If a machine appears slow or stuck, use `Copilot Usage Studio: Show Logs` or `Copilot Usage Studio: Export Diagnostics` to inspect the current workspace phase and customization-evidence progress.
 
@@ -104,9 +104,11 @@ The global refresh and customization analysis are deliberately separate:
 
 The top-right **Global refresh** never starts customization analysis. Both actions use the same serialized local scanner, so while a focused **Customization evidence scan** is running the global action is temporarily unavailable and labeled as such. This keeps routine usage refreshes quick without making the interface look like two scans are running. `Copilot Usage Studio: Full Rescan` remains available from the command palette for recovery when cached state is suspected to be stale.
 
-Results are sorted by text-evidence count by default. Quick filters separate evidence found, no evidence, partial results, skills, instructions, prompts, and rule-path instructions. The result sidebar is draggable, keyboard-resizable, and remembers one shared width across Customizations and Memory.
+Results are sorted by distinct text-matched model requests by default. Quick filters separate evidence found, no evidence, partial results, skills, instructions, prompts, and rule-path instructions. The result sidebar is draggable, keyboard-resizable, and remembers one shared width across Customizations and Memory. Generic legacy skill records use metadata, the configured name, or the parent folder as a recognizable display-name fallback.
 
-Evidence details use a compact confidence checklist. A missing preview is explained as unavailable request content or an unrecovered text snippet, not merely “No file text found.” Large matches show a representative excerpt alongside the approximate matched character count. Raw VS Code source labels identify request-log fields; they are not local files and therefore are not openable.
+The default detail view uses one compact evidence sentence and shows the skill or customization description once. File facts, the confidence checklist, paths, and character counts stay collapsed under technical details. Request evidence shows one bounded, highlighted representative excerpt; larger-match metadata is optional. Raw VS Code request-field labels appear only in the separate developer-diagnostics section, where the UI explains that they are fields rather than openable files.
+
+Active analysis uses one compact status line with either percentage or sessions checked. Long-running, stale, stopped, failed, and partial states remain visible without showing competing progress meters and counters.
 
 Evidence matching runs in the scanner worker, not the Angular UI. It supports cancellation and reports session-folder progress through the local runtime. Successful results are merged into the existing local snapshot; a failed or canceled analysis keeps the last valid evidence.
 

@@ -4,6 +4,8 @@ All notable changes to Copilot Usage Studio are recorded here.
 
 ## Unreleased
 
+- Consolidate the Customizations preview into one compact command header, request-ranked results, recognizable legacy skill names, collapsed technical evidence, bounded highlighted excerpts, developer-only diagnostics, and horizontally scrollable narrow-screen navigation.
+
 - Add a read-only Copilot Memory library for global, repository, workspace, and session-scoped memories and plans.
 - Link session-scoped memory files to the imported run that created them.
 - Add guarded local-runtime actions to open or reveal an indexed memory file.

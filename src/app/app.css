@@ -2114,9 +2114,28 @@
   }
 
   .view-nav button {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+}
+
+/* Keep every application view reachable when the top bar is narrow. */
+@media (max-width: 900px) {
+  .view-nav {
+    display: flex;
+    grid-column: 1 / -1;
+    width: 100%;
     min-width: 0;
-    padding: 6px 2px;
-    font-size: 10px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+    scroll-snap-type: inline proximity;
+  }
+
+  .view-nav button {
+    flex: 0 0 auto;
+    min-width: max-content;
+    scroll-snap-align: start;
   }
 }
 

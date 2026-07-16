@@ -13,8 +13,6 @@ import { HelpPopoverComponent } from './help-popover.component';
 import { LocalRuntimeStatus, SessionDataRefreshState } from './session-data.service';
 import { ResizableSidebarDirective } from './resizable-sidebar.directive';
 
-type CustomizationKindFilter = 'all' | CopilotCustomizationKind;
-type CustomizationStatusFilter = 'all' | CopilotCustomizationEvidenceStatus;
 type CustomizationResultFilter =
   | 'all'
   | 'evidence'
@@ -28,10 +26,6 @@ type MatchSource = 'inputMessages' | 'userRequest' | string;
 type EvidenceSource = {
   label: string;
   raw: string;
-};
-type EvidenceTimelineMarker = {
-  callNumber: number;
-  status: CopilotCustomizationEvidenceStatus;
 };
 type CustomizationCallEvidence = {
   key: string;
@@ -72,8 +66,6 @@ export class CustomizationsPageComponent {
   protected readonly sessionsInput = signal<CopilotSession[]>([]);
   protected readonly ingestionInput = signal<SessionData['ingestion'] | null>(null);
   protected readonly query = signal('');
-  protected readonly kindFilter = signal<CustomizationKindFilter>('all');
-  protected readonly statusFilter = signal<CustomizationStatusFilter>('all');
   protected readonly workspaceFilter = signal('all');
   protected readonly resultFilter = signal<CustomizationResultFilter>('all');
   protected readonly selectedId = signal<string | null>(null);
@@ -109,14 +101,13 @@ export class CustomizationsPageComponent {
 
   protected readonly filteredCustomizations = computed(() => {
     const query = this.query().trim().toLowerCase();
-    const kind = this.kindFilter();
-    const status = this.statusFilter();
     const workspace = this.workspaceFilter();
 
     return this.customizationsInput().filter((item) => {
       const matchesQuery =
         !query ||
         [
+          this.displayTitle(item),
           item.title,
           item.name,
           item.description,
@@ -135,15 +126,13 @@ export class CustomizationsPageComponent {
 
       return (
         matchesQuery &&
-        (kind === 'all' || item.kind === kind) &&
-        (status === 'all' || item.evidenceStatus === status) &&
         (workspace === 'all' || item.workspace === workspace) &&
         this.matchesResultFilter(item, this.resultFilter())
       );
     }).sort((a, b) =>
       this.evidenceSortCount(b) - this.evidenceSortCount(a) ||
       this.statusRank(b.evidenceStatus) - this.statusRank(a.evidenceStatus) ||
-      a.title.localeCompare(b.title),
+      this.displayTitle(a).localeCompare(this.displayTitle(b)),
     );
   });
 
@@ -182,6 +171,7 @@ export class CustomizationsPageComponent {
   ];
 
   protected readonly summaryHelp = {
+    overview: 'Files is the discovered customization inventory. Evidence counts files with distinctive text in visible request logs, sessions counts distinct Copilot sessions, and matches counts distinct customization/request occurrences.',
     files: 'Customization files discovered in trusted VS Code settings, defaults, or exact local-log references.',
     evidence: 'Files with distinctive text matched inside visible VS Code model-request logs.',
     sessions: 'Distinct Copilot sessions containing at least one text match for a customization file.',
@@ -243,12 +233,6 @@ export class CustomizationsPageComponent {
     return this.refreshState === 'refreshing' && this.runtimeStatus?.activeScanMode === 'customizations';
   }
 
-  protected scanRelationshipText(): string {
-    return this.isEvidenceScanActive()
-      ? 'Customization evidence scan is running. Global refresh is temporarily unavailable because local scans run one at a time.'
-      : 'Customization evidence analysis is separate from Global refresh and runs only when requested here.';
-  }
-
   protected currentWorkspaceLabel(): string {
     const progressWorkspace = this.runtimeStatus?.scanProgress?.workspace || '';
     if (progressWorkspace) {
@@ -264,34 +248,9 @@ export class CustomizationsPageComponent {
     return 'Current VS Code workspace';
   }
 
-  protected customizationFileCountLabel(): string {
-    const total = this.summary().total;
-    return `${total.toLocaleString()} customization file${total === 1 ? '' : 's'}`;
-  }
-
-  protected requestTextCountLabel(): string {
-    const evidence = this.customizationEvidenceSummary();
-    if (this.isEvidenceScanActive()) {
-      return 'Checking recent requests';
-    }
-    if (this.refreshState === 'error') {
-      return 'Scan failed';
-    }
-    if (this.refreshMessage?.toLowerCase().includes('stopped')) {
-      return 'Scan stopped';
-    }
-    if (!evidence.hasScannedEvidence) {
-      return 'Not checked yet';
-    }
-    const sent = evidence.sent;
-    return sent
-      ? `${sent.toLocaleString()} file${sent === 1 ? '' : 's'} with request text`
-      : 'No request text found';
-  }
-
   protected evidenceResultText(): string {
     if (this.isEvidenceScanActive()) {
-      return this.currentScanStep();
+      return this.compactScanProgressText();
     }
     if (this.refreshState === 'error') {
       return this.refreshMessage || 'The usage evidence scan did not finish.';
@@ -332,32 +291,6 @@ export class CustomizationsPageComponent {
     return 'Scan this workspace to find Copilot instructions, skills, prompts, hooks, and agents, then check recent request logs for evidence.';
   }
 
-  protected evidenceMetricLabel(): string {
-    return this.isEvidenceScanActive() ? 'Matches so far' : 'Last result';
-  }
-
-  protected evidenceMetricText(): string {
-    const matches = this.isEvidenceScanActive()
-      ? Number(this.runtimeStatus?.scanProgress?.matches ?? this.evidenceMatchCount())
-      : this.evidenceMatchCount();
-    return `${matches.toLocaleString()} text match${matches === 1 ? '' : 'es'}`;
-  }
-
-  protected activeScanStats(): string {
-    if (!this.isEvidenceScanActive()) {
-      return '';
-    }
-    const progress = this.runtimeStatus?.scanProgress;
-    const sessions = Number(progress?.sessions ?? 0);
-    const calls = Number(progress?.modelCalls ?? 0);
-    const parts = [
-      sessions > 0 ? `${sessions.toLocaleString()} session${sessions === 1 ? '' : 's'} checked` : '',
-      calls > 0 ? `${calls.toLocaleString()} model call${calls === 1 ? '' : 's'} checked` : '',
-      this.evidenceMetricText(),
-    ].filter(Boolean);
-    return parts.join(' · ');
-  }
-
   protected evidenceScanProgressPercent(): number {
     if (!this.isEvidenceScanActive()) {
       return 0;
@@ -368,47 +301,18 @@ export class CustomizationsPageComponent {
     return index > 0 && total > 0 ? Math.max(1, Math.min(100, Math.round((index / total) * 100))) : 0;
   }
 
-  protected evidenceScanProgressLabel(): string {
+  protected compactScanProgressText(): string {
     if (!this.isEvidenceScanActive()) {
       return '';
     }
-    const progress = this.runtimeStatus?.scanProgress;
-    const index = Number(progress?.index ?? 0);
-    const total = Number(progress?.total ?? 0);
-    if (index > 0 && total > 0) {
-      return `${index.toLocaleString()} of ${total.toLocaleString()} Copilot session folders checked`;
+    const percent = this.evidenceScanProgressPercent();
+    if (percent) {
+      return `Analyzing recent activity · ${percent}%`;
     }
-    return 'Preparing session list';
-  }
-
-  protected currentScanStep(): string {
-    const stage = this.runtimeStatus?.scanProgress?.stage ?? '';
-    if (stage === 'customizations' || stage === 'workspace' || stage === 'workspace-state') {
-      return 'Step 1 of 3: Loading customization files';
-    }
-    if (stage === 'customization-evidence' || stage === 'debug-logs') {
-      return 'Step 2 of 3: Checking recent Copilot sessions';
-    }
-    if (stage === 'complete') {
-      return 'Step 3 of 3: Summarising matches';
-    }
-    return 'Preparing current workspace scan';
-  }
-
-  protected elapsedScanLabel(): string {
-    const startedAt = this.runtimeStatus?.lastScanStartedAt;
-    if (!startedAt || !this.isEvidenceScanActive()) {
-      return '';
-    }
-    return this.durationLabel(Date.now() - Date.parse(startedAt));
-  }
-
-  protected lastProgressLabel(): string {
-    const updatedAt = this.runtimeStatus?.scanProgress?.updatedAt;
-    if (!updatedAt || !this.isEvidenceScanActive()) {
-      return '';
-    }
-    return this.durationLabel(Date.now() - Date.parse(updatedAt));
+    const sessions = Number(this.runtimeStatus?.scanProgress?.sessions ?? 0);
+    return sessions > 0
+      ? `Analyzing recent activity · ${sessions.toLocaleString()} session${sessions === 1 ? '' : 's'} checked`
+      : 'Analyzing recent activity…';
   }
 
   protected isLongRunningScan(): boolean {
@@ -437,20 +341,9 @@ export class CustomizationsPageComponent {
 
   protected evidenceMatchCount(): number {
     return this.customizationsInput().reduce(
-      (sum, customization) => sum + customization.matches.filter((match) => match.status === 'sent').length,
+      (sum, customization) => sum + this.requestOccurrenceCount(customization),
       0,
     );
-  }
-
-  private durationLabel(ms: number): string {
-    if (!Number.isFinite(ms) || ms < 0) {
-      return '';
-    }
-    const seconds = Math.max(0, Math.round(ms / 1000));
-    if (seconds < 60) {
-      return `${seconds}s`;
-    }
-    return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
   }
 
   protected selectCustomization(customization: CopilotCustomization): void {
@@ -459,16 +352,6 @@ export class CustomizationsPageComponent {
 
   protected setQuery(value: string): void {
     this.query.set(value);
-    this.ensureVisibleSelection();
-  }
-
-  protected setKindFilter(value: CustomizationKindFilter): void {
-    this.kindFilter.set(value);
-    this.ensureVisibleSelection();
-  }
-
-  protected setStatusFilter(value: CustomizationStatusFilter): void {
-    this.statusFilter.set(value);
     this.ensureVisibleSelection();
   }
 
@@ -484,8 +367,6 @@ export class CustomizationsPageComponent {
 
   protected resetFilters(): void {
     this.query.set('');
-    this.kindFilter.set('all');
-    this.statusFilter.set('all');
     this.workspaceFilter.set('all');
     this.resultFilter.set('all');
     this.ensureVisibleSelection();
@@ -496,6 +377,31 @@ export class CustomizationsPageComponent {
       .split(/[\\/]+/)
       .filter(Boolean)
       .at(-1) ?? customization.title;
+  }
+
+  protected displayTitle(customization: CopilotCustomization): string {
+    const title = String(customization.title ?? '').trim();
+    if (title && !this.isGenericSkillName(title, customization.kind)) {
+      return title;
+    }
+
+    const metadataName = String(customization.name ?? '').trim();
+    if (metadataName && !this.isGenericSkillName(metadataName, customization.kind)) {
+      return this.humanizeName(metadataName);
+    }
+
+    if (customization.kind === 'skill') {
+      const pathParts = (customization.relativePath || customization.sourcePath)
+        .split(/[\\/]+/)
+        .filter(Boolean);
+      const fileIndex = pathParts.findIndex((part) => /^skill\.md$/i.test(part));
+      const folderName = fileIndex > 0 ? pathParts[fileIndex - 1] : pathParts.at(-2);
+      if (folderName && !/^skills?$/i.test(folderName)) {
+        return this.humanizeName(folderName);
+      }
+    }
+
+    return title || this.kindLabel(customization.kind);
   }
 
   protected kindLabel(kind: CopilotCustomizationKind): string {
@@ -511,9 +417,26 @@ export class CustomizationsPageComponent {
 
   protected customizationTypeLabel(customization: CopilotCustomization): string {
     const kind = this.kindLabel(customization.kind);
-    return customization.kind === 'skill' && !/^skill$/i.test(customization.title)
-      ? `${kind} (${customization.title})`
+    const title = this.displayTitle(customization);
+    return customization.kind === 'skill' && !/^skill$/i.test(title)
+      ? `${kind} (${title})`
       : kind;
+  }
+
+  protected evidenceHeadline(customization: CopilotCustomization): string {
+    const requests = this.requestOccurrenceCount(customization);
+    if (customization.evidenceStatus === 'sent') {
+      return requests
+        ? `Evidence found in ${requests.toLocaleString()} model request${requests === 1 ? '' : 's'}`
+        : 'Evidence found in local request logs';
+    }
+    if (customization.evidenceStatus === 'listed') {
+      return 'File path or read reference found';
+    }
+    if (customization.evidenceStatus === 'discovered') {
+      return 'Discovered locally; no request text recovered';
+    }
+    return 'No evidence found in imported request logs';
   }
 
   protected statusLabel(status: CopilotCustomizationEvidenceStatus): string {
@@ -544,30 +467,19 @@ export class CustomizationsPageComponent {
   }
 
   protected evidenceCountLabel(customization: CopilotCustomization): string {
-    const sessions = new Set(customization.matches.map((match) => match.sessionId)).size;
-    if (!customization.matches.length) {
-      return 'No sessions';
+    const requests = this.requestOccurrenceCount(customization);
+    if (!requests) {
+      return 'No requests';
     }
-    return `${sessions.toLocaleString()} session${sessions === 1 ? '' : 's'}`;
+    return `${requests.toLocaleString()} request${requests === 1 ? '' : 's'}`;
   }
 
-  protected evidenceGroupSubtitle(group: CustomizationSessionEvidence): string {
-    const calls = group.modelCallNumbers.length;
+  protected groupEvidenceSummary(group: CustomizationSessionEvidence): string {
     if (group.bestStatus === 'sent') {
-      const sentCalls = this.sentModelCallCount(group);
-      return sentCalls
-        ? `${sentCalls.toLocaleString()} text-matched request${sentCalls === 1 ? '' : 's'}`
-        : 'Evidence found';
+      const requests = this.sentModelCallCount(group);
+      return `Found in ${requests.toLocaleString()} model request${requests === 1 ? '' : 's'}`;
     }
-    if (group.bestStatus === 'listed') {
-      return calls
-        ? `File path or read recorded; contents unavailable`
-        : 'Read or referenced';
-    }
-    if (group.bestStatus === 'discovered') {
-      return 'Found during setup or discovery';
-    }
-    return 'No imported evidence';
+    return group.bestStatus === 'listed' ? 'File path or read reference found' : 'Discovery record found';
   }
 
   protected sourceLabel(source: MatchSource): string {
@@ -584,72 +496,8 @@ export class CustomizationsPageComponent {
     }[source] ?? source;
   }
 
-  protected sourceHelp(source: EvidenceSource): string {
-    if (/^system_prompt/i.test(source.raw)) {
-      return 'Matched inside the instruction/system part of a VS Code request. This is usually where custom instructions and skills appear.';
-    }
-    if (/^tools/i.test(source.raw)) {
-      return 'Matched near the tool definitions included with the request. This can include tool or MCP schema material.';
-    }
-    if (source.raw === 'inputMessages') {
-      return 'Matched somewhere in the full request payload visible in VS Code logs. This is useful as broad local confirmation that the text appeared.';
-    }
-    if (source.raw === 'userRequest') {
-      return 'Matched in the user-facing prompt/request material for this model call.';
-    }
-    if (source.raw === 'copilotFileRead') {
-      return 'VS Code logs show Copilot read this customization file. This is useful evidence, but it does not prove the file text was sent to the model.';
-    }
-    return 'Matched in this VS Code debug-log source. Open the technical proof section if you need the raw field name.';
-  }
-
   protected rawSourceLabel(source: MatchSource): string {
     return String(source);
-  }
-
-  protected sessionEvidenceLabel(group: CustomizationSessionEvidence): string {
-    const calls = group.modelCallNumbers.length;
-    if (!calls) {
-      return group.bestStatus === 'sent' ? 'Evidence found' : this.statusLabel(group.bestStatus);
-    }
-    if (group.bestStatus !== 'sent') {
-      return 'Read or referenced';
-    }
-    const sentCalls = this.sentModelCallCount(group);
-    const label = sentCalls === 1 ? 'request' : 'requests';
-    return `${sentCalls.toLocaleString()} text-matched ${label}`;
-  }
-
-  protected timelineMarkers(group: CustomizationSessionEvidence): EvidenceTimelineMarker[] {
-    const markers = new Map<number, CopilotCustomizationEvidenceStatus>();
-    for (const match of group.matches) {
-      if (!match.modelCallNumber) {
-        continue;
-      }
-      const current = markers.get(match.modelCallNumber) ?? 'not_seen';
-      markers.set(match.modelCallNumber, this.strongerStatus(current, match.status));
-    }
-    return [...markers.entries()]
-      .sort(([a], [b]) => a - b)
-      .filter(([, status]) => group.bestStatus !== 'sent' || status === 'sent')
-      .slice(0, 10)
-      .map(([callNumber, status]) => ({ callNumber, status }));
-  }
-
-  protected timelineOverflow(group: CustomizationSessionEvidence): number {
-    const distinctCalls = new Set(
-      group.matches
-        .filter((match) => group.bestStatus !== 'sent' || match.status === 'sent')
-        .map((match) => match.modelCallNumber)
-        .filter(Boolean),
-    );
-    return Math.max(0, distinctCalls.size - 10);
-  }
-
-  protected timelineMarkerLabel(marker: EvidenceTimelineMarker): string {
-    return marker.status === 'sent'
-      ? `Model request #${marker.callNumber}: this file's text was included`
-      : `Model request #${marker.callNumber}: file text not proved`;
   }
 
   protected callEvidence(group: CustomizationSessionEvidence): CustomizationCallEvidence[] {
@@ -725,19 +573,22 @@ export class CustomizationsPageComponent {
     return 'No request payload content was verified for this event.';
   }
 
-  protected groupDetailSummary(group: CustomizationSessionEvidence): string {
-    if (group.bestStatus === 'sent') {
-      const calls = this.sentModelCallCount(group);
-      const label = calls === 1 ? 'model request' : 'model requests';
-      return `File text appeared in ${calls.toLocaleString()} Copilot ${label}. This confirms the text was visible in local request logs.`;
+  protected shortEvidenceExcerpt(call: CustomizationCallEvidence): string {
+    const excerpt = String(call.matchedPreview[0] ?? '').replace(/\s+/g, ' ').trim();
+    return excerpt.length > 240 ? `${excerpt.slice(0, 237).trimEnd()}…` : excerpt;
+  }
+
+  protected selectedDiagnosticSources(): EvidenceSource[] {
+    const customization = this.selectedCustomization();
+    if (!customization) {
+      return [];
     }
-    if (group.bestStatus === 'listed') {
-      return 'Copilot read or referenced this file in this session, but imported model requests did not show distinctive file text.';
-    }
-    if (group.bestStatus === 'discovered') {
-      return 'VS Code setup or discovery mentioned this file, but imported model requests did not show distinctive file text.';
-    }
-    return 'No visible request evidence was imported for this session.';
+    return this.uniqueSources(
+      customization.matches.map((match) => ({
+        label: this.sourceLabel(match.source),
+        raw: this.rawSourceLabel(match.source),
+      })),
+    );
   }
 
   protected weakEvidenceExplanation(group: CustomizationSessionEvidence): string {
@@ -748,47 +599,6 @@ export class CustomizationsPageComponent {
       return 'VS Code reported the file during customization discovery, but no matching text snippet could be recovered from imported request logs.';
     }
     return 'No matching text snippet could be recovered from the imported logs.';
-  }
-
-  protected evidenceSourceLabels(call: CustomizationCallEvidence): string[] {
-    return this.uniqueSources(call.sources).map((source) => source.label);
-  }
-
-  protected evidenceSources(call: CustomizationCallEvidence): EvidenceSource[] {
-    return this.uniqueSources(call.sources);
-  }
-
-  protected rawEvidenceSources(call: CustomizationCallEvidence): EvidenceSource[] {
-    return this.uniqueSources(call.sources);
-  }
-
-  protected evidenceDetailsSummary(call: CustomizationCallEvidence): string {
-    const parts = [];
-    if (call.callNumber) {
-      parts.push(`request #${call.callNumber}`);
-    }
-    const sourceText = this.sourcePhrase(call.sources);
-    if (sourceText) {
-      parts.push(sourceText);
-    }
-    if (call.matchedCharacters) {
-      parts.push(`${call.matchedCharacters.toLocaleString()} characters matched`);
-    }
-    return parts.join(' · ') || 'raw debug-log proof';
-  }
-
-  private sourcePhrase(sources: EvidenceSource[]): string {
-    const labels = this.uniqueSources(sources).map((source) => source.label);
-    if (!labels.length) {
-      return 'the model request';
-    }
-    if (labels.length === 1) {
-      return labels[0].toLowerCase();
-    }
-    if (labels.length === 2) {
-      return `${labels[0].toLowerCase()} and ${labels[1].toLowerCase()}`;
-    }
-    return `${labels.slice(0, -1).map((label) => label.toLowerCase()).join(', ')}, and ${labels.at(-1)?.toLowerCase()}`;
   }
 
   private uniqueSources(sources: EvidenceSource[]): EvidenceSource[] {
@@ -910,7 +720,28 @@ export class CustomizationsPageComponent {
   }
 
   private evidenceSortCount(customization: CopilotCustomization): number {
-    return customization.matches.filter((match) => match.status === 'sent').length;
+    return this.requestOccurrenceCount(customization);
+  }
+
+  private requestOccurrenceCount(customization: CopilotCustomization): number {
+    return new Set(
+      customization.matches
+        .filter((match) => match.status === 'sent')
+        .map((match) => `${match.sessionId}:${match.modelCallNumber || `event-${match.eventIndex}`}`),
+    ).size;
+  }
+
+  private isGenericSkillName(value: string, kind: CopilotCustomizationKind): boolean {
+    return kind === 'skill' && /^(?:skill|skill\.md)$/i.test(value.trim());
+  }
+
+  private humanizeName(value: string): string {
+    return value
+      .replace(/\.md$/i, '')
+      .replace(/[-_]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, (character) => character.toUpperCase());
   }
 
   private matchesResultFilter(

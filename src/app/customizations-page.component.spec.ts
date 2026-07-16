@@ -52,11 +52,15 @@ describe('CustomizationsPageComponent', () => {
     fixture = TestBed.createComponent(CustomizationsPageComponent);
     fixture.componentRef.setInput('customizations', [
       customization('quiet-rule', 'Quiet Rule', 'instruction', 'not_seen'),
+      {
+        ...customization('create-pull-request', 'Skill', 'skill', 'sent', 2),
+        name: 'skill',
+      },
       customization('release-review', 'Release Safety Review', 'skill', 'sent', 3),
     ]);
     fixture.componentRef.setInput('sessions', []);
     fixture.componentRef.setInput('ingestion', {
-      importedCustomizations: 2,
+      importedCustomizations: 3,
       customizationEvidenceAnalyzedAt: '2026-07-13T10:00:00.000Z',
     });
     fixture.detectChanges();
@@ -66,6 +70,9 @@ describe('CustomizationsPageComponent', () => {
     const cards = [...fixture.nativeElement.querySelectorAll('.customization-card')] as HTMLElement[];
     expect(cards[0].textContent).toContain('Release Safety Review');
     expect(cards[0].textContent).toContain('Skill (Release Safety Review)');
+    expect(cards[0].textContent).toContain('3 requests');
+    expect(cards[1].textContent).toContain('Create Pull Request');
+    expect(cards[1].textContent).toContain('Skill (Create Pull Request)');
   });
 
   it('filters to evidence-backed files and explains the summary counts', () => {
@@ -73,8 +80,14 @@ describe('CustomizationsPageComponent', () => {
       .find((button: Element) => button.textContent?.trim() === 'Evidence found') as HTMLButtonElement;
     evidenceButton.click();
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelectorAll('.customization-card').length).toBe(1);
-    expect(fixture.nativeElement.textContent).toContain('Total evidence matches');
-    expect(fixture.nativeElement.textContent).toContain('Sessions containing evidence');
+    expect(fixture.nativeElement.querySelectorAll('.customization-card').length).toBe(2);
+    expect(fixture.nativeElement.querySelector('.overview-metrics').textContent).toContain('with evidence');
+    expect(fixture.nativeElement.querySelector('.overview-metrics').textContent).toContain('sessions');
+  });
+
+  it('keeps technical evidence collapsed and removes dead-end evidence controls', () => {
+    expect(fixture.nativeElement.querySelector('.customization-technical').open).toBe(false);
+    expect(fixture.nativeElement.textContent).not.toContain('View evidence');
+    expect(fixture.nativeElement.textContent).not.toContain('Proof details');
   });
 });
