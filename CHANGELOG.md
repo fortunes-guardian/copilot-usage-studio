@@ -4,8 +4,6 @@ All notable changes to Copilot Usage Studio are recorded here.
 
 ## Unreleased
 
-- Consolidate the Customizations preview into one compact command header, request-ranked results, recognizable legacy skill names, collapsed technical evidence, bounded highlighted excerpts, developer-only diagnostics, and horizontally scrollable narrow-screen navigation.
-
 - Add a read-only Copilot Memory library for global, repository, workspace, and session-scoped memories and plans.
 - Link session-scoped memory files to the imported run that created them.
 - Add guarded local-runtime actions to open or reveal an indexed memory file.
@@ -31,6 +29,10 @@ All notable changes to Copilot Usage Studio are recorded here.
 - Purge public roadmap links from README and release-facing docs.
 - Refresh GitHub Copilot model pricing from the July 5, 2026 GitHub Docs table, including Claude Sonnet 5, Claude Opus 4.8 fast mode, Kimi K2.7 Code, and updated model statuses.
 - Add raw model-id alias support so newly observed VS Code ids can map to the matching GitHub pricing row without hidden fallback pricing.
+
+## 0.3.1 - 2026-07-16
+
+- Consolidate the Customizations preview into one compact command header, request-ranked results, recognizable legacy skill names, collapsed technical evidence, bounded highlighted excerpts, developer-only diagnostics, and horizontally scrollable narrow-screen navigation.
 
 ## 0.3.0 - 2026-07-13
 
